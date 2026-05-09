@@ -27,7 +27,40 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.5 in planning. Will deliver the gameplay core: hero auto-running across the bottom, four aliens descending with answers, fire button (Space / click / tap), wrong-shot speed penalty, full 20-question round end-to-end. The first sprint where mathBasher is actually a playable game.
+- Sprint 0.5.1 next: in-round pause + escape (Esc key, on-screen Pause button, Resume / Quit-to-Menu, Esc back-stack on menus). Then 0.6 mobile responsive.
+
+## [0.5.0] - 2026-05-09 — Gameplay core (mathBasher is now a game)
+
+The release where mathBasher actually plays. Hero auto-runs across the bottom; four aliens descend each round with answers on their faces; player fires (Space / mouse click / touch tap) at the correct one before the aliens reach the hero. Wrong shot triggers a visible speed penalty. A full 20-question round ends with a score saved to the score store and a `★` rating on GameOverScene, with "New high score!" detected and surfaced.
+
+### Added
+- **`src/game/entities/Hero.ts`** — auto-running placeholder hero (~48×64 amber rectangle with a direction notch), bouncing between safe-area bounds at `config.hero.runSpeedPxPerSec`. `playHitAnim()` (alpha flash) and `playDeathAnim(onComplete)` (~400ms drop+shake). The chassis is named `chassis`, not `body`, to avoid colliding with Phaser's reserved physics-body field.
+- **`src/game/entities/Alien.ts`** — placeholder rounded panel (~80×60) carrying a centered answer number. `static WIDTH`/`HEIGHT` exposed for HitSystem. `playExplodeAnim(correct, onDone)` with green/red tint by outcome; `playFadeOut` for surviving aliens after a correct hit.
+- **`src/game/entities/Projectile.ts`** — upward-moving ellipse fired by the hero. Speed from `config.hero.projectileSpeedPxPerSec` (added to central config this sprint). `bounds()` returns an instance-scoped scratch rectangle mutated in place to avoid per-frame allocations.
+- **`src/game/systems/WaveSystem.ts`** — owns the 4-alien wave and descent. `spawnWave(question)` creates the alien set with the correct answer placed in a random lane, recorded internally so `isCorrectLane(lane)` resolves later. `update(dt)` advances all live aliens and returns `'reached-hero'` when contact is made. `applyWrongShotPenalty()` boosts every live alien to `penaltyPxPerSec` for the rest of the wave. Wrong-shot penalty is idempotent — a second wrong shot in the same wave doesn't re-boost.
+- **`src/game/systems/HitSystem.ts`** — pure AABB collision helper. Module-scoped scratch `Rectangle` mutated via `setTo(...)`; collision sizes pulled from `Alien.WIDTH`/`Alien.HEIGHT` statics, not magic numbers.
+- **`src/game/systems/InputSystem.ts`** — three input pathways converging into one `'fire'` event: `Space` keydown, mouse pointerdown, touch pointerdown. Cooldown gate from `config.hero.fireCooldownMs`. Auto-cleans on scene shutdown (and on explicit `destroy()`).
+- **`src/game/scenes/GameScene.ts`** wired to actual gameplay: reads `Settings.round`, instantiates Hero/WaveSystem/HitSystem/InputSystem/ScoreCalculator, runs the 20-question round loop, emits `'questionStarted'` / `'questionEnded'` for HudScene, transitions to GameOverScene with the final result. Defensive defaults if Settings is empty.
+- **`src/game/scenes/HudScene.ts`** wired to real GameScene events: prompt and question counter update on `'questionStarted'`; score updates and "+N" floating popup on `'questionEnded'`. **Pulls** the in-flight question from GameScene on bind to tolerate Phaser's async parallel-scene launch (otherwise Q1 would render the placeholder until Q2 fires).
+- **`src/game/scenes/GameOverScene.ts`** now saves the round to the shared score store (read `previousBest` BEFORE save, then check for new high score), guards post-await scene mutations with `this.scene.isActive()`, animates a "★ New High Score! ★" badge, and `Settings.set`s `mathId`/`speed` defensively before `Play Again` so a `Settings.reset()` later in the sprint can't strand the replay path.
+- **`src/services/scoreStoreFactory.ts`** memoized at module scope; `createScoreStore()` is called once in `src/main.ts` at boot to materialize the singleton.
+- **`scripts/check-tooling-leaks.sh`** — canonical leak scanner. Greps every git-tracked file for workflow vocabulary (Claude / reviewer / slash commands) with a tight allow-list, exits non-zero on findings. Runnable as `bash scripts/check-tooling-leaks.sh` (full repo) or `--staged` (pre-commit).
+- **`src/game/PLAYTEST.md`** — manual playtest checklist used to verify the round end-to-end across Slow / Medium / Fast.
+- **DeveloperGuide.md** — six new "Where to look for what" rows for the gameplay layer.
+
+### Changed
+- **`src/game/ui/PlaceholderButton.ts`** — bug-fix pass during the sprint after the new game-entry path surfaced two real click-reliability issues:
+  1. `pointerup` → `pointerdown` so the first click after a scene transition isn't dropped (Phaser's pointer-state tracking treats the first down/up as incomplete if the cursor was already over the target when the scene activated).
+  2. Interactive surface moved from the Container to the bg `Rectangle` leaf to eliminate dead zones from text glyphs shadowing portions of the container's hit-test.
+  3. `useHandCursor: true` so the cursor flips to a hand on hover.
+
+### Telemetry
+- New events: `RoundStarted`, `QuestionStarted`, `QuestionEnded`, `WrongShot`, `RoundEnded`, `HighScoreSaved`. All carry `mathId`, `speed` and the relevant gameplay context. Zero PII.
+
+### Notes
+- All six review agents passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Five "should-fix" items folded in at wrap-up; one ("first-time wrong-shot tooltip") deferred to the art-polish milestone.
+- Test count unchanged at 45 across 5 files — gameplay code is Phaser-coupled and verified by manual playtest, per the project's documented test-layer rule.
+- Bundle still ~1.5MB / ~340KB gzipped (Phaser-dominated).
 
 ## [0.4.0] - 2026-05-09 — Scene flow (first kid-facing UI)
 
