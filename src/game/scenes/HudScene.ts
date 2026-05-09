@@ -6,19 +6,37 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
+import type { Question } from '@/math/types';
+import type { GameScene } from '@/game/scenes/GameScene';
+
+interface QuestionStartedPayload {
+  question: Question;
+  index: number;
+  total: number;
+}
+
+interface QuestionEndedPayload {
+  wasCorrect: boolean;
+  score: number;
+  correctCount: number;
+}
 
 /**
- * Heads-up display, runs in PARALLEL with GameScene (Phaser scene-launch
- * pattern). For sprint 0.4 it just renders a placeholder top bar:
+ * Heads-up display, runs in PARALLEL with GameScene. Listens for events
+ * GameScene emits and updates the top bar:
  *
- *   Score: 0  |  Q: 0/20  |  <prompt>
+ *   Score: 1500    7 + 5 = ?    Q: 5/20
  *
- * Sprint 0.5 wires this to real GameScene events:
- *   - 'questionStarted' updates the prompt + question counter
- *   - 'questionEnded' updates the score
+ * Score popup ("+200") rises briefly when a question is answered correctly,
+ * giving snappy positive feedback in addition to the score-counter update.
  */
 export class HudScene extends Phaser.Scene {
   static readonly key = SceneKeys.Hud;
+
+  private scoreText!: Phaser.GameObjects.Text;
+  private promptText!: Phaser.GameObjects.Text;
+  private counterText!: Phaser.GameObjects.Text;
+  private gameSceneListenersBound = false;
 
   constructor() {
     super(HudScene.key);
@@ -30,12 +48,10 @@ export class HudScene extends Phaser.Scene {
     const { width } = this.scale;
     const barHeight = 48;
 
-    // Translucent backdrop strip at the top so labels stay legible over busy
-    // gameplay backgrounds when sprite assets land in 0.7.
     const bg = this.add.rectangle(0, 0, width, barHeight, 0x000000, 0.45);
     bg.setOrigin(0, 0);
 
-    this.add
+    this.scoreText = this.add
       .text(16, barHeight / 2, 'Score: 0', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
@@ -43,15 +59,16 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
 
-    this.add
+    this.promptText = this.add
       .text(width / 2, barHeight / 2, '— + — = ?', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '20px',
         color: '#facc15',
+        fontStyle: 'bold',
       })
       .setOrigin(0.5);
 
-    this.add
+    this.counterText = this.add
       .text(width - 16, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
@@ -59,8 +76,89 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(1, 0.5);
 
+    // Bind to GameScene events. The GameScene event emitter is per-scene
+    // and lives as long as the scene; we listen via scene.get(...).events.
+    this.bindGameSceneEvents();
+
     this.events.once('shutdown', () => {
+      this.unbindGameSceneEvents();
       _th.logToAi('HudScene Completed', SeverityLevel.Information);
+    });
+  }
+
+  private bindGameSceneEvents(): void {
+    if (this.gameSceneListenersBound) return;
+    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    if (!gameScene) return;
+    gameScene.events.on('questionStarted', this.onQuestionStarted, this);
+    gameScene.events.on('questionEnded', this.onQuestionEnded, this);
+    this.gameSceneListenersBound = true;
+
+    // Phaser launches parallel scenes asynchronously: GameScene.create() can
+    // run startNextQuestion() (which emits 'questionStarted') BEFORE this
+    // HudScene's create() runs and binds the listener above. Without this
+    // pull, the first question's prompt would stay as the placeholder
+    // "— + — = ?" until question 2.
+    //
+    // Pulling the in-flight question here means HudScene tolerates either
+    // start order. Also makes future pause/resume of HudScene robust (the
+    // 0.5.1 Pause sprint will hit this same race when re-binding after
+    // a resume).
+    const inFlight = gameScene.getCurrentQuestionPayload?.();
+    if (inFlight) {
+      this.onQuestionStarted(inFlight);
+    }
+  }
+
+  private unbindGameSceneEvents(): void {
+    if (!this.gameSceneListenersBound) return;
+    const gameScene = this.scene.get(SceneKeys.Game);
+    if (gameScene) {
+      gameScene.events.off('questionStarted', this.onQuestionStarted, this);
+      gameScene.events.off('questionEnded', this.onQuestionEnded, this);
+    }
+    this.gameSceneListenersBound = false;
+  }
+
+  private onQuestionStarted(payload: QuestionStartedPayload): void {
+    this.promptText.setText(payload.question.prompt);
+    this.counterText.setText(`Q: ${payload.index + 1}/${payload.total}`);
+  }
+
+  private onQuestionEnded(payload: QuestionEndedPayload): void {
+    const oldScore = this.parseScore(this.scoreText.text);
+    const delta = payload.score - oldScore;
+    this.scoreText.setText(`Score: ${payload.score}`);
+    if (payload.wasCorrect && delta > 0) {
+      this.popupScoreDelta(delta);
+    }
+  }
+
+  private parseScore(s: string): number {
+    const m = /Score: (\d+)/.exec(s);
+    return m ? Number(m[1]) : 0;
+  }
+
+  /**
+   * Brief floating "+N" text above the score counter for positive feedback.
+   * Auto-destroys after the tween completes.
+   */
+  private popupScoreDelta(delta: number): void {
+    const popup = this.add
+      .text(80, 60, `+${delta}`, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '20px',
+        color: '#34d399',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
+    this.tweens.add({
+      targets: popup,
+      y: 30,
+      alpha: 0,
+      duration: 700,
+      ease: 'Quad.Out',
+      onComplete: () => popup.destroy(),
     });
   }
 }
