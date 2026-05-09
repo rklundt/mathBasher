@@ -27,7 +27,27 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.3 in planning. Will deliver the score store: `IScoreStore` interface, in-memory `SessionScoreStore`, `ScoreCalculator` (round-scoring math), and a factory so a future API-backed store is a drop-in replacement.
+- Sprint 0.4 in planning. Will deliver the scene-flow layer: Boot → Menu → GameSelect → Difficulty → Game → GameOver navigation, with placeholder UI; first sprint with visible interactive surface.
+
+## [0.3.0] - 2026-05-09 — Score store and scoring
+
+The part of the system that **remembers how the player did**, plus the math that turns per-question outcomes into a final round score. After this release, sprint 0.5 (gameplay) has everything it needs to record results — no UI yet, but every back-end pipe is connected. Test count climbs from 25 to 45.
+
+### Added
+- **`src/services/IScoreStore.ts`** — `ScoreEntry` (one round result), `ScoreFilter` (combo lookup shape), and the `IScoreStore` interface (`save` / `top` / `bestForCombo`). All methods async-shaped so a future API-backed store is a drop-in replacement.
+- **`src/services/SessionScoreStore.ts`** — in-memory implementation. Scores live in a single `ScoreEntry[]` field on the running browser tab and clear on page reload. Logs each `save`/`top` call via the typed telemetry helper.
+- **`src/services/ScoreCalculator.ts`** — round-scoring math. Construct with `(mathId, speed)`, feed it per-question outcomes via `recordOutcome()`, then read `score` / `correctCount` / `passed` / `stars` getters at round end. Every multiplier and threshold comes from `src/core/config.ts` — no magic numbers.
+- **`src/services/scoreStoreFactory.ts`** — `createScoreStore()` exports the single call site that decides which `IScoreStore` implementation gameplay code uses. Today returns a `SessionScoreStore`; the future Phase-3 `ApiScoreStore` is a one-file change here.
+- **Tests:** 21 new tests (8 for `SessionScoreStore`, 13 for `ScoreCalculator`). `ScoreCalculator` tests are config-driven — re-tuning `config.round.starThresholds` or `config.scoring.afterWrongShotMultiplier` does not silently break the suite. Total now 5 test files, 45 tests.
+- **DeveloperGuide.md** updated: project layout block lists the four new `src/services/*` files; "Where to look for what" gains rows for "How is scoring computed?" and "How do I add a new score backend?".
+
+### Changed
+- **`IScoreStore` docblock now carries forward-looking security notes for the future `ApiScoreStore`:** identity must NOT be a parameter (the API-backed store derives the acting user from server-side session state — never a caller-supplied id, prevents IDOR); client-supplied score values are advisory only when crossing the network (the API-backed store recomputes from `QuestionOutcome[]` server-side and stamps `achievedAt` itself, prevents client tampering). Comments only — no behavior change today, but the right threat model is locked in before the Phase-3 sprint inherits the interface.
+
+### Notes
+- Async signatures on `IScoreStore` are deliberate even though the v1 in-memory implementation is sync. Switching `Promise.resolve(...)` to real network requests later must NOT require changes to callers.
+- No `localStorage`. No persistence. By design — persistence (across page reloads, even without an account) is a deliberate post-MVP decision.
+- Wrap-fix items routed to future sprints (not in this release): sprint 0.4 acceptance now requires the `DifficultyScene` to gate tile selection on `getImplementedIds()` (so a kid can never trigger a stub generator's throw), and sprint 0.5's "save score" story now requires `createScoreStore()` to be called once at app boot rather than per-scene.
 
 ## [0.2.0] - 2026-05-09 — Math engine
 
