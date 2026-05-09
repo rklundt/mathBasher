@@ -123,6 +123,21 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | No console errors during a full round |
 |   | Memory in DevTools doesn't grow noticeably across 5 back-to-back rounds (entities cleaned up) |
 
+## Audio (sprint 0.5.2)
+
+| ✓ | Check |
+|---|---|
+|   | Click Start on Menu, then start a round. Pressing **Space**, clicking the canvas, or tapping the canvas (touch) all produce a fire sound |
+|   | Volume is moderate — putting headphones on and starting the game does NOT result in a blast of sound |
+|   | Click the **mute icon** (top-right of HUD bar, just left of the Pause icon) — speaker shape gains a red diagonal slash, sound stops |
+|   | Click mute again — slash disappears, sound returns |
+|   | Mute icon shows hand cursor on hover; hover tints the background (matches the Pause icon affordance) |
+|   | Mute persists across **page refresh** (mute → reload → still muted; visually the slash is on from first paint) |
+|   | Mute persists across **round restart** (mute → finish or quit round → start new round → still muted) |
+|   | Pause overlay still gates fire input — open the pause overlay and press Space; no sound plays (carryover from 0.5.1) |
+|   | First-load behavior: open the app in a fresh tab, press fire on Menu — no sound (audio not initialized yet); click Start, then go through to the round, fire — sound plays. (This verifies the iOS Safari first-interaction guard works.) |
+|   | Browser DevTools console shows no warnings about missing audio keys or playback errors during a normal round |
+
 ## Pause + Escape (sprint 0.5.1)
 
 | ✓ | Check |
