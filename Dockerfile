@@ -39,7 +39,6 @@ COPY --from=build /app/server/dist ./server/dist
 
 # AGPL distribution requirement: ship the license + notices so anyone with the
 # image (operator, auditor) can locate them without going back to the repo.
-COPY --from=build /app/package.json ./package.json
 COPY LICENSE NOTICE README.md ./
 
 # Run as non-root user (alpine ships a `node` user with uid 1000).

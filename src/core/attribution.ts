@@ -5,10 +5,10 @@
 /**
  * THE single source of truth for the AGPL §7(b) UI attribution notice.
  *
- * Sprint 0.4 will create AttributionScene that renders these strings as a
- * persistent footer on every interactive scene. Sprint 0.7 will polish the
- * presentation. Updating attribution text MUST happen here — never duplicate
- * the strings into individual scenes or other call sites.
+ * A future revision will create AttributionScene to render these strings as a
+ * persistent footer on every interactive scene; an art-polish revision after
+ * that will tune the presentation. Updating attribution text MUST happen here
+ * — never duplicate the strings into individual scenes or other call sites.
  *
  * The Source URL is read from the `VITE_SOURCE_URL` environment variable at
  * build time (set in `.env` locally and in CI for production). Vite inlines

@@ -6,12 +6,12 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 
 /**
- * BootScene — minimal proof-of-life scene for sprint 0.1.
+ * BootScene — minimal proof-of-life scene for the scaffold.
  *
- * In sprint 0.7 (Art + Polish), this scene gains preload duties and a loading
- * bar; for now it just renders the project name to verify the toolchain.
+ * In a later art-polish revision this scene will gain preload duties and a
+ * loading bar; for now it just renders the project name to verify the toolchain.
  *
- * Sprint 0.4 will add a Menu transition; for now the scene just sits.
+ * The Menu transition will be wired when the scene-flow layer lands.
  */
 export class BootScene extends Phaser.Scene {
   static readonly key = 'boot';

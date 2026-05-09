@@ -23,7 +23,7 @@ When in doubt about whether an asset belongs here, add it. Over-attribution cost
 
 ## Assets in this project
 
-_(No third-party assets are bundled yet. Entries will be appended here as assets land in `public/assets/` — primarily during sprint 0.7 when the Kenney sprite packs are sourced.)_
+_(No third-party assets are bundled yet. Entries will be appended here as assets land in `public/assets/` — primarily when third-party sprite packs are sourced during the art-polish phase.)_
 
 ## Project-original assets
 

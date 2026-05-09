@@ -9,8 +9,8 @@
  * events in queries).
  *
  * App Insights wiring (the `applicationinsights` Node SDK) is intentionally not
- * installed yet; it lands in a later sprint. Until then, this falls back to
- * stdout/stderr only.
+ * installed yet; it lands later. Until then, this falls back to stdout/stderr
+ * only.
  */
 export enum SeverityLevel {
   Verbose = 'Verbose',

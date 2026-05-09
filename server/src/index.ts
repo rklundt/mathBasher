@@ -17,7 +17,23 @@ import { healthRouter } from './routes/health.js';
  * /health under 100ms, SIGTERM graceful with 30s grace, stdout-only logging.
  */
 
-const PORT = Number(process.env['PORT'] ?? 8080);
+const DEFAULT_PORT = 8080;
+function resolvePort(): number {
+  const raw = process.env['PORT'];
+  if (raw === undefined || raw === '') return DEFAULT_PORT;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 65535) {
+    _th.logToAi('serverBoot Warning', SeverityLevel.Warning, {
+      reason: 'PORT env var is not a valid port number; falling back to default',
+      raw,
+      fallback: String(DEFAULT_PORT),
+    });
+    return DEFAULT_PORT;
+  }
+  return parsed;
+}
+
+const PORT = resolvePort();
 const HOST = '0.0.0.0';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +61,23 @@ function bootstrap(): void {
   });
 
   const server: Server = createServer(app);
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      _th.logToAi('serverBoot Failed', SeverityLevel.Error, {
+        reason: 'port in use',
+        port: String(PORT),
+      });
+      // eslint-disable-next-line no-console -- final exit message MUST be visible
+      console.error(`Port ${PORT} is already in use. Set PORT=<other> and retry.`);
+      process.exit(1);
+    }
+    _th.logToAi('serverBoot Failed', SeverityLevel.Error, {
+      reason: err.code ?? 'unknown',
+      message: err.message,
+    });
+    process.exit(1);
+  });
 
   server.listen(PORT, HOST, () => {
     _th.logToAi('serverBoot Completed', SeverityLevel.Information, {

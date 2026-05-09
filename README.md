@@ -25,12 +25,21 @@ npm install -g pnpm@9.15.0
 ## Run locally
 
 ```bash
-cp .env.example .env       # adjust if needed; defaults work for local dev
 pnpm install
 pnpm dev                   # Vite dev server with HMR
 ```
 
 Then open the URL Vite prints (typically `http://localhost:5173`).
+
+`.env` is **optional** — defaults work out of the box. Copy `.env.example` only if you want to override `VITE_SOURCE_URL` (the source link the in-app attribution footer points to) or wire Application Insights locally:
+
+```bash
+# macOS / Linux
+cp .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
+```
 
 For a production-style local run (Express serving the built assets):
 

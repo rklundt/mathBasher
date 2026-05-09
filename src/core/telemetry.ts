@@ -3,13 +3,13 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 /**
- * Telemetry helper. Same shape used across the user's projects.
+ * Telemetry helper. Same call shape used across the project.
  *
  *   const dict: Record<string, string> = {};
  *   dict['gameId'] = 'alien-shoot';
  *   _th.logToAi('RoundStarted', SeverityLevel.Information, dict);
  *
- * App Insights wiring is deferred to a later sprint. Until then, this falls
+ * App Insights wiring is deferred to a later milestone. Until then, this falls
  * back to console.log with a structured prefix so events are visible in dev.
  *
  * Reserved property names (use these exact spellings so cross-event queries
@@ -47,7 +47,7 @@ function consoleFallback(
 
 export const _th: TelemetryHelper = {
   logToAi(eventName, severity, props) {
-    // App Insights wiring lands in a future sprint; for now, console only.
+    // Real App Insights wiring lands later; for now, console only.
     consoleFallback(eventName, severity, props);
   },
 };
