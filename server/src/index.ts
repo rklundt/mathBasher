@@ -12,9 +12,9 @@ import { healthRouter } from './routes/health.js';
 
 /**
  * Express server. Serves the Vite-built static assets in production and exposes
- * /health for App Service container probes. Honors the Azure ground rules from
- * CLAUDE.md: PORT from env (default 8080), bind 0.0.0.0, /health under 100ms,
- * SIGTERM graceful with 30s grace, stdout-only logging.
+ * /health for App Service container probes. Honors the project's Azure
+ * deployment ground rules: PORT from env (default 8080), bind 0.0.0.0,
+ * /health under 100ms, SIGTERM graceful with 30s grace, stdout-only logging.
  */
 
 const PORT = Number(process.env['PORT'] ?? 8080);
