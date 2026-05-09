@@ -43,3 +43,4 @@ Don't write one for:
 | [0005](ADR-0005-sprint-id-as-version.md) | Sprint id is the release version |
 | [0006](ADR-0006-folder-discipline.md) | Folder discipline (no Phaser in /math or /services) |
 | [0007](ADR-0007-azure-app-service-for-containers.md) | Azure App Service for Containers (over Container Apps) |
+| [0008](ADR-0008-ffmpeg-static-as-dev-dependency.md) | `ffmpeg-static` as a project-scoped dev dependency (with build-script allowlist) |
