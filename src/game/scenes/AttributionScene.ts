@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright 2026 Ray Klundt
+// mathBasher is also available under a commercial license — see COMMERCIAL.md
+
+import Phaser from 'phaser';
+import { _th, SeverityLevel } from '@/core/telemetry';
+import { SceneKeys } from '@/core/sceneKeys';
+import { attribution } from '@/core/attribution';
+
+/**
+ * Persistent parallel scene that renders the AGPL §7(b) UI attribution footer
+ * on every interactive scene. **Hard architectural requirement** of the dual
+ * license model: removing or weakening this display violates §7(b) and the
+ * project's contribution rules; the only legitimate way to omit the
+ * attribution is to hold a separate commercial license, which doesn't apply
+ * to the public/main branch.
+ *
+ * Lifecycle (load-bearing):
+ *  - BootScene launches this scene exactly once after BootScene completes
+ *    (see `src/main.ts` scene order — Attribution is registered LAST so it
+ *    renders on top of everything).
+ *  - This scene NEVER calls scene.stop on itself; no other code calls
+ *    scene.stop on it either. It runs for the lifetime of the page.
+ *  - The footer is anchored to the bottom edge of the canvas and overlays
+ *    every other scene's content.
+ *
+ * Polish (real fonts, hover states on the source link, animated transitions)
+ * is sprint 0.7's job; this scene's contract is just "the four lines from
+ * `attribution.block` are visible, the source URL link works."
+ */
+export class AttributionScene extends Phaser.Scene {
+  static readonly key = SceneKeys.Attribution;
+
+  constructor() {
+    super(AttributionScene.key);
+  }
+
+  create(): void {
+    _th.logToAi('AttributionScene Started', SeverityLevel.Information);
+
+    const { width, height } = this.scale;
+    const footerHeight = 56;
+
+    // Translucent dark backdrop strip so the attribution stays legible over
+    // any scene's background, no matter how busy.
+    const bg = this.add.rectangle(0, height - footerHeight, width, footerHeight, 0x000000, 0.55);
+    bg.setOrigin(0, 0);
+
+    // Three labels (productName + copyright + license) on the left, source
+    // link on the right. Compact form so the footer doesn't eat too much
+    // vertical space; sprint 0.7 will tune typography.
+    const leftText = `${attribution.productName}  •  ${attribution.copyrightLine}  •  ${attribution.licenseLine}`;
+    this.add
+      .text(16, height - footerHeight / 2, leftText, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '12px',
+        color: '#eaeaf2',
+      })
+      .setOrigin(0, 0.5);
+
+    const sourceLabel = this.add
+      .text(width - 16, height - footerHeight / 2, `Source: ${attribution.sourceUrl}`, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '12px',
+        color: '#60a5fa',
+      })
+      .setOrigin(1, 0.5);
+
+    // Make the source URL clickable and open in a new tab.
+    sourceLabel.setInteractive({ useHandCursor: true });
+    sourceLabel.on('pointerup', () => {
+      window.open(attribution.sourceUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    _th.logToAi('AttributionScene Completed', SeverityLevel.Information);
+
+    // Intentionally NO 'shutdown' handler that stops or hides the footer.
+    // This scene runs for the lifetime of the page; that's the §7(b) contract.
+  }
+}
