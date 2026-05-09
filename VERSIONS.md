@@ -29,6 +29,37 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 - Sprint 0.6 next: mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
 
+## [0.5.2] - 2026-05-09 — First audio (fire SFX + audio infrastructure)
+
+mathBasher's first sound. `fire-1.mp3` plays on every shot (Space, mouse, touch — all converge through InputSystem). A mute toggle on the HUD silences the game in one click and persists across rounds and page refreshes via localStorage. Default volume is moderate (0.6, never 100% — kid-safe by policy: a kid putting on headphones and starting the game must not be blasted). iOS Safari's WebAudio first-gesture requirement is handled by binding the AudioManager to a scene inside MenuScene's first Start click rather than at boot. The sprint also establishes the audio infrastructure pattern (pure facade in `/services/`, Phaser-coupled implementation in `/game/services/`, factory singleton, asset-key constants module mirroring `sceneKeys.ts`) so later audio work — wrong-shot SFX, music, etc. — drops in cleanly.
+
+### Added
+- **`src/services/AudioManager.ts`** — pure-TS audio facade. Mute persistence to localStorage with a pluggable storage backend (tests pass an in-memory mock). `DEFAULT_VOLUME = 0.6` enforced at the `play()` callsite — callers cannot override.
+- **`src/game/services/PhaserAudioManager.ts`** — extends the facade. Holds a scene reference, plays loaded sounds via `scene.sound.play`. Missing keys log Warning and return silently — fire loop must NOT crash on asset miss.
+- **`src/services/audioManagerFactory.ts`** — memoized singleton. Mirrors `scoreStoreFactory`. Returns the concrete `PhaserAudioManager` while exposing the pure facade type so callers can't reach Phaser specifics.
+- **`src/core/audioKeys.ts`** — typed string-key registry for every loadable audio asset, mirrors `sceneKeys.ts`. `sfxPath()` helper builds `/assets/audio/sfx/<key>.mp3` URLs.
+- **BootScene preload** — loads `fire-1` and `fire-2` into Phaser's audio cache (`fire-2` reserved for a future alt-fire feature).
+- **MenuScene first-click init** — calls `getAudioManager().init(this)` inside the Start button's `onClick` so WebAudioContext is created inside a user-gesture handler (iOS Safari requirement).
+- **GameScene fire wire-up** — `handleFire()` plays `Fire1` BEFORE spawning the projectile so audio is sample-aligned with the visual fire.
+- **HudScene mute toggle** — speaker icon (with red diagonal slash + 60% alpha dim when muted) anchored just left of the existing Pause icon. 44×44 hit area (Apple HIG min). Visually distinct from Pause: warm-amber-tinted background (vs Pause's pure slate), 24px gap. Pure Phaser shapes, no image asset required.
+- **HUD icons keyboard-accessible** (WCAG 2.1.1) — Tab/Shift+Tab cycles Mute → Pause → Mute, Enter/Space activates the focused icon, blue 3px focus ring matches PlaceholderButton's focus convention. `KeyboardNavigator` widened to accept any `Focusable` instead of the concrete `PlaceholderButton` type.
+
+### Tests (56 → 70, +14)
+- **AudioManager**: mute persistence to/from storage, idempotent `setMuted`, `play()` on missing key is a silent no-op, `DEFAULT_VOLUME` ≤ 0.7 (codifies the "never blast-loud" anti-pattern rule)
+- **audioManagerFactory**: same-instance contract, `getAudioManager` alias matches `createAudioManager`, `_resetForTests` returns a fresh instance for test isolation
+
+Pure-TS tests with no phaser import (per the project's test-layer rule).
+
+### Tooling fixes (in-sprint)
+- **Encoder pipeline filter ORDER** (`scripts/audio/encode.mjs`) — fixed a real bug discovered while running the audio-pipeline skill on a quiet input. The chain was `trim → limiter → loudnorm`; for very quiet inputs (mean -39 dB), loudnorm's 23 dB boost pushed peaks past the -1.5 dBTP ceiling unchecked. Reordered to `trim → loudnorm → limiter` (with `level=disabled` from v0.5.1 still set) — limiter is now the FINAL brick-wall safety net.
+- **Probe metadata-leak detection** (`scripts/audio/probe.mjs`, prior PR) — surfaces any `Metadata:` block in the output so future leaks get caught at verification, not after-the-fact.
+
+### Notes
+- All six review agents passed. Two should-fix items folded in at wrap-up (HUD icon keyboard accessibility + visual distinction between Mute and Pause).
+- Real bug caught while writing tests: Node 20+ ships `globalThis.localStorage` as an empty stub without methods (reserved for the experimental `--localstorage-file` flag); `resolveDefaultStorage()` now verifies methods are functions before trusting the binding.
+- New telemetry events: `AudioManager.setMuted`, `AudioManager.play.notInitialized`, `AudioManager.play.keyMissing`, `BootScene PreloadedSfx`. All carry only fixed-string `reason` values — zero PII.
+- Bundle stays ~1.5 MB (audio is loaded async by Phaser, not bundled into the JS).
+
 ## [0.5.1] - 2026-05-09 — Pause + Escape (in-round escape route)
 
 A round used to be all-or-nothing — once started, the only way out was to finish or close the tab. v0.5.1 adds a clean in-round pause via Esc or an on-screen Pause icon, with a Resume / Quit-to-Menu overlay, and an Esc back-stack on every menu screen. Quitting abandons the round (no score saved) and emits a distinct `RoundAbandoned` telemetry event.
