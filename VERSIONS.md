@@ -29,6 +29,17 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 - Sprint 0.5.1 next: in-round pause + escape (Esc key, on-screen Pause button, Resume / Quit-to-Menu, Esc back-stack on menus). Then 0.6 mobile responsive.
 
+## [0.5.0.1] - 2026-05-09 — Hotfix: DifficultyScene default selections
+
+Tagged with a 4-part version (not strict semver) so the hotfix doesn't collide with the upcoming sprint 0.5.1 (Pause + Escape). `package.json#version` stays at `0.5.0` since npm requires 3-part semver; only the git tag and GitHub release carry `v0.5.0.1`.
+
+### Fixed
+- **`src/game/scenes/DifficultyScene.ts`** — Start button stayed disabled even though "Add to 10" appeared selected. The blue keyboard-focus ring on the first tab stop and the amber "selected" ring on a previously-chosen speed look the same to a casual user, but internally `Settings.mathId` was `null`. Scene now auto-selects the first implemented math type (currently Add to 10) and Medium speed on entry if either is unset. Existing selections are preserved across navigation.
+- **`VERSIONS.md`** — the v0.5.0 entry's description of the leak scanner ironically used the literal trigger words from its own pattern. Rephrased to "development-tooling vocabulary" so a fresh leak scan stays clean.
+
+### Notes
+- Tagging convention: hotfixes that ship after a closed sprint but before its successor ship as `vX.Y.Z.N` (4-part) when the standard `vX.Y.Z+1` patch slot is reserved for an upcoming named sprint. Future hotfixes follow the same rule.
+
 ## [0.5.0] - 2026-05-09 — Gameplay core (mathBasher is now a game)
 
 The release where mathBasher actually plays. Hero auto-runs across the bottom; four aliens descend each round with answers on their faces; player fires (Space / mouse click / touch tap) at the correct one before the aliens reach the hero. Wrong shot triggers a visible speed penalty. A full 20-question round ends with a score saved to the score store and a `★` rating on GameOverScene, with "New high score!" detected and surfaced.
