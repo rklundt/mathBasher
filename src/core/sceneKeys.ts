@@ -20,6 +20,7 @@ export const SceneKeys = {
   GameOver: 'game-over',
   Attribution: 'attribution',
   PauseOverlay: 'pause-overlay',
+  Settings: 'settings',
 } as const;
 
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];
