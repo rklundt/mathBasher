@@ -4,21 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
-
-/**
- * Mulberry32 — small, fast, seedable PRNG. Vitest needs deterministic randomness
- * for reproducible test runs; Math.random can't be seeded.
- */
-function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { mulberry32 } from '@/test-utils/mulberry32';
 
 describe('pickDistractors', () => {
   it('returns the requested count of distinct integers', () => {
@@ -68,6 +54,25 @@ describe('pickDistractors', () => {
     expect(() =>
       pickDistractors(0, { count: 1, min: 10, max: 5, rng: mulberry32(6) }),
     ).toThrow(/>= min/);
+  });
+
+  it('throws when count is negative', () => {
+    expect(() =>
+      pickDistractors(0, { count: -1, min: 0, max: 10, rng: mulberry32(6) }),
+    ).toThrow(/count.*>=\s*0/i);
+  });
+
+  it('falls back to deterministic fill when the rng is degenerate', () => {
+    // rng always returns 0 -> candidate is always min, but min === correct, so
+    // the random-sampling loop never accepts a candidate. The defense-in-depth
+    // fallback should kick in and fill from the pool start, skipping `correct`.
+    const result = pickDistractors(0, { count: 3, min: 0, max: 10, rng: () => 0 });
+    expect(result).toHaveLength(3);
+    expect(new Set(result).size).toBe(3);
+    expect(result).not.toContain(0);
+    // Fallback fills sequentially from min (skipping correct), so the result
+    // should be the smallest three values that aren't correct.
+    expect(result.sort((a, b) => a - b)).toEqual([1, 2, 3]);
   });
 
   it('accepts count: 0 and returns []', () => {
