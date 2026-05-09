@@ -386,6 +386,9 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
 | What runs in production? | `Dockerfile` build stage, `server/src/index.ts` runtime |
 | What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest. Generators inject an RNG (`rng?: () => number`) so tests pin determinism by passing a seeded sequence — see `src/test-utils/mulberry32.ts` |
+| How do I add a new scene? | New file in `src/game/scenes/<Name>Scene.ts` extending `Phaser.Scene`; register its key in `src/core/sceneKeys.ts`; add the class to the scene array in `src/main.ts`. Scenes that should render on top of others (HUD, overlays, attribution) are registered LAST. |
+| Where does the cross-scene round selection live? | `src/services/Settings.ts` — module-level singleton with `setMathId`/`setSpeed`/`isReady`. Scenes read on `create`. |
+| Where is the AGPL §7(b) attribution display implemented? | `src/game/scenes/AttributionScene.ts` (the persistent parallel scene) reads from `src/core/attribution.ts` (the single source of truth for the four-line text). The scene is launched once by BootScene and never stopped. |
 | How is scoring computed? | `src/services/ScoreCalculator.ts` — construct with `(mathId, speed)`, feed it per-question outcomes via `recordOutcome()`, then read `score` / `correctCount` / `passed` / `stars` getters at round end. All multipliers come from `src/core/config.ts`. |
 | How do I add a new score backend? | Implement `IScoreStore` (in `src/services/`), then change the single line in `src/services/scoreStoreFactory.ts` to return your new instance. No game code changes. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
