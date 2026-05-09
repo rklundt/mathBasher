@@ -14,7 +14,7 @@ Each asset or asset pack should appear as a section like:
 - **Author:** <name and link if available>
 - **License:** <SPDX identifier> (e.g. `CC0-1.0`, `CC-BY-4.0`, `OFL-1.1`)
 - **Source:** <URL or other locator>
-- **Files used:** <relative paths under `app/public/assets/`>
+- **Files used:** <relative paths under `public/assets/`>
 - **Modifications:** <none / list of edits, e.g. resized, recolored, sliced>
 - **Notes:** <anything else worth recording>
 ```
@@ -23,7 +23,7 @@ When in doubt about whether an asset belongs here, add it. Over-attribution cost
 
 ## Assets in this project
 
-_(No third-party assets are bundled yet. Entries will be appended here as assets land in `app/public/assets/` — primarily during sprint 0.7 when the Kenney sprite packs are sourced.)_
+_(No third-party assets are bundled yet. Entries will be appended here as assets land in `public/assets/` — primarily when third-party sprite packs are sourced during the art-polish phase.)_
 
 ## Project-original assets
 
