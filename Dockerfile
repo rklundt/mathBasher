@@ -50,4 +50,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- "http://localhost:${PORT:-8080}/health" >/dev/null || exit 1
 
-CMD ["node", "server/dist/index.js"]
+CMD ["node", "server/dist/server/src/index.js"]

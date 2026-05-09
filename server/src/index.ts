@@ -7,7 +7,7 @@ import { createServer, type Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { _th, SeverityLevel } from './telemetry.js';
+import { _th, SeverityLevel, type TelemetryProps } from './telemetry.js';
 import { healthRouter } from './routes/health.js';
 
 /**
@@ -42,7 +42,7 @@ const __dirname = dirname(__filename);
 const distDir = join(__dirname, '..', '..', 'dist');
 
 function bootstrap(): void {
-  const dict: Record<string, string> = {
+  const dict: TelemetryProps = {
     port: String(PORT),
     nodeVersion: process.version,
   };

@@ -19,7 +19,7 @@
     "build": "tsc -p tsconfig.app.json --noEmit && vite build && tsc -p tsconfig.server.json",
     "build:client": "tsc -p tsconfig.app.json --noEmit && vite build",
     "build:server": "tsc -p tsconfig.server.json",
-    "start": "node server/dist/index.js",
+    "start": "node server/dist/server/src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

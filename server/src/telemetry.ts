@@ -3,52 +3,29 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 /**
- * Server-side telemetry helper. Mirrors the browser-side _th shape so the same
- * call sites work on either side. cloudRoleName placeholder is 'MathBasher.Server'
- * (the future App Insights wiring will use this to distinguish browser vs server
- * events in queries).
+ * Server-side telemetry helper. Thin wrapper over the shared factory in
+ * `src/shared/telemetry-core.ts`; this file just sets the runtime context
+ * (`appLayer: 'server'`, `cloudRoleName: 'MathBasher.Server'`).
  *
- * App Insights wiring (the `applicationinsights` Node SDK) is intentionally not
- * installed yet; it lands later. Until then, this falls back to stdout/stderr
- * only.
+ * `tsconfig.server.json` includes both `server/src/**` and `src/shared/**`
+ * with `rootDir: "."`, so cross-folder imports compile correctly and the
+ * shared module ships at `server/dist/src/shared/telemetry-core.js` next to
+ * `server/dist/server/src/...` after build.
+ *
+ * App Insights Node SDK wiring will be added to the shared factory in a later
+ * milestone; until then, this falls back to console output (errors -> stderr).
  */
-export enum SeverityLevel {
-  Verbose = 'Verbose',
-  Information = 'Information',
-  Warning = 'Warning',
-  Error = 'Error',
-  Critical = 'Critical',
-}
 
-export interface TelemetryHelper {
-  logToAi(
-    eventName: string,
-    severity: SeverityLevel,
-    props?: Record<string, string>,
-  ): void;
-}
+import { makeTelemetry } from '../../src/shared/telemetry-core.js';
 
-const APP_LAYER = 'server';
-const CLOUD_ROLE_NAME = 'MathBasher.Server';
+export {
+  SeverityLevel,
+  type TelemetryHelper,
+  type TelemetryProps,
+  type TelemetryPropName,
+} from '../../src/shared/telemetry-core.js';
 
-function consoleFallback(
-  eventName: string,
-  severity: SeverityLevel,
-  props?: Record<string, string>,
-): void {
-  const enriched: Record<string, string> = {
-    appLayer: APP_LAYER,
-    cloudRoleName: CLOUD_ROLE_NAME,
-    ...(props ?? {}),
-  };
-  const channel = severity === SeverityLevel.Error || severity === SeverityLevel.Critical
-    ? console.error
-    : console.log;
-  channel(`[telemetry] [${severity}] ${eventName}`, enriched);
-}
-
-export const _th: TelemetryHelper = {
-  logToAi(eventName, severity, props) {
-    consoleFallback(eventName, severity, props);
-  },
-};
+export const _th = makeTelemetry({
+  appLayer: 'server',
+  cloudRoleName: 'MathBasher.Server',
+});
