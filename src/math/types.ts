@@ -48,7 +48,3 @@ export interface QuestionGenerator {
   generate(rng?: () => number): Question;
 }
 
-// `defaultRng` now lives in `./rng.ts` so this file holds only types.
-// Re-exported here for backwards compatibility with existing imports;
-// new callers should import directly from `@/math/rng`.
-export { defaultRng } from '@/math/rng';
