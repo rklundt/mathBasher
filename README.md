@@ -4,6 +4,8 @@ A browser-based math game for kids. Aliens descend from the top of the screen ca
 
 Mobile-friendly (landscape on phones), zero-install. New game modes and new math types are added by adding files, not by changing the engine.
 
+> 💡 **For a high-level orientation to the codebase, read [DeveloperGuide.md](DeveloperGuide.md).** It covers structure, file purposes, and conventions in 5 minutes; the code is the source of truth for detail.
+
 ## Prerequisites
 
 - **Node.js 20+** (see `package.json#engines`)
