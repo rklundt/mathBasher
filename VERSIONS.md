@@ -27,7 +27,34 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.4 in planning. Will deliver the scene-flow layer: Boot → Menu → GameSelect → Difficulty → Game → GameOver navigation, with placeholder UI; first sprint with visible interactive surface.
+- Sprint 0.5 in planning. Will deliver the gameplay core: hero auto-running across the bottom, four aliens descending with answers, fire button (Space / click / tap), wrong-shot speed penalty, full 20-question round end-to-end. The first sprint where mathBasher is actually a playable game.
+
+## [0.4.0] - 2026-05-09 — Scene flow (first kid-facing UI)
+
+The menu / scene-flow layer. **First release with visible interactive UI.** Navigation works end-to-end with placeholder buttons across Boot → Menu → GameSelect → Difficulty → Game (placeholder) → GameOver, with a persistent AGPL §7(b) attribution footer running in parallel over every interactive scene.
+
+### Added
+- **`src/core/sceneKeys.ts`** — typed string constants for all 8 scenes (Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, Attribution).
+- **`src/services/Settings.ts`** — module-level singleton holding the in-flight round selection (`gameId`, `mathId`, `speed`). API: `setGameId`/`setMathId`/`setSpeed`/`reset`/`isReady`/`round` (read-only snapshot). Each setter logs via `_th` with typed telemetry props.
+- **`src/game/ui/PlaceholderButton.ts`** — reusable rounded-rectangle button with hover/selected/focused/disabled states. Hit area exactly matches the rectangle. Disabled buttons IGNORE pointer events AND keyboard activation. Subtitle text at 14px stays fully opaque even when the button is disabled (WCAG 1.4.3 compliance).
+- **`src/game/ui/KeyboardNavigator.ts`** — scene-scoped focus manager. Tab/Shift+Tab cycles through buttons (skipping disabled), Enter/Space activates the focused button. Distinct **blue** focus ring (3px) so keyboard focus is never confused with the **amber** selected ring. Listeners auto-cleaned on scene shutdown. Satisfies WCAG 2.1.1 (Keyboard).
+- **`src/game/scenes/MenuScene.ts`** — title + subtitle + Start button (→ GameSelect) + High Scores button (auto-dismissing placeholder overlay with double-tap guard).
+- **`src/game/scenes/GameSelectScene.ts`** — Alien Shoot tile (active) + Coming-soon tile (disabled) + Back button.
+- **`src/game/scenes/DifficultyScene.ts`** — Math Type tiles gated on `getImplementedIds()` from the math registry; stub generators render disabled with their `description` ("Coming soon.") so a kid can never trigger a stub generator's throw. Speed tiles (Slow/Medium/Fast). Start button gated on `Settings.isReady()`. Defensive fallback if `getImplementedIds()` returns empty (no math types implemented anywhere): friendly message + Back button.
+- **`src/game/scenes/GameScene.ts`** (placeholder) — shows the selected `mathId`/`speed`, launches HudScene in parallel (with double-launch guard), Quit button transitions to GameOverScene with a fake outcome. Real gameplay is the next milestone.
+- **`src/game/scenes/HudScene.ts`** (placeholder, parallel) — translucent top bar with Score / prompt placeholder / Q-counter pulled from `config.round.questionsPerRound`.
+- **`src/game/scenes/GameOverScene.ts`** — kid-friendly headline ('Round Complete!' / 'Round Done — Try Again?', never 'You failed'), score + correctCount + ★ row (filled vs outlined Unicode), three buttons (Play Again / Change Difficulty / Main Menu). Receives data via Phaser's `init(data)` mechanism.
+- **`src/game/scenes/AttributionScene.ts`** — persistent parallel scene rendering the AGPL §7(b) attribution footer along the bottom of every non-Boot scene. Reads from `src/core/attribution.ts` (single source of truth). Source URL clickable, opens in a new tab with `noopener,noreferrer`. Never stopped — runs for the lifetime of the page.
+- **`src/main.ts`** updated to register all 8 scenes (AttributionScene LAST so it renders on top of everything).
+- **DeveloperGuide.md** updated: project layout block lists every new scene; "Where to look for what" gains rows for "How do I add a new scene?", "Where does cross-scene round selection live?", "Where is the AGPL §7(b) attribution display implemented?".
+
+### Changed
+- **`BootScene`** now transitions to MenuScene after an 800ms title flash (bumped from 400ms so a kid can actually read 'mathBasher' instead of seeing it flicker), launching AttributionScene in parallel before the transition.
+
+### Notes
+- **First kid-facing UI.** Visible buttons, copy, navigation. Accessibility was treated as in-scope for this sprint per the support-review feedback (keyboard nav, contrast, font sizes — not deferred to art polish).
+- **No new tests** — gameplay/scene code is verified by manual playtest per the project's documented test strategy. Test count remains 45 across 5 files.
+- The Vite production bundle is still ~1.5MB unminified / ~340KB gzipped (Phaser-dominated). Eight new scene files add trivial bytes.
 
 ## [0.3.0] - 2026-05-09 — Score store and scoring
 
