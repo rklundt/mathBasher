@@ -54,6 +54,21 @@ export class GameScene extends Phaser.Scene {
   private questionIndex = 0;
   private transitioning = false;
 
+  /**
+   * Snapshot of the in-flight question, exposed so HudScene can sync up after
+   * its own `create()` runs (Phaser launches parallel scenes asynchronously,
+   * so HudScene's listener bind can race with the first `questionStarted`
+   * emit). Null between rounds and after the last question.
+   */
+  getCurrentQuestionPayload(): { question: Question; index: number; total: number } | null {
+    if (!this.currentQuestion) return null;
+    return {
+      question: this.currentQuestion,
+      index: this.questionIndex,
+      total: config.round.questionsPerRound,
+    };
+  }
+
   constructor() {
     super(GameScene.key);
   }

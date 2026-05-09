@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
 import type { Question } from '@/math/types';
+import type { GameScene } from '@/game/scenes/GameScene';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -87,11 +88,26 @@ export class HudScene extends Phaser.Scene {
 
   private bindGameSceneEvents(): void {
     if (this.gameSceneListenersBound) return;
-    const gameScene = this.scene.get(SceneKeys.Game);
+    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
     if (!gameScene) return;
     gameScene.events.on('questionStarted', this.onQuestionStarted, this);
     gameScene.events.on('questionEnded', this.onQuestionEnded, this);
     this.gameSceneListenersBound = true;
+
+    // Phaser launches parallel scenes asynchronously: GameScene.create() can
+    // run startNextQuestion() (which emits 'questionStarted') BEFORE this
+    // HudScene's create() runs and binds the listener above. Without this
+    // pull, the first question's prompt would stay as the placeholder
+    // "— + — = ?" until question 2.
+    //
+    // Pulling the in-flight question here means HudScene tolerates either
+    // start order. Also makes future pause/resume of HudScene robust (the
+    // 0.5.1 Pause sprint will hit this same race when re-binding after
+    // a resume).
+    const inFlight = gameScene.getCurrentQuestionPayload?.();
+    if (inFlight) {
+      this.onQuestionStarted(inFlight);
+    }
   }
 
   private unbindGameSceneEvents(): void {
