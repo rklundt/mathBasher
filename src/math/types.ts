@@ -34,6 +34,13 @@ export interface QuestionGenerator {
   /** One-line description used as a hover/subtitle on the difficulty-select tile. */
   description: string;
   /**
+   * If true, this generator is a placeholder for a math type whose real
+   * implementation hasn't landed yet. The difficulty-select UI uses this to
+   * disable the corresponding tile, and `generate()` will throw rather than
+   * produce a Question.
+   */
+  isStub?: boolean;
+  /**
    * Produce one fresh question. `rng()` should return a float in [0, 1) like
    * `Math.random` — the function (not the value) is injected so callers can
    * supply seeded generators in tests.

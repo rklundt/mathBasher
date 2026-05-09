@@ -19,6 +19,7 @@ function makeStub(id: MathId, label: string): QuestionGenerator {
     id,
     label,
     description: 'Coming soon.',
+    isStub: true,
     generate(): never {
       throw new Error(`Generator not yet implemented: ${id}`);
     },
@@ -53,15 +54,7 @@ export function getGenerator(id: MathId): QuestionGenerator {
  * The difficulty-select UI uses this to decide which tiles are enabled.
  */
 export function getImplementedIds(): MathId[] {
-  return (Object.keys(config.scoring.mathDifficulty) as MathId[]).filter((id) => {
-    const gen = generators[id];
-    // A stub throws on generate(); detect by trying once with a noop RNG and
-    // catching. This avoids tagging stubs explicitly which would couple them.
-    try {
-      gen.generate(() => 0);
-      return true;
-    } catch {
-      return false;
-    }
-  });
+  return (Object.keys(config.scoring.mathDifficulty) as MathId[]).filter(
+    (id) => !generators[id].isStub,
+  );
 }

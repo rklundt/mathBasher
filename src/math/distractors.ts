@@ -49,11 +49,28 @@ export function pickDistractors(correct: number, opts: PickDistractorsOpts): num
   }
 
   const picked = new Set<number>();
-  while (picked.size < count) {
+  // Defense-in-depth: an adversarial / degenerate rng (e.g. one that always
+  // returns 0) could otherwise make this loop never terminate. Cap iterations
+  // at a generous multiple of the requested count and fall back to deterministic
+  // fill-in from the available pool if we get stuck.
+  const maxIterations = count * 20 + 100;
+  let iters = 0;
+  while (picked.size < count && iters < maxIterations) {
     // floor(rng() * rangeSize) -> int in [0, rangeSize-1]; offset by min.
     const candidate = min + Math.floor(rng() * rangeSize);
+    iters++;
     if (candidate === correct) continue;
     picked.add(candidate);
+  }
+  if (picked.size < count) {
+    // Random sampling didn't make enough progress (likely a degenerate rng).
+    // Fill from the start of the range, skipping `correct`, until we have
+    // `count` distinct values. We've already validated `count <= available`,
+    // so this is guaranteed to succeed.
+    for (let v = min; v <= max && picked.size < count; v++) {
+      if (v === correct) continue;
+      picked.add(v);
+    }
   }
   return [...picked];
 }
