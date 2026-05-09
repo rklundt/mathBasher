@@ -6,9 +6,13 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Enable Corepack and pin pnpm to the same version as packageManager in package.json
+# so container builds match local builds exactly.
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
 # Install build deps with the lockfile to keep builds reproducible.
-COPY package.json package-lock.json ./
-RUN npm ci --no-fund --no-audit
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile
 
 # Copy sources and build both client (Vite -> dist/) and server (tsc -> server/dist/).
 COPY tsconfig.json tsconfig.app.json tsconfig.server.json tsconfig.node.json vite.config.ts index.html ./
@@ -16,7 +20,10 @@ COPY src ./src
 COPY server/src ./server/src
 COPY public ./public
 
-RUN npm run build
+RUN pnpm build
+
+# Trim devDependencies so the next stage can copy a lean node_modules.
+RUN pnpm prune --prod
 
 # ---------- Runtime stage ----------
 FROM node:20-alpine AS runtime
@@ -24,13 +31,16 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install ONLY production deps using the same lockfile.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-fund --no-audit && npm cache clean --force
-
-# Bring the built artifacts over from the build stage.
+# Bring the built artifacts and the production-pruned node_modules over.
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server/dist ./server/dist
+
+# AGPL distribution requirement: ship the license + notices so anyone with the
+# image (operator, auditor) can locate them without going back to the repo.
+COPY --from=build /app/package.json ./package.json
+COPY LICENSE NOTICE README.md ./
 
 # Run as non-root user (alpine ships a `node` user with uid 1000).
 USER node

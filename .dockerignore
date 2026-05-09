@@ -1,26 +1,89 @@
+# =============================================================================
+# .dockerignore — controls what gets sent as build context to docker build.
+# Goal: ship only the source files needed to build the image, NEVER ship
+# secrets, internal tooling, build artifacts, IDE state, OS junk, or VCS data.
+# =============================================================================
+
+# ---------- Dependencies (always rebuilt in the image) ----------
 node_modules
+**/node_modules
+
+# ---------- Version control ----------
 .git
 .gitignore
 .gitattributes
+.github
+**/.git
+
+# ---------- Editor / IDE / OS ----------
 .editorconfig
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.bak
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Secrets and env ----------
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+.aws/
+.ssh/
+.azure/
+
+# ---------- Build artifacts (regenerated inside the image) ----------
 dist
 server/dist
+build
+out
 coverage
 .nyc_output
 *.tsbuildinfo
 
-# Internal Claude Code workspace — never enters image layers
+# ---------- Internal Claude Code workspace (NEVER enters image) ----------
+# Both the directory pattern AND the recursive glob, defense-in-depth in case
+# a future refactor adds a broad COPY statement.
 CLAUDE.md
 .claude
+.claude/**
 .sprints
+.sprints/**
 .adrs
+.adrs/**
 backlog.md
 
-# Repo docs we don't ship in the image
+# ---------- Repo docs we don't ship in the image ----------
 docs
+
+# ---------- Logs ----------
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+
+# ---------- Tests (runtime image is for serving, not testing) ----------
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__
+test
+tests
+
+# ---------- Markdown at repo root: ship only the public-facing legal/community files ----------
 *.md
 !README.md
 !LICENSE
@@ -29,14 +92,17 @@ docs
 !CODE_OF_CONDUCT.md
 !CONTRIBUTING.md
 !SECURITY.md
-!app/public/assets/CREDITS.md
+!public/assets/CREDITS.md
 
-# Editor / OS
-.vscode
-.idea
-.DS_Store
-Thumbs.db
+# ---------- Docker meta itself doesn't need to be in the image ----------
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
 
-# Tests in image are wasted weight
-**/*.test.ts
-**/*.test.tsx
+# ---------- Misc ----------
+.husky
+.changeset
+*.tar
+*.gz
+*.zip

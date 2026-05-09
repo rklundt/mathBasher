@@ -49,7 +49,7 @@ Contributions must respect the architecture documented in [docs/adrs/](docs/adrs
 
 - Pure modules under `/src/math/` and `/src/services/` need Vitest tests.
 - Game logic under `/src/game/` is tested manually via the playtest checklist.
-- `npm run typecheck` and `npm run test` must pass before requesting review.
+- `pnpm typecheck` and `pnpm test` must pass before requesting review.
 
 ### 7. Versioning
 

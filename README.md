@@ -7,14 +7,27 @@ Mobile-friendly (landscape on phones), zero-install. New game modes and new math
 ## Prerequisites
 
 - **Node.js 20+** (see `package.json#engines`)
-- **npm 10+** (ships with Node 20)
+- **pnpm 9+** (the project pins `pnpm@9.15.0` via `package.json#packageManager`)
+
+The fastest way to get pnpm is via Corepack (bundled with Node 20):
+
+```bash
+corepack enable
+corepack prepare pnpm@9.15.0 --activate
+```
+
+Or install globally with npm:
+
+```bash
+npm install -g pnpm@9.15.0
+```
 
 ## Run locally
 
 ```bash
 cp .env.example .env       # adjust if needed; defaults work for local dev
-npm install
-npm run dev                # Vite dev server with HMR
+pnpm install
+pnpm dev                   # Vite dev server with HMR
 ```
 
 Then open the URL Vite prints (typically `http://localhost:5173`).
@@ -22,8 +35,8 @@ Then open the URL Vite prints (typically `http://localhost:5173`).
 For a production-style local run (Express serving the built assets):
 
 ```bash
-npm run build              # builds client (Vite) + server (tsc)
-npm start                  # listens on http://localhost:8080
+pnpm build                 # builds client (Vite) + server (tsc)
+pnpm start                 # listens on http://localhost:8080
 ```
 
 ## Project structure
@@ -48,11 +61,11 @@ NOTICE            attribution and third-party notices
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Production build |
-| `npm start` | Run the Express server against the built assets |
-| `npm test` | Run the unit test suite |
-| `npm run typecheck` | TypeScript strict-mode check, no emit |
+| `pnpm dev` | Vite dev server with HMR |
+| `pnpm build` | Production build (client + server) |
+| `pnpm start` | Run the Express server against the built assets |
+| `pnpm test` | Run the unit test suite |
+| `pnpm typecheck` | TypeScript strict-mode check, no emit |
 
 ## Contributing
 
