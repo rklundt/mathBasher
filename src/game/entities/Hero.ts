@@ -22,7 +22,7 @@ import { config } from '@/core/config';
  * (~400ms), informative-not-punishing.
  */
 export class Hero extends Phaser.GameObjects.Container {
-  private readonly body: Phaser.GameObjects.Rectangle;
+  private readonly chassis: Phaser.GameObjects.Rectangle;
   private readonly notch: Phaser.GameObjects.Triangle;
   private readonly leftBound: number;
   private readonly rightBound: number;
@@ -38,15 +38,16 @@ export class Hero extends Phaser.GameObjects.Container {
     this.leftBound = leftBound;
     this.rightBound = rightBound;
 
-    // Body: vivid amber rounded-ish rectangle
-    this.body = scene.add.rectangle(0, 0, 48, 64, 0xfacc15);
-    this.body.setStrokeStyle(2, 0xeab308);
+    // Chassis: vivid amber rectangle (NOT named `body` — that field is
+    // reserved by Phaser's GameObject for the arcade physics body).
+    this.chassis = scene.add.rectangle(0, 0, 48, 64, 0xfacc15);
+    this.chassis.setStrokeStyle(2, 0xeab308);
 
     // Direction notch: small triangle on the leading edge so the hero "looks"
     // the way they're running.
     this.notch = scene.add.triangle(24, 0, 0, -10, 0, 10, 12, 0, 0xeab308);
 
-    this.add([this.body, this.notch]);
+    this.add([this.chassis, this.notch]);
     this.setSize(48, 64);
   }
 
@@ -83,11 +84,11 @@ export class Hero extends Phaser.GameObjects.Container {
     return Phaser.Math.Clamp(Math.floor(offset / laneWidth), 0, lanes - 1);
   }
 
-  /** Brief tint flash when something interesting happens (hit confirmation). */
+  /** Brief alpha flash when something interesting happens (hit confirmation). */
   playHitAnim(): void {
     this.scene.tweens.add({
-      targets: this.body,
-      fillColor: { from: 0xffffff, to: 0xfacc15 },
+      targets: this.chassis,
+      alpha: { from: 0.4, to: 1 },
       duration: 120,
       ease: 'Quad.Out',
     });
