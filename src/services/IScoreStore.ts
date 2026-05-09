@@ -51,6 +51,22 @@ export interface ScoreFilter {
  * whole point of the interface is that the API-backed store will be a drop-in
  * — switching `Promise.resolve(...)` calls to real network requests must NOT
  * require changes to callers.
+ *
+ * IMPORTANT — security notes for the future API-backed implementation:
+ *
+ * 1. Identity is intentionally NOT a parameter. The future `ApiScoreStore`
+ *    must derive the acting user from server-side session state (auth cookie,
+ *    bearer token validated server-side, etc.) — NEVER from a caller-supplied
+ *    `userId`. Adding `userId: string` to `save()` here would create an
+ *    insecure-direct-object-reference (IDOR) surface.
+ *
+ * 2. Score values are NOT to be trusted as authoritative when crossing the
+ *    network. The future `ApiScoreStore.save()` must treat client-supplied
+ *    `score`, `correctCount`, `passed`, and `achievedAt` as advisory only;
+ *    the server must recompute the score from a server-side replay of the
+ *    round's `QuestionOutcome[]` and stamp `achievedAt` itself. This shape
+ *    is already compatible: a future overload can accept either `ScoreEntry`
+ *    (today, in-memory) or `QuestionOutcome[]` (Phase 3, server-recomputed).
  */
 export interface IScoreStore {
   /** Persist a single round result. */

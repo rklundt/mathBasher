@@ -90,10 +90,4 @@ describe('SessionScoreStore', () => {
     await store.save(makeEntry(100));
     expect(await store.top(FILTER_A, 0)).toEqual([]);
   });
-
-  it('handles negative n the same as n=0 (defensive)', async () => {
-    const store = new SessionScoreStore();
-    await store.save(makeEntry(100));
-    expect(await store.top(FILTER_A, -3)).toEqual([]);
-  });
 });

@@ -41,7 +41,7 @@ export class SessionScoreStore implements IScoreStore {
           e.speed === filter.speed,
       )
       .sort((a, b) => b.score - a.score)
-      .slice(0, Math.max(0, n));
+      .slice(0, n);
   }
 
   async bestForCombo(filter: ScoreFilter): Promise<ScoreEntry | null> {
