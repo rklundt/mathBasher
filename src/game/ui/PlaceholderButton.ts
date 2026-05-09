@@ -96,21 +96,42 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
       this.textChildren.push(subtitle);
     }
 
-    // Hit area exactly matches the rectangle.
+    // Hit area exactly matches the rectangle. `useHandCursor: true` flips the
+    // CSS cursor to a pointing hand on hover so users get visual feedback that
+    // a tile is interactive before they click.
     this.setSize(opts.width, opts.height);
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-opts.width / 2, -opts.height / 2, opts.width, opts.height),
-      Phaser.Geom.Rectangle.Contains,
+      {
+        hitArea: new Phaser.Geom.Rectangle(
+          -opts.width / 2,
+          -opts.height / 2,
+          opts.width,
+          opts.height,
+        ),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+        useHandCursor: true,
+      },
     );
 
-    // Hover + press states (only when enabled).
+    // Hover state (only when enabled).
     this.on('pointerover', () => {
       if (!this._disabled) this.bg.setFillStyle(0x2a3454);
     });
     this.on('pointerout', () => {
       if (!this._disabled) this.bg.setFillStyle(0x1f2740);
     });
-    this.on('pointerup', () => {
+    // Click handler uses POINTERDOWN, not pointerup. pointerup is bug-shaped
+    // here for two reasons:
+    //   1. Phaser containers track pointer-down state internally; if the cursor
+    //      is already over the target when the scene becomes active (very common
+    //      after a scene transition), the first down/up pair is sometimes
+    //      treated as "incomplete" and the click is silently dropped — the user
+    //      has to hover off and back on to re-sync the state.
+    //   2. pointerdown fires the moment the button is pressed, which feels
+    //      snappier for arcade-game menus.
+    // pointerdown also works the same for mouse, touch, and pen via Phaser's
+    // unified pointer abstraction.
+    this.on('pointerdown', () => {
       if (this._disabled) return;
       this.onClick?.();
     });
