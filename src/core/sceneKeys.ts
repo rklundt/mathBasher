@@ -19,6 +19,7 @@ export const SceneKeys = {
   Hud: 'hud',
   GameOver: 'game-over',
   Attribution: 'attribution',
+  PauseOverlay: 'pause-overlay',
 } as const;
 
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];

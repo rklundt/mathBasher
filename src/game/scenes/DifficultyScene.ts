@@ -10,6 +10,7 @@ import { Settings } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { wireEscBack } from '@/game/ui/EscBackHandler';
 
 /**
  * Difficulty selection. Two sections:
@@ -94,6 +95,9 @@ export class DifficultyScene extends Phaser.Scene {
     if (this.startButton) tabOrder.push(this.startButton);
     if (this.backButton) tabOrder.push(this.backButton);
     new KeyboardNavigator(this, tabOrder);
+
+    // Esc returns to the previous step in the menu stack.
+    wireEscBack(this, () => this.scene.start(SceneKeys.GameSelect));
 
     this.refreshSelection();
 

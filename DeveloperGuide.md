@@ -218,10 +218,11 @@ mathBasher/
 ├── src/                 BROWSER-SIDE TYPESCRIPT
 │   ├── main.ts          entry; instantiates the game
 │   ├── game/            rendering layer (the only folder that imports phaser)
-│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, Attribution
+│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay, Attribution
 │   │   ├── entities/    Hero, Alien, Projectile (sprites with animation state)
-│   │   ├── systems/     WaveSystem, InputSystem, HitSystem (own state, no rendering)
-│   │   └── ui/          PlaceholderButton, TouchFireButton, etc.
+│   │   ├── systems/     WaveSystem, InputSystem, HitSystem, waveKinematics (own state, no rendering)
+│   │   │                (waveKinematics is pure — has __tests__/ alongside)
+│   │   └── ui/          PlaceholderButton, KeyboardNavigator, EscBackHandler, TouchFireButton, etc.
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
 │   │   ├── distractors.ts       distractor-picking helpers
@@ -397,6 +398,9 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | How is the test strategy split? | Vitest covers pure logic (`src/math/`, `src/services/`); Phaser-coupled gameplay code is verified by the manual playtest in `src/game/PLAYTEST.md`. Run that checklist before every gameplay-touching sprint closes. |
 | How is scoring computed? | `src/services/ScoreCalculator.ts` — construct with `(mathId, speed)`, feed it per-question outcomes via `recordOutcome()`, then read `score` / `correctCount` / `passed` / `stars` getters at round end. All multipliers come from `src/core/config.ts`. |
 | How do I add a new score backend? | Implement `IScoreStore` (in `src/services/`), then change the single line in `src/services/scoreStoreFactory.ts` to return your new instance. No game code changes. |
+| How does pause / Esc / Quit-to-Menu work mid-round? | Esc and the on-screen Pause icon (top-right of `HudScene`) both call into `HudScene.openPauseOverlay()`, which calls `GameScene.pause()` (freezes WaveSystem, gates InputSystem fire, pauses tweens, pauses HudScene) and launches `PauseOverlay` (parallel scene). Resume and Quit-to-Menu callbacks are passed in via `init` data. Quit fires `RoundAbandoned` telemetry and routes to `MenuScene` without saving the score. |
+| Where is the Esc back-stack on menu scenes? | `src/game/ui/EscBackHandler.ts#wireEscBack(scene, onBack)` — small helper that registers a `keydown-ESC` handler with paired cleanup on `shutdown` + `destroy`. Used by `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). MenuScene is the top of the stack — Esc is intentionally not bound there. |
+| Where is the pause-aware kinematics math? | `src/game/systems/waveKinematics.ts` — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` and `simulatePauseAwareAdvance(...)`. Used by `Alien.advance` for production motion, and by `src/game/systems/__tests__/waveKinematics.test.ts` for verifying that pause freezes Y and resume continues from the same position with no drift. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---

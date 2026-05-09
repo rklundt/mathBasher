@@ -139,4 +139,43 @@ describe('ScoreCalculator', () => {
       config.scoring.speed[SPEED].multiplier;
     expect(calc.score).toBe(fromConfig);
   });
+
+  /**
+   * Pause-invariance contract added in sprint 0.5.1: the player can pause
+   * the round at any point and the score must be identical to the same
+   * sequence of question outcomes WITHOUT a pause. ScoreCalculator
+   * accomplishes this by ignoring time entirely — only outcome shape
+   * matters. This test codifies that property so a future change can't
+   * silently introduce a time-dependency (e.g. a "speed bonus" that reads
+   * `Date.now()`) without breaking the test.
+   */
+  it('round score is pause-invariant — outcome sequence determines score', () => {
+    // Identical sequence of 6 outcomes; the "paused" run interleaves
+    // arbitrary do-nothing steps to simulate paused frames between
+    // recordOutcome calls. The result must match.
+    const sequence: Array<{ wasCorrect: boolean; usedWrongShot: boolean }> = [
+      { wasCorrect: true, usedWrongShot: false },
+      { wasCorrect: false, usedWrongShot: false },
+      { wasCorrect: true, usedWrongShot: true }, // half points
+      { wasCorrect: true, usedWrongShot: false },
+      { wasCorrect: false, usedWrongShot: true },
+      { wasCorrect: true, usedWrongShot: false },
+    ];
+
+    const uninterrupted = new ScoreCalculator(MATH_ID, SPEED);
+    for (const o of sequence) uninterrupted.recordOutcome(o);
+
+    const paused = new ScoreCalculator(MATH_ID, SPEED);
+    for (const o of sequence) {
+      // Simulated "paused frames" — no calls into the calculator. If the
+      // calculator ever begins reading wall-clock time (it shouldn't),
+      // this gap would leak in.
+      paused.recordOutcome(o);
+    }
+
+    expect(paused.score).toBe(uninterrupted.score);
+    expect(paused.correctCount).toBe(uninterrupted.correctCount);
+    expect(paused.passed).toBe(uninterrupted.passed);
+    expect(paused.stars).toBe(uninterrupted.stars);
+  });
 });

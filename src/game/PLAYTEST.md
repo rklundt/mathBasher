@@ -123,6 +123,31 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | No console errors during a full round |
 |   | Memory in DevTools doesn't grow noticeably across 5 back-to-back rounds (entities cleaned up) |
 
+## Pause + Escape (sprint 0.5.1)
+
+| ✓ | Check |
+|---|---|
+|   | Start a round, press **Esc** → pause overlay appears with "Paused" title, Resume + Quit-to-Menu buttons |
+|   | While paused, **aliens stop descending** — they hold at their exact Y positions, no drift |
+|   | While paused, the **question countdown / hero motion freezes** — no time pressure accrues |
+|   | While paused, **fire input is dropped** — Space and clicks do not produce projectiles |
+|   | Press **Esc** while paused → overlay closes, gameplay resumes from exactly where it left off (no snap) |
+|   | Click the **Pause icon button** (top-right of HUD bar) → same pause flow as Esc |
+|   | While paused, click **Resume** button → same as Esc-to-resume |
+|   | While paused, click **Quit to Menu** → returns to MenuScene; the round score is NOT saved (Q: counter resets next round; no new high-score entry recorded for this combo) |
+|   | Pause for ~30 seconds, then resume → round continues normally, no auto-fail / timeout penalty |
+|   | Mash Esc + Pause-button repeatedly → only ONE pause overlay ever appears (no stacking) |
+|   | After resume, wrong-shot speed penalty still works (try a wrong answer) |
+|   | After resume, the question counter still increments correctly through to round end |
+|   | Tab on PauseOverlay cycles Resume → Quit; Enter activates the focused button |
+|   | Esc on **DifficultyScene** → returns to GameSelectScene |
+|   | Esc on **GameSelectScene** → returns to MenuScene |
+|   | Esc on **MenuScene** → no-op (top of stack) |
+|   | Esc on **GameOverScene** → returns to MenuScene (matches the existing "Main Menu" button) |
+|   | Navigate Menu → GameSelect → Difficulty → back via Esc 3+ times — no Esc handler accumulation (each scene's listener cleans up on shutdown) |
+|   | Console shows `GamePaused` / `GameResumed` events with `mathId`, `speed`, `questionIndex` |
+|   | After Quit-to-Menu, console shows `RoundAbandoned` with `mathId`, `speed`, `questionsCompleted` |
+
 ---
 
 ## Logging the run

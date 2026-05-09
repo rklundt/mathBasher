@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
 import type { Question } from '@/math/types';
 import type { GameScene } from '@/game/scenes/GameScene';
+import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -68,8 +69,15 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // Pause button anchored top-right with padding from the canvas edge,
+    // before the counter so the counter shifts left to make room. Uses a
+    // simple container so we keep the placeholder vibe of the rest of the
+    // HUD until 0.7 art polish.
+    this.createPauseButton(width - 16, barHeight / 2);
+    const pauseButtonRoom = 56; // approx button width + gap
+
     this.counterText = this.add
-      .text(width - 16, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
+      .text(width - 16 - pauseButtonRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
         color: '#eaeaf2',
@@ -80,10 +88,87 @@ export class HudScene extends Phaser.Scene {
     // and lives as long as the scene; we listen via scene.get(...).events.
     this.bindGameSceneEvents();
 
+    // Esc key on HudScene opens the pause overlay. HudScene runs in parallel
+    // with GameScene during a round, so its keyboard plugin is the right
+    // place for in-game shortcuts (GameScene's update is paused while
+    // PauseOverlay is up; we don't want the listener stuck on a paused
+    // scene's keyboard plugin).
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown-ESC', this.openPauseOverlay, this);
+    }
+
     this.events.once('shutdown', () => {
       this.unbindGameSceneEvents();
+      if (this.input.keyboard) {
+        this.input.keyboard.off('keydown-ESC', this.openPauseOverlay, this);
+      }
       _th.logToAi('HudScene Completed', SeverityLevel.Information);
     });
+  }
+
+  /**
+   * Build the on-screen Pause button. Container with a tinted square
+   * background and two centered horizontal "pause bars" — universally
+   * recognized as the pause icon, no text needed (good for younger kids
+   * and for future i18n). Hit area at least 44×44 device-independent px
+   * (Apple HIG minimum). On click → openPauseOverlay.
+   */
+  private createPauseButton(rightX: number, centerY: number): Phaser.GameObjects.Container {
+    const w = 44;
+    const h = 36;
+    const container = this.add.container(rightX - w / 2, centerY);
+    const bg = this.add.rectangle(0, 0, w, h, 0x1f2740);
+    bg.setStrokeStyle(2, 0x6b7280);
+    const barColor = 0xeaeaf2;
+    const barW = 5;
+    const barH = 18;
+    const leftBar = this.add.rectangle(-6, 0, barW, barH, barColor);
+    const rightBar = this.add.rectangle(6, 0, barW, barH, barColor);
+    container.add([bg, leftBar, rightBar]);
+    container.setSize(w, h);
+
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerover', () => bg.setFillStyle(0x2a3454));
+    bg.on('pointerout', () => bg.setFillStyle(0x1f2740));
+    bg.on('pointerdown', () => this.openPauseOverlay());
+
+    return container;
+  }
+
+  /**
+   * Launch the PauseOverlay in parallel and put GameScene into its paused
+   * state. Guarded against double-launch — Esc + Pause-button mash should
+   * only ever produce one overlay.
+   */
+  private openPauseOverlay(): void {
+    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    if (!gameScene || gameScene.isPaused()) return;
+    if (this.scene.isActive(SceneKeys.PauseOverlay)) return;
+    gameScene.pause();
+    const init: PauseOverlayInit = {
+      resumeFn: () => this.closePauseOverlay(),
+      quitFn: () => this.handleQuitFromOverlay(),
+    };
+    this.scene.launch(SceneKeys.PauseOverlay, init);
+  }
+
+  private closePauseOverlay(): void {
+    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    if (this.scene.isActive(SceneKeys.PauseOverlay)) {
+      this.scene.stop(SceneKeys.PauseOverlay);
+    }
+    gameScene?.resume();
+  }
+
+  private handleQuitFromOverlay(): void {
+    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    if (this.scene.isActive(SceneKeys.PauseOverlay)) {
+      this.scene.stop(SceneKeys.PauseOverlay);
+    }
+    // Resume before quit so any frozen tweens don't carry over to the next
+    // round if the user starts a new game from MenuScene.
+    gameScene?.resume();
+    gameScene?.quitToMenu();
   }
 
   private bindGameSceneEvents(): void {
