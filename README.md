@@ -40,6 +40,12 @@ NOTICE           attribution and third-party notices
 | `npm test` | Run the unit test suite |
 | `npm run typecheck` | TypeScript strict-mode check, no emit |
 
+## Contributing
+
+Contributions are not yet open — the Contributor License Agreement (CLA) mechanism that the dual-license model requires is not in place yet. See [CONTRIBUTING.md](CONTRIBUTING.md) for the planned workflow.
+
+Bug reports and security disclosures are welcome regardless. Security issues: see [SECURITY.md](SECURITY.md). All project participation follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 Copyright 2026 Ray Klundt.
