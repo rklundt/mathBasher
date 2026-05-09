@@ -53,6 +53,7 @@ export class GameScene extends Phaser.Scene {
   private currentQuestion: Question | null = null;
   private questionIndex = 0;
   private transitioning = false;
+  private paused = false;
 
   /**
    * Snapshot of the in-flight question, exposed so HudScene can sync up after
@@ -113,6 +114,7 @@ export class GameScene extends Phaser.Scene {
     this.scoreCalculator = new ScoreCalculator(this.mathId, this.speed);
     this.questionIndex = 0;
     this.transitioning = false;
+    this.paused = false;
 
     this.inputSystem = new InputSystem(this);
     this.inputSystem.onFire(() => this.handleFire());
@@ -127,6 +129,7 @@ export class GameScene extends Phaser.Scene {
 
   override update(_time: number, dt: number): void {
     if (this.transitioning) return;
+    if (this.paused) return;
     this.hero.update(dt);
 
     // Wave step
@@ -277,5 +280,81 @@ export class GameScene extends Phaser.Scene {
     if (this.scene.isActive(SceneKeys.Hud)) {
       this.scene.stop(SceneKeys.Hud);
     }
+    if (this.scene.isActive(SceneKeys.PauseOverlay)) {
+      this.scene.stop(SceneKeys.PauseOverlay);
+    }
+  }
+
+  // ----- Pause / resume / quit (sprint 0.5.1) ------------------------------
+
+  isPaused(): boolean {
+    return this.paused;
+  }
+
+  /** Questions COMPLETED so far (i.e. answered or timed out). Used by RoundAbandoned. */
+  getQuestionsCompleted(): number {
+    return this.questionIndex;
+  }
+
+  /**
+   * Freeze the round. Stops alien descent (WaveSystem.pause), suppresses fire
+   * input (InputSystem.setPaused), pauses HudScene's timers/animations
+   * (scene.pause), and pauses every active tween scoped to this scene
+   * (tweens.pauseAll). Pause is silent — score and round state are preserved
+   * exactly. No auto-fail timeout: this is not a stealth difficulty mechanic.
+   *
+   * Idempotent: a second pause() call is a no-op.
+   */
+  pause(): void {
+    if (this.paused) return;
+    this.paused = true;
+    this.waveSystem?.pause();
+    this.inputSystem?.setPaused(true);
+    this.tweens.pauseAll();
+    if (this.scene.isActive(SceneKeys.Hud)) {
+      this.scene.pause(SceneKeys.Hud);
+    }
+    _th.logToAi('GamePaused', SeverityLevel.Information, {
+      mathId: this.mathId,
+      speed: this.speed,
+      questionIndex: String(this.questionIndex),
+    });
+  }
+
+  /** Reverse `pause()`. Idempotent. */
+  resume(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    this.waveSystem?.resume();
+    this.inputSystem?.setPaused(false);
+    this.tweens.resumeAll();
+    if (this.scene.isPaused(SceneKeys.Hud)) {
+      this.scene.resume(SceneKeys.Hud);
+    }
+    _th.logToAi('GameResumed', SeverityLevel.Information, {
+      mathId: this.mathId,
+      speed: this.speed,
+      questionIndex: String(this.questionIndex),
+    });
+  }
+
+  /**
+   * Abandon the round and return to the title screen. NO score is saved
+   * (per the sprint spec — abandonment is distinct from a completed round
+   * and `RoundAbandoned` telemetry surfaces this for analysis).
+   *
+   * Cleanup is the same as scene shutdown — `cleanup()` runs via the
+   * shutdown event when MenuScene takes over.
+   */
+  quitToMenu(): void {
+    _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
+      mathId: this.mathId,
+      speed: this.speed,
+      questionsCompleted: String(this.questionIndex),
+    });
+    // Resume tweens before exit so any cleanup tweens GameScene's children
+    // queue up don't sit frozen on the next round.
+    this.tweens.resumeAll();
+    this.scene.start(SceneKeys.Menu);
   }
 }

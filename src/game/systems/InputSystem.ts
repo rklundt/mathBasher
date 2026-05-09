@@ -24,8 +24,19 @@ export class InputSystem {
   private readonly callbacks: Array<() => void> = [];
   private lastFireTimeMs = -Infinity;
   private destroyed = false;
+  private paused = false;
   private readonly handlePointerDown: () => void;
   private readonly handleSpaceDown: () => void;
+
+  /**
+   * While paused, fire input is silently dropped — Space and pointerdown
+   * still trigger their handlers (we can't `off` them without losing the
+   * binding for resume), but the cooldown gate logic refuses to emit. Used
+   * by GameScene during the pause overlay.
+   */
+  setPaused(p: boolean): void {
+    this.paused = p;
+  }
 
   constructor(private readonly scene: Phaser.Scene) {
     this.handlePointerDown = this.tryFire.bind(this);
@@ -62,6 +73,7 @@ export class InputSystem {
 
   private tryFire(): void {
     if (this.destroyed) return;
+    if (this.paused) return;
     const now = this.scene.time.now;
     if (now - this.lastFireTimeMs < config.hero.fireCooldownMs) return;
     this.lastFireTimeMs = now;

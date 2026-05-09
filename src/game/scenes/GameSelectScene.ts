@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { wireEscBack } from '@/game/ui/EscBackHandler';
 
 /**
  * Game-mode selection. MVP has one real tile (Alien Shoot) plus at least one
@@ -74,6 +75,9 @@ export class GameSelectScene extends Phaser.Scene {
     });
 
     new KeyboardNavigator(this, [alienShoot, comingSoon, back]);
+
+    // Esc returns to the previous step in the menu stack.
+    wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
 
     _th.logToAi('GameSelectScene Completed', SeverityLevel.Information);
   }

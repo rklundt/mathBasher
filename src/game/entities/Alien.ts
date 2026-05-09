@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { advanceY } from '@/game/systems/waveKinematics';
 
 export interface AlienOpts {
   scene: Phaser.Scene;
@@ -58,10 +59,14 @@ export class Alien extends Phaser.GameObjects.Container {
     this.setSize(Alien.WIDTH, Alien.HEIGHT);
   }
 
-  /** Per-frame descent. WaveSystem calls this for every live alien. */
+  /**
+   * Per-frame descent. WaveSystem calls this for every live alien.
+   * Pause is handled at the WaveSystem layer (its `update(dt)` early-returns
+   * when paused), so this method can stay unconditional.
+   */
   advance(dt: number): void {
     if (this.destroyed) return;
-    this.y += (this.descentSpeed / 1000) * dt;
+    this.y = advanceY(this.y, dt, this.descentSpeed);
   }
 
   /** Change descent speed mid-flight (used for the wrong-shot speed penalty). */

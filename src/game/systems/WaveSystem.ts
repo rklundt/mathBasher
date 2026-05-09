@@ -44,8 +44,28 @@ export class WaveSystem {
   private aliens: Alien[] = [];
   private correctAnswerLane = -1;
   private penaltyApplied = false;
+  private paused = false;
 
   constructor(private readonly opts: WaveSystemOpts) {}
+
+  /**
+   * Freeze descent. While paused, `update(dt)` early-returns 'in-progress'
+   * without advancing aliens — they sit at their current Y positions, so a
+   * resume continues from exactly where the player left off (no snap, no
+   * accumulated drift). Idempotent.
+   */
+  pause(): void {
+    this.paused = true;
+  }
+
+  /** Resume descent. Idempotent. */
+  resume(): void {
+    this.paused = false;
+  }
+
+  isPaused(): boolean {
+    return this.paused;
+  }
 
   /**
    * Spawn one wave of `lanes` aliens for the given question. The shuffled
@@ -85,9 +105,12 @@ export class WaveSystem {
 
   /**
    * Advance every live alien this frame; report the wave's status so
-   * GameScene can decide whether to end the question.
+   * GameScene can decide whether to end the question. While paused, this
+   * is a no-op that always reports 'in-progress' — aliens stay frozen at
+   * their current positions until `resume()` is called.
    */
   update(dt: number): WaveOutcome {
+    if (this.paused) return 'in-progress';
     for (const a of this.aliens) {
       if (!a.isDestroyed()) a.advance(dt);
     }
@@ -139,5 +162,6 @@ export class WaveSystem {
     this.aliens = [];
     this.correctAnswerLane = -1;
     this.penaltyApplied = false;
+    this.paused = false;
   }
 }
