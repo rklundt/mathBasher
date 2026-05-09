@@ -74,6 +74,16 @@ export class DifficultyScene extends Phaser.Scene {
     this.renderStartButton(cx, height * 0.85);
     this.renderBackButton(cx - 250, height * 0.85);
 
+    // Default selections so the user lands on a "ready to play" state.
+    // Without this, a first-time user sees the keyboard-focus blue ring on
+    // "Add to 10" (because it's the first tab stop) AND the amber selected
+    // ring on a previously-chosen speed, but Settings.mathId is still null
+    // and Start stays disabled. The visual contradicts the actual state and
+    // the user can't tell why Start won't light up. Auto-selecting the
+    // first implemented math type and a default speed (Medium) closes that
+    // gap — the kid can tap Start immediately or change their mind first.
+    this.applyDefaultSelections();
+
     // Keyboard nav: math tiles in registry order, then speed tiles slow→fast,
     // then Start, then Back. Disabled stubs are skipped automatically by
     // KeyboardNavigator.
@@ -232,5 +242,27 @@ export class DifficultyScene extends Phaser.Scene {
       btn.setSelected(key === speed);
     }
     this.startButton?.setDisabled(!Settings.isReady());
+  }
+
+  /**
+   * Pre-populate Settings with sane defaults if the user hasn't picked yet.
+   * Called once on scene entry, AFTER the buttons have been rendered (so
+   * the math-type pick is gated on `getImplementedIds()` matching the
+   * actual buttons on screen).
+   *
+   * Existing selections are preserved — a user who picked Subtract within 10
+   * before, came back here from Game Over, and is replaying still sees their
+   * prior choices selected.
+   */
+  private applyDefaultSelections(): void {
+    if (Settings.round.mathId === null) {
+      const firstImplemented = getImplementedIds()[0];
+      if (firstImplemented !== undefined) {
+        Settings.setMathId(firstImplemented);
+      }
+    }
+    if (Settings.round.speed === null) {
+      Settings.setSpeed('medium');
+    }
   }
 }
