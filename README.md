@@ -4,30 +4,44 @@ A browser-based math game for kids. Aliens descend from the top of the screen ca
 
 Mobile-friendly (landscape on phones), zero-install. New game modes and new math types are added by adding files, not by changing the engine.
 
+## Prerequisites
+
+- **Node.js 20+** (see `package.json#engines`)
+- **npm 10+** (ships with Node 20)
+
 ## Run locally
 
 ```bash
-cd app
+cp .env.example .env       # adjust if needed; defaults work for local dev
 npm install
-npm run dev
+npm run dev                # Vite dev server with HMR
 ```
 
 Then open the URL Vite prints (typically `http://localhost:5173`).
 
+For a production-style local run (Express serving the built assets):
+
+```bash
+npm run build              # builds client (Vite) + server (tsc)
+npm start                  # listens on http://localhost:8080
+```
+
 ## Project structure
 
 ```
-app/              the application (Vite + TypeScript + Phaser)
-  src/
-    game/        Phaser scenes, entities, systems
-    math/        question generators (pure TypeScript)
-    services/    score store, audio manager, settings
-    core/        config, telemetry, shared types
-  server/        Express server (serves built assets, /health)
-  public/        static assets
-docs/            reference documents (config reference, telemetry plan)
-LICENSE          GNU Affero General Public License v3 (see also COMMERCIAL.md)
-NOTICE           attribution and third-party notices
+src/              browser-side TypeScript (Vite)
+  game/          Phaser scenes, entities, systems, UI
+  math/          question generators (pure TS, no Phaser)
+  services/      score store, audio manager, settings (no Phaser)
+  core/          config, telemetry, attribution, shared types
+public/           static assets served as-is by Vite (CREDITS.md lives here)
+server/           Express server for production container
+  src/           server source
+  dist/          compiled output
+docs/             reference documents (ADRs)
+dist/             Vite client build output
+LICENSE           GNU Affero General Public License v3 (see also COMMERCIAL.md)
+NOTICE            attribution and third-party notices
 ```
 
 ## Scripts
