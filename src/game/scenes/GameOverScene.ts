@@ -29,7 +29,7 @@ export interface GameOverData {
  * count-up score, etc.).
  */
 export class GameOverScene extends Phaser.Scene {
-  private data!: GameOverData;
+  private roundData!: GameOverData;
 
   static readonly key = SceneKeys.GameOver;
 
@@ -38,30 +38,31 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   init(data: GameOverData): void {
-    this.data = data;
+    this.roundData = data;
   }
+
 
   create(): void {
     const props: Record<string, string> = {
       gameId: 'alien-shoot',
-      roundScore: String(this.data.score),
-      roundCorrectCount: String(this.data.correctCount),
-      passed: String(this.data.passed),
+      roundScore: String(this.roundData.score),
+      roundCorrectCount: String(this.roundData.correctCount),
+      passed: String(this.roundData.passed),
     };
-    if (this.data.mathId) props['mathId'] = this.data.mathId;
-    if (this.data.speed) props['speed'] = this.data.speed;
+    if (this.roundData.mathId) props['mathId'] = this.roundData.mathId;
+    if (this.roundData.speed) props['speed'] = this.roundData.speed;
 
     _th.logToAi('GameOverScene Started', SeverityLevel.Information, props);
 
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    const headline = this.data.passed ? 'Round Complete!' : 'Round Done — Try Again?';
+    const headline = this.roundData.passed ? 'Round Complete!' : 'Round Done — Try Again?';
     this.add
       .text(cx, height * 0.18, headline, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '40px',
-        color: this.data.passed ? '#34d399' : '#fbbf24',
+        color: this.roundData.passed ? '#34d399' : '#fbbf24',
       })
       .setOrigin(0.5);
 
@@ -69,7 +70,7 @@ export class GameOverScene extends Phaser.Scene {
       .text(
         cx,
         height * 0.32,
-        `Score: ${this.data.score}\nCorrect: ${this.data.correctCount} / ${config.round.questionsPerRound}`,
+        `Score: ${this.roundData.score}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`,
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '24px',
@@ -123,8 +124,8 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private renderStars(): string {
-    const filled = '★'.repeat(this.data.stars);
-    const empty = '☆'.repeat(3 - this.data.stars);
+    const filled = '★'.repeat(this.roundData.stars);
+    const empty = '☆'.repeat(3 - this.roundData.stars);
     return filled + empty;
   }
 }
