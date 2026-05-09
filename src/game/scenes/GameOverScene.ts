@@ -6,6 +6,9 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
+import { Settings } from '@/services/Settings';
+import { getScoreStore } from '@/services/scoreStoreFactory';
+import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
@@ -23,11 +26,13 @@ export interface GameOverData {
  * speed }` via Phaser scene-data on transition.
  *
  * Copy is deliberately kid-friendly — `passed === false` says "Try again" not
- * "You failed", per the Support reviewer's frustration-protection guidance.
+ * "You failed". Game-over messaging that reads as punishment ("You failed",
+ * "You died") discourages a kid from immediately restarting; "Try again"
+ * frames the next round as an invitation.
  *
- * Sprint 0.5 wires this to actually save scores via the IScoreStore (and to
- * detect "New high score!"); sprint 0.7 polishes the visuals (animated stars,
- * count-up score, etc.).
+ * v0.5 wires this to actually save scores via the IScoreStore (and to detect
+ * "New high score!"); a later visual-polish pass animates the stars and adds
+ * a count-up score effect.
  */
 export class GameOverScene extends Phaser.Scene {
   private roundData!: GameOverData;
@@ -54,6 +59,15 @@ export class GameOverScene extends Phaser.Scene {
     if (this.roundData.speed) props.speed = this.roundData.speed;
 
     _th.logToAi('GameOverScene Started', SeverityLevel.Information, props);
+
+    // Save the score asynchronously and check for new high score. The
+    // IScoreStore methods are Promise-returning so a future ApiScoreStore is a
+    // drop-in; SessionScoreStore resolves immediately. We don't BLOCK the UI
+    // on the save — render the screen first, then asynchronously update with
+    // the "New high score!" badge if appropriate.
+    if (this.roundData.mathId && this.roundData.speed) {
+      void this.saveAndCheckHighScore(this.roundData.mathId, this.roundData.speed);
+    }
 
     const { width, height } = this.scale;
     const cx = width / 2;
@@ -96,7 +110,16 @@ export class GameOverScene extends Phaser.Scene {
       width: 240,
       height: 56,
       label: 'Play Again',
-      onClick: () => this.scene.start(SceneKeys.Game),
+      onClick: () => {
+        // Defensive: re-set Settings to the round we just played, so a Play
+        // Again works even if a future code path resets Settings (e.g. on
+        // round-end cleanup that hasn't been written yet). GameScene reads
+        // Settings on create, so this is enough to preserve the user's
+        // intent across the bounce.
+        if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
+        if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
+        this.scene.start(SceneKeys.Game);
+      },
     });
 
     const changeDifficulty = new PlaceholderButton({
@@ -130,5 +153,60 @@ export class GameOverScene extends Phaser.Scene {
     const filled = '★'.repeat(this.roundData.stars);
     const empty = '☆'.repeat(3 - this.roundData.stars);
     return filled + empty;
+  }
+
+  /**
+   * Persist the round result and detect "New high score!" — read the previous
+   * best for this combo BEFORE saving (otherwise we'd always tie our own
+   * just-saved score), then save, then optionally show the badge.
+   */
+  private async saveAndCheckHighScore(mathId: MathId, speed: SpeedKey): Promise<void> {
+    const store = getScoreStore();
+    const filter: ScoreFilter = { gameId: 'alien-shoot', mathId, speed };
+
+    const previousBest = await store.bestForCombo(filter);
+
+    const entry: ScoreEntry = {
+      gameId: 'alien-shoot',
+      mathId,
+      speed,
+      score: this.roundData.score,
+      correctCount: this.roundData.correctCount,
+      passed: this.roundData.passed,
+      achievedAt: Date.now(),
+    };
+
+    await store.save(entry);
+
+    _th.logToAi('HighScoreSaved', SeverityLevel.Information, {
+      gameId: 'alien-shoot',
+      mathId,
+      speed,
+      roundScore: String(this.roundData.score),
+    });
+
+    // Beat the previous best (or there was no previous best AND we scored)?
+    const isNewHighScore =
+      this.roundData.score > 0 &&
+      (previousBest === null || this.roundData.score > previousBest.score);
+
+    if (isNewHighScore && this.scene.isActive()) {
+      const { width, height } = this.scale;
+      const badge = this.add
+        .text(width / 2, height * 0.54, '★ New High Score! ★', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '22px',
+          color: '#fbbf24',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5);
+      this.tweens.add({
+        targets: badge,
+        scale: { from: 0.5, to: 1 },
+        alpha: { from: 0, to: 1 },
+        duration: 400,
+        ease: 'Back.Out',
+      });
+    }
   }
 }
