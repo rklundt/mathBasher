@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# Project-local pnpm content store (configured via .npmrc store-dir)
+.pnpm-store/
+
 # Build output
 dist/
 build/
