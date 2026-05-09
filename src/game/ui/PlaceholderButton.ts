@@ -70,6 +70,20 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.onClick = opts.onClick;
 
     // Background (filled) + border (stroked).
+    //
+    // The BACKGROUND rectangle is the interactive surface, NOT the container.
+    // Why: putting setInteractive on the container with a custom hit-area was
+    // producing dead zones — only narrow horizontal bands of the button
+    // responded to clicks, and the rest silently swallowed the pointer. The
+    // root cause is that Phaser's input pipeline, when resolving a hit on a
+    // Container, walks the container's children and lets non-interactive
+    // children (the text glyphs sitting on top of the bg) shadow portions of
+    // the hit-test in some configurations. Anchoring `setInteractive` to the
+    // bg rectangle directly bypasses all of that: the bg is a leaf node, its
+    // hit area is auto-derived from its width/height, and Phaser computes the
+    // world-to-local transform via its parent container automatically. Net:
+    // the entire button surface is clickable, regardless of where the text
+    // sits.
     this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, 0x1f2740);
     this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height);
     this.border.setStrokeStyle(2, 0x6b7280);
@@ -96,42 +110,33 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
       this.textChildren.push(subtitle);
     }
 
-    // Hit area exactly matches the rectangle. `useHandCursor: true` flips the
-    // CSS cursor to a pointing hand on hover so users get visual feedback that
-    // a tile is interactive before they click.
+    // Container size is still set so layout consumers (KeyboardNavigator focus
+    // ring math, future tween-on-press) have correct bounds, but the container
+    // itself is NOT interactive — see the comment on `this.bg` above.
     this.setSize(opts.width, opts.height);
-    this.setInteractive(
-      {
-        hitArea: new Phaser.Geom.Rectangle(
-          -opts.width / 2,
-          -opts.height / 2,
-          opts.width,
-          opts.height,
-        ),
-        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-        useHandCursor: true,
-      },
-    );
+
+    // Make the BG the click target. `useHandCursor: true` flips the CSS cursor
+    // to a pointing hand on hover so users get visual feedback before clicking.
+    this.bg.setInteractive({ useHandCursor: true });
 
     // Hover state (only when enabled).
-    this.on('pointerover', () => {
+    this.bg.on('pointerover', () => {
       if (!this._disabled) this.bg.setFillStyle(0x2a3454);
     });
-    this.on('pointerout', () => {
+    this.bg.on('pointerout', () => {
       if (!this._disabled) this.bg.setFillStyle(0x1f2740);
     });
     // Click handler uses POINTERDOWN, not pointerup. pointerup is bug-shaped
     // here for two reasons:
-    //   1. Phaser containers track pointer-down state internally; if the cursor
-    //      is already over the target when the scene becomes active (very common
-    //      after a scene transition), the first down/up pair is sometimes
-    //      treated as "incomplete" and the click is silently dropped — the user
-    //      has to hover off and back on to re-sync the state.
+    //   1. After a scene transition, if the cursor is already over the target
+    //      when the scene activates, the first down/up pair is sometimes
+    //      treated as "incomplete" and the click is silently dropped — the
+    //      user has to hover off and back on to re-sync the state.
     //   2. pointerdown fires the moment the button is pressed, which feels
     //      snappier for arcade-game menus.
-    // pointerdown also works the same for mouse, touch, and pen via Phaser's
+    // pointerdown works the same for mouse, touch, and pen via Phaser's
     // unified pointer abstraction.
-    this.on('pointerdown', () => {
+    this.bg.on('pointerdown', () => {
       if (this._disabled) return;
       this.onClick?.();
     });
