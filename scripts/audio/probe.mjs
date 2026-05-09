@@ -48,13 +48,53 @@ const info = spawnSync(ffmpegPath, ['-hide_banner', '-i', file], {
   encoding: 'utf8',
 });
 
-// Filter to the lines we care about (Input / Duration / Stream).
-const infoLines = (info.stderr || '')
+// Filter to the lines we care about (Input / Duration / Stream / Metadata).
+// Metadata is surfaced specifically so leak issues (e.g. encoder identifying
+// itself in a TSSE tag) get caught at probe time instead of after-the-fact.
+const stderr = info.stderr || '';
+const infoLines = stderr
   .split('\n')
-  .filter((l) => /Duration|Stream|Input/.test(l))
+  .filter((l) => /Duration|Stream|Input|Metadata/.test(l))
   .map((l) => l.trim());
 console.log('--- Stream info ---');
 for (const line of infoLines) console.log(`  ${line}`);
+
+// Walk the stderr looking for ANY metadata field lines (key : value) inside
+// a Metadata: block, regardless of which key. Surface them as warnings —
+// any output of audio:encode should report ZERO metadata fields here.
+const metadataFields = collectMetadataFields(stderr);
+if (metadataFields.length > 0) {
+  console.log('--- Metadata fields detected (should be empty for shipped assets) ---');
+  for (const f of metadataFields) console.log(`  WARN: ${f}`);
+} else {
+  console.log('--- Metadata fields: none ---');
+}
+
+function collectMetadataFields(s) {
+  const lines = s.split('\n');
+  const out = [];
+  let inMetadata = false;
+  for (const raw of lines) {
+    const line = raw.replace(/\r$/, '');
+    if (/^\s*Metadata:\s*$/.test(line)) {
+      inMetadata = true;
+      continue;
+    }
+    if (inMetadata) {
+      // Metadata blocks contain "    key : value" lines indented further than
+      // the surrounding container/stream lines. A non-indented line ends the
+      // block.
+      if (/^\s{2,}\S/.test(line) && line.includes(':')) {
+        out.push(line.trim());
+      } else if (line.trim() === '') {
+        // continue — blank lines inside metadata blocks are fine
+      } else {
+        inMetadata = false;
+      }
+    }
+  }
+  return out;
+}
 
 // Pass 2: volumedetect filter — gives mean and peak volume in dBFS, useful
 // for verifying loudness-normalization landed in the expected range.

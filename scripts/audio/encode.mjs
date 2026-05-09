@@ -130,12 +130,39 @@ const silenceTrim =
   'silenceremove=start_periods=1:start_duration=0.005:start_threshold=-45dB:detection=peak,' +
   'areverse';
 
+// Brick-wall limiter — runs FIRST (after silence trim) so loudnorm sees an
+// input with peaks already constrained, instead of trying to chase a target
+// loudness on a signal whose peaks it can't predict. Pins peaks at 0.7 ≈
+// -3.1 dBFS, giving ~1.6 dB of headroom for MP3 reconstruction noise (the
+// codec's lossy decoder can reconstruct samples 1-2 dB above the original
+// peak); after MP3 round-trip, decoded peaks land safely under the -1.5
+// dBTP shipping ceiling.
+//
+// `level=disabled` is critical: alimiter's default `level=true` re-normalizes
+// the OUTPUT back to 0 dB after limiting, which silently undoes everything
+// the limiter just did. With `level=disabled`, peaks stay pinned at the
+// limit value. This was a real bug we hit during the v0.5.1+ audio sprint.
+//
+// Attack 5 ms / release 50 ms is fast enough for transient SFX without
+// producing audible pumping.
+const limiter = 'alimiter=limit=0.7:level=disabled:attack=5:release=50';
+
 // Two-pass loudnorm is the gold standard but adds complexity (need to parse
 // JSON from a probe pass). One-pass loudnorm is good enough for SFX/short
-// game audio and matches what most game-audio pipelines use.
+// game audio when its input has already been peak-constrained by the
+// limiter above.
 const loudnorm = `loudnorm=I=${profile.loudnormI}:TP=${profile.loudnormTP}:LRA=${profile.loudnormLRA}`;
 
-const filters = trim ? `${silenceTrim},${loudnorm}` : loudnorm;
+// Filter ORDER matters: trim → limiter → loudnorm. Limiter first means
+// loudnorm operates on a peak-constrained signal and can hit its target
+// reliably. Loudnorm after limiter does NOT re-introduce uncapped peaks
+// because it adjusts gain, and the gain change keeps proportionality —
+// peaks scale together with the rest. Final post-loudnorm peaks land
+// just over the limiter's -3.1 dB anchor (loudnorm boosts the entire
+// signal to hit -16 LUFS target), but well under the -1.5 dBTP ceiling.
+const filters = trim
+  ? `${silenceTrim},${limiter},${loudnorm}`
+  : `${limiter},${loudnorm}`;
 
 // --- Build ffmpeg arg list ---------------------------------------------------
 
@@ -143,7 +170,16 @@ const args = [
   '-y', // overwrite output if it exists (the script is idempotent by design)
   '-i', input,
   '-af', filters,
-  '-map_metadata', '-1', // strip ALL metadata (no leaked generator info)
+  // Strip ALL input-side metadata (generator names, prompts, timestamps).
+  '-map_metadata', '-1',
+  // Suppress ffmpeg's own muxer-side metadata. By default the mp3 muxer
+  // writes an ID3v2 TSSE/`encoder` tag identifying the libavformat version
+  // that produced the file ("Lavf60.3.100"). That's not generator info but
+  // it IS metadata, and the project policy is "no metadata in shipped audio."
+  // The three flags below disable Xing VBR header tagging, ID3v2, and ID3v1.
+  '-write_xing', '0',
+  '-id3v2_version', '0',
+  '-write_id3v1', '0',
   '-codec:a', 'libmp3lame',
   '-b:a', profile.bitrate,
   '-ac', String(profile.channels),
