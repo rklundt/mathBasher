@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { getAudioManager } from '@/services/audioManagerFactory';
 
 /**
  * Title screen. Two actions: Start (-> GameSelect) and High Scores
@@ -51,7 +52,17 @@ export class MenuScene extends Phaser.Scene {
       width: 280,
       height: 64,
       label: 'Start',
-      onClick: () => this.scene.start(SceneKeys.GameSelect),
+      onClick: () => {
+        // Bind the AudioManager to a scene from inside this user-gesture
+        // handler. iOS Safari blocks WebAudioContext creation outside a
+        // gesture; calling AudioManager.init() from BootScene works on
+        // Chrome/Firefox but silently fails on iOS, leaving the kid pressing
+        // fire forever in silence. Wiring the bind to the first Start
+        // click is the canonical fix and idempotent — repeated Starts just
+        // re-bind to the same audio engine.
+        getAudioManager().init(this);
+        this.scene.start(SceneKeys.GameSelect);
+      },
     });
 
     const highScoresButton = new PlaceholderButton({

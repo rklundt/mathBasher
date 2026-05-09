@@ -130,39 +130,38 @@ const silenceTrim =
   'silenceremove=start_periods=1:start_duration=0.005:start_threshold=-45dB:detection=peak,' +
   'areverse';
 
-// Brick-wall limiter — runs FIRST (after silence trim) so loudnorm sees an
-// input with peaks already constrained, instead of trying to chase a target
-// loudness on a signal whose peaks it can't predict. Pins peaks at 0.7 ≈
-// -3.1 dBFS, giving ~1.6 dB of headroom for MP3 reconstruction noise (the
-// codec's lossy decoder can reconstruct samples 1-2 dB above the original
-// peak); after MP3 round-trip, decoded peaks land safely under the -1.5
-// dBTP shipping ceiling.
+// Two-pass loudnorm is the gold standard but adds complexity (need to parse
+// JSON from a probe pass). One-pass loudnorm is good enough for SFX/short
+// game audio. Single-pass adherence to the TP target is approximate
+// though — for very quiet inputs (mean below -25 dB) loudnorm's boost can
+// push peaks above the TP ceiling. The limiter below catches that.
+const loudnorm = `loudnorm=I=${profile.loudnormI}:TP=${profile.loudnormTP}:LRA=${profile.loudnormLRA}`;
+
+// Brick-wall limiter as the FINAL stage — true safety net that catches
+// whatever loudnorm produces, including overshoots on very quiet inputs.
+// Pins peaks at 0.7 ≈ -3.1 dBFS, giving ~1.6 dB of headroom for MP3
+// reconstruction noise (the codec's lossy decoder can reconstruct samples
+// 1-2 dB above the original peak); after MP3 round-trip, decoded peaks
+// land safely under the -1.5 dBTP shipping ceiling.
 //
-// `level=disabled` is critical: alimiter's default `level=true` re-normalizes
-// the OUTPUT back to 0 dB after limiting, which silently undoes everything
-// the limiter just did. With `level=disabled`, peaks stay pinned at the
-// limit value. This was a real bug we hit during the v0.5.1+ audio sprint.
+// `level=disabled` is CRITICAL: alimiter's default `level=true`
+// re-normalizes the OUTPUT back to 0 dB after limiting, which silently
+// undoes everything the limiter just did. With `level=disabled`, peaks
+// stay pinned at the limit value.
 //
 // Attack 5 ms / release 50 ms is fast enough for transient SFX without
 // producing audible pumping.
 const limiter = 'alimiter=limit=0.7:level=disabled:attack=5:release=50';
 
-// Two-pass loudnorm is the gold standard but adds complexity (need to parse
-// JSON from a probe pass). One-pass loudnorm is good enough for SFX/short
-// game audio when its input has already been peak-constrained by the
-// limiter above.
-const loudnorm = `loudnorm=I=${profile.loudnormI}:TP=${profile.loudnormTP}:LRA=${profile.loudnormLRA}`;
-
-// Filter ORDER matters: trim → limiter → loudnorm. Limiter first means
-// loudnorm operates on a peak-constrained signal and can hit its target
-// reliably. Loudnorm after limiter does NOT re-introduce uncapped peaks
-// because it adjusts gain, and the gain change keeps proportionality —
-// peaks scale together with the rest. Final post-loudnorm peaks land
-// just over the limiter's -3.1 dB anchor (loudnorm boosts the entire
-// signal to hit -16 LUFS target), but well under the -1.5 dBTP ceiling.
+// Filter ORDER matters: trim → loudnorm → limiter. The limiter is a true
+// safety net at the END — whatever loudnorm overshoots, the limiter catches.
+// An earlier (mis-)ordering put the limiter BEFORE loudnorm, which left
+// loudnorm free to push peaks past the TP ceiling on quiet inputs (real bug
+// hit during the bloop encode in v0.5.2+; mean was -39 dB, loudnorm boosted
+// 23 dB to hit -16 LUFS target, peaks went to 0 dB unchecked).
 const filters = trim
-  ? `${silenceTrim},${limiter},${loudnorm}`
-  : `${limiter},${loudnorm}`;
+  ? `${silenceTrim},${loudnorm},${limiter}`
+  : `${loudnorm},${limiter}`;
 
 // --- Build ffmpeg arg list ---------------------------------------------------
 

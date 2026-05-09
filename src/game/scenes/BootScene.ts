@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
+import { AudioKeys, sfxPath } from '@/core/audioKeys';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -20,6 +21,29 @@ export class BootScene extends Phaser.Scene {
 
   constructor() {
     super(BootScene.key);
+  }
+
+  /**
+   * Preload SFX assets. Phaser caches them as decoded PCM AudioBuffers, so
+   * later `scene.sound.play(key)` calls have zero decode cost — perfect for
+   * arcade-style fire-on-keypress where any latency is felt.
+   *
+   * NOTE: BootScene only LOADS the assets here. The AudioManager's `init()`
+   * call (which binds to a scene's sound manager) MUST happen later, in
+   * MenuScene's first user-gesture handler — not here. iOS Safari blocks
+   * WebAudioContext creation outside a user gesture, and an init from
+   * BootScene silently fails on iOS even though Chrome/Firefox tolerate it.
+   */
+  preload(): void {
+    this.load.audio(AudioKeys.Fire1, sfxPath(AudioKeys.Fire1));
+    this.load.audio(AudioKeys.Fire2, sfxPath(AudioKeys.Fire2));
+    this.load.on('complete', () => {
+      _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
+        // Number of audio assets queued via load.audio above. Update if more
+        // get added.
+        reason: '2',
+      });
+    });
   }
 
   create(): void {

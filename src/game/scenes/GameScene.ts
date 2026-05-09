@@ -17,6 +17,8 @@ import type { Alien } from '@/game/entities/Alien';
 import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
+import { getAudioManager } from '@/services/audioManagerFactory';
+import { AudioKeys } from '@/core/audioKeys';
 
 /**
  * The actual game. One round = `config.round.questionsPerRound` questions.
@@ -159,6 +161,13 @@ export class GameScene extends Phaser.Scene {
   private handleFire(): void {
     if (this.transitioning) return;
     if (this.projectile) return; // one in flight at a time
+    // Play SFX BEFORE spawning the projectile so the sound is sample-aligned
+    // with the visual fire. Phaser caches the decoded buffer at preload, so
+    // play() is effectively zero-latency. AudioManager respects the mute
+    // toggle and the volume cap; if init() hasn't fired yet (e.g. dev hot
+    // reload skips MenuScene) play() is a silent no-op rather than a crash.
+    // Always fire-1 in this sprint; alt-fire variety is a later sprint.
+    getAudioManager().play(AudioKeys.Fire1);
     this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
   }
 

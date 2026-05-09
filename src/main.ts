@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { createScoreStore } from '@/services/scoreStoreFactory';
+import { createAudioManager } from '@/services/audioManagerFactory';
 import { BootScene } from '@/game/scenes/BootScene';
 import { MenuScene } from '@/game/scenes/MenuScene';
 import { GameSelectScene } from '@/game/scenes/GameSelectScene';
@@ -21,6 +22,13 @@ _th.logToAi('AppBoot Started', SeverityLevel.Information);
 // is shared across every round in the page lifetime. GameOverScene calls
 // getScoreStore() (alias for createScoreStore()) and gets this same one.
 createScoreStore();
+
+// Eagerly initialize the audio manager at boot so its mute state (read from
+// localStorage at construction) is available immediately. The manager is
+// NOT bound to a Phaser scene here — that happens later in MenuScene's
+// first user-gesture handler (iOS Safari blocks WebAudioContext creation
+// outside a user gesture). Construction is fine; init(scene) is not.
+createAudioManager();
 
 new Phaser.Game({
   type: Phaser.AUTO,
