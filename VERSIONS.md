@@ -27,7 +27,40 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.2 in planning. Will deliver the math engine: `Question` / `QuestionGenerator` interfaces, the first generator (Add to 10), shared distractor strategies, generator registry, and Vitest unit tests.
+- Sprint 0.3 in planning. Will deliver the score store: `IScoreStore` interface, in-memory `SessionScoreStore`, `ScoreCalculator` (round-scoring math), and a factory so a future API-backed store is a drop-in replacement.
+
+## [0.2.0] - 2026-05-09 — Math engine
+
+The pure-TypeScript math content layer. After this release, the engine can produce `Question` objects (prompt + correct answer + 4 shuffled choices) for the Add-to-10 difficulty, with a registry that's ready to accept additional generators by adding files. First sprint with real test coverage in the repo (25 tests across 3 files).
+
+### Added
+- **`src/math/types.ts`** — `Question` and `QuestionGenerator` interfaces; `isStub` flag for placeholder generators; `defaultRng` re-exported for compatibility (it now lives in `src/math/rng.ts`).
+- **`src/math/rng.ts`** — production RNG export (`Math.random` wrapped). Pulled out of `types.ts` so the types file holds only types.
+- **`src/math/distractors.ts`** — `pickDistractors()` returns N distinct integers from `[min, max]` excluding `correct`; throws on impossible ranges. Defense-in-depth iteration cap + deterministic fill-from-pool fallback so adversarial / degenerate RNGs can't hang the loop. `shuffleAnswers()` Fisher-Yates with injectable RNG.
+- **`src/math/generators/addTo10.ts`** — first real `QuestionGenerator`. `a` uniform in `[0, 10]`, `b` uniform in `[0, 10 - a]`, `correctAnswer = a + b`. Distractor count comes from `config.layout.targetLanes`.
+- **`src/math/registry.ts`** — `Record<MathId, QuestionGenerator>` keyspace matched to `config.scoring.mathDifficulty`. Real `add-to-10` plus stubs for `add-to-20`, `sub-to-10`, `sub-to-20` that throw an actionable error on `.generate()`. `getGenerator(id)` and `getImplementedIds()` helpers.
+- **`vitest.config.ts`** — `environment: 'node'`, includes `src/**` and `server/src/**`, `passWithNoTests: true`, v8 coverage, `@/*` alias mirrored from `vite.config.ts`.
+- **`src/test-utils/mulberry32.ts`** — small seedable PRNG, test-only, used across all test files for deterministic randomness.
+- **`pnpm test:coverage` script** + `@vitest/coverage-v8` devDep; HTML report at `coverage/index.html`.
+- **`DeveloperGuide.md`** — high-level orientation file for engineers and tech leads. Project structure, conventions, build/run/test commands, license model, "where to look for what" navigation table. Top-of-file numbered Dev environment setup walkthrough plus a "Common first-run gotchas" troubleshooting table.
+- **Tests:** 25 across `src/math/distractors.test.ts`, `src/math/generators/addTo10.test.ts`, `src/math/registry.test.ts` — including a 1000-sample seeded property test on the `addTo10` generator and explicit coverage of the defense-in-depth fallback path.
+
+### Changed
+- **Project-local pnpm install.** `.npmrc` now sets `store-dir=.pnpm-store` so the pnpm content store lives inside the project root rather than the user's home folder. Cloning to a USB stick or fresh machine produces an identical install regardless of any pre-existing global pnpm state.
+- **`vite` upgraded** from `^5.2.0` to `^6.4.2`.
+- **`vitest` upgraded** from `^1.5.0` to `^3.2.4` (plus matching `@vitest/coverage-v8`).
+- **`pnpm.overrides`** added in `package.json` to dedupe transitive `vite` and `esbuild` to the patched lines (Vitest 3 still ships `vite@5.4.21` internally; override forces it to `^6.4.2`).
+- **`@types/express`** pinned from `^5.0.0` to `^4.17.21` to match the actual `express ^4.19.2` runtime.
+- **`Dockerfile`** runtime stage now also COPYs `LICENSE`, `NOTICE`, `README.md` for AGPL distribution compliance; previously had a duplicate `package.json` COPY (removed).
+- **Express server** PORT validation: malformed values log a Warning and fall back to 8080 instead of allowing `NaN` to crash-loop the container. Friendly EADDRINUSE message + clean exit if the port is in use.
+
+### Fixed
+- **Two moderate dev-only CVEs cleared** (GHSA-4w7w-66w2-5vf9 Vite path traversal in dev server, GHSA-67mh-4wv8-2f99 esbuild dev server permissive CORS). Production runtime image was never affected. `pnpm audit` now reports zero vulnerabilities.
+- **Vitest worker-cleanup hang on Windows** — Vitest 1.6 sometimes left worker threads alive after the test run completed, requiring manual termination. Vitest 3 handles this correctly.
+
+### Notes
+- Disk size after first install is ~2.3GB; Phaser ships its full source in the npm package. Production image is unaffected (only `dist/` and `server/dist/` reach the runtime stage).
+- Community-standards files (`SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`) landed alongside the v0.0.0 baseline. They've been live throughout 0.1 and 0.2 but the formal release notes are recorded here for completeness.
 
 ## [0.1.0] - 2026-05-09 — Scaffold
 
