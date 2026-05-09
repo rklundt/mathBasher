@@ -4,17 +4,19 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
+import { SceneKeys } from '@/core/sceneKeys';
 
 /**
- * BootScene — minimal proof-of-life scene for the scaffold.
+ * BootScene — entry point. Briefly displays the project name, launches the
+ * persistent AttributionScene (AGPL §7(b) requirement), then hands off to
+ * MenuScene.
  *
  * In a later art-polish revision this scene will gain preload duties and a
- * loading bar; for now it just renders the project name to verify the toolchain.
- *
- * The Menu transition will be wired when the scene-flow layer lands.
+ * loading bar; for now it just renders the project name to verify the toolchain
+ * and orchestrates the initial scene transitions.
  */
 export class BootScene extends Phaser.Scene {
-  static readonly key = 'boot';
+  static readonly key = SceneKeys.Boot;
 
   constructor() {
     super(BootScene.key);
@@ -31,6 +33,13 @@ export class BootScene extends Phaser.Scene {
         color: '#eaeaf2',
       })
       .setOrigin(0.5);
+
+    // Briefly show the title, launch the persistent attribution footer, and
+    // transition to the Menu. Real preload + loading bar lands in 0.7.
+    this.time.delayedCall(400, () => {
+      this.scene.launch(SceneKeys.Attribution);
+      this.scene.start(SceneKeys.Menu);
+    });
 
     _th.logToAi('BootScene Completed', SeverityLevel.Information);
   }
