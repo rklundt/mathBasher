@@ -1,0 +1,71 @@
+# Default: auto-detect text files, normalize line endings to LF in the repo,
+# allow Git to convert to native line endings on checkout if a contributor
+# really needs CRLF locally (it should not be necessary for any of our tooling).
+* text=auto eol=lf
+
+# Source code — always LF, regardless of platform
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.scss      text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.sh        text eol=lf
+*.bicep     text eol=lf
+*.bicepparam text eol=lf
+.env.example text eol=lf
+.gitignore   text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+LICENSE     text eol=lf
+NOTICE      text eol=lf
+Dockerfile  text eol=lf
+.dockerignore text eol=lf
+
+# Windows-only scripts get CRLF (Powershell, batch)
+*.ps1       text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Binary assets — never line-end-converted, never diffed
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.webp      binary
+*.ico       binary
+*.svg       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.eot       binary
+*.mp3       binary
+*.ogg       binary
+*.wav       binary
+*.flac      binary
+*.mp4       binary
+*.webm      binary
+*.zip       binary
+*.gz        binary
+*.tgz       binary
+*.tar       binary
+*.pdf       binary
+
+# Lockfiles — text but treat as generated (no manual diff review)
+package-lock.json -diff
+yarn.lock         -diff
+pnpm-lock.yaml    -diff
+
+# Linguist hints (GitHub language stats) — exclude vendored / generated paths
+app/public/assets/** linguist-vendored
+infra/observability/* linguist-generated

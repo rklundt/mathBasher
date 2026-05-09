@@ -1,0 +1,78 @@
+mathBasher
+Copyright 2026 Ray Klundt
+
+================================================================================
+DUAL LICENSE
+================================================================================
+
+mathBasher is offered under two licenses, at the recipient's choice:
+
+  1. The GNU Affero General Public License, version 3 (AGPL-3.0-or-later),
+     as set out in the file LICENSE in this distribution, INCLUDING the
+     additional term under AGPL Section 7(b) set out below.
+
+  2. A separate commercial license, available from the copyright holder.
+     The commercial license waives the AGPL copyleft requirement AND the
+     additional UI attribution requirement set out below. See COMMERCIAL.md
+     for details and contact information.
+
+Choose ONE of these licenses. You cannot pick and choose terms from both.
+
+================================================================================
+ADDITIONAL TERM UNDER AGPL SECTION 7(b) — UI ATTRIBUTION
+================================================================================
+
+Per Section 7(b) of the GNU Affero General Public License version 3, the
+following additional term applies to any deployment, derivative work, or
+modified version of mathBasher distributed or made available under the AGPL
+license option:
+
+  ATTRIBUTION DISPLAY REQUIREMENT.
+
+  Any interactive user interface of mathBasher, or of any work that
+  contains or is based on mathBasher, MUST prominently display the
+  following Appropriate Legal Notice (as that term is defined in AGPL
+  Section 0):
+
+      mathBasher
+      Copyright 2026 Ray Klundt
+      Licensed under AGPL-3.0-or-later
+      Source: <URL of the corresponding source>
+
+  This notice MUST be:
+
+  (a) Visible during normal interactive use of the software — for example,
+      on the main menu, the splash screen, or a persistent on-screen
+      footer. It may NOT be hidden inside a "Credits" or "About" page
+      that is not reachable through a prominent and clearly labeled
+      element of the main interface.
+
+  (b) Legible at the resolution and font size at which the rest of the
+      interface is presented. It may not be obscured, made transparent,
+      shrunk to an unreadable size, or covered by other UI elements.
+
+  (c) Accompanied by a working hyperlink (or, where hyperlinks are not
+      possible, a clearly displayed URL) to the corresponding source
+      code, satisfying both this attribution term AND AGPL Section 13's
+      requirement that users interacting with the software over a network
+      be offered access to the corresponding source.
+
+  Removal, weakening, or relocation of this attribution display is
+  permitted ONLY under the terms of a separate commercial license
+  obtained from the copyright holder. See COMMERCIAL.md.
+
+  This additional term is preserved in this NOTICE file pursuant to
+  AGPL Section 7(b). All recipients of this software, in any form, must
+  preserve this NOTICE file and the additional term it sets out.
+
+================================================================================
+THIRD-PARTY ASSETS
+================================================================================
+
+Visual assets used in this project may be sourced from kenney.nl
+(https://kenney.nl) and released under the Creative Commons CC0 public
+domain dedication. Attribution is not legally required for CC0 assets but
+is provided as a courtesy in app/public/assets/CREDITS.md.
+
+If additional third-party code or assets are added later, attribution
+notices required by their licenses will be appended below this section.
