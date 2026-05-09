@@ -72,18 +72,6 @@ export class Hero extends Phaser.GameObjects.Container {
     }
   }
 
-  /**
-   * Returns which lane (0-indexed, left to right) the hero is currently under,
-   * given the lane count and the same bounds the hero is moving inside.
-   * Used by HitSystem to decide which alien a fired projectile will reach.
-   */
-  currentLane(lanes: number): number {
-    const span = this.rightBound - this.leftBound;
-    const laneWidth = span / lanes;
-    const offset = this.x - this.leftBound;
-    return Phaser.Math.Clamp(Math.floor(offset / laneWidth), 0, lanes - 1);
-  }
-
   /** Brief alpha flash when something interesting happens (hit confirmation). */
   playHitAnim(): void {
     this.scene.tweens.add({

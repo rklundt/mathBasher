@@ -26,11 +26,13 @@ export interface GameOverData {
  * speed }` via Phaser scene-data on transition.
  *
  * Copy is deliberately kid-friendly — `passed === false` says "Try again" not
- * "You failed", per the Support reviewer's frustration-protection guidance.
+ * "You failed". Game-over messaging that reads as punishment ("You failed",
+ * "You died") discourages a kid from immediately restarting; "Try again"
+ * frames the next round as an invitation.
  *
- * Sprint 0.5 wires this to actually save scores via the IScoreStore (and to
- * detect "New high score!"); sprint 0.7 polishes the visuals (animated stars,
- * count-up score, etc.).
+ * v0.5 wires this to actually save scores via the IScoreStore (and to detect
+ * "New high score!"); a later visual-polish pass animates the stars and adds
+ * a count-up score effect.
  */
 export class GameOverScene extends Phaser.Scene {
   private roundData!: GameOverData;

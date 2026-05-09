@@ -24,7 +24,6 @@ export class InputSystem {
   private readonly callbacks: Array<() => void> = [];
   private lastFireTimeMs = -Infinity;
   private destroyed = false;
-  private readonly spaceKey?: Phaser.Input.Keyboard.Key;
   private readonly handlePointerDown: () => void;
   private readonly handleSpaceDown: () => void;
 
@@ -32,9 +31,11 @@ export class InputSystem {
     this.handlePointerDown = this.tryFire.bind(this);
     this.handleSpaceDown = this.tryFire.bind(this);
 
-    // Keyboard: Space.
+    // Keyboard: Space. We don't need to call `addKey` — the
+    // 'keydown-SPACE' event fires regardless, and storing a `Key` instance
+    // we never read introduced a leak (the key was never `removeKey`'d in
+    // `destroy`). Plain event subscription with a paired `off` is cleaner.
     if (scene.input.keyboard) {
-      this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       scene.input.keyboard.on('keydown-SPACE', this.handleSpaceDown);
     }
 
@@ -75,6 +76,5 @@ export class InputSystem {
       this.scene.input.keyboard.off('keydown-SPACE', this.handleSpaceDown);
     }
     this.callbacks.length = 0;
-    void this.spaceKey;
   }
 }

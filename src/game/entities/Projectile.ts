@@ -49,15 +49,22 @@ export class Projectile extends Phaser.GameObjects.Container {
     return this.y + Projectile.HEIGHT / 2;
   }
 
-  /** AABB rectangle for HitSystem collision checks. */
+  /**
+   * AABB rectangle for HitSystem collision checks. Returns a per-instance
+   * scratch buffer mutated in place — callers must NOT retain the reference
+   * across frames. This avoids allocating a fresh `Rectangle` every frame
+   * (the projectile is hit-tested once per `update()`).
+   */
   bounds(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(
+    this._boundsScratch.setTo(
       this.x - Projectile.WIDTH / 2,
       this.y - Projectile.HEIGHT / 2,
       Projectile.WIDTH,
       Projectile.HEIGHT,
     );
+    return this._boundsScratch;
   }
+  private readonly _boundsScratch = new Phaser.Geom.Rectangle(0, 0, 0, 0);
 
   isDestroyed(): boolean {
     return this.destroyed;
