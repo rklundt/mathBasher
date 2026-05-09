@@ -11,6 +11,7 @@ import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { wireEscBack } from '@/game/ui/EscBackHandler';
 
 export interface GameOverData {
   score: number;
@@ -143,6 +144,9 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     new KeyboardNavigator(this, [playAgain, changeDifficulty, mainMenu]);
+
+    // Esc on Game Over = Main Menu (matches the existing button's destination).
+    wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
 
     this.events.once('shutdown', () => {
       _th.logToAi('GameOverScene Completed', SeverityLevel.Information);

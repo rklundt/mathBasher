@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ScoreCalculator } from '@/services/ScoreCalculator';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 
@@ -138,5 +138,55 @@ describe('ScoreCalculator', () => {
       config.scoring.mathDifficulty[MATH_ID] *
       config.scoring.speed[SPEED].multiplier;
     expect(calc.score).toBe(fromConfig);
+  });
+
+  /**
+   * Pause-invariance contract added in sprint 0.5.1: the player can pause
+   * the round at any point and the score must be identical to the same
+   * sequence of question outcomes WITHOUT a pause. ScoreCalculator
+   * accomplishes this by ignoring time entirely — only outcome shape
+   * matters. This test codifies that property so a future change can't
+   * silently introduce a time-dependency (e.g. a "speed bonus" that reads
+   * `Date.now()`) without breaking the test.
+   *
+   * The test uses vitest's fake timers to inject a REAL time-gap (5
+   * minutes of wall-clock advance) between `recordOutcome` calls in the
+   * "paused" run. If a future change makes the calculator observe time —
+   * e.g. `const elapsed = Date.now() - this.lastCallMs` — that gap would
+   * appear in the paused run's score and the assertion would fail.
+   * Without the time-gap injection this test was a property restatement;
+   * with it, it's a real probe.
+   */
+  it('round score is pause-invariant — outcome sequence determines score', () => {
+    const sequence: Array<{ wasCorrect: boolean; usedWrongShot: boolean }> = [
+      { wasCorrect: true, usedWrongShot: false },
+      { wasCorrect: false, usedWrongShot: false },
+      { wasCorrect: true, usedWrongShot: true }, // half points
+      { wasCorrect: true, usedWrongShot: false },
+      { wasCorrect: false, usedWrongShot: true },
+      { wasCorrect: true, usedWrongShot: false },
+    ];
+
+    // Baseline: no pause, all outcomes recorded back-to-back.
+    const uninterrupted = new ScoreCalculator(MATH_ID, SPEED);
+    for (const o of sequence) uninterrupted.recordOutcome(o);
+
+    // Pause-simulated: same outcomes, but with 5 minutes of wall-clock
+    // advance between each call. Any future Date.now()/performance.now()
+    // dependency in scoring would surface here as a different score.
+    vi.useFakeTimers();
+    try {
+      const paused = new ScoreCalculator(MATH_ID, SPEED);
+      for (const o of sequence) {
+        paused.recordOutcome(o);
+        vi.advanceTimersByTime(5 * 60 * 1000); // 5 minutes "paused"
+      }
+      expect(paused.score).toBe(uninterrupted.score);
+      expect(paused.correctCount).toBe(uninterrupted.correctCount);
+      expect(paused.passed).toBe(uninterrupted.passed);
+      expect(paused.stars).toBe(uninterrupted.stars);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

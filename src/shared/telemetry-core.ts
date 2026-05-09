@@ -38,6 +38,7 @@ export type TelemetryPropName =
   | 'usedWrongShot'
   | 'roundScore'
   | 'roundCorrectCount'
+  | 'questionsCompleted'
   | 'passed'
   | 'sessionId'
   | 'disclaimerType'
@@ -50,7 +51,8 @@ export type TelemetryPropName =
   | 'raw'
   | 'message'
   | 'nodeVersion'
-  | 'error';
+  | 'error'
+  | 'from';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so
