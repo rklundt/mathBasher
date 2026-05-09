@@ -4,6 +4,110 @@ A high-level orientation to the project for engineers and tech leads. Read this 
 
 ---
 
+## Dev environment setup
+
+Get from a fresh clone to a running app in under five minutes.
+
+### 1. Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| **Node.js** | 20.0.0 or newer | LTS recommended; verify with `node --version` |
+| **pnpm** | 9.x (project pins `9.15.0`) | Install via Corepack (preferred) or globally via npm |
+| **Git** | any recent | for cloning |
+| **Docker** | 24+ (optional) | only needed if you want to build the production image locally |
+
+#### Install pnpm via Corepack (preferred — bundled with Node 20)
+
+```bash
+corepack enable
+corepack prepare pnpm@9.15.0 --activate
+pnpm --version          # should print 9.15.0
+```
+
+#### Or install pnpm globally via npm
+
+```bash
+npm install -g pnpm@9.15.0
+pnpm --version
+```
+
+### 2. Clone and install
+
+```bash
+git clone https://github.com/rklundt/mathBasher.git
+cd mathBasher
+pnpm install
+```
+
+The install is **fully self-contained** — both `node_modules/` and the pnpm content store (`.pnpm-store/`) live inside the project root, gitignored and dockerignored. Cloning to a USB stick or a brand-new machine produces an identical install regardless of any pre-existing global pnpm cache.
+
+> 📦 **First install is large (~2.3GB on disk).** Phaser ships its full source in the npm package, which dominates the size. The production Docker image is unaffected — only `dist/` and `server/dist/` reach the runtime stage. See "Build, run, test" below for production builds.
+
+### 3. Run the app
+
+```bash
+pnpm dev                 # Vite dev server with HMR (default http://localhost:5173)
+```
+
+Open the printed URL. You should see the Phaser canvas with `mathBasher` centered on a deep-space background and the AGPL §7(b) attribution footer along the bottom edge.
+
+### 4. (Optional) Configure `.env`
+
+The app runs fine without an `.env` file — defaults work for local development. You only need one if you want to override the public source URL shown in the attribution footer or wire Application Insights locally:
+
+```bash
+# macOS / Linux
+cp .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+Then edit `.env` to set:
+- `VITE_SOURCE_URL` — the public URL of this repo for the in-app attribution link (default placeholder is intentionally invalid so misconfigured deploys surface immediately)
+- `APPINSIGHTS_CONNECTION_STRING` — optional; without it, telemetry falls back to console logging
+- `PORT` — only relevant for `pnpm start` (production-style server); defaults to 8080
+- `BUILD_HASH` — set by CI; locally defaults to `dev`
+
+### 5. Run the test suite
+
+```bash
+pnpm typecheck           # tsc strict-mode check (client + server), no emit
+pnpm test                # Vitest suite once
+pnpm test:watch          # Vitest watch mode for tight iteration
+```
+
+### 6. Production-style local run (optional)
+
+```bash
+pnpm build               # builds client (Vite -> dist/) AND server (tsc -> server/dist/)
+pnpm start               # node serves both on http://localhost:8080
+```
+
+The Express server reads `PORT` from env (default 8080), binds `0.0.0.0`, exposes `/health` for container probes, and handles SIGTERM/SIGINT gracefully. Try `PORT=9000 pnpm start` to confirm the env-port contract works end-to-end.
+
+### 7. (Optional) Build the Docker image
+
+```bash
+docker build -t mathbasher .
+docker run --rm -p 8080:8080 mathbasher
+```
+
+Multi-stage build using `node:20-alpine` for both stages. Final image runs as the non-root `node` user, exposes port 8080, and includes a `HEALTHCHECK` against `/health`. Ships `LICENSE`, `NOTICE`, `README.md` for AGPL distribution compliance. Should weigh in well under 200MB.
+
+### Common first-run gotchas
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `EADDRINUSE` on port 8080 from `pnpm start` | another process on 8080 | `PORT=9000 pnpm start` (the server logs a friendly message and the new port) |
+| `pnpm: command not found` | Corepack not enabled OR no global install | re-run the Corepack steps in §1 |
+| Vite dev server picks a random port instead of 5173 | `strictPort: true` should prevent this — likely 5173 already in use | kill the process holding 5173 |
+| `cp` not found on Windows | git-bash isn't always on PATH | use `Copy-Item .env.example .env` in PowerShell |
+| Install pulls down 2.3GB | normal — Phaser is large (see size note above) | be patient on first install |
+
+---
+
 ## What this project is
 
 A **browser-based math game for kids**, modeled on the arcade-shooter feel of the classic *Math Blaster*. Aliens descend from the top of the screen carrying possible answers; the player times a fire button to hit the right one before the aliens reach the hero. It runs in any modern browser, is mobile-friendly in landscape, and is built so that **adding a new math difficulty or a new game mode means adding files, not changing the engine**.
@@ -236,28 +340,19 @@ function startRound(mathId: string, speed: SpeedKey): void {
 
 ---
 
-## Build, run, test
+## Build, run, test — quick reference
 
-### Prerequisites
-
-- **Node.js 20+**
-- **pnpm 9+** (install via Corepack: `corepack enable && corepack prepare pnpm@9.15.0 --activate`)
-
-### Quick reference
+(Full setup is in [Dev environment setup](#dev-environment-setup) at the top.)
 
 | Command | What it does |
 |---|---|
-| `pnpm install` | Install deps into the local `node_modules` and `.pnpm-store` |
+| `pnpm install` | Install deps into local `node_modules` and `.pnpm-store` |
 | `pnpm dev` | Vite dev server with HMR (default `http://localhost:5173`) |
 | `pnpm build` | Build client (Vite → `dist/`) and server (tsc → `server/dist/`) |
 | `pnpm start` | Run the Express server against the built assets (port 8080 by default) |
 | `pnpm test` | Run the Vitest suite once |
 | `pnpm test:watch` | Vitest in watch mode |
 | `pnpm typecheck` | tsc strict-mode check, no emit (client + server) |
-
-### Local install is fully self-contained
-
-`.npmrc` sets `store-dir=.pnpm-store`, so the pnpm content store lives inside the project directory rather than in the user's home folder. Cloning to a USB stick or fresh machine and running `pnpm install` produces an identical install regardless of any pre-existing global pnpm state. The `.pnpm-store` and `node_modules` directories are both gitignored and dockerignored.
 
 ---
 
