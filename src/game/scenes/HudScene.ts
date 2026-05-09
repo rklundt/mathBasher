@@ -140,8 +140,18 @@ export class HudScene extends Phaser.Scene {
    * state. Guarded against double-launch — Esc + Pause-button mash should
    * only ever produce one overlay.
    */
+  /**
+   * Resolve the live GameScene reference. `this.scene.get(...)` returns
+   * `Phaser.Scene | null`; this method centralizes the cast to the typed
+   * GameScene class so the typed pause/resume/quit API is callable
+   * without scattering `as GameScene` across every call site.
+   */
+  private getGameScene(): GameScene | null {
+    return this.scene.get(SceneKeys.Game) as GameScene | null;
+  }
+
   private openPauseOverlay(): void {
-    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    const gameScene = this.getGameScene();
     if (!gameScene || gameScene.isPaused()) return;
     if (this.scene.isActive(SceneKeys.PauseOverlay)) return;
     gameScene.pause();
@@ -153,7 +163,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private closePauseOverlay(): void {
-    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    const gameScene = this.getGameScene();
     if (this.scene.isActive(SceneKeys.PauseOverlay)) {
       this.scene.stop(SceneKeys.PauseOverlay);
     }
@@ -161,7 +171,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private handleQuitFromOverlay(): void {
-    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    const gameScene = this.getGameScene();
     if (this.scene.isActive(SceneKeys.PauseOverlay)) {
       this.scene.stop(SceneKeys.PauseOverlay);
     }
@@ -173,7 +183,7 @@ export class HudScene extends Phaser.Scene {
 
   private bindGameSceneEvents(): void {
     if (this.gameSceneListenersBound) return;
-    const gameScene = this.scene.get(SceneKeys.Game) as GameScene | null;
+    const gameScene = this.getGameScene();
     if (!gameScene) return;
     gameScene.events.on('questionStarted', this.onQuestionStarted, this);
     gameScene.events.on('questionEnded', this.onQuestionEnded, this);
