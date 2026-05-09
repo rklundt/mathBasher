@@ -229,9 +229,10 @@ mathBasher/
 │   │   └── generators/          one file per math difficulty
 │   │       └── addTo10.ts
 │   ├── services/        PURE TS — cross-cutting concerns (no engine imports)
-│   │   ├── IScoreStore.ts       interface for high-score backends
-│   │   ├── SessionScoreStore.ts in-memory implementation
-│   │   ├── ScoreCalculator.ts   round scoring logic
+│   │   ├── IScoreStore.ts       interface for high-score backends (ScoreEntry, ScoreFilter)
+│   │   ├── SessionScoreStore.ts in-memory implementation (v1; session-only by design)
+│   │   ├── scoreStoreFactory.ts createScoreStore() — single call site for which store to use
+│   │   ├── ScoreCalculator.ts   round scoring logic (per-question outcomes -> score, stars, pass)
 │   │   ├── AudioManager.ts      audio facade (real impl lands in audio milestone)
 │   │   └── Settings.ts          cross-scene selection state
 │   └── core/            shared building blocks (other folders depend on this)
@@ -385,6 +386,8 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
 | What runs in production? | `Dockerfile` build stage, `server/src/index.ts` runtime |
 | What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest. Generators inject an RNG (`rng?: () => number`) so tests pin determinism by passing a seeded sequence — see `src/test-utils/mulberry32.ts` |
+| How is scoring computed? | `src/services/ScoreCalculator.ts` — construct with `(mathId, speed)`, feed it per-question outcomes via `recordOutcome()`, then read `score` / `correctCount` / `passed` / `stars` getters at round end. All multipliers come from `src/core/config.ts`. |
+| How do I add a new score backend? | Implement `IScoreStore` (in `src/services/`), then change the single line in `src/services/scoreStoreFactory.ts` to return your new instance. No game code changes. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---
