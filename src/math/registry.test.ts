@@ -18,10 +18,13 @@ describe('registry', () => {
     expect(getGenerator('add-to-10')).toBe(addTo10);
   });
 
-  it('getGenerator returns a stub that throws on .generate() for unimplemented ids', () => {
+  it('getGenerator returns a stub that throws an actionable error on .generate()', () => {
     const stub = getGenerator('add-to-20');
     expect(stub.id).toBe('add-to-20');
-    expect(() => stub.generate()).toThrow(/not yet implemented: add-to-20/i);
+    expect(stub.isStub).toBe(true);
+    expect(() => stub.generate()).toThrow(/'add-to-20' is a stub/);
+    expect(() => stub.generate()).toThrow(/getImplementedIds/);
+    expect(() => stub.generate()).toThrow(/src\/math\/generators\/add-to-20\.ts/);
   });
 
   it('every stub has a label and description so the difficulty UI can render it', () => {

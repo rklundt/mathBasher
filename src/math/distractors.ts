@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { defaultRng } from '@/math/types';
+import { defaultRng } from '@/math/rng';
 
 export interface PickDistractorsOpts {
   /** How many distractors to return. */
