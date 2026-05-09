@@ -10,7 +10,7 @@ The user explicitly asked for "very configurable" — code that hard-codes gamep
 
 ## Decision
 
-Every gameplay knob lives in **`app/src/core/config.ts`**, exported as a single `as const` object. No game code, scoring code, or system code may hard-code a tunable value. Magic numbers in code that should be in config are a hard violation flagged at every sprint-close architecture review.
+Every gameplay knob lives in **`src/core/config.ts`**, exported as a single `as const` object. No game code, scoring code, or system code may hard-code a tunable value. Magic numbers in code that should be in config are a hard violation flagged at every sprint-close architecture review.
 
 ## Consequences
 

@@ -37,7 +37,7 @@ Initial planning and setup phase. No application code yet; this version establis
 - AGPL-3.0-or-later + Commercial dual license (`LICENSE`, `NOTICE`, `COMMERCIAL.md`)
 - AGPL §7(b) UI attribution requirement, with architectural enforcement plan via a persistent `AttributionScene` (to be implemented in sprint 0.4)
 - Project `README.md` and `VERSIONS.md`
-- Third-party asset credits skeleton at `app/public/assets/CREDITS.md`
+- Third-party asset credits skeleton at `public/assets/CREDITS.md`
 - Seven public Architecture Decision Records under `docs/adrs/`:
   - ADR-0001 Tech stack — Vite + TypeScript + Phaser 3
   - ADR-0002 Single-container deployment with Express server
@@ -47,4 +47,4 @@ Initial planning and setup phase. No application code yet; this version establis
   - ADR-0006 Folder discipline (no Phaser in /math or /services)
   - ADR-0007 Azure App Service for Containers (over Container Apps)
 - Repo hygiene: `.gitignore`, `.gitattributes` (LF normalization, binary marks), `.editorconfig`
-- Initial directory structure for `app/public/assets/`
+- Initial directory structure for `public/assets/`

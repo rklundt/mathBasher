@@ -23,7 +23,7 @@ mathBasher is dual-licensed:
 1. **AGPL-3.0-or-later** as the default. Plus an additional term under AGPL §7(b) requiring the running app to prominently display a UI attribution notice (`mathBasher © Ray Klundt — AGPL-3.0 — Source: <link>`) on every interactive scene.
 2. **Commercial license** available from Ray Klundt (rayklundt (at) Outlook (dot) com) that waives both the AGPL copyleft AND the UI attribution requirement, scoped per-licensee.
 
-`LICENSE`, `NOTICE`, `COMMERCIAL.md`, and `README.md` document this. The UI attribution display is enforced architecturally via `app/src/core/attribution.ts` + an always-on `AttributionScene`.
+`LICENSE`, `NOTICE`, `COMMERCIAL.md`, and `README.md` document this. The UI attribution display is enforced architecturally via `src/core/attribution.ts` + an always-on `AttributionScene`.
 
 ## Consequences
 

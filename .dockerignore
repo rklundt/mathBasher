@@ -1,0 +1,42 @@
+node_modules
+.git
+.gitignore
+.gitattributes
+.editorconfig
+.env
+.env.*
+!.env.example
+dist
+server/dist
+coverage
+.nyc_output
+*.tsbuildinfo
+
+# Internal Claude Code workspace — never enters image layers
+CLAUDE.md
+.claude
+.sprints
+.adrs
+backlog.md
+
+# Repo docs we don't ship in the image
+docs
+*.md
+!README.md
+!LICENSE
+!NOTICE
+!COMMERCIAL.md
+!CODE_OF_CONDUCT.md
+!CONTRIBUTING.md
+!SECURITY.md
+!app/public/assets/CREDITS.md
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Tests in image are wasted weight
+**/*.test.ts
+**/*.test.tsx

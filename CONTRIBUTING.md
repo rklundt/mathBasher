@@ -35,7 +35,7 @@ Modifying a file inherited from another AGPL/GPL project requires adding a `Modi
 Contributions must respect the architecture documented in [docs/adrs/](docs/adrs/), notably:
 
 - **Folder discipline** ([ADR-0006](docs/adrs/ADR-0006-folder-discipline.md)) — `/src/game/` is the only folder that imports Phaser; `/src/math/` and `/src/services/` are pure TypeScript with no DOM.
-- **Configurability** ([ADR-0003](docs/adrs/ADR-0003-central-config-file.md)) — every gameplay number lives in `app/src/core/config.ts`. Magic numbers in code are not accepted.
+- **Configurability** ([ADR-0003](docs/adrs/ADR-0003-central-config-file.md)) — every gameplay number lives in `src/core/config.ts`. Magic numbers in code are not accepted.
 - **UI attribution** ([ADR-0004](docs/adrs/ADR-0004-agpl-commercial-dual-license.md)) — the AGPL §7(b) attribution display is a hard architectural requirement; PRs may not weaken or remove it.
 
 ### 5. Branching and pull requests
