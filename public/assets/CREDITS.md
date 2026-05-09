@@ -25,6 +25,13 @@ When in doubt about whether an asset belongs here, add it. Over-attribution cost
 
 _(No third-party assets are bundled yet. Entries will be appended here as assets land in `public/assets/` — primarily when third-party sprite packs are sourced during the art-polish phase.)_
 
+## Generated assets
+
+### Game Audio
+
+- **Generator:** ElevenLabs
+- **Modifications:** Trimmed, downmixed, gain-capped, and re-encoded to project format.
+
 ## Project-original assets
 
 Assets created specifically for mathBasher (custom illustrations, audio, etc.) are NOT listed here. They are covered by the project's primary license (AGPL-3.0-or-later) and are attributed by the project's `LICENSE` and `NOTICE` files at the project root.

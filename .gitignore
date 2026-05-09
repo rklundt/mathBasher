@@ -45,3 +45,20 @@ CLAUDE.md
 .sprints/
 .adrs/
 backlog.md
+
+# Audio source / working files (NEVER commit these)
+# Raw audio (WAV from generators, untrimmed takes, alternate cuts, etc.) is
+# kept locally for reprocessing but never shipped. Only the final encoded
+# MP3 in public/assets/audio/ is committed. CREDITS.md tracks license/origin.
+#
+# Pattern note: `.audio-source/*` (with the trailing /*) ignores everything
+# INSIDE the folder while leaving the folder itself un-ignored, so the
+# `!README.md` negation below can re-include the docs file. A plain
+# `.audio-source/` would ignore the folder wholesale and git would refuse
+# to descend into it to find anything to un-ignore.
+.audio-source/*
+!.audio-source/README.md
+*.wav
+*.aif
+*.aiff
+*.flac

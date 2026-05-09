@@ -244,6 +244,16 @@ mathBasher/
 │
 ├── public/              static assets served as-is by Vite
 │   └── assets/          (CREDITS.md attribution ledger; sprites added later)
+│       └── audio/       shipped MP3s (sfx/, music/) — MP3 only, see scripts/audio/
+│
+├── scripts/             developer tooling (NOT shipped, NOT bundled)
+│   ├── check-tooling-leaks.sh   leak scanner (CI + pre-commit)
+│   └── audio/                   audio processing (encode, probe)
+│       ├── encode.mjs           one-pass trim + loudnorm + MP3 encode
+│       └── probe.mjs            inspect a file (duration, channels, peak/mean dB)
+│
+├── .audio-source/       gitignored — raw audio (WAV/FLAC) + working cuts
+│   └── README.md        the only tracked file in here
 │
 ├── server/              EXPRESS SERVER for production
 │   ├── src/
@@ -356,6 +366,38 @@ function startRound(mathId: string, speed: SpeedKey): void {
 | `pnpm test:watch` | Vitest in watch mode |
 | `pnpm test:coverage` | Vitest with v8 coverage; HTML report at `coverage/index.html` |
 | `pnpm typecheck` | tsc strict-mode check, no emit (client + server) |
+| `pnpm audio:encode <in> <out> [--kind sfx\|music] [--no-trim]` | Encode raw audio (WAV/FLAC) → properly trimmed, loudness-normalized, metadata-stripped MP3. SFX profile = 96 kbps mono; music = 160 kbps stereo. |
+| `pnpm audio:probe <file>` | Inspect an audio file: duration, sample rate, channels, mean/peak dB. Use to sanity-check encode output. |
+
+---
+
+## Audio
+
+mathBasher ships only **MP3** in `public/assets/audio/`. Every shipped file goes through `pnpm audio:encode`, which runs one ffmpeg pass that:
+
+1. Trims leading + trailing silence (peak detection at -45 dB, 5 ms guard)
+2. Loudness-normalizes to EBU R128 (-16 LUFS for SFX, -18 LUFS for music; -1.5 dBTP true-peak ceiling — kid-safe, never blast-loud)
+3. Strips ALL metadata (no leaked generator names, prompts, or timestamps)
+4. Encodes to the right MP3 profile for the kind
+
+The ffmpeg binary is supplied by the `ffmpeg-static` devDependency (no manual install needed; `pnpm install` provisions it; see [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md) for the supply-chain reasoning and the `pnpm.onlyBuiltDependencies` allowlist that guards postinstall scripts).
+
+### Workflow
+
+```
+1. Drop raw audio in .audio-source/raw/<topic>/<name>.wav   (gitignored)
+2. pnpm audio:probe .audio-source/raw/<topic>/<name>.wav    (sanity-check input)
+3. pnpm audio:encode .audio-source/raw/<topic>/<name>.wav public/assets/audio/sfx/<name>.mp3
+4. pnpm audio:probe public/assets/audio/sfx/<name>.mp3      (verify output is in spec)
+5. Add a CREDITS.md entry for the new file (license, source, attribution)
+6. Commit the .mp3 and the CREDITS.md edit
+```
+
+The raw WAV in `.audio-source/raw/` stays on disk locally for re-processing but never enters git (the `.gitignore` patterns `.audio-source/*` plus `*.wav`/`*.aif`/`*.aiff`/`*.flac` keep raw audio out of the repo regardless of where it sits).
+
+### When NOT to use the script
+
+- **The file is already an MP3 at the right profile, normalized, trimmed, and metadata-stripped.** Then yes, drop it directly into `public/assets/audio/<kind>/`. In practice, this almost never happens — generator outputs almost always benefit from at least the encode + normalize + strip-metadata pass.
 
 ---
 
@@ -401,6 +443,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | How does pause / Esc / Quit-to-Menu work mid-round? | Esc and the on-screen Pause icon (top-right of `HudScene`) both call into `HudScene.openPauseOverlay()`, which calls `GameScene.pause()` (freezes WaveSystem, gates InputSystem fire, pauses tweens, pauses HudScene) and launches `PauseOverlay` (parallel scene). Resume and Quit-to-Menu callbacks are passed in via `init` data. Quit fires `RoundAbandoned` telemetry and routes to `MenuScene` without saving the score. |
 | Where is the Esc back-stack on menu scenes? | `src/game/ui/EscBackHandler.ts#wireEscBack(scene, onBack)` — small helper that registers a `keydown-ESC` handler with paired cleanup on `shutdown` + `destroy`. Used by `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). MenuScene is the top of the stack — Esc is intentionally not bound there. |
 | Where is the pause-aware kinematics math? | `src/game/systems/waveKinematics.ts` — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` and `simulatePauseAwareAdvance(...)`. Used by `Alien.advance` for production motion, and by `src/game/systems/__tests__/waveKinematics.test.ts` for verifying that pause freezes Y and resume continues from the same position with no drift. |
+| How do I prepare a new audio file? | See the **Audio** section above. Short version: drop raw WAV in `.audio-source/raw/<topic>/`, run `pnpm audio:encode <in> public/assets/audio/sfx/<name>.mp3`, run `pnpm audio:probe` on both ends to sanity-check, add a `public/assets/CREDITS.md` line. The encoder lives at `scripts/audio/encode.mjs`; the supply-chain reasoning for `ffmpeg-static` is in [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md). |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---
