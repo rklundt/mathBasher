@@ -3,27 +3,46 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
-import type { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 
 /**
- * Tiny keyboard-focus manager for menu scenes. Phaser is canvas-based and
- * has no DOM focus model, so we manage focus ourselves: each scene with
- * buttons constructs a `KeyboardNavigator`, hands it the buttons in tab
- * order, and the navigator wires Tab / Shift+Tab / Enter / Space to move
- * focus and activate.
+ * Structural contract for anything KeyboardNavigator can move focus through.
+ *
+ * `PlaceholderButton` (in menu scenes) and the HUD icon buttons (Pause,
+ * Mute) all satisfy this. The interface is deliberately tiny so a custom
+ * focusable can be added without subclassing or boilerplate — match these
+ * three method shapes and you're in.
+ *
+ * - `setFocused(value)`: paint the focus ring (or hide it). Called as the
+ *   navigator moves focus.
+ * - `activate()`: invoke the click handler programmatically (Enter/Space).
+ *   No-op when disabled.
+ * - `isDisabled()`: skip-stop hint. Disabled focusables are never the
+ *   focused index.
+ */
+export interface Focusable {
+  setFocused(value: boolean): void;
+  activate(): void;
+  isDisabled(): boolean;
+}
+
+/**
+ * Tiny keyboard-focus manager. Phaser is canvas-based and has no DOM focus
+ * model, so we manage focus ourselves: each scene with focusables constructs
+ * a `KeyboardNavigator`, hands it the focusables in tab order, and the
+ * navigator wires Tab / Shift+Tab / Enter / Space to move focus and activate.
  *
  * Why this matters: a kid on a Chromebook trackpad+keyboard (or any
- * accessibility-tools user) needs a non-pointer way to navigate menus.
- * Per WCAG 2.1.1.
+ * accessibility-tools user) needs a non-pointer way to navigate. Per WCAG
+ * 2.1.1.
  *
  * Usage from a scene's `create()`:
  *
- *   const buttons = [startBtn, highScoresBtn];
- *   new KeyboardNavigator(this, buttons);
+ *   const focusables = [startBtn, highScoresBtn];
+ *   new KeyboardNavigator(this, focusables);
  *
- * Disabled buttons are skipped during navigation. The navigator updates
- * each button's `focused` state so PlaceholderButton can render a focus
- * ring distinct from the amber selected ring.
+ * Disabled focusables are skipped during navigation. The navigator updates
+ * each one's `focused` state so the focusable can render a visible focus
+ * ring distinct from any selected ring.
  */
 export class KeyboardNavigator {
   private focusedIndex: number;
@@ -31,7 +50,7 @@ export class KeyboardNavigator {
 
   constructor(
     private readonly scene: Phaser.Scene,
-    private readonly buttons: PlaceholderButton[],
+    private readonly buttons: Focusable[],
   ) {
     if (!scene.input.keyboard) {
       // Some test environments lack the keyboard plugin; bail gracefully.
