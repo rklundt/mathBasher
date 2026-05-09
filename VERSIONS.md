@@ -27,7 +27,33 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.5.1 next: in-round pause + escape (Esc key, on-screen Pause button, Resume / Quit-to-Menu, Esc back-stack on menus). Then 0.6 mobile responsive.
+- Sprint 0.6 next: mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
+
+## [0.5.1] - 2026-05-09 — Pause + Escape (in-round escape route)
+
+A round used to be all-or-nothing — once started, the only way out was to finish or close the tab. v0.5.1 adds a clean in-round pause via Esc or an on-screen Pause icon, with a Resume / Quit-to-Menu overlay, and an Esc back-stack on every menu screen. Quitting abandons the round (no score saved) and emits a distinct `RoundAbandoned` telemetry event.
+
+### Added
+- **`src/game/scenes/PauseOverlay.ts`** — new parallel scene. Translucent backdrop, centered "Paused" title, `Resume` and `Quit to Menu` `PlaceholderButton`s, full keyboard nav (Tab/Enter/Space) via the existing `KeyboardNavigator`. Esc on the overlay routes to Resume so a single Esc round-trips the pause without hunting for the button. Registered in `main.ts` BEFORE `AttributionScene` so the AGPL §7(b) attribution footer stays visible while paused.
+- **`src/game/ui/EscBackHandler.ts`** — small helper exporting `wireEscBack(scene, onBack)`. Registers a `keydown-ESC` handler with paired cleanup on BOTH `shutdown` and `destroy` so listeners don't accumulate across navigation. Wired into `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). `MenuScene` is the top of the stack — Esc intentionally not bound there.
+- **`src/game/systems/waveKinematics.ts`** — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` (used by `Alien.advance`) and `simulatePauseAwareAdvance(...)` (used by the new tests). Phaser-free so it tests at the right layer.
+- **`src/game/systems/__tests__/waveKinematics.test.ts`** — 9 new tests verifying that paused frames don't advance Y, resume continues from the same Y with no snap or drift, and total advance is identical regardless of where pauses are inserted.
+- **HudScene Pause icon** — 44×44 monochrome two-bar icon anchored top-right, `useHandCursor: true`, hand-cursor on hover. Bg-rectangle is the interactive surface (per the prior PlaceholderButton dead-zone lesson). Counter shifted left to make room.
+- **GameScene pause API**: `pause()` / `resume()` / `isPaused()` / `quitToMenu()` / `getQuestionsCompleted()`. `pause()` freezes WaveSystem (early-return on its update), gates InputSystem fire (Space/click silently dropped), pauses scene-scoped tweens via `tweens.pauseAll()`, and pauses HudScene via `scene.pause`. `resume()` reverses each. Round state preserved exactly. No auto-fail timeout — pause is not a stealth difficulty mechanic. Idempotent.
+- **Telemetry**: new events `GamePaused`, `GameResumed` (carry `mathId`, `speed`, `questionIndex`), and `RoundAbandoned` (carries `mathId`, `speed`, `questionsCompleted`). Two new reserved property names added to the central `TelemetryPropName` union: `from` and `questionsCompleted`.
+- **`src/game/PLAYTEST.md`** — 21-row "Pause + Escape" section covering the keyboard, mouse, and touch entry points; the freeze-resume preservation contract; the back-stack on menu scenes; and the new telemetry events.
+- **DeveloperGuide.md** — project layout reflects new files; three new "Where to look for what" rows for pause/Esc/Quit flow, the Esc back-stack helper, and pause-aware kinematics.
+- **`src/services/ScoreCalculator.test.ts`** — new pause-invariance test that injects a real 5-minute time-gap (via `vi.useFakeTimers()` + `vi.advanceTimersByTime`) between `recordOutcome` calls. Codifies the contract that scoring is timing-independent — a future `Date.now()`-based bonus would now actually break the test instead of passing as a property restatement.
+
+### Changed
+- **`src/game/entities/Alien.ts`** — `advance(dt)` now calls `waveKinematics.advanceY` instead of inlining the math, so production motion and the pause tests share one implementation. Pause is enforced at the WaveSystem layer (its `update()` early-returns when paused), not inside Alien.
+- **`src/game/scenes/HudScene.ts`** — added a single `getGameScene()` accessor that wraps the `as GameScene | null` cast, so the four call sites for pause/resume/quit/bind read as typed code instead of scattering casts.
+
+### Notes
+- All six review agents passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Two should-fix items folded in at wrap-up (real time-gap in the pause-invariance test; `getGameScene` accessor in HudScene). Zero must-fix items.
+- Test count: 45 → **56** (+11). New file count: 4.
+- iOS Safari audio gotcha (audio blocked until first user interaction) flagged in audio-format guidance for sprint 4 — not a 0.5.1 deliverable.
+- Bundle still ~1.5MB / ~340KB gzipped (Phaser-dominated).
 
 ## [0.5.0.1] - 2026-05-09 — Hotfix: DifficultyScene default selections
 
