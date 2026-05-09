@@ -4,7 +4,8 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
-import { defaultRng, type Question, type QuestionGenerator } from '@/math/types';
+import { defaultRng } from '@/math/rng';
+import type { Question, QuestionGenerator } from '@/math/types';
 
 /**
  * Add-to-10 generator.

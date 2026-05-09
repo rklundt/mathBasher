@@ -352,6 +352,7 @@ function startRound(mathId: string, speed: SpeedKey): void {
 | `pnpm start` | Run the Express server against the built assets (port 8080 by default) |
 | `pnpm test` | Run the Vitest suite once |
 | `pnpm test:watch` | Vitest in watch mode |
+| `pnpm test:coverage` | Vitest with v8 coverage; HTML report at `coverage/index.html` |
 | `pnpm typecheck` | tsc strict-mode check, no emit (client + server) |
 
 ---
@@ -383,7 +384,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Why AGPL+commercial? | `docs/adrs/ADR-0004-agpl-commercial-dual-license.md` |
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
 | What runs in production? | `Dockerfile` build stage, `server/src/index.ts` runtime |
-| What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest |
+| What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest. Generators inject an RNG (`rng?: () => number`) so tests pin determinism by passing a seeded sequence — see `src/test-utils/mulberry32.ts` |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---

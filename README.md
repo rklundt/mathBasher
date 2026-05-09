@@ -76,6 +76,8 @@ NOTICE            attribution and third-party notices
 | `pnpm build` | Production build (client + server) |
 | `pnpm start` | Run the Express server against the built assets |
 | `pnpm test` | Run the unit test suite |
+| `pnpm test:watch` | Vitest in watch mode |
+| `pnpm test:coverage` | Vitest with v8 coverage; report at `coverage/index.html` |
 | `pnpm typecheck` | TypeScript strict-mode check, no emit |
 
 ## Contributing

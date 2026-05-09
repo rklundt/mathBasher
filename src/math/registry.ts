@@ -21,7 +21,13 @@ function makeStub(id: MathId, label: string): QuestionGenerator {
     description: 'Coming soon.',
     isStub: true,
     generate(): never {
-      throw new Error(`Generator not yet implemented: ${id}`);
+      throw new Error(
+        `Generator '${id}' is a stub — the real implementation has not landed yet. ` +
+          `Stubs stay in the registry so the difficulty-select UI can render every tile ` +
+          `(with stubbed ones disabled). Either filter via getImplementedIds() before ` +
+          `calling generate(), or implement src/math/generators/${id}.ts and wire it ` +
+          `into src/math/registry.ts.`,
+      );
     },
   };
 }

@@ -48,8 +48,7 @@ export interface QuestionGenerator {
   generate(rng?: () => number): Question;
 }
 
-/**
- * The default RNG: `Math.random` wrapped so callers always pass a function
- * even when they don't care about determinism.
- */
-export const defaultRng: () => number = Math.random;
+// `defaultRng` now lives in `./rng.ts` so this file holds only types.
+// Re-exported here for backwards compatibility with existing imports;
+// new callers should import directly from `@/math/rng`.
+export { defaultRng } from '@/math/rng';
