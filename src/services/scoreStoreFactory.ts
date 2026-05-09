@@ -10,16 +10,32 @@ import { SessionScoreStore } from '@/services/SessionScoreStore';
  * code asks for an `IScoreStore` and never has to know which implementation
  * is wired in.
  *
- * Today this returns a brand-new `SessionScoreStore` (in-memory, session-only)
- * each call. When Phase 3 adds an API-backed store with accounts, the swap is
- * **a single change to this file** — every other file consumes the interface
- * and is unchanged.
+ * The instance is memoized — `createScoreStore()` (and its alias
+ * `getScoreStore()`) returns the SAME `IScoreStore` every call within the
+ * lifetime of the page. main.ts calls it once at boot to eagerly initialize;
+ * GameScene + GameOverScene call it later and get the same instance, so
+ * scores saved in one round are visible to bestForCombo() in the next.
  *
- * Do NOT call this multiple times per round in gameplay code; create the
- * store once at app boot and pass it around (or look up via DI). Repeated
- * calls today produce independent in-memory arrays, which is rarely what you
- * want — and would cost real network requests once Phase 3 lands.
+ * When Phase 3 adds an API-backed store with accounts, the swap is **a
+ * single change to this file** — every other file consumes the interface and
+ * is unchanged.
  */
+let instance: IScoreStore | null = null;
+
 export function createScoreStore(): IScoreStore {
-  return new SessionScoreStore();
+  if (!instance) {
+    instance = new SessionScoreStore();
+  }
+  return instance;
+}
+
+/** Alias of `createScoreStore()` for call sites that read better as "get". */
+export const getScoreStore = createScoreStore;
+
+/**
+ * Test-only helper: reset the memoized instance so tests can construct fresh
+ * stores without page reload. Production code does NOT call this.
+ */
+export function _resetScoreStoreForTests(): void {
+  instance = null;
 }

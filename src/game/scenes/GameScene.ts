@@ -3,22 +3,56 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
-import { _th, SeverityLevel } from '@/core/telemetry';
+import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
+import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { ScoreCalculator } from '@/services/ScoreCalculator';
+import { getGenerator } from '@/math/registry';
+import type { Question } from '@/math/types';
+import { Hero } from '@/game/entities/Hero';
+import { Projectile } from '@/game/entities/Projectile';
+import type { Alien } from '@/game/entities/Alien';
+// `Alien` is used as a type-only import for handleHit's parameter.
+import { WaveSystem } from '@/game/systems/WaveSystem';
+import { HitSystem } from '@/game/systems/HitSystem';
+import { InputSystem } from '@/game/systems/InputSystem';
 
 /**
- * Placeholder GameScene — for sprint 0.4 only. Shows the selected
- * `mathId` / `speed` (proves the Settings hand-off works) and a Quit button
- * that transitions to GameOverScene with a fake outcome. Real gameplay is
- * implemented in sprint 0.5; this scene only proves navigation in/out.
+ * The actual game. One round = `config.round.questionsPerRound` questions.
+ * Each question = one wave of 4 aliens descending; the hero auto-runs along
+ * the bottom; the player times Space / click / tap to fire upward.
  *
- * Launches HudScene in parallel; stops it again on shutdown.
+ * Per-question outcomes (from gameplay events to ScoreCalculator):
+ *   - Hit the alien with the correct answer  -> wasCorrect: true
+ *   - Hit a wrong alien                       -> applyWrongShotPenalty(),
+ *                                                wave continues; player keeps
+ *                                                shooting until they hit the
+ *                                                right one OR aliens land
+ *   - Aliens reach the hero                   -> wasCorrect: false (timeout)
+ *
+ * The wrong-shot penalty halves points awarded for the EVENTUAL correct
+ * answer that question (per ScoreCalculator's `usedWrongShot` flag).
+ *
+ * Telemetry events emitted (matched by HudScene):
+ *   - 'questionStarted' { question, index, total }
+ *   - 'questionEnded'   { wasCorrect, score, correctCount }
  */
 export class GameScene extends Phaser.Scene {
   static readonly key = SceneKeys.Game;
+
+  // Configured at create()
+  private mathId!: MathId;
+  private speed!: SpeedKey;
+  private hero!: Hero;
+  private waveSystem!: WaveSystem;
+  private inputSystem!: InputSystem;
+  private scoreCalculator!: ScoreCalculator;
+
+  private projectile: Projectile | null = null;
+  private currentQuestion: Question | null = null;
+  private questionIndex = 0;
+  private transitioning = false;
 
   constructor() {
     super(GameScene.key);
@@ -26,78 +60,207 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { mathId, speed } = Settings.round;
-    _th.logToAi('GameScene Started', SeverityLevel.Information, {
-      mathId: mathId ?? undefined,
-      speed: speed ?? undefined,
-    });
+    // Defensive defaults — DifficultyScene gates progress on isReady() so
+    // these should always be set, but if a future flow lands here without
+    // selections (e.g. dev hotload), pick reasonable fallbacks.
+    this.mathId = mathId ?? 'add-to-10';
+    this.speed = speed ?? 'medium';
 
-    // Defensive double-launch guard: if some future code path restarts
-    // GameScene without going through a full shutdown (e.g. scene.restart()),
-    // Hud could be launched twice. Cheap insurance.
+    const props: TelemetryProps = { mathId: this.mathId, speed: this.speed };
+    _th.logToAi('RoundStarted', SeverityLevel.Information, props);
+
+    // Hud overlay (parallel scene), guarded against double-launch.
     if (!this.scene.isActive(SceneKeys.Hud)) {
       this.scene.launch(SceneKeys.Hud);
     }
 
     const { width, height } = this.scale;
-    const cx = width / 2;
+    const padding = config.layout.safeAreaPaddingPx;
+    const leftBound = padding + 24;
+    const rightBound = width - padding - 24;
+    const heroY = height - 80;
+    const spawnY = 40;
 
-    this.add
-      .text(cx, height * 0.3, 'Get ready!', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '32px',
-        color: '#eaeaf2',
-      })
-      .setOrigin(0.5);
+    this.hero = new Hero(this, width / 2, heroY, leftBound, rightBound);
 
-    this.add
-      .text(
-        cx,
-        height * 0.42,
-        `Math: ${mathId ?? '?'}\nSpeed: ${speed ?? '?'}`,
-        {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '20px',
-          color: '#cbd5e1',
-          align: 'center',
-        },
-      )
-      .setOrigin(0.5);
-
-    this.add
-      .text(cx, height * 0.55, 'The real game is coming soon!', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
-        color: '#cbd5e1',
-      })
-      .setOrigin(0.5);
-
-    const quit = new PlaceholderButton({
+    const speedConfig = config.scoring.speed[this.speed];
+    this.waveSystem = new WaveSystem({
       scene: this,
-      x: cx,
-      y: height * 0.75,
-      width: 200,
-      height: 56,
-      label: 'Quit',
-      onClick: () => {
-        // No explicit scene.stop(Hud) here — the shutdown handler below is
-        // the single source of truth for stopping HudScene. Calling stop in
-        // both places would double-stop on every Quit, which is bug-shaped.
-        this.scene.start(SceneKeys.GameOver, {
-          score: 0,
-          correctCount: 0,
-          passed: false,
-          stars: 0,
-          mathId,
-          speed,
-        });
-      },
+      lanes: config.layout.targetLanes,
+      descentSpeedPxPerSec: speedConfig.descentPxPerSec,
+      penaltyPxPerSec: speedConfig.penaltyPxPerSec,
+      leftBound,
+      rightBound,
+      spawnY,
+      heroY: heroY - 40, // contact line slightly above the hero's center
     });
 
-    new KeyboardNavigator(this, [quit]);
+    this.scoreCalculator = new ScoreCalculator(this.mathId, this.speed);
+    this.questionIndex = 0;
+    this.transitioning = false;
+
+    this.inputSystem = new InputSystem(this);
+    this.inputSystem.onFire(() => this.handleFire());
+
+    this.startNextQuestion();
 
     this.events.once('shutdown', () => {
-      this.scene.stop(SceneKeys.Hud);
+      this.cleanup();
       _th.logToAi('GameScene Completed', SeverityLevel.Information);
     });
+  }
+
+  override update(_time: number, dt: number): void {
+    if (this.transitioning) return;
+    this.hero.update(dt);
+
+    // Wave step
+    const outcome = this.waveSystem.update(dt);
+    if (outcome === 'reached-hero') {
+      this.handleTimeout();
+      return;
+    }
+
+    // Projectile step + collision
+    if (this.projectile) {
+      const stillAlive = this.projectile.advance(dt);
+      if (!stillAlive || this.projectile.topY() < 0) {
+        this.projectile.kill();
+        this.projectile = null;
+      } else {
+        const hit = HitSystem.findHit(this.projectile, this.waveSystem.liveAliens());
+        if (hit) {
+          this.projectile.kill();
+          this.projectile = null;
+          this.handleHit(hit);
+        }
+      }
+    }
+  }
+
+  private handleFire(): void {
+    if (this.transitioning) return;
+    if (this.projectile) return; // one in flight at a time
+    this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
+  }
+
+  private handleHit(alien: Alien): void {
+    const correct = this.waveSystem.isCorrectLane(alien.lane);
+    if (correct) {
+      this.transitioning = true;
+      const usedWrongShot = this.waveSystem.hasUsedWrongShot();
+      this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
+      this.hero.playHitAnim();
+      alien.playExplodeAnim(true, () => {
+        // Fade the rest of the wave smoothly so it doesn't snap-disappear.
+        const survivors = this.waveSystem.liveAliens();
+        let pendingFades = survivors.length;
+        if (pendingFades === 0) {
+          this.afterQuestion(true);
+          return;
+        }
+        for (const s of survivors) {
+          s.playFadeOut(() => {
+            pendingFades -= 1;
+            if (pendingFades === 0) this.afterQuestion(true);
+          });
+        }
+      });
+    } else {
+      // Wrong shot: explode the wrong alien, accelerate the rest, wave continues.
+      this.waveSystem.applyWrongShotPenalty();
+      alien.playExplodeAnim(false, () => {
+        // No state change beyond the alien being gone + speed boost applied.
+      });
+      _th.logToAi('WrongShot', SeverityLevel.Information, {
+        questionIndex: String(this.questionIndex),
+        mathId: this.mathId,
+        speed: this.speed,
+      });
+    }
+  }
+
+  private handleTimeout(): void {
+    this.transitioning = true;
+    this.scoreCalculator.recordOutcome({
+      wasCorrect: false,
+      usedWrongShot: this.waveSystem.hasUsedWrongShot(),
+    });
+    this.hero.playDeathAnim(() => {
+      this.afterQuestion(false);
+    });
+  }
+
+  private afterQuestion(wasCorrect: boolean): void {
+    const props: TelemetryProps = {
+      questionIndex: String(this.questionIndex),
+      wasCorrect: String(wasCorrect),
+      usedWrongShot: String(this.waveSystem.hasUsedWrongShot()),
+      mathId: this.mathId,
+      speed: this.speed,
+    };
+    _th.logToAi('QuestionEnded', SeverityLevel.Information, props);
+    this.events.emit('questionEnded', {
+      wasCorrect,
+      score: this.scoreCalculator.score,
+      correctCount: this.scoreCalculator.correctCount,
+    });
+
+    this.waveSystem.clearWave(true);
+    this.questionIndex += 1;
+    this.transitioning = false;
+    this.startNextQuestion();
+  }
+
+  private startNextQuestion(): void {
+    if (this.questionIndex >= config.round.questionsPerRound) {
+      this.endRound();
+      return;
+    }
+    const generator = getGenerator(this.mathId);
+    this.currentQuestion = generator.generate();
+    this.waveSystem.spawnWave(this.currentQuestion);
+
+    _th.logToAi('QuestionStarted', SeverityLevel.Information, {
+      questionIndex: String(this.questionIndex),
+      mathId: this.mathId,
+      speed: this.speed,
+    });
+    this.events.emit('questionStarted', {
+      question: this.currentQuestion,
+      index: this.questionIndex,
+      total: config.round.questionsPerRound,
+    });
+  }
+
+  private endRound(): void {
+    const props: TelemetryProps = {
+      mathId: this.mathId,
+      speed: this.speed,
+      roundScore: String(this.scoreCalculator.score),
+      roundCorrectCount: String(this.scoreCalculator.correctCount),
+      passed: String(this.scoreCalculator.passed),
+    };
+    _th.logToAi('RoundEnded', SeverityLevel.Information, props);
+
+    this.scene.stop(SceneKeys.Hud);
+    this.scene.start(SceneKeys.GameOver, {
+      score: this.scoreCalculator.score,
+      correctCount: this.scoreCalculator.correctCount,
+      passed: this.scoreCalculator.passed,
+      stars: this.scoreCalculator.stars,
+      mathId: this.mathId,
+      speed: this.speed,
+    });
+  }
+
+  private cleanup(): void {
+    this.projectile?.kill();
+    this.projectile = null;
+    this.waveSystem?.clearWave(true);
+    this.inputSystem?.destroy();
+    if (this.scene.isActive(SceneKeys.Hud)) {
+      this.scene.stop(SceneKeys.Hud);
+    }
   }
 }
