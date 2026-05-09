@@ -222,6 +222,8 @@ mathBasher/
 │   │   ├── entities/    Hero, Alien, Projectile (sprites with animation state)
 │   │   ├── systems/     WaveSystem, InputSystem, HitSystem, waveKinematics (own state, no rendering)
 │   │   │                (waveKinematics is pure — has __tests__/ alongside)
+│   │   ├── services/    Phaser-coupled services (pure facades live in /src/services/)
+│   │   │   └── PhaserAudioManager.ts  scene-bound audio playback (extends AudioManager)
 │   │   └── ui/          PlaceholderButton, KeyboardNavigator, EscBackHandler, TouchFireButton, etc.
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
@@ -230,17 +232,19 @@ mathBasher/
 │   │   └── generators/          one file per math difficulty
 │   │       └── addTo10.ts
 │   ├── services/        PURE TS — cross-cutting concerns (no engine imports)
-│   │   ├── IScoreStore.ts       interface for high-score backends (ScoreEntry, ScoreFilter)
-│   │   ├── SessionScoreStore.ts in-memory implementation (v1; session-only by design)
-│   │   ├── scoreStoreFactory.ts createScoreStore() — single call site for which store to use
-│   │   ├── ScoreCalculator.ts   round scoring logic (per-question outcomes -> score, stars, pass)
-│   │   ├── AudioManager.ts      audio facade (real impl lands in audio milestone)
-│   │   └── Settings.ts          cross-scene selection state
+│   │   ├── IScoreStore.ts        interface for high-score backends (ScoreEntry, ScoreFilter)
+│   │   ├── SessionScoreStore.ts  in-memory implementation (v1; session-only by design)
+│   │   ├── scoreStoreFactory.ts  createScoreStore() — single call site for which store to use
+│   │   ├── ScoreCalculator.ts    round scoring logic (per-question outcomes -> score, stars, pass)
+│   │   ├── AudioManager.ts       audio facade — pure TS, mute persistence, volume cap
+│   │   ├── audioManagerFactory.ts createAudioManager() — single instance per page
+│   │   └── Settings.ts           cross-scene selection state
 │   └── core/            shared building blocks (other folders depend on this)
 │       ├── config.ts            *the* gameplay tuning knobs (ALL of them)
 │       ├── telemetry.ts         _th.logToAi(...) helper, console fallback
 │       ├── attribution.ts       AGPL §7(b) UI text — single source of truth
-│       └── sceneKeys.ts         scene identifier constants
+│       ├── sceneKeys.ts         scene identifier constants
+│       └── audioKeys.ts         audio asset keys + sfxPath() URL helper
 │
 ├── public/              static assets served as-is by Vite
 │   └── assets/          (CREDITS.md attribution ledger; sprites added later)
@@ -444,6 +448,10 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where is the Esc back-stack on menu scenes? | `src/game/ui/EscBackHandler.ts#wireEscBack(scene, onBack)` — small helper that registers a `keydown-ESC` handler with paired cleanup on `shutdown` + `destroy`. Used by `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). MenuScene is the top of the stack — Esc is intentionally not bound there. |
 | Where is the pause-aware kinematics math? | `src/game/systems/waveKinematics.ts` — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` and `simulatePauseAwareAdvance(...)`. Used by `Alien.advance` for production motion, and by `src/game/systems/__tests__/waveKinematics.test.ts` for verifying that pause freezes Y and resume continues from the same position with no drift. |
 | How do I prepare a new audio file? | See the **Audio** section above. Short version: drop raw WAV in `.audio-source/raw/<topic>/`, run `pnpm audio:encode <in> public/assets/audio/sfx/<name>.mp3`, run `pnpm audio:probe` on both ends to sanity-check, add a `public/assets/CREDITS.md` line. The encoder lives at `scripts/audio/encode.mjs`; the supply-chain reasoning for `ffmpeg-static` is in [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md). |
+| How does audio playback flow at runtime? | `BootScene.preload` loads each MP3 into Phaser's audio cache by key (`AudioKeys.Fire1`, etc.). On the user's first `Start` click in `MenuScene`, `getAudioManager().init(scene)` binds the singleton to a Phaser scene (must happen inside a user-gesture handler — iOS Safari blocks WebAudioContext creation outside one). `GameScene.handleFire()` calls `audio.play(AudioKeys.Fire1)`; the manager checks mute state, looks up the cached buffer, and plays at the volume cap (`DEFAULT_VOLUME = 0.6`, never higher). Missing keys log a Warning and return silently — never throw into the gameplay loop. |
+| Where does the mute state live? | `AudioManager.muted` (in-memory) is the single source of truth at runtime. It's persisted to `localStorage` under the key `mathbasher.audio.muted` ("true"/"false"); read at AudioManager construction (in `main.ts` at app boot), written on every `setMuted` call. The HUD mute icon (`HudScene.createMuteButton`) reads `audio.isMuted()` for its visual state and calls `audio.setMuted(...)` on click. |
+| Why is AudioManager split into two files? | Folder discipline. `src/services/AudioManager.ts` is the pure-TS facade (no Phaser import) — unit-testable, callable from anywhere. `src/game/services/PhaserAudioManager.ts` is the Phaser-coupled implementation that actually drives WebAudio. `src/services/audioManagerFactory.ts` returns the concrete subclass while exposing the pure facade type, same pattern as `IScoreStore` / `SessionScoreStore` / `scoreStoreFactory`. |
+| Why does the audio init happen in MenuScene, not BootScene? | iOS Safari blocks `WebAudioContext` creation/resumption outside a user-gesture handler. `init()` from BootScene works on Chrome and Firefox but silently fails on iOS, leaving the kid pressing fire forever in silence. Wiring `init()` to the first Start-button click is the canonical fix. Asset preload is fine in BootScene (no audio context needed); only the live binding has to happen inside a gesture. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---

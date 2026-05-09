@@ -9,6 +9,7 @@ import { config } from '@/core/config';
 import type { Question } from '@/math/types';
 import type { GameScene } from '@/game/scenes/GameScene';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
+import { getAudioManager } from '@/services/audioManagerFactory';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -69,15 +70,18 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Pause button anchored top-right with padding from the canvas edge,
-    // before the counter so the counter shifts left to make room. Uses a
-    // simple container so we keep the placeholder vibe of the rest of the
-    // HUD until 0.7 art polish.
+    // Pause button anchored top-right; mute button just left of it. Both
+    // use the same square-icon pattern so the corner reads as "controls".
+    // Counter shifts left to make room for both. Tuned padding so the icons
+    // never touch the canvas edge or each other.
+    const buttonWidth = 44;
+    const buttonGap = 12;
     this.createPauseButton(width - 16, barHeight / 2);
-    const pauseButtonRoom = 56; // approx button width + gap
+    this.createMuteButton(width - 16 - buttonWidth - buttonGap, barHeight / 2);
+    const buttonsRoom = (buttonWidth + buttonGap) * 2; // pause + mute + a gap
 
     this.counterText = this.add
-      .text(width - 16 - pauseButtonRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
+      .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
         color: '#eaeaf2',
@@ -131,6 +135,64 @@ export class HudScene extends Phaser.Scene {
     bg.on('pointerover', () => bg.setFillStyle(0x2a3454));
     bg.on('pointerout', () => bg.setFillStyle(0x1f2740));
     bg.on('pointerdown', () => this.openPauseOverlay());
+
+    return container;
+  }
+
+  /**
+   * On-screen mute toggle anchored just left of the Pause icon. Reads
+   * initial muted state from AudioManager (which itself read from
+   * localStorage at boot), then keeps the visual in sync on every click.
+   * Two visual states:
+   *   - audio on:    speaker shape, no slash
+   *   - muted:       speaker shape with a diagonal slash overlay
+   * Pure Phaser shapes (no image asset) so this lands without any new
+   * art dependency. Hit area at least 44×44 px (Apple HIG minimum).
+   */
+  private createMuteButton(rightX: number, centerY: number): Phaser.GameObjects.Container {
+    const w = 44;
+    const h = 36;
+    const container = this.add.container(rightX - w / 2, centerY);
+    const bg = this.add.rectangle(0, 0, w, h, 0x1f2740);
+    bg.setStrokeStyle(2, 0x6b7280);
+
+    // Speaker icon: a small square + a triangle "horn" + two arc waves.
+    // All built from triangles/rectangles so we don't need an image asset.
+    const speakerColor = 0xeaeaf2;
+    const speakerBox = this.add.rectangle(-8, 0, 8, 10, speakerColor);
+    const speakerHorn = this.add.triangle(-2, 0, 0, -8, 0, 8, 8, 0, speakerColor);
+
+    // Two short "wave" lines to the right of the horn — drawn as thin
+    // vertical rectangles to suggest sound radiating. Visible when audio
+    // is on; hidden when muted.
+    const wave1 = this.add.rectangle(8, 0, 2, 10, speakerColor);
+    const wave2 = this.add.rectangle(13, 0, 2, 14, speakerColor);
+
+    // Slash overlay (red diagonal line) — visible when muted; hidden when
+    // audio is on. Built from a thin rotated rectangle so it lands as a
+    // clear diagonal stroke across the icon.
+    const slash = this.add.rectangle(0, 0, 30, 3, 0xef4444);
+    slash.setRotation(-Math.PI / 4);
+
+    container.add([bg, speakerBox, speakerHorn, wave1, wave2, slash]);
+    container.setSize(w, h);
+
+    const audio = getAudioManager();
+    const refresh = (): void => {
+      const muted = audio.isMuted();
+      wave1.setVisible(!muted);
+      wave2.setVisible(!muted);
+      slash.setVisible(muted);
+    };
+    refresh();
+
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerover', () => bg.setFillStyle(0x2a3454));
+    bg.on('pointerout', () => bg.setFillStyle(0x1f2740));
+    bg.on('pointerdown', () => {
+      audio.setMuted(!audio.isMuted());
+      refresh();
+    });
 
     return container;
   }
