@@ -9,6 +9,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
 /**
  * Difficulty selection. Two sections:
@@ -54,14 +55,68 @@ export class DifficultyScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // Defensive fallback: if for some reason the math registry has no
+    // implemented generators (every entry is a stub), don't render an empty
+    // grid with a permanently-disabled Start button — show a friendly message
+    // and a Back button. Today this can't happen (addTo10 is implemented),
+    // but if a refactor ever leaves the registry stub-only, this prevents the
+    // UI from silently bricking.
+    if (getImplementedIds().length === 0) {
+      this.renderEmptyState(cx, height);
+      _th.logToAi('DifficultyScene Completed', SeverityLevel.Information, {
+        fallback: 'no-implemented-generators',
+      });
+      return;
+    }
+
     this.renderMathTypes(cx, height * 0.32);
     this.renderSpeeds(cx, height * 0.62);
     this.renderStartButton(cx, height * 0.85);
     this.renderBackButton(cx - 250, height * 0.85);
 
+    // Keyboard nav: math tiles in registry order, then speed tiles slow→fast,
+    // then Start, then Back. Disabled stubs are skipped automatically by
+    // KeyboardNavigator.
+    const tabOrder: PlaceholderButton[] = [
+      ...this.mathButtons.values(),
+      ...this.speedButtons.values(),
+    ];
+    if (this.startButton) tabOrder.push(this.startButton);
+    if (this.backButton) tabOrder.push(this.backButton);
+    new KeyboardNavigator(this, tabOrder);
+
     this.refreshSelection();
 
     _th.logToAi('DifficultyScene Completed', SeverityLevel.Information);
+  }
+
+  private backButton?: PlaceholderButton;
+
+  private renderEmptyState(cx: number, height: number): void {
+    this.add
+      .text(
+        cx,
+        height * 0.45,
+        'No math types available yet — check back soon!',
+        {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '24px',
+          color: '#facc15',
+          align: 'center',
+        },
+      )
+      .setOrigin(0.5);
+
+    const back = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y: height * 0.7,
+      width: 200,
+      height: 56,
+      label: 'Back',
+      onClick: () => this.scene.start(SceneKeys.GameSelect),
+    });
+    new KeyboardNavigator(this, [back]);
   }
 
   private renderMathTypes(cx: number, y: number): void {
@@ -157,7 +212,7 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderBackButton(x: number, y: number): void {
-    new PlaceholderButton({
+    this.backButton = new PlaceholderButton({
       scene: this,
       x,
       y,

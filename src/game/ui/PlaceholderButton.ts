@@ -13,32 +13,52 @@ export interface PlaceholderButtonOpts {
   label: string;
   /** Optional secondary line under the label (e.g. tile description). */
   subtitle?: string;
-  /** Disabled buttons render dimmer and ignore pointer events. */
+  /** Disabled buttons render dimmer and ignore pointer + keyboard activation. */
   disabled?: boolean;
-  /** Selected buttons get a brighter border to indicate active choice. */
+  /** Selected buttons get an amber border to indicate active choice. */
   selected?: boolean;
-  /** Click / tap handler. Not invoked when `disabled` is true. */
+  /** Click / tap / Enter / Space handler. Not invoked when `disabled` is true. */
   onClick?: () => void;
 }
 
 /**
  * Reusable placeholder button — rounded rectangle with a centered label and
- * optional subtitle. Used everywhere through sprint 0.4 so spacing and styling
- * are consistent before the real Kenney-art polish lands.
+ * optional subtitle. Used everywhere through the menu sprint so spacing and
+ * styling are consistent before the real Kenney-art polish lands.
  *
- * The component is small but encodes a few invariants worth keeping:
- * - Disabled buttons IGNORE pointer events entirely (not just visually dim).
- *   This is load-bearing for the DifficultyScene tile-gating: a kid clicking
- *   a "Coming soon" tile must NOT trigger anything.
- * - Hit area exactly matches the rectangle bounds (no off-by-one phantom hits).
- * - The button exposes `setSelected(boolean)` so scenes can flip selection
- *   state without rebuilding the button.
+ * Visual states:
+ *   - normal: dim slate fill + grey 2px border
+ *   - hover:  slightly brighter slate fill
+ *   - selected: amber 3px border (active choice in a multi-choice group)
+ *   - focused: blue 3px border (current keyboard focus, distinct from amber)
+ *   - disabled: very dim fill + grey 2px border, IGNORES pointer and keyboard
+ *
+ * Important invariants:
+ * - Disabled buttons IGNORE pointer events AND keyboard activation. This is
+ *   load-bearing for DifficultyScene tile gating (a kid clicking a "Coming
+ *   soon" tile must NOT trigger anything).
+ * - Text inside disabled buttons does NOT have its alpha reduced — only the
+ *   background and border dim. This keeps text contrast above WCAG 1.4.3
+ *   (~4.5:1) on the dark canvas background. Reducing alpha on the whole
+ *   container previously dropped subtitle contrast below the AA threshold.
+ * - Subtitle font size is 14px (bumped from 12px) for elementary-school
+ *   readability on phones in landscape.
+ *
+ * Keyboard accessibility:
+ * - `setFocused(boolean)` paints the keyboard-focus ring; KeyboardNavigator
+ *   in the same folder calls this as Tab/Shift-Tab moves through buttons.
+ * - `activate()` invokes the click handler programmatically (Enter/Space
+ *   uses this).
+ * - `isDisabled()` exposes the disabled flag so KeyboardNavigator skips
+ *   focus-stop on disabled buttons.
  */
 export class PlaceholderButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly border: Phaser.GameObjects.Rectangle;
+  private readonly textChildren: Phaser.GameObjects.Text[] = [];
   private _disabled: boolean;
   private _selected: boolean;
+  private _focused = false;
   private readonly onClick?: () => void;
 
   constructor(opts: PlaceholderButtonOpts) {
@@ -63,15 +83,17 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     });
     label.setOrigin(0.5);
     this.add(label);
+    this.textChildren.push(label);
 
     if (opts.subtitle) {
-      const subtitle = opts.scene.add.text(0, 12, opts.subtitle, {
+      const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '12px',
-        color: '#9ca3af',
+        fontSize: '14px',
+        color: '#cbd5e1',
       });
       subtitle.setOrigin(0.5);
       this.add(subtitle);
+      this.textChildren.push(subtitle);
     }
 
     // Hit area exactly matches the rectangle.
@@ -108,19 +130,54 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.refreshAppearance();
   }
 
+  setFocused(value: boolean): void {
+    if (this._focused === value) return;
+    this._focused = value;
+    this.refreshAppearance();
+  }
+
+  isDisabled(): boolean {
+    return this._disabled;
+  }
+
+  /**
+   * Programmatically activate the button (used by KeyboardNavigator on
+   * Enter/Space). No-op when disabled.
+   */
+  activate(): void {
+    if (this._disabled) return;
+    this.onClick?.();
+  }
+
   private refreshAppearance(): void {
+    // Disabled state: dim bg/border, but KEEP TEXT BRIGHT for WCAG 1.4.3
+    // contrast on the dark canvas background. The previous setAlpha(0.55)
+    // on the whole container dropped subtitle text below the 4.5:1 ratio.
     if (this._disabled) {
       this.bg.setFillStyle(0x161b2c);
+      this.bg.setAlpha(0.7);
       this.border.setStrokeStyle(2, 0x374151);
-      this.setAlpha(0.55);
+      this.border.setAlpha(0.7);
+      this.textChildren.forEach((t) => t.setAlpha(1));
+      this.setAlpha(1); // container itself stays full-alpha
+      return;
+    }
+
+    this.bg.setAlpha(1);
+    this.border.setAlpha(1);
+    this.textChildren.forEach((t) => t.setAlpha(1));
+
+    // Border colors: focus > selected > normal. Focus uses a distinct blue
+    // so it never gets confused with the amber selected state.
+    if (this._focused) {
+      this.bg.setFillStyle(0x2a3454);
+      this.border.setStrokeStyle(3, 0x60a5fa); // blue for keyboard focus
     } else if (this._selected) {
       this.bg.setFillStyle(0x2a3454);
       this.border.setStrokeStyle(3, 0xfacc15); // amber for selected
-      this.setAlpha(1);
     } else {
       this.bg.setFillStyle(0x1f2740);
       this.border.setStrokeStyle(2, 0x6b7280);
-      this.setAlpha(1);
     }
   }
 }

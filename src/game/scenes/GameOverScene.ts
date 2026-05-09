@@ -3,10 +3,11 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
-import { _th, SeverityLevel } from '@/core/telemetry';
+import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
 export interface GameOverData {
   score: number;
@@ -43,14 +44,14 @@ export class GameOverScene extends Phaser.Scene {
 
 
   create(): void {
-    const props: Record<string, string> = {
+    const props: TelemetryProps = {
       gameId: 'alien-shoot',
       roundScore: String(this.roundData.score),
       roundCorrectCount: String(this.roundData.correctCount),
       passed: String(this.roundData.passed),
     };
-    if (this.roundData.mathId) props['mathId'] = this.roundData.mathId;
-    if (this.roundData.speed) props['speed'] = this.roundData.speed;
+    if (this.roundData.mathId) props.mathId = this.roundData.mathId;
+    if (this.roundData.speed) props.speed = this.roundData.speed;
 
     _th.logToAi('GameOverScene Started', SeverityLevel.Information, props);
 
@@ -88,7 +89,7 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    new PlaceholderButton({
+    const playAgain = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.62,
@@ -98,7 +99,7 @@ export class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Game),
     });
 
-    new PlaceholderButton({
+    const changeDifficulty = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.72,
@@ -108,7 +109,7 @@ export class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Difficulty),
     });
 
-    new PlaceholderButton({
+    const mainMenu = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.82,
@@ -117,6 +118,8 @@ export class GameOverScene extends Phaser.Scene {
       label: 'Main Menu',
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
+
+    new KeyboardNavigator(this, [playAgain, changeDifficulty, mainMenu]);
 
     this.events.once('shutdown', () => {
       _th.logToAi('GameOverScene Completed', SeverityLevel.Information);

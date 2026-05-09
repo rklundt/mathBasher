@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
 /**
  * Placeholder GameScene — for sprint 0.4 only. Shows the selected
@@ -30,13 +31,18 @@ export class GameScene extends Phaser.Scene {
       speed: speed ?? undefined,
     });
 
-    this.scene.launch(SceneKeys.Hud);
+    // Defensive double-launch guard: if some future code path restarts
+    // GameScene without going through a full shutdown (e.g. scene.restart()),
+    // Hud could be launched twice. Cheap insurance.
+    if (!this.scene.isActive(SceneKeys.Hud)) {
+      this.scene.launch(SceneKeys.Hud);
+    }
 
     const { width, height } = this.scale;
     const cx = width / 2;
 
     this.add
-      .text(cx, height * 0.3, 'GameScene placeholder', {
+      .text(cx, height * 0.3, 'Get ready!', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '32px',
         color: '#eaeaf2',
@@ -47,25 +53,25 @@ export class GameScene extends Phaser.Scene {
       .text(
         cx,
         height * 0.42,
-        `mathId: ${mathId ?? '<none>'}\nspeed: ${speed ?? '<none>'}`,
+        `Math: ${mathId ?? '?'}\nSpeed: ${speed ?? '?'}`,
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '20px',
-          color: '#9ca3af',
+          color: '#cbd5e1',
           align: 'center',
         },
       )
       .setOrigin(0.5);
 
     this.add
-      .text(cx, height * 0.55, 'Real gameplay lands in the next milestone.', {
+      .text(cx, height * 0.55, 'The real game is coming soon!', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
-        color: '#9ca3af',
+        fontSize: '16px',
+        color: '#cbd5e1',
       })
       .setOrigin(0.5);
 
-    new PlaceholderButton({
+    const quit = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.75,
@@ -73,7 +79,9 @@ export class GameScene extends Phaser.Scene {
       height: 56,
       label: 'Quit',
       onClick: () => {
-        this.scene.stop(SceneKeys.Hud);
+        // No explicit scene.stop(Hud) here — the shutdown handler below is
+        // the single source of truth for stopping HudScene. Calling stop in
+        // both places would double-stop on every Quit, which is bug-shaped.
         this.scene.start(SceneKeys.GameOver, {
           score: 0,
           correctCount: 0,
@@ -84,6 +92,8 @@ export class GameScene extends Phaser.Scene {
         });
       },
     });
+
+    new KeyboardNavigator(this, [quit]);
 
     this.events.once('shutdown', () => {
       this.scene.stop(SceneKeys.Hud);

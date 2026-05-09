@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
 /**
  * Game-mode selection. MVP has one real tile (Alien Shoot) plus at least one
@@ -36,7 +37,7 @@ export class GameSelectScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Active tile.
-    new PlaceholderButton({
+    const alienShoot = new PlaceholderButton({
       scene: this,
       x: cx - 180,
       y: height * 0.5,
@@ -51,7 +52,7 @@ export class GameSelectScene extends Phaser.Scene {
     });
 
     // Disabled "soon" tile so the layout obviously supports more game modes.
-    new PlaceholderButton({
+    const comingSoon = new PlaceholderButton({
       scene: this,
       x: cx + 180,
       y: height * 0.5,
@@ -62,7 +63,7 @@ export class GameSelectScene extends Phaser.Scene {
       disabled: true,
     });
 
-    new PlaceholderButton({
+    const back = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.85,
@@ -71,6 +72,8 @@ export class GameSelectScene extends Phaser.Scene {
       label: 'Back',
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
+
+    new KeyboardNavigator(this, [alienShoot, comingSoon, back]);
 
     _th.logToAi('GameSelectScene Completed', SeverityLevel.Information);
   }

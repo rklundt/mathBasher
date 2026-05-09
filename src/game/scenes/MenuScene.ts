@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 
 /**
  * Title screen. Two actions: Start (-> GameSelect) and High Scores
@@ -43,7 +44,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    new PlaceholderButton({
+    const startButton = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.5,
@@ -53,7 +54,7 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.GameSelect),
     });
 
-    new PlaceholderButton({
+    const highScoresButton = new PlaceholderButton({
       scene: this,
       x: cx,
       y: height * 0.62,
@@ -63,22 +64,36 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.showHighScoresPlaceholder(),
     });
 
+    new KeyboardNavigator(this, [startButton, highScoresButton]);
+
     _th.logToAi('MenuScene Completed', SeverityLevel.Information);
   }
+
+  private highScoresOverlay?: Phaser.GameObjects.Text;
 
   /**
    * Placeholder until the score-store UI lands. For now, just shows a temporary
    * text overlay that auto-dismisses. Real high-score browsing is a later sprint.
+   *
+   * Guards against double-tap stacking: if the user mashes the button, the
+   * existing overlay is destroyed before the new one is created — only ever
+   * one overlay on screen.
    */
   private showHighScoresPlaceholder(): void {
+    if (this.highScoresOverlay) {
+      this.highScoresOverlay.destroy();
+    }
     const { width, height } = this.scale;
-    const overlay = this.add
+    this.highScoresOverlay = this.add
       .text(width / 2, height * 0.78, 'No scores yet — play a round!', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
         color: '#facc15',
       })
       .setOrigin(0.5);
-    this.time.delayedCall(2000, () => overlay.destroy());
+    this.time.delayedCall(2000, () => {
+      this.highScoresOverlay?.destroy();
+      this.highScoresOverlay = undefined;
+    });
   }
 }

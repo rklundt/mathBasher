@@ -35,8 +35,10 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Briefly show the title, launch the persistent attribution footer, and
-    // transition to the Menu. Real preload + loading bar lands in 0.7.
-    this.time.delayedCall(400, () => {
+    // transition to the Menu. 800ms is enough that a kid actually reads the
+    // title rather than seeing it flicker; faster (e.g. 400ms) feels broken.
+    // Real preload + loading bar lands in the art-polish milestone.
+    this.time.delayedCall(800, () => {
       this.scene.launch(SceneKeys.Attribution);
       this.scene.start(SceneKeys.Menu);
     });
