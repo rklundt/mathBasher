@@ -27,6 +27,22 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     _th.logToAi('MenuScene Started', SeverityLevel.Information);
 
+    // Bind the AudioManager to THIS scene immediately, before any
+    // PlaceholderButton is constructed. PlaceholderButton's pointerdown
+    // handler plays a click SFX BEFORE invoking the user-supplied onClick;
+    // if the audio manager isn't yet bound to a live scene at that moment,
+    // `ensureReady()` returns false and the very first button click is
+    // silently dropped (logs `AudioManager.play.notInitialized`). Sprint
+    // 0.5.4 follow-up: previously this `init` call lived inside Start's
+    // onClick, which guaranteed the first Start click was silent.
+    //
+    // iOS Safari note: the user-gesture requirement is for AudioContext
+    // CREATION, not for `init()`. The AudioContext is already created
+    // (and unlocked) when Phaser is constructed inside the splash click
+    // handler in main.ts — by the time MenuScene.create() runs, the audio
+    // pipeline is hot. Binding here is safe.
+    getAudioManager().init(this);
+
     const { width, height } = this.scale;
     const cx = width / 2;
 
@@ -53,17 +69,7 @@ export class MenuScene extends Phaser.Scene {
       width: 280,
       height: 64,
       label: 'Start',
-      onClick: () => {
-        // Bind the AudioManager to a scene from inside this user-gesture
-        // handler. iOS Safari blocks WebAudioContext creation outside a
-        // gesture; calling AudioManager.init() from BootScene works on
-        // Chrome/Firefox but silently fails on iOS, leaving the kid pressing
-        // fire forever in silence. Wiring the bind to the first Start
-        // click is the canonical fix and idempotent — repeated Starts just
-        // re-bind to the same audio engine.
-        getAudioManager().init(this);
-        this.scene.start(SceneKeys.GameSelect);
-      },
+      onClick: () => this.scene.start(SceneKeys.GameSelect),
     });
 
     const highScoresButton = new PlaceholderButton({

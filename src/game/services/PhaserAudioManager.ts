@@ -54,10 +54,25 @@ export class PhaserAudioManager extends AudioManager {
   }
 
   /**
-   * Bind to a Phaser scene. MUST be called from inside a user-gesture
-   * handler on iOS Safari (touch / click) — the WebAudioContext cannot be
-   * created or resumed outside of one. Calling `init` from BootScene's
-   * `create` works on Chrome/Firefox but silently fails on iOS.
+   * Bind to a Phaser scene. Every scene that plays audio (one-shots OR
+   * loops, including PlaceholderButton click SFX) MUST call this at the
+   * TOP of its `create()` method, before any button or other audio-emitting
+   * object is constructed.
+   *
+   * Why every scene re-binds: PlaceholderButton's pointerdown handler plays
+   * the click SFX BEFORE invoking the user's onClick. If the audio manager
+   * is bound to a stopped scene (the previous scene that `scene.start()`-ed
+   * away), `ensureReady()` finds a stale scene reference and the first
+   * click in the new scene is silently dropped. Re-binding at the start of
+   * each scene's create() keeps the reference fresh.
+   *
+   * iOS Safari note: the historical concern was that AudioContext creation
+   * required a user gesture. Sprint 0.5.4's splash overlay solves that by
+   * constructing `Phaser.Game` inside the splash button's click handler —
+   * the AudioContext is created (and unlocked) within that gesture. After
+   * that, `init` is just a scene-reference swap; no AudioContext mutation
+   * happens here, so calling it from `create()` (not from a user gesture)
+   * is safe on iOS.
    *
    * Idempotent: a second `init` call swaps the scene reference but doesn't
    * re-create the underlying sound manager (Phaser owns that lifetime).

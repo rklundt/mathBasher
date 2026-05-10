@@ -12,9 +12,49 @@
       html, body { margin: 0; padding: 0; height: 100%; background: #0b1020; overflow: hidden; }
       body { font-family: system-ui, -apple-system, sans-serif; color: #eaeaf2; }
       #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+      /* Splash overlay — shown until the user clicks "Tap to play".
+         Constructing Phaser inside the click handler ensures the
+         AudioContext is created inside a user-gesture context
+         (eliminates the "AudioContext was prevented from starting
+         automatically" browser warning) and gives iOS Safari the
+         first-gesture audio context creation it requires. After the
+         click, main.ts hides the element by adding the `.hidden` class
+         (display: none) — the node stays in the DOM for stable inspection
+         and to support a future replay/teardown path, but is invisible
+         and non-interactive. */
+      #splash {
+        position: fixed; inset: 0; z-index: 10;
+        background: #0b1020;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 1.5rem;
+        color: #eaeaf2;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      #splash h1 { font-size: 3rem; margin: 0; letter-spacing: 0.02em; }
+      #splash p { font-size: 1rem; margin: 0; color: #9ca3af; }
+      #splash button {
+        font-size: 1.5rem; padding: 0.75rem 2rem;
+        background: #1f2740; color: #eaeaf2;
+        border: 2px solid #6b7280; border-radius: 6px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      #splash button:hover { background: #2a3454; }
+      #splash button:focus { outline: none; border-color: #60a5fa; }
+      /* :active gives a tactile "press" — slight inset shift + darker fill,
+         so the button visibly responds the instant a finger/mouse goes down,
+         not when it goes up. Adds polish on touch devices where the hover
+         state never fires. */
+      #splash button:active { background: #161b2c; transform: translateY(1px); }
+      #splash.hidden { display: none; }
     </style>
   </head>
   <body>
+    <div id="splash">
+      <h1>mathBasher</h1>
+      <p>Math, but with aliens.</p>
+      <button id="splash-start" type="button" autofocus>Tap to play</button>
+    </div>
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

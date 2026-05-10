@@ -11,6 +11,7 @@ import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
+import { getAudioManager } from '@/services/audioManagerFactory';
 
 /**
  * Difficulty selection. Two sections:
@@ -44,6 +45,11 @@ export class DifficultyScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('DifficultyScene Started', SeverityLevel.Information);
+
+    // Re-bind the AudioManager — see GameSelectScene.create for rationale.
+    // The previous scene was shut down; PlaceholderButton's click SFX call
+    // needs a live scene reference or the first click here is silent.
+    getAudioManager().init(this);
 
     const { width, height } = this.scale;
     const cx = width / 2;

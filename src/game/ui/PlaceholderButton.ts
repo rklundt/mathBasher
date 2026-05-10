@@ -3,6 +3,8 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { getAudioManager } from '@/services/audioManagerFactory';
+import { SfxKeys } from '@/core/audioKeys';
 
 export interface PlaceholderButtonOpts {
   scene: Phaser.Scene;
@@ -138,10 +140,26 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // unified pointer abstraction.
     this.bg.on('pointerdown', () => {
       if (this._disabled) return;
+      this.playClickSfx();
       this.onClick?.();
     });
 
     this.refreshAppearance();
+  }
+
+  /**
+   * Play the universal button-click SFX. Triggered on every successful
+   * activation (pointer click + keyboard Enter/Space when focused).
+   * Disabled buttons skip this — they suppress the sound just like they
+   * suppress the onClick callback.
+   *
+   * Volume rides on the sfx slider in SettingsScene + master mute,
+   * because AudioManager's `play(key, 'sfx')` already handles both.
+   * If audio.init() hasn't fired yet (e.g. dev hot-reload skips the
+   * splash flow), the call is a silent no-op rather than a crash.
+   */
+  private playClickSfx(): void {
+    getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
   }
 
   setSelected(value: boolean): void {
@@ -168,10 +186,12 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
   /**
    * Programmatically activate the button (used by KeyboardNavigator on
-   * Enter/Space). No-op when disabled.
+   * Enter/Space). No-op when disabled. Plays the same click SFX as a
+   * mouse/touch activation so keyboard users get audible confirmation.
    */
   activate(): void {
     if (this._disabled) return;
+    this.playClickSfx();
     this.onClick?.();
   }
 
