@@ -66,6 +66,14 @@ CLAUDE.md
 .adrs/**
 backlog.md
 
+# ---------- Asset source workspaces (raw inputs are local-only) ----------
+# Raw audio + raw sprite inputs stay on the developer's machine for re-
+# processing; only the encoded/processed outputs in public/assets/ ship.
+.audio-source
+.audio-source/**
+.sprite-source
+.sprite-source/**
+
 # ---------- Repo docs we don't ship in the image ----------
 docs
 
