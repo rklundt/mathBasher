@@ -73,15 +73,21 @@ export class BootScene extends Phaser.Scene {
     // No title text rendered here anymore — the splash overlay (in
     // index.html, dismissed by main.ts after the first user gesture)
     // already showed the title before this scene even mounted. Repeating
-    // the title here would feel like a stutter. The brief delay (250ms)
-    // exists so AttributionScene + MenuScene have a moment to initialize
-    // their own assets before the user lands on the menu.
+    // the title here would feel like a stutter.
+    //
+    // The 250ms delay is a deliberate calm-the-flicker beat: the splash
+    // dismiss → BootScene mount → MenuScene start chain happens in a
+    // single rAF on a fast machine, which produces a visible flash of the
+    // empty boot canvas before MenuScene paints. 250ms is just long enough
+    // to feel like "the splash faded into the menu" rather than "things
+    // popped." Tested values: 0ms / 100ms feel jumpy; 500ms feels sluggish;
+    // 250ms is the sweet spot. When a real loading bar lands in the
+    // art-polish milestone (asset count grows past trivial), this delay
+    // becomes unnecessary — the bar itself fills the same role.
     //
     // The slate background fills the canvas during the brief wait — same
     // color as the splash + the rest of the HUD chrome, so the transition
-    // from splash → boot → menu reads as continuous, not flickery. A real
-    // loading bar (when the asset count grows) lands in the art-polish
-    // milestone.
+    // from splash → boot → menu reads as continuous, not flickery.
     this.time.delayedCall(250, () => {
       this.scene.launch(SceneKeys.Attribution);
       this.scene.start(SceneKeys.Menu);

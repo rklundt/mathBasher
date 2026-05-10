@@ -29,11 +29,28 @@ const MAIN_SOURCE = readFileSync(resolve(__dirname, 'main.ts'), 'utf8');
 describe('main.ts boot sequence', () => {
   it('does NOT construct Phaser.Game at module top level', () => {
     // Top-level statements have NO leading whitespace. Statements inside
-    // a function body have at least one space/tab of indentation.
+    // a function body have at least one space/tab of indentation. The
+    // pattern is broader than `^new Phaser.Game(` to catch the four
+    // realistic regression shapes a future "cleanup" might introduce:
+    //   new Phaser.Game(...)                         (bare construction)
+    //   const game = new Phaser.Game(...)            (capture into const)
+    //   let game = new Phaser.Game(...)              (capture into let)
+    //   var game = new Phaser.Game(...)              (capture into var)
+    //   export const game = new Phaser.Game(...)     (export-as-side-effect)
+    // Anything indented (inside a function body) is allowed because the
+    // canonical home for the call IS inside startGame().
     const lines = MAIN_SOURCE.split('\n');
+    // The prefix `(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*` is GROUPED
+    // and made optional as a whole — either there's a complete declaration
+    // prefix (`const game = `, `let g = `, `export const x = `) OR no prefix
+    // at all (bare `new Phaser.Game(`). Crucially, there is NO `\s*` between
+    // `^` and the prefix group, so a line indented inside a function body
+    // (`  new Phaser.Game(`) does NOT match.
+    const topLevelPhaserConstruction =
+      /^(?:(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*)?new Phaser\.Game\s*\(/;
     const offendingLines = lines
       .map((line, i) => ({ line, i }))
-      .filter(({ line }) => /^new Phaser\.Game\s*\(/.test(line));
+      .filter(({ line }) => topLevelPhaserConstruction.test(line));
 
     expect(
       offendingLines,

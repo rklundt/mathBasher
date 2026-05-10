@@ -112,6 +112,11 @@ splashButton?.addEventListener('click', startGame, { once: true });
 // a user-gesture context for the same-origin reload), or worst case the
 // AudioContext warning prints once per dev refresh, which is acceptable
 // for the dev workflow tradeoff.
-if (window.location.search.includes('autostart')) {
+//
+// Use URLSearchParams.has() rather than search.includes('autostart'): the
+// substring check would also match `?fooautostart=1` or `?my_autostart_x`,
+// which would be a surprise to a future contributor who reads ?autostart as
+// an exact-name flag. The exact-key check makes the contract obvious.
+if (new URLSearchParams(window.location.search).has('autostart')) {
   startGame();
 }

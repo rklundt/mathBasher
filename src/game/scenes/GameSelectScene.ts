@@ -9,6 +9,7 @@ import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
+import { getAudioManager } from '@/services/audioManagerFactory';
 
 /**
  * Game-mode selection. MVP has one real tile (Alien Shoot) plus at least one
@@ -25,6 +26,14 @@ export class GameSelectScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('GameSelectScene Started', SeverityLevel.Information);
+
+    // Re-bind the AudioManager to THIS scene before any button is built.
+    // The previous scene (MenuScene) was `scene.start()`-ed away from and
+    // is now shut down; PlaceholderButton's pointerdown SFX call would
+    // ride on a stale scene reference and the first click here would be
+    // silent. Every scene that creates buttons must re-init at the top
+    // of create() — defense-in-depth for the click-SFX contract.
+    getAudioManager().init(this);
 
     const { width, height } = this.scale;
     const cx = width / 2;

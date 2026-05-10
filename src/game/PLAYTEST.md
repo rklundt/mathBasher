@@ -187,6 +187,7 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | Click → splash disappears, BootScene's brief blank-slate render appears (~250ms), then MenuScene loads |
 |   | After dismissing splash, the canvas is fully interactive |
 |   | **Button-click SFX**: clicking ANY PlaceholderButton (Start, High Scores, Settings, Back, Difficulty tiles, Speed tiles, Pause overlay buttons, Settings −/+/Back buttons, Game Over Play Again / Change Difficulty / Main Menu) plays the `button-click-1.mp3` sound |
+|   | **First click in every scene plays SFX** (regression check from 0.5.4 follow-up): Menu Start → audible; first Alien Shoot tile click in GameSelect → audible; first math-tile click in Difficulty → audible; first Play Again click in Game Over → audible. The bug we are guarding against was the pointerdown SFX firing before the scene re-bound to the AudioManager and silently dropping. |
 |   | Keyboard activation (Enter or Space when focused) on any button also plays the click sound |
 |   | Disabled buttons (Coming-soon math tiles, the − button at 0% volume, the + button at 100%) do NOT play the click sound |
 |   | HUD **Pause icon** click plays the click sound |
