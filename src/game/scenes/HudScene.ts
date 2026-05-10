@@ -98,11 +98,20 @@ export class HudScene extends Phaser.Scene {
     const buttonsRoom = buttonWidth * 2 + buttonGap + 16; // pause + mute + gap + edge padding
 
     // Wire both icons through a KeyboardNavigator so Tab/Shift+Tab cycles
-    // them and Enter/Space activates the focused one. Without this the
-    // mute toggle is mouse-only — fails WCAG 2.1.1 for any kid on a
-    // Chromebook trackpad+keyboard. Pause has Esc as a backdoor; mute had
-    // none until this lands.
-    new KeyboardNavigator(this, [muteBtn, pauseBtn]);
+    // them and Enter activates the focused one. Without this the mute
+    // toggle is mouse-only — fails WCAG 2.1.1 for any kid on a Chromebook
+    // trackpad+keyboard. Pause has Esc as a backdoor; mute had none.
+    //
+    // `activateOnSpace: false` is LOAD-BEARING. HudScene runs in parallel
+    // with GameScene during a round, and Space is the FIRE key in
+    // InputSystem. Phaser dispatches the same Space keydown to both
+    // scenes; if KeyboardNavigator activates on Space here, every fire
+    // press also toggles whichever HUD icon currently has focus
+    // (typically Mute, the first tab stop). Real audible bug — every
+    // fire toggles mute → loops + fire flicker on/off. Disabling Space
+    // activation here keeps Tab + Enter for keyboard a11y while letting
+    // Space remain a clean fire input on GameScene.
+    new KeyboardNavigator(this, [muteBtn, pauseBtn], { activateOnSpace: false });
 
     this.counterText = this.add
       .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {

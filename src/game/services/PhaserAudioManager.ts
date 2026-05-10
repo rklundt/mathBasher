@@ -79,20 +79,7 @@ export class PhaserAudioManager extends AudioManager {
     if (!this.ensureReady(key)) return;
     const volume = this.effectiveVolume01(kind);
     if (volume === 0) return; // silent — nothing to play
-
-    // TEMPORARY DIAGNOSTIC (sprint 0.5.3 audio bug investigation):
-    // capture the state of the sound manager + audio context + every loop
-    // BEFORE the play call. The user is reporting alternating audible/
-    // silent fires + loop stutter that didn't yield to the cache theory or
-    // the scene-rebind theory. Real data should narrow it down.
-    this.logSoundState(`pre-play(${key})`);
-
-    const result = this.scene!.sound.play(key, { volume });
-
-    // Capture POST state too — comparing pre/post tells us whether the
-    // play call mutated state in a way we can see.
-    // eslint-disable-next-line no-console
-    console.log(`[audio:diag] play(${key}) returned:`, result);
+    this.scene!.sound.play(key, { volume });
   }
 
   // ----- Loop playback ---------------------------------------------------
@@ -111,8 +98,6 @@ export class PhaserAudioManager extends AudioManager {
     });
     sound.play();
     this.loops.set(key, { kind, sound });
-    // TEMPORARY DIAGNOSTIC
-    this.logSoundState(`post-playLoop(${key},${kind})`);
     return key;
   }
 
@@ -202,47 +187,6 @@ export class PhaserAudioManager extends AudioManager {
       return false;
     }
     return true;
-  }
-
-  /**
-   * Diagnostic — TEMPORARY for sprint 0.5.3 audio bug investigation.
-   * Logs the state of every Sound currently in the manager plus the
-   * AudioContext state. Called from `play` and `playLoop` to capture
-   * what's actually happening when fire SFX is alternating audible/
-   * silent. Remove once the bug is identified and fixed.
-   */
-  private logSoundState(label: string): void {
-    if (!this.scene) return;
-    const mgr = this.scene.sound as Phaser.Sound.BaseSoundManager & {
-      sounds?: Phaser.Sound.BaseSound[];
-      context?: AudioContext;
-      locked?: boolean;
-    };
-    const ctxState = mgr.context?.state ?? '(no-ctx)';
-    const ctxTime = mgr.context?.currentTime?.toFixed(3) ?? '(n/a)';
-    const locked = mgr.locked ?? '(n/a)';
-    const totalSounds = mgr.sounds?.length ?? 0;
-    const trackedLoops = Array.from(this.loops.entries()).map(([k, r]) => ({
-      key: k,
-      kind: r.kind,
-      isPlaying: (r.sound as Phaser.Sound.BaseSound).isPlaying,
-      isPaused: (r.sound as Phaser.Sound.BaseSound).isPaused,
-      pendingRemove: (r.sound as Phaser.Sound.BaseSound & { pendingRemove?: boolean })
-        .pendingRemove,
-    }));
-    const allSounds = (mgr.sounds ?? []).map((s) => ({
-      key: (s as Phaser.Sound.BaseSound & { key?: string }).key,
-      isPlaying: s.isPlaying,
-      isPaused: s.isPaused,
-      pendingRemove: (s as Phaser.Sound.BaseSound & { pendingRemove?: boolean }).pendingRemove,
-    }));
-    // eslint-disable-next-line no-console
-    console.log(`[audio:diag] ${label}`, {
-      ctx: { state: ctxState, time: ctxTime, locked },
-      total: totalSounds,
-      trackedLoops,
-      allSounds,
-    });
   }
 
   /**
