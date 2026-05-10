@@ -23,7 +23,18 @@ This folder is gitignored. It holds the **raw** image files that are used to pro
 │   │   └── laser.png
 │   └── processed/       successfully-encoded raws are moved here after processing
 │       └── alien-green-1.png
+└── working/             intermediate cuts, hand-edited variants, A/B comparisons
+    └── alien/
+        ├── alien-green-1.recolored.png
+        └── alien-green-1.alt-pose.png
 ```
+
+`raw/` vs `working/` follows the audio-pipeline convention:
+
+- **`raw/<topic>/`** is for **untouched** generator output, Kenney pack source dumps, fresh exports. Treat as read-only inputs.
+- **`working/<topic>/`** is for **hand-edited intermediates** — Photoshop layered exports flattened to PNG, recolored sprite variants, A/B comparisons that haven't been picked yet. Anything you'd want to revisit + re-process.
+
+Both folders are gitignored; only the final processed PNG in `public/assets/sprites/` is committed.
 
 ## Why a separate folder
 

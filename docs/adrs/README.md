@@ -44,3 +44,4 @@ Don't write one for:
 | [0006](ADR-0006-folder-discipline.md) | Folder discipline (no Phaser in /math or /services) |
 | [0007](ADR-0007-azure-app-service-for-containers.md) | Azure App Service for Containers (over Container Apps) |
 | [0008](ADR-0008-ffmpeg-static-as-dev-dependency.md) | `ffmpeg-static` as a project-scoped dev dependency (with build-script allowlist) |
+| [0009](ADR-0009-sharp-as-dev-dependency.md) | `sharp` as a project-scoped dev dependency (visual-asset analogue of ADR-0008) |

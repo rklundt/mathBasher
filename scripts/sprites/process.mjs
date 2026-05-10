@@ -9,18 +9,24 @@
  * one-pass through `sharp`, metadata stripped, deterministic output.
  *
  * Usage:
- *   pnpm sprite:process [--kind <kind>] [--no-resize] <input.png> <output.png>
+ *   pnpm sprite:process [--kind <kind>] [--name <basename>] [--no-resize] <input.png> [output.png]
  *
  * Kinds (the only legal values for `--kind`):
- *   alien        — enemy sprites; 96×96 max bounding box
- *   hero         — player ship; 128×128 max
- *   projectile   — bullet/laser; 32×32 max
- *   ui           — buttons / panels / frames; 256×256 max, lossless palette
- *   particle     — explosion / glow / smoke; 64×64 max
- *   bg           — parallax / tile art; 512×512 max
+ *   alien        — enemy sprites; 96×96 max bounding box   → public/assets/sprites/aliens/
+ *   hero         — player ship; 128×128 max                → public/assets/sprites/hero/
+ *   projectile   — bullet/laser; 32×32 max                 → public/assets/sprites/projectiles/
+ *   ui           — buttons / panels / frames; 256×256 max  → public/assets/sprites/ui/
+ *   particle     — explosion / glow / smoke; 64×64 max     → public/assets/sprites/particles/
+ *   bg           — parallax / tile art; 512×512 max        → public/assets/sprites/bg/
  *
  * If `--kind` is omitted, defaults to `alien` (the most common type for
  * mathBasher today).
+ *
+ * Output path resolution (in priority order):
+ *   1. Positional `output.png` arg if provided — explicit override.
+ *   2. `--name <basename>` derives `public/assets/sprites/<kind-folder>/<basename>.png`.
+ *      Saves typing during batch ingest (e.g. Kenney pack with 30+ files).
+ *   3. If neither is provided, the script errors and prints help.
  *
  * The script ALWAYS:
  *   - validates the input has a transparent alpha channel (warns if not —
@@ -59,6 +65,7 @@ const PROFILES = {
     palette: true,
     compressionLevel: 9,
     quality: 90,
+    folder: 'public/assets/sprites/aliens',
     description: 'enemy sprites — 96×96 max bounding box',
   },
   hero: {
@@ -66,6 +73,7 @@ const PROFILES = {
     palette: true,
     compressionLevel: 9,
     quality: 90,
+    folder: 'public/assets/sprites/hero',
     description: 'player ship — 128×128 max',
   },
   projectile: {
@@ -73,6 +81,7 @@ const PROFILES = {
     palette: true,
     compressionLevel: 9,
     quality: 95,
+    folder: 'public/assets/sprites/projectiles',
     description: 'bullet/laser — 32×32 max (lossless quantize at this size)',
   },
   ui: {
@@ -80,6 +89,7 @@ const PROFILES = {
     palette: true,
     compressionLevel: 9,
     quality: 100,
+    folder: 'public/assets/sprites/ui',
     description: 'buttons/panels/frames — 256×256 max, lossless palette',
   },
   particle: {
@@ -87,6 +97,7 @@ const PROFILES = {
     palette: true,
     compressionLevel: 9,
     quality: 88,
+    folder: 'public/assets/sprites/particles',
     description: 'explosion/glow/smoke — 64×64 max',
   },
   bg: {
@@ -94,6 +105,7 @@ const PROFILES = {
     palette: false, // gradients + smooth color need full RGB
     compressionLevel: 9,
     quality: 90,
+    folder: 'public/assets/sprites/bg',
     description: 'parallax/tile art — 512×512 max, full RGB',
   },
 };
@@ -103,12 +115,14 @@ const PROFILES = {
 // ------------------------------------------------------------------
 
 function parseArgs(args) {
-  const opts = { kind: 'alien', resize: true };
+  const opts = { kind: 'alien', resize: true, name: null };
   const positional = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--kind') {
       opts.kind = args[++i];
+    } else if (a === '--name') {
+      opts.name = args[++i];
     } else if (a === '--no-resize') {
       opts.resize = false;
     } else if (a === '--resize') {
@@ -124,23 +138,49 @@ function parseArgs(args) {
       positional.push(a);
     }
   }
-  if (positional.length !== 2) {
-    console.error('Need exactly two positional args: <input.png> <output.png>');
-    printHelp();
-    exit(1);
-  }
+
   if (!Object.prototype.hasOwnProperty.call(PROFILES, opts.kind)) {
     console.error(`Unknown --kind "${opts.kind}". Valid: ${Object.keys(PROFILES).join(', ')}`);
     exit(1);
   }
-  return { ...opts, input: positional[0], output: positional[1] };
+
+  // Output path resolution: explicit positional output wins; --name derives
+  // from the kind's canonical folder; neither = error.
+  let input;
+  let output;
+  if (positional.length === 2) {
+    [input, output] = positional;
+    if (opts.name !== null) {
+      console.error('Cannot specify both --name and an explicit output path. Pick one.');
+      exit(1);
+    }
+  } else if (positional.length === 1 && opts.name !== null) {
+    input = positional[0];
+    output = `${PROFILES[opts.kind].folder}/${opts.name}.png`;
+  } else {
+    console.error(
+      'Need either: (a) two positional args <input.png> <output.png>, ' +
+        'OR (b) one positional <input.png> + --name <basename> (derives output from --kind folder).',
+    );
+    printHelp();
+    exit(1);
+  }
+
+  return { ...opts, input, output };
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm sprite:process [--kind <kind>] [--no-resize] <input.png> <output.png>
+  console.log(`Usage:
+  pnpm sprite:process [--kind <kind>] [--no-resize] <input.png> <output.png>
+  pnpm sprite:process [--kind <kind>] --name <basename> <input.png>
 
 Kinds:
 ${Object.entries(PROFILES).map(([k, p]) => `  ${k.padEnd(11)} ${p.description}`).join('\n')}
+
+Output path resolution (in priority order):
+  1. Positional <output.png> arg — explicit override.
+  2. --name <basename> derives <kind-folder>/<basename>.png. Folder per kind:
+${Object.entries(PROFILES).map(([k, p]) => `       ${k.padEnd(11)} ${p.folder}/`).join('\n')}
 
 Defaults to --kind alien if --kind is omitted.
 --no-resize skips the resize pass (use when input is already at target size).`);
