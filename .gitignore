@@ -63,3 +63,22 @@ backlog.md
 *.aif
 *.aiff
 *.flac
+
+# Sprite source / working files (NEVER commit these)
+# Raw sprites (PNG exports from generators, Kenney-pack source dumps,
+# Photoshop layered exports, etc.) are kept locally for re-processing
+# but never shipped. Only the final processed PNG in public/assets/sprites/
+# is committed. CREDITS.md tracks license/origin per the same pattern as
+# audio. The `*` wildcard pattern is identical to the audio one (descend
+# into the folder so the README negation works).
+#
+# Note: we do NOT add `*.png` here. PNG is the SHIPPED format under
+# public/assets/sprites/ — those files MUST be committable. The folder-
+# scoped ignore above keeps raw PNGs out of git without affecting
+# shipped ones. Other source-only image types are blanket-ignored
+# below in case anyone exports as PSD/AI/SVG/WebP intermediate.
+.sprite-source/*
+!.sprite-source/README.md
+*.psd
+*.ai
+*.xcf
