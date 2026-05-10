@@ -125,7 +125,19 @@ export class GameScene extends Phaser.Scene {
     // skittering. Both are tracked by AudioManager and respect their
     // per-kind volume sliders + master mute. They're stopped in
     // cleanup() and pause/resumed via the pause/resume contract.
+    //
+    // Re-bind the AudioManager to THIS scene before starting the loops.
+    // The first init() happened in MenuScene.Start onClick (iOS Safari
+    // first-gesture rule); MenuScene has long since shut down by the time
+    // GameScene runs. Phaser's per-scene `sound` proxy is tied to its
+    // owning scene's lifecycle — adding/playing sounds via a shut-down
+    // scene's proxy creates Sounds whose internal scheduling/update
+    // contract is owed to a dead scene. Symptoms include alternating
+    // audible/silent playback on rapid one-shots and stuttering loops
+    // (user playtest 2026-05-09). Re-binding here points the manager at
+    // the currently-active scene whose update loop is alive.
     const audio = getAudioManager();
+    audio.init(this);
     audio.playLoop(MusicKeys.Loop1, 'music');
     audio.playLoop(MidgroundKeys.Skittering1, 'midground');
 
