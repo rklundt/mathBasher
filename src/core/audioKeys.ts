@@ -8,15 +8,16 @@
  * a constant here so a typo doesn't silently fall through to a runtime
  * "key not found" warning.
  *
- * Three flat const objects, one per audio kind. The `AudioKey` union type
+ * Three flat const objects — one per audio kind — with parallel naming
+ * (`SfxKeys` / `MidgroundKeys` / `MusicKeys`). The `AudioKey` union type
  * spans all three so anywhere in code that takes "any audio key" is
  * statically constrained to actual existing keys.
  *
  * Asset URL paths are derived from these keys via `sfxPath`/`midgroundPath`/
- * `musicPath` helpers so call sites read `loadSfx(AudioKeys.Fire1)` not
+ * `musicPath` helpers so call sites read `loadSfx(SfxKeys.Fire1)` not
  * `'/assets/audio/sfx/fire-1.mp3'`.
  */
-export const AudioKeys = {
+export const SfxKeys = {
   Fire1: 'fire-1',
   Fire2: 'fire-2',
 } as const;
@@ -31,7 +32,7 @@ export const MusicKeys = {
   Loop1: 'loop-1',
 } as const;
 
-export type SfxKey = (typeof AudioKeys)[keyof typeof AudioKeys];
+export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
 export type MidgroundKey = (typeof MidgroundKeys)[keyof typeof MidgroundKeys];
 export type MusicKey = (typeof MusicKeys)[keyof typeof MusicKeys];
 export type AudioKey = SfxKey | MidgroundKey | MusicKey;

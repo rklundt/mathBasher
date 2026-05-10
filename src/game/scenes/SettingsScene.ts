@@ -44,7 +44,9 @@ const MAX_VOLUME = 100;
 
 const KIND_LABELS: Readonly<Record<AudioKind, string>> = {
   sfx: 'Sound effects',
-  midground: 'Background ambience',
+  // "Background sounds" reads more naturally to a younger user than the
+  // technical "Background ambience" — same concept, plainer English.
+  midground: 'Background sounds',
   music: 'Music',
 };
 
@@ -59,6 +61,18 @@ export class SettingsScene extends Phaser.Scene {
 
   init(data: Partial<SettingsSceneInit>): void {
     this.onBack = data.onBack;
+    if (typeof this.onBack !== 'function') {
+      // `onBack` is logically required — without it, Back button + Esc both
+      // become no-ops and the user is stranded on the Settings screen with
+      // no way out. The init signature uses `Partial` to keep Phaser's
+      // scene-data flexibility, so the type system can't enforce this.
+      // Surface a Warning so a future caller who forgets onBack sees a clear
+      // signal in the console + telemetry stream rather than a silent
+      // dead-end UI.
+      _th.logToAi('SettingsScene.initMissingOnBack', SeverityLevel.Warning, {
+        reason: 'caller did not supply onBack',
+      });
+    }
   }
 
   create(): void {

@@ -18,7 +18,7 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { AudioKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
+import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
 
 /**
  * The actual game. One round = `config.round.questionsPerRound` questions.
@@ -176,7 +176,7 @@ export class GameScene extends Phaser.Scene {
     // hot reload skips MenuScene) play() is a silent no-op rather than a
     // crash. Kind is explicit ('sfx') for clarity even though it's the
     // default — makes the playback category obvious at the call site.
-    getAudioManager().play(AudioKeys.Fire1, 'sfx');
+    getAudioManager().play(SfxKeys.Fire1, 'sfx');
     this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
   }
 

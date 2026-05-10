@@ -26,6 +26,12 @@ import { _th, SeverityLevel } from '@/core/telemetry';
  * their pre-mute values and resume on unmute. (One-icon kid UX from sprint
  * 0.5.2.)
  */
+// localStorage key for the master mute toggle. Boolean stringified ("true"
+// / "false"). FUTURE: when user accounts ship, migrate this and the per-kind
+// volume keys below to per-account scoping (e.g.
+// `mathbasher.user.<id>.audio.muted`) so a shared device with two kids
+// preserves each kid's preferences independently. Today's single-key form
+// is fine for the session-only/no-accounts MVP.
 export const AUDIO_MUTE_STORAGE_KEY = 'mathbasher.audio.muted';
 
 /**

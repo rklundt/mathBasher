@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import {
-  AudioKeys,
+  SfxKeys,
   MidgroundKeys,
   MusicKeys,
   midgroundPath,
@@ -42,18 +42,26 @@ export class BootScene extends Phaser.Scene {
    * BootScene silently fails on iOS even though Chrome/Firefox tolerate it.
    */
   preload(): void {
-    // SFX (one-shots)
-    this.load.audio(AudioKeys.Fire1, sfxPath(AudioKeys.Fire1));
-    this.load.audio(AudioKeys.Fire2, sfxPath(AudioKeys.Fire2));
-    // Midground loops (atmospheric layers under SFX)
-    this.load.audio(MidgroundKeys.Skittering1, midgroundPath(MidgroundKeys.Skittering1));
-    // Music loops (background atmosphere)
-    this.load.audio(MusicKeys.Loop1, musicPath(MusicKeys.Loop1));
+    // Single source-of-truth list of every audio asset the game needs at
+    // boot. Each entry is `[key, urlPath]`. The load loop AND the completion
+    // log both derive from this list, so adding a new asset is a single-line
+    // change with no chance of the count drifting from the queue.
+    const audioToLoad: ReadonlyArray<readonly [string, string]> = [
+      // SFX (one-shots)
+      [SfxKeys.Fire1, sfxPath(SfxKeys.Fire1)],
+      [SfxKeys.Fire2, sfxPath(SfxKeys.Fire2)],
+      // Midground loops (atmospheric layers under SFX)
+      [MidgroundKeys.Skittering1, midgroundPath(MidgroundKeys.Skittering1)],
+      // Music loops (background atmosphere)
+      [MusicKeys.Loop1, musicPath(MusicKeys.Loop1)],
+    ];
+    for (const [key, url] of audioToLoad) {
+      this.load.audio(key, url);
+    }
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
-        // Total preloaded audio asset count (sfx + midground + music).
-        // Update when entries are added above.
-        reason: '4',
+        // Derived from the list above so the count never drifts.
+        reason: String(audioToLoad.length),
       });
     });
   }

@@ -116,6 +116,15 @@ export class PauseOverlay extends Phaser.Scene {
   }
 
   private handleResume(): void {
+    // Guard: when SettingsScene is launched on top of this overlay (via the
+    // Settings button), Phaser still routes input to BOTH scenes. Pressing
+    // Esc to dismiss SettingsScene would otherwise also fire this handler
+    // and accidentally resume the game underneath. Skip when Settings is
+    // active; SettingsScene's own Esc handler closes the settings panel
+    // and a subsequent Esc on this overlay (with Settings now gone) resumes
+    // as expected. Mirrors the double-launch guard pattern in
+    // `handleSettings` below.
+    if (this.scene.isActive(SceneKeys.Settings)) return;
     this.resumeFn?.();
   }
 
