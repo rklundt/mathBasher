@@ -218,12 +218,12 @@ mathBasher/
 ├── src/                 BROWSER-SIDE TYPESCRIPT
 │   ├── main.ts          entry; instantiates the game
 │   ├── game/            rendering layer (the only folder that imports phaser)
-│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay, Attribution
+│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay, Settings, Attribution
 │   │   ├── entities/    Hero, Alien, Projectile (sprites with animation state)
 │   │   ├── systems/     WaveSystem, InputSystem, HitSystem, waveKinematics (own state, no rendering)
 │   │   │                (waveKinematics is pure — has __tests__/ alongside)
 │   │   ├── services/    Phaser-coupled services (pure facades live in /src/services/)
-│   │   │   └── PhaserAudioManager.ts  scene-bound audio playback (extends AudioManager)
+│   │   │   └── PhaserAudioManager.ts  scene-bound audio playback + loop tracking
 │   │   └── ui/          PlaceholderButton, KeyboardNavigator, EscBackHandler, TouchFireButton, etc.
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
@@ -377,12 +377,23 @@ function startRound(mathId: string, speed: SpeedKey): void {
 
 ## Audio
 
-mathBasher ships only **MP3** in `public/assets/audio/`. Every shipped file goes through `pnpm audio:encode`, which runs one ffmpeg pass that:
+mathBasher ships only **MP3** in `public/assets/audio/`, organized into three folders by kind:
 
-1. Trims leading + trailing silence (peak detection at -45 dB, 5 ms guard)
-2. Loudness-normalizes to EBU R128 (-16 LUFS for SFX, -18 LUFS for music; -1.5 dBTP true-peak ceiling — kid-safe, never blast-loud)
+| Kind | Folder | What lives here | Encoder profile | Volume slider |
+|---|---|---|---|---|
+| `sfx` | `public/assets/audio/sfx/` | One-shot effects (fire, hit, click) | 96 kbps mono, -16 LUFS, trim ON | sfx (default 70%) |
+| `midground` | `public/assets/audio/midground/` | Atmospheric LOOPS that sit under SFX (skittering, ambient hum) | 96 kbps mono, -22 LUFS, trim **OFF** by default (loop boundaries) | midground (default 40%) |
+| `music` | `public/assets/audio/music/` | Full musical loops/tracks (menu music, gameplay loops) | 160 kbps stereo, -18 LUFS, trim ON | music (default 50%) |
+
+Every shipped file goes through `pnpm audio:encode --kind <sfx|midground|music>`, which runs one ffmpeg pass that:
+
+1. (For sfx + music; not midground) trims leading + trailing silence
+2. Loudness-normalizes to the kind's EBU R128 target (with -1.5 dBTP shared true-peak ceiling — kid-safe, never blast-loud)
 3. Strips ALL metadata (no leaked generator names, prompts, or timestamps)
-4. Encodes to the right MP3 profile for the kind
+4. Brick-wall limits peaks (alimiter `level=disabled`, limit 0.7 ≈ -3.1 dBFS, gives ~1.6 dB MP3-reconstruction headroom)
+5. Encodes to the kind's MP3 profile
+
+Per-kind volumes (0–100%) plus the master mute toggle are controlled from **SettingsScene** (reachable from MenuScene and from PauseOverlay). Volumes persist to `localStorage` per kind. Mute overrides every slider.
 
 The ffmpeg binary is supplied by the `ffmpeg-static` devDependency (no manual install needed; `pnpm install` provisions it; see [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md) for the supply-chain reasoning and the `pnpm.onlyBuiltDependencies` allowlist that guards postinstall scripts).
 
@@ -448,9 +459,13 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where is the Esc back-stack on menu scenes? | `src/game/ui/EscBackHandler.ts#wireEscBack(scene, onBack)` — small helper that registers a `keydown-ESC` handler with paired cleanup on `shutdown` + `destroy`. Used by `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). MenuScene is the top of the stack — Esc is intentionally not bound there. |
 | Where is the pause-aware kinematics math? | `src/game/systems/waveKinematics.ts` — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` and `simulatePauseAwareAdvance(...)`. Used by `Alien.advance` for production motion, and by `src/game/systems/__tests__/waveKinematics.test.ts` for verifying that pause freezes Y and resume continues from the same position with no drift. |
 | How do I prepare a new audio file? | See the **Audio** section above. Short version: drop raw WAV in `.audio-source/raw/<topic>/`, run `pnpm audio:encode <in> public/assets/audio/sfx/<name>.mp3`, run `pnpm audio:probe` on both ends to sanity-check, add a `public/assets/CREDITS.md` line. The encoder lives at `scripts/audio/encode.mjs`; the supply-chain reasoning for `ffmpeg-static` is in [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md). |
-| How does audio playback flow at runtime? | `BootScene.preload` loads each MP3 into Phaser's audio cache by key (`AudioKeys.Fire1`, etc.). On the user's first `Start` click in `MenuScene`, `getAudioManager().init(scene)` binds the singleton to a Phaser scene (must happen inside a user-gesture handler — iOS Safari blocks WebAudioContext creation outside one). `GameScene.handleFire()` calls `audio.play(AudioKeys.Fire1)`; the manager checks mute state, looks up the cached buffer, and plays at the volume cap (`DEFAULT_VOLUME = 0.6`, never higher). Missing keys log a Warning and return silently — never throw into the gameplay loop. |
-| Where does the mute state live? | `AudioManager.muted` (in-memory) is the single source of truth at runtime. It's persisted to `localStorage` under the key `mathbasher.audio.muted` ("true"/"false"); read at AudioManager construction (in `main.ts` at app boot), written on every `setMuted` call. The HUD mute icon (`HudScene.createMuteButton`) reads `audio.isMuted()` for its visual state and calls `audio.setMuted(...)` on click. |
-| Why is AudioManager split into two files? | Folder discipline. `src/services/AudioManager.ts` is the pure-TS facade (no Phaser import) — unit-testable, callable from anywhere. `src/game/services/PhaserAudioManager.ts` is the Phaser-coupled implementation that actually drives WebAudio. `src/services/audioManagerFactory.ts` returns the concrete subclass while exposing the pure facade type, same pattern as `IScoreStore` / `SessionScoreStore` / `scoreStoreFactory`. |
+| How does audio playback flow at runtime? | `BootScene.preload` loads each MP3 into Phaser's audio cache by key (`AudioKeys.Fire1`, `MidgroundKeys.Skittering1`, `MusicKeys.Loop1`, etc.). On the user's first `Start` click in `MenuScene`, `getAudioManager().init(scene)` binds the singleton to a Phaser scene (must happen inside a user-gesture handler — iOS Safari blocks WebAudioContext creation outside one). One-shot SFX use `audio.play(key, kind)` — defaults to `'sfx'` kind, multiplied by the kind's slider value. Loops use `audio.playLoop(key, kind)` returning a handle the caller passes to `stopLoop` later. Missing keys log a Warning and return silently — never throw into the gameplay loop. |
+| Where does the mute + per-kind volume state live? | `AudioManager` (the pure facade) holds in-memory copies of `muted` and three per-kind volumes (`sfx` / `midground` / `music`). Each is persisted to `localStorage` under the keys `mathbasher.audio.muted`, `mathbasher.audio.volume.sfx`, `mathbasher.audio.volume.midground`, `mathbasher.audio.volume.music`. Read at AudioManager construction (in `main.ts` at app boot), written on every `setMuted` / `setVolume` call. Defaults if storage is empty: `DEFAULT_VOLUMES = { sfx: 70, midground: 40, music: 50 }`. The HUD mute icon (`HudScene.createMuteButton`) reads `audio.isMuted()`; SettingsScene reads `audio.getVolume(kind)` per row. |
+| How does the mute-master rule work? | When `isMuted()` is true, `effectiveVolume01(kind)` returns 0 regardless of slider position. Sliders themselves are NOT auto-zeroed on mute — they keep their pre-mute values. Mute applies live to active loops too: `onMuteChanged` walks every tracked loop and re-applies its effective volume (drops to 0 muted, restores to slider value unmuted). Loops keep PLAYING through mute (no hard stop+restart cycle), they just go silent. |
+| How does live volume reactivity work? | When SettingsScene calls `audio.setVolume(kind, n)`, the `onVolumeChanged` hook fires. `PhaserAudioManager` overrides it to walk every active loop OF THAT KIND and call `setVolume(effectiveVolume01)` on the underlying Phaser `Sound`. Other kinds' loops are untouched. Net effect: the kid moving a slider mid-round hears the change immediately; no stop+restart click. |
+| Where does the loop API live? | `AudioManager.playLoop(key, kind): LoopHandle` / `stopLoop(handle)` / `pauseAllLoops()` / `resumeAllLoops()`. `LoopHandle = string` (the asset key). Base class is no-op stubs; `PhaserAudioManager` tracks active loops in `Map<key, {kind, sound}>`. One loop per key — calling `playLoop` on an already-looping key returns the existing handle. `GameScene.create()` starts the music + skittering loops; `GameScene.cleanup()` stops them. `GameScene.pause()` / `resume()` call `pauseAllLoops` / `resumeAllLoops` for in-round freeze. |
+| How is SettingsScene reached from two entry points? | SettingsScene is a parallel scene launched (not started) with `init({ onBack })`. The caller supplies the close behavior. From **MenuScene**, the Settings button calls `this.scene.launch(SceneKeys.Settings, { onBack: () => this.scene.stop(SceneKeys.Settings) })` — Menu was never stopped, so it reappears underneath when Settings closes. From **PauseOverlay** the same pattern, but the pause overlay stays underneath; gameplay stays paused (only the explicit Resume button resumes). SettingsScene knows nothing about its caller — it just calls `onBack` when done. Esc on SettingsScene also calls `onBack` via the existing `wireEscBack` helper. |
+| Why is AudioManager split into two files? | Folder discipline. `src/services/AudioManager.ts` is the pure-TS facade (no Phaser import) — unit-testable, callable from anywhere. `src/game/services/PhaserAudioManager.ts` is the Phaser-coupled implementation that actually drives WebAudio + tracks loops. `src/services/audioManagerFactory.ts` returns the concrete subclass while exposing the pure facade type, same pattern as `IScoreStore` / `SessionScoreStore` / `scoreStoreFactory`. |
 | Why does the audio init happen in MenuScene, not BootScene? | iOS Safari blocks `WebAudioContext` creation/resumption outside a user-gesture handler. `init()` from BootScene works on Chrome and Firefox but silently fails on iOS, leaving the kid pressing fire forever in silence. Wiring `init()` to the first Start-button click is the canonical fix. Asset preload is fine in BootScene (no audio context needed); only the live binding has to happen inside a gesture. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
