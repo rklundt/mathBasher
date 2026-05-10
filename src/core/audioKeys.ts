@@ -20,6 +20,7 @@
 export const SfxKeys = {
   Fire1: 'fire-1',
   Fire2: 'fire-2',
+  ButtonClick1: 'button-click-1',
 } as const;
 
 /** Atmospheric loop keys (midground kind — see encoder profile). */

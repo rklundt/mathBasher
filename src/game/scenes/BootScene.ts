@@ -50,6 +50,7 @@ export class BootScene extends Phaser.Scene {
       // SFX (one-shots)
       [SfxKeys.Fire1, sfxPath(SfxKeys.Fire1)],
       [SfxKeys.Fire2, sfxPath(SfxKeys.Fire2)],
+      [SfxKeys.ButtonClick1, sfxPath(SfxKeys.ButtonClick1)],
       // Midground loops (atmospheric layers under SFX)
       [MidgroundKeys.Skittering1, midgroundPath(MidgroundKeys.Skittering1)],
       // Music loops (background atmosphere)
@@ -69,20 +70,19 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     _th.logToAi('BootScene Started', SeverityLevel.Information);
 
-    const { width, height } = this.scale;
-    this.add
-      .text(width / 2, height / 2, 'mathBasher', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '64px',
-        color: '#eaeaf2',
-      })
-      .setOrigin(0.5);
-
-    // Briefly show the title, launch the persistent attribution footer, and
-    // transition to the Menu. 800ms is enough that a kid actually reads the
-    // title rather than seeing it flicker; faster (e.g. 400ms) feels broken.
-    // Real preload + loading bar lands in the art-polish milestone.
-    this.time.delayedCall(800, () => {
+    // No title text rendered here anymore — the splash overlay (in
+    // index.html, dismissed by main.ts after the first user gesture)
+    // already showed the title before this scene even mounted. Repeating
+    // the title here would feel like a stutter. The brief delay (250ms)
+    // exists so AttributionScene + MenuScene have a moment to initialize
+    // their own assets before the user lands on the menu.
+    //
+    // The slate background fills the canvas during the brief wait — same
+    // color as the splash + the rest of the HUD chrome, so the transition
+    // from splash → boot → menu reads as continuous, not flickery. A real
+    // loading bar (when the asset count grows) lands in the art-polish
+    // milestone.
+    this.time.delayedCall(250, () => {
       this.scene.launch(SceneKeys.Attribution);
       this.scene.start(SceneKeys.Menu);
     });
