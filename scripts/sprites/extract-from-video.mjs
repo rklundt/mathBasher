@@ -35,6 +35,14 @@
  *                       without doing a full extract. Use this BEFORE every
  *                       extract — eyeball whether the grid lines align with
  *                       the actual sprite cells.
+ *   --margin N          crop N pixels off ALL four sides of the source video
+ *                       before slicing into cells. Useful when the source
+ *                       has a uniform border around the actual sprite grid.
+ *                       Default 0.
+ *   --margin-top N      override --margin for the top edge only
+ *   --margin-bottom N   override --margin for the bottom edge only
+ *   --margin-left N     override --margin for the left edge only
+ *   --margin-right N    override --margin for the right edge only
  *   --fps N             extract this many frames per second (default 12)
  *   --cell-size N       output px per frame, square bounding box (default 96).
  *                       Frames preserve source aspect via fit:inside, so
@@ -55,8 +63,12 @@
  * Recommended workflow:
  *   1. pnpm sprite:extract --rows 5 --cols 6 --verify-grid <video>
  *   2. open .sprite-source/working/frame0-grid-5x6.png — magenta lines
- *      should land in the gaps BETWEEN sprites, not slice through them
- *   3. once verified: re-run without --verify-grid to do the real extract
+ *      should land in the gaps BETWEEN sprites, not slice through them.
+ *      Yellow outline shows the cropped area (whatever --margin says).
+ *   3. if the magenta lines slice through sprites near the edges, bump
+ *      --margin and re-verify. Iterate (5, 10, 15px) until the grid
+ *      lines align with the gaps between sprites.
+ *   4. once verified: re-run without --verify-grid to do the real extract.
  */
 
 import { argv, exit } from 'node:process';
@@ -93,6 +105,11 @@ function parseArgs(args) {
     rows: null,
     cols: null,
     verifyGrid: false,
+    margin: 0,
+    marginTop: null,
+    marginBottom: null,
+    marginLeft: null,
+    marginRight: null,
     fps: 12,
     cellSize: 96,
     bg: 'auto',
@@ -110,6 +127,11 @@ function parseArgs(args) {
     else if (a === '--rows') opts.rows = parseInt(args[++i], 10);
     else if (a === '--cols') opts.cols = parseInt(args[++i], 10);
     else if (a === '--verify-grid') opts.verifyGrid = true;
+    else if (a === '--margin') opts.margin = parseInt(args[++i], 10);
+    else if (a === '--margin-top') opts.marginTop = parseInt(args[++i], 10);
+    else if (a === '--margin-bottom') opts.marginBottom = parseInt(args[++i], 10);
+    else if (a === '--margin-left') opts.marginLeft = parseInt(args[++i], 10);
+    else if (a === '--margin-right') opts.marginRight = parseInt(args[++i], 10);
     else if (a === '--fps') opts.fps = parseInt(args[++i], 10);
     else if (a === '--cell-size') opts.cellSize = parseInt(args[++i], 10);
     else if (a === '--bg') opts.bg = args[++i];
@@ -172,6 +194,20 @@ function parseArgs(args) {
     exit(1);
   }
 
+  // Resolve per-side margins: each per-side flag overrides --margin if set.
+  // After this block, opts.{top,bottom,left,right} hold the resolved values.
+  opts.top = opts.marginTop !== null ? opts.marginTop : opts.margin;
+  opts.bottom = opts.marginBottom !== null ? opts.marginBottom : opts.margin;
+  opts.left = opts.marginLeft !== null ? opts.marginLeft : opts.margin;
+  opts.right = opts.marginRight !== null ? opts.marginRight : opts.margin;
+
+  for (const side of ['top', 'bottom', 'left', 'right']) {
+    if (opts[side] < 0) {
+      console.error(`Margin --margin-${side} must be ≥ 0 (got ${opts[side]})`);
+      exit(1);
+    }
+  }
+
   return { ...opts, video: positional[0] };
 }
 
@@ -187,6 +223,13 @@ Verify-grid mode:
                       .sprite-source/working/frame0-grid-RxC.png and exit
                       WITHOUT extracting. Use to confirm grid alignment
                       before a real run.
+
+Margin (crop edge pixels before grid math):
+  --margin N          crop N pixels off all 4 sides (default 0)
+  --margin-top N      per-side override (top)
+  --margin-bottom N   per-side override (bottom)
+  --margin-left N     per-side override (left)
+  --margin-right N    per-side override (right)
 
 Optional:
   --fps N             frames per second to extract (default 12)
@@ -454,13 +497,30 @@ async function main() {
   // ---- Step 1: probe ----
   console.log(`\nProbing ${opts.video}...`);
   const probe = await probeVideo(ffmpegPath, opts.video);
-  const cellSourceW = Math.floor(probe.width / opts.gridCols);
-  const cellSourceH = Math.floor(probe.height / opts.gridRows);
+
+  // Effective grid area = source dimensions minus per-side margins.
+  // All cell math operates on this inner rectangle, NOT the raw video.
+  const effW = probe.width - opts.left - opts.right;
+  const effH = probe.height - opts.top - opts.bottom;
+  if (effW <= 0 || effH <= 0) {
+    console.error(
+      `Margins eat the whole frame (${opts.top}/${opts.right}/${opts.bottom}/${opts.left} ` +
+        `vs ${probe.width}×${probe.height}). Effective grid area would be ${effW}×${effH}.`,
+    );
+    exit(1);
+  }
+
+  const cellSourceW = Math.floor(effW / opts.gridCols);
+  const cellSourceH = Math.floor(effH / opts.gridRows);
   const expectedFrames = probe.duration ? Math.floor(probe.duration * opts.fps) : '?';
   const totalCells = opts.gridRows * opts.gridCols;
   const cellsToProcess = opts.maxCells ?? totalCells;
 
   console.log(`  Source: ${probe.width}×${probe.height}, ${probe.fps ?? '?'} fps, ${probe.duration?.toFixed(2) ?? '?'}s`);
+  if (opts.top || opts.right || opts.bottom || opts.left) {
+    console.log(`  Margin: top=${opts.top}, right=${opts.right}, bottom=${opts.bottom}, left=${opts.left}px`);
+    console.log(`  Effective grid area: ${effW}×${effH} (after margin crop)`);
+  }
   console.log(`  Grid:   ${opts.gridRows} rows × ${opts.gridCols} cols = ${totalCells} cells`);
   console.log(`  Each source cell: ${cellSourceW}×${cellSourceH}px`);
 
@@ -522,11 +582,14 @@ async function main() {
       let totalRemoved = 0;
       let totalPixels = 0;
       for (const framePath of frameFiles) {
-        // Extract the cell from the source frame
+        // Extract the cell from the source frame, offset by the margin.
+        // Cells are computed against the EFFECTIVE area (post-margin), so
+        // a cell at (r, c) is at pixel (left + c*cellW, top + r*cellH)
+        // within the raw video frame.
         const cellBuffer = await sharp(framePath)
           .extract({
-            left: c * cellSourceW,
-            top: r * cellSourceH,
+            left: opts.left + c * cellSourceW,
+            top: opts.top + r * cellSourceH,
             width: cellSourceW,
             height: cellSourceH,
           })
@@ -666,24 +729,46 @@ async function runVerifyGrid(ffmpegPath, sharp, opts, probe) {
     p.on('error', rej);
   });
 
-  // Build the SVG overlay — magenta lines at every internal grid boundary.
-  const cellW = probe.width / opts.gridCols;
-  const cellH = probe.height / opts.gridRows;
-  const lines = [];
+  // Build the SVG overlay:
+  //   - Yellow rect at the margin boundary (shows what gets CROPPED away —
+  //     anything outside the yellow box is ignored by the cell math)
+  //   - Magenta lines at internal grid boundaries (shows where each
+  //     extracted cell's edges sit WITHIN the cropped area)
+  // Read the resolved per-side margins; cell math operates on the area
+  // bounded by these margins.
+  const innerLeft = opts.left;
+  const innerTop = opts.top;
+  const innerRight = probe.width - opts.right;
+  const innerBottom = probe.height - opts.bottom;
+  const innerW = innerRight - innerLeft;
+  const innerH = innerBottom - innerTop;
+  const cellW = innerW / opts.gridCols;
+  const cellH = innerH / opts.gridRows;
+  const overlayParts = [];
+
+  // Yellow margin outline — only draw if any margin is non-zero.
+  if (opts.top || opts.right || opts.bottom || opts.left) {
+    overlayParts.push(
+      `<rect x="${innerLeft}" y="${innerTop}" width="${innerW}" height="${innerH}" ` +
+        `fill="none" stroke="yellow" stroke-width="2"/>`,
+    );
+  }
+
+  // Magenta internal grid lines (start at margin, end at margin).
   for (let i = 1; i < opts.gridCols; i++) {
-    const x = Math.round(i * cellW);
-    lines.push(
-      `<line x1="${x}" y1="0" x2="${x}" y2="${probe.height}" stroke="magenta" stroke-width="2"/>`,
+    const x = Math.round(innerLeft + i * cellW);
+    overlayParts.push(
+      `<line x1="${x}" y1="${innerTop}" x2="${x}" y2="${innerBottom}" stroke="magenta" stroke-width="2"/>`,
     );
   }
   for (let i = 1; i < opts.gridRows; i++) {
-    const y = Math.round(i * cellH);
-    lines.push(
-      `<line x1="0" y1="${y}" x2="${probe.width}" y2="${y}" stroke="magenta" stroke-width="2"/>`,
+    const y = Math.round(innerTop + i * cellH);
+    overlayParts.push(
+      `<line x1="${innerLeft}" y1="${y}" x2="${innerRight}" y2="${y}" stroke="magenta" stroke-width="2"/>`,
     );
   }
   const svg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${probe.width}" height="${probe.height}">${lines.join('')}</svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${probe.width}" height="${probe.height}">${overlayParts.join('')}</svg>`,
   );
   await sharp(rawFramePath).composite([{ input: svg }]).png().toFile(overlayPath);
 
@@ -692,10 +777,18 @@ async function runVerifyGrid(ffmpegPath, sharp, opts, probe) {
 
   console.log(`✓ Wrote ${overlayPath}`);
   console.log(
-    `\nOpen the file and check: do the magenta lines land in the gaps BETWEEN\n` +
-      `sprites, or do they slice through sprite bodies?\n` +
-      `  - All gaps: grid is correct → re-run without --verify-grid for the real extract.\n` +
-      `  - Slicing through sprites: grid spec is wrong → adjust --rows/--cols and re-verify.`,
+    `\nOpen the file and check:\n` +
+      `  • Magenta lines should land in the GAPS between sprites (not through bodies)\n` +
+      (opts.top || opts.right || opts.bottom || opts.left
+        ? `  • Yellow rectangle shows the cropped area — sprites should sit inside it,\n` +
+          `    with the bordering margin (outside the yellow) being clean background\n`
+        : `  • No yellow rectangle (no margin set) — if sprites near the edge look\n` +
+          `    misaligned with the grid, try --margin 5 (or 10, 15...) and re-verify\n`) +
+      `\nFix paths:\n` +
+      `  - Lines slicing sprites in middle → wrong --rows/--cols, adjust\n` +
+      `  - Lines slicing sprites only near edges → bump --margin, re-verify\n` +
+      `  - Yellow box too small (cuts off sprite edges) → reduce --margin\n` +
+      `  - All looks good → re-run without --verify-grid for the real extract`,
   );
 }
 
