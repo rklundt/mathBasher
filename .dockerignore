@@ -53,9 +53,10 @@ coverage
 .nyc_output
 *.tsbuildinfo
 
-# ---------- Internal Claude Code workspace (NEVER enters image) ----------
-# Both the directory pattern AND the recursive glob, defense-in-depth in case
-# a future refactor adds a broad COPY statement.
+# ---------- Internal workspace files (NEVER enter image) ----------
+# Local development scaffolding — workflow notes, sprint planning drafts,
+# ADR working copies, etc. Both the directory pattern AND the recursive
+# glob, defense-in-depth in case a future refactor adds a broad COPY.
 CLAUDE.md
 .claude
 .claude/**
