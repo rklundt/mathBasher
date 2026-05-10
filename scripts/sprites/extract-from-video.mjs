@@ -129,6 +129,7 @@ function parseArgs(args) {
     bg: 'auto',
     bgTolerance: 30,
     bgFeather: 10,
+    decontaminate: true,
     consistency: 80,
     namePrefix: 'alien',
     quality: 90,
@@ -159,6 +160,8 @@ function parseArgs(args) {
     else if (a === '--bg') opts.bg = args[++i];
     else if (a === '--bg-tolerance') opts.bgTolerance = parseInt(args[++i], 10);
     else if (a === '--bg-feather') opts.bgFeather = parseInt(args[++i], 10);
+    else if (a === '--decontaminate') opts.decontaminate = true;
+    else if (a === '--no-decontaminate') opts.decontaminate = false;
     else if (a === '--consistency') opts.consistency = parseInt(args[++i], 10);
     else if (a === '--name-prefix') opts.namePrefix = args[++i];
     else if (a === '--quality') opts.quality = parseInt(args[++i], 10);
@@ -273,6 +276,10 @@ Optional:
   --bg auto|"#hex"    background color (default "auto" — corner-sample)
   --bg-tolerance N    color-distance threshold 0–100 (default 30) — soft-alpha midpoint
   --bg-feather N      soft-alpha transition width 0–50 (default 10) — 0 = binary alpha
+  --no-decontaminate  skip color decontamination of partial-alpha edge pixels
+                      (default ON) — fixes white halos around anti-aliased
+                      sprite edges by inferring true foreground color from
+                      the composited pixel + bg color + alpha
   --consistency N     cross-frame consistency restore 0–100 (default 80) — 0 = disabled
   --name-prefix S     filename prefix (default "alien" → alien-r0c0.webp)
   --quality N         WebP quality 0–100 (default 90)
@@ -727,6 +734,61 @@ function removeBackgroundInPlace(buf, width, height, keyColor, tolerance, feathe
   return modified;
 }
 
+/**
+ * Color decontamination ("unmatting" / "defringing").
+ *
+ * After removeBackgroundInPlace produces partial-alpha edge pixels, those
+ * pixels still carry the COMPOSITED color from the original video — the
+ * sprite's true foreground color blended with the white-ish video background.
+ * Fully-opaque interior pixels are unaffected; edge pixels look fine while
+ * displayed against a similar light background, but composite over a dark
+ * game background and the residual bg-tint shows up as a halo.
+ *
+ * The unmatting math (Porter-Duff "over" inverted):
+ *   composite = fg * α + bg * (1 - α)
+ *   => fg = (composite - bg * (1 - α)) / α
+ *
+ * In 0-255 byte space with α also 0-255:
+ *   fg_R = (R - bg_R * (255 - α) / 255) * 255 / α
+ *
+ * Two safeguards:
+ *   - Skip pixels with α >= 255 (no contamination possible — no bg blended in).
+ *   - Skip pixels with α below MIN_ALPHA (~16). Below that, the division
+ *     amplifies floating-point noise into wild RGB jumps. Those pixels are
+ *     already so transparent that their color barely contributes to the
+ *     final composite anyway, so leaving them alone is the right call.
+ *
+ * Result must be clamped to [0, 255] — over-correction can push values
+ * out of range when the original pixel was darker than the formula
+ * assumes (e.g. very thin dark feature on a light background).
+ *
+ * Returns the count of pixels whose RGB was modified (for the caller to
+ * report as a quality metric).
+ */
+function decontaminateInPlace(buf, width, height, keyColor) {
+  const N = width * height;
+  const MIN_ALPHA = 16;
+  const bgR = keyColor.r;
+  const bgG = keyColor.g;
+  const bgB = keyColor.b;
+  let modified = 0;
+  for (let p = 0; p < N; p++) {
+    const alpha = buf[p * 4 + 3];
+    if (alpha >= 255 || alpha < MIN_ALPHA) continue;
+    // (255 - α) / 255 → fraction of bg in the composited pixel.
+    const bgFrac = (255 - alpha) / 255;
+    const invAlphaScale = 255 / alpha;
+    const r = (buf[p * 4]     - bgR * bgFrac) * invAlphaScale / 255 * 255;
+    const g = (buf[p * 4 + 1] - bgG * bgFrac) * invAlphaScale / 255 * 255;
+    const b = (buf[p * 4 + 2] - bgB * bgFrac) * invAlphaScale / 255 * 255;
+    buf[p * 4]     = Math.max(0, Math.min(255, Math.round(r)));
+    buf[p * 4 + 1] = Math.max(0, Math.min(255, Math.round(g)));
+    buf[p * 4 + 2] = Math.max(0, Math.min(255, Math.round(b)));
+    modified++;
+  }
+  return modified;
+}
+
 // ------------------------------------------------------------------
 // Main
 // ------------------------------------------------------------------
@@ -833,6 +895,9 @@ async function main() {
       `(tolerance ${opts.bgTolerance}, feather ${opts.bgFeather})`,
   );
   console.log(
+    `  Decontamination: ${opts.decontaminate ? 'on (strip residual bg-tint from edge pixels)' : 'OFF (--no-decontaminate)'}`,
+  );
+  console.log(
     `  Cross-frame consistency: ${opts.consistency === 0 ? 'disabled' : `restore at ≥${opts.consistency}% opaque consensus`}`,
   );
   if (cellsToProcess < totalCells) {
@@ -900,6 +965,7 @@ async function main() {
       // Per-frame: extract this cell, resize to cell-size, remove bg.
       const frameBuffers = [];
       let totalRemoved = 0;
+      let totalDecontaminated = 0;
       let totalPixels = 0;
       for (const framePath of frameFiles) {
         // Extract the cell from the source frame, offset by the margin.
@@ -932,6 +998,20 @@ async function main() {
         );
         totalRemoved += removed;
         totalPixels += cellBuffer.info.width * cellBuffer.info.height;
+
+        // Color decontamination — strip residual bg-tint from edge pixels
+        // that ended up partially transparent. Default ON; --no-decontaminate
+        // skips it (useful for A/B comparison or when sprites have
+        // intentional bg-colored regions).
+        if (opts.decontaminate) {
+          const decon = decontaminateInPlace(
+            cellBuffer.data,
+            cellBuffer.info.width,
+            cellBuffer.info.height,
+            bgColor,
+          );
+          totalDecontaminated += decon;
+        }
 
         frameBuffers.push({
           buf: cellBuffer.data,
@@ -989,8 +1069,9 @@ async function main() {
         restorations,
       });
       const restoreInfo = restorations > 0 ? `, ${restorations}px restored` : '';
+      const deconInfo = totalDecontaminated > 0 ? `, ${totalDecontaminated}px decon` : '';
       process.stdout.write(
-        `\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed${restoreInfo}`.padEnd(80),
+        `\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed${deconInfo}${restoreInfo}`.padEnd(90),
       );
     }
     if (cellIdx >= cellsToProcess) break;
