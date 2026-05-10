@@ -29,18 +29,33 @@ export const config = {
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {
-      // Sprint 0.5.5: descent + penalty rates bumped uniformly across all
-      // three tiers (playtest feedback — game felt sluggish even at 'fast').
-      // Two passes applied during the sprint: first +10%, then a second +10%
-      // on top, for a cumulative ~21% increase from the v0.5.4 baseline.
-      // Score multipliers unchanged (still 1.0 / 1.25 / 1.5). Baseline
-      // values preserved in commit history if a future tune needs to revert.
-      //   slow:   40 → 48   px/s descent;  120 → 145  penalty
-      //   medium: 60 → 73   px/s descent;  180 → 218  penalty
-      //   fast:   90 → 109  px/s descent;  270 → 327  penalty
-      slow: { multiplier: 1.0, descentPxPerSec: 48, penaltyPxPerSec: 145 },
-      medium: { multiplier: 1.25, descentPxPerSec: 73, penaltyPxPerSec: 218 },
-      fast: { multiplier: 1.5, descentPxPerSec: 109, penaltyPxPerSec: 327 },
+      // Speed tuning — these are the only six numbers that govern alien
+      // descent + wrong-shot penalty acceleration. To rebalance the game
+      // globally (e.g. "make it 10% slower at every tier"), edit just
+      // these two values per tier; nothing else in the codebase needs to
+      // change. `multiplier` is the SCORE multiplier, NOT speed — leaving
+      // it alone keeps points-per-correct-answer stable across re-tunes.
+      //
+      // Tuning history (newest first):
+      //   v0.6 playtest (sprint 0.6 — "blaster doesn't have time for a
+      //     final pass when I'm thinking"): −15% across all tiers.
+      //     slow:   48 → 41   px/s descent;  145 → 123  penalty
+      //     medium: 73 → 62   px/s descent;  218 → 185  penalty
+      //     fast:  109 → 93   px/s descent;  327 → 278  penalty
+      //   Sprint 0.5.5 (two +10% passes during a refactor sprint —
+      //     "felt sluggish even at fast"): cumulative ~21% above the
+      //     v0.5.4 baseline.
+      //   v0.5.4 baseline:
+      //     slow 40 / medium 60 / fast 90 px/s descent
+      //     slow 120 / medium 180 / fast 270 px/s penalty
+      //
+      // Cumulative effect from v0.5.4 baseline after this round:
+      //   1.10 × 1.10 × 0.85 ≈ 1.03 → ~3% faster than the original
+      //   baseline (i.e. effectively neutral; the two +10% passes
+      //   over-corrected and the -15% pulls it back near baseline).
+      slow: { multiplier: 1.0, descentPxPerSec: 41, penaltyPxPerSec: 123 },
+      medium: { multiplier: 1.25, descentPxPerSec: 62, penaltyPxPerSec: 185 },
+      fast: { multiplier: 1.5, descentPxPerSec: 93, penaltyPxPerSec: 278 },
     },
   },
   hero: {
