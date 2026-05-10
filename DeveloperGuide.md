@@ -229,8 +229,8 @@ mathBasher/
 │   │   ├── services/    Phaser-coupled services (pure facades live in /src/services/)
 │   │   │   └── PhaserAudioManager.ts  scene-bound audio playback + loop tracking
 │   │   └── ui/          PlaceholderButton, IconButton, KeyboardNavigator, EscBackHandler,
-│   │                    TouchFireButton, MenuLayout (+ pure menuLayoutGeometry.ts),
-│   │                    typography, uiPalette
+│   │                    TouchFireButton (on-screen fire btn for touch devices),
+│   │                    MenuLayout (+ pure menuLayoutGeometry.ts), typography, uiPalette
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
 │   │   ├── distractors.ts       distractor-picking helpers
@@ -250,7 +250,8 @@ mathBasher/
 │       ├── telemetry.ts         _th.logToAi(...) helper, console fallback
 │       ├── attribution.ts       AGPL §7(b) UI text — single source of truth
 │       ├── sceneKeys.ts         scene identifier constants
-│       └── audioKeys.ts         audio asset keys + sfxPath() URL helper
+│       ├── audioKeys.ts         audio asset keys + sfxPath() URL helper + AUDIO_MANIFEST
+│       └── SCALE.md             canvas scaling strategy doc (FIT + 1280×720 + landscape lock)
 │
 ├── public/              static assets served as-is by Vite
 │   └── assets/          (CREDITS.md attribution ledger; sprites added later)
@@ -480,6 +481,10 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where do text styles live? | `src/game/ui/typography.ts` — `FONT_FAMILY` constant + named `TEXT_*` color constants + a `text(scene, x, y, str, kind)` helper that picks size + color + weight from a vocabulary of 12 named `TextKind`s (`title`, `h2`, `h3`, `body`, `subtitle`, `prompt`, `accent`, `success`, `warning`, `stars`, `sectionLabel`, `bodyMuted`). Scenes use the helper; one-off sizes inline `{ fontFamily: FONT_FAMILY, ... }` and reference the named color constants. The `'system-ui, sans-serif'` literal appears nowhere outside this file. |
 | How do I add a new menu screen? | Extend `Phaser.Scene`, call `setupScene(this)` as the FIRST line of `create()` (logs Started + binds AudioManager + registers shutdown listener for Completed), then use `stackButtons(scene, { centerY, items: [{ label, onClick, kind }] })` from `MenuLayout.ts` to build the button stack. Pass the returned buttons to `new KeyboardNavigator(this, buttons)`. Use `wireEscBack(this, () => this.scene.start(SceneKeys.X))` for Esc back-stack. Register the scene class in `src/app/boot.ts`'s scene array (NOT in `main.ts` anymore) and add its key to `src/core/sceneKeys.ts`. |
 | Where do I add a new audio asset? | One line in `src/core/audioKeys.ts` — add the key to `SfxKeys` (or `MidgroundKeys` / `MusicKeys`). The `AUDIO_MANIFEST` const at the bottom of the same file derives URLs programmatically, and `BootScene.preload` iterates the manifest with no per-kind branching. Adding a new sound is a 1-file change; BootScene needs zero edits. |
+| How does the canvas scale to different viewports? | `Phaser.Scale.FIT` mode against a fixed 1280×720 (16:9) design canvas — letterboxes anything off-ratio. The page CSS in `index.html` paints body + html in `#0b1020` (matches in-game backdrop) so letterbox bands look intentional. Configured in `src/app/boot.ts` (`scale: { mode: FIT, parent: 'game', expandParent: true, width: 1280, height: 720 }`). Full rationale + when-to-revisit guidance in [`src/core/SCALE.md`](src/core/SCALE.md). RESIZE was deliberately rejected — every entity, HUD position, and gameplay tuning constant is anchored to design-space coordinates; switching to RESIZE would require per-scene layout recomputation for no real win on a fixed-aspect arcade game. |
+| How does the portrait-rotate prompt work on phones? | Pure DOM, no Phaser. `index.html` declares `<div id="rotate-overlay">` with the rotate prompt + a CSS-only animated phone glyph. A media query (`@media (orientation: portrait) and (max-width: 900px)`) toggles `display: flex`. The 900px max-width gates it to phone-sized viewports — a desktop user resizing into a portrait window pose isn't pestered. When the kid rotates back to landscape the media query stops matching, the overlay disappears, and `boot.ts` registers an `orientationchange` listener that calls `game.scale.refresh()` belt-and-braces in case a quirky mobile browser (older iOS Safari) doesn't fire a paired resize event. |
+| Where does the on-screen FIRE button live? | `src/game/ui/TouchFireButton.ts` — a circular amber button anchored bottom-right, sized for one-handed thumb use in landscape (80px diameter visual + ~108px hit area). Constructed in `GameScene.create`. Visibility gated by touch detection: hidden when `navigator.maxTouchPoints === 0` AND no `touchstart` has ever fired on the page; shown if either flips (so a Surface / Chromebook with both keyboard and touch always gets the button after the first touch). Pointer-down stops event propagation so the canvas-wide tap-to-fire listener in `InputSystem` doesn't double-count, then calls `InputSystem.fire()` (the cooldown still applies — same code path as Space / mouse-click). Positioned ABOVE the AttributionScene footer with 8px clearance — the §7(b) attribution must always remain visible per the AGPL contract. |
+| Where does touch input enter the game? | `src/game/systems/InputSystem.ts` is the single funnel. Three input pathways converge: (1) keyboard Space, (2) canvas-wide pointerdown (mouse or touch), (3) `TouchFireButton.onFire` calling `InputSystem.fire()` programmatically. All three pass through the same cooldown gate (`config.hero.fireCooldownMs`). InputSystem is instantiated in `GameScene.create` and destroyed on scene shutdown — it doesn't listen during menus, so a Tab/Enter on a menu button never fires a shot. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---

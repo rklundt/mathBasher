@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
+import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { attribution } from '@/core/attribution';
 import { FONT_FAMILY, TEXT_PRIMARY, TEXT_BLUE } from '@/game/ui/typography';
@@ -40,7 +41,11 @@ export class AttributionScene extends Phaser.Scene {
     _th.logToAi('AttributionScene Started', SeverityLevel.Information);
 
     const { width, height } = this.scale;
-    const footerHeight = 56;
+    // Footer height from config (load-bearing for §7(b) compliance + the
+    // TouchFireButton's "above the footer" positioning). Centralized in
+    // `config.layout.attributionFooterHeightPx` so a future redesign
+    // automatically repositions every dependent widget.
+    const footerHeight = config.layout.attributionFooterHeightPx;
 
     // Translucent dark backdrop strip so the attribution stays legible over
     // any scene's background, no matter how busy.

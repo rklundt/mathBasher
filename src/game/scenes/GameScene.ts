@@ -20,6 +20,7 @@ import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { TouchFireButton } from '@/game/ui/TouchFireButton';
 
 /**
  * The actual game. One round = `config.round.questionsPerRound` questions.
@@ -127,6 +128,18 @@ export class GameScene extends Phaser.Scene {
 
     this.inputSystem = new InputSystem(this);
     this.inputSystem.onFire(() => this.handleFire());
+
+    // On-screen FIRE button for touch devices. Hidden on desktop unless
+    // a touch event fires (Surface / Chromebook with both keyboard + touch
+    // can use either). The button calls InputSystem.fire() — same code
+    // path as Space / canvas-tap; cooldown applies. The button itself
+    // stops pointerdown propagation so the canvas-wide tap-to-fire
+    // listener doesn't double-count. See sprint 0.6 Story 3 + Story 4
+    // for the full design rationale.
+    new TouchFireButton({
+      scene: this,
+      onFire: () => this.inputSystem.fire(),
+    });
 
     // Start the active-round loops: background music + hero movement
     // skittering. Both are tracked by AudioManager and respect their
