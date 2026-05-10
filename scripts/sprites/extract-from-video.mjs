@@ -702,12 +702,27 @@ async function main() {
   }
 
   // ---- Step 2: extract frames ----
+  // Don't rm the temp dir wholesale — the pre-detect step (auto-margin /
+  // auto-bg) may have just created it for the probe frame, and Windows
+  // sometimes hits EPERM when mkdir-ing a just-removed directory due to
+  // a delayed handle release. Instead, scrub only stale `frame-*.png`
+  // files so a prior run's extra frames don't pollute this run's count,
+  // and leave the dir + the probe frame in place.
   const tempDir = TEMP_DIR;
   console.log(`\nExtracting frames to ${tempDir}...`);
-  await rm(tempDir, { recursive: true, force: true });
+  await mkdir(tempDir, { recursive: true });
+  const existing = await readdir(tempDir).catch(() => []);
+  for (const f of existing) {
+    if (/^frame-\d+\.png$/.test(f)) {
+      await rm(join(tempDir, f), { force: true });
+    }
+  }
   await extractFrames(ffmpegPath, opts.video, opts.fps, tempDir);
+  // Filter for the strict ffmpeg-pattern only (frame-0001.png etc.) — the
+  // probe frame (probe-frame.png) and any human-dropped files in the
+  // temp dir are excluded by this regex.
   const frameFiles = (await readdir(tempDir))
-    .filter((f) => f.endsWith('.png'))
+    .filter((f) => /^frame-\d+\.png$/.test(f))
     .sort()
     .map((f) => join(tempDir, f));
   if (frameFiles.length === 0) {
