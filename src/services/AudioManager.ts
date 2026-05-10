@@ -26,12 +26,17 @@ import { _th, SeverityLevel } from '@/core/telemetry';
  * their pre-mute values and resume on unmute. (One-icon kid UX from sprint
  * 0.5.2.)
  */
-// localStorage key for the master mute toggle. Boolean stringified ("true"
-// / "false"). FUTURE: when user accounts ship, migrate this and the per-kind
-// volume keys below to per-account scoping (e.g.
-// `mathbasher.user.<id>.audio.muted`) so a shared device with two kids
-// preserves each kid's preferences independently. Today's single-key form
-// is fine for the session-only/no-accounts MVP.
+// localStorage key for the master mute toggle. RETAINED only so the
+// constructor can clean up any prior-session value (see constructor).
+//
+// **Mute is NOT persisted across page reloads** — every fresh page load
+// starts UNMUTED, period. Per user direction (post-0.5.3 testing where a
+// previous bug accidentally persisted muted=true and made the next session
+// mysteriously silent). The mute toggle still works WITHIN a session
+// (loops drop to 0 volume, fire stays silent until unmuted), but a refresh
+// always brings audio back. Volumes ARE still persisted (see
+// VOLUME_STORAGE_KEY_PREFIX below) — those are the kid's preference and
+// reasonable to remember. Mute is more like "right now, be quiet."
 export const AUDIO_MUTE_STORAGE_KEY = 'mathbasher.audio.muted';
 
 /**
@@ -94,7 +99,15 @@ export class AudioManager {
    *   implementation.
    */
   constructor(private readonly storage: MinimalStorage = resolveDefaultStorage()) {
-    this.muted = this.storage.getItem(AUDIO_MUTE_STORAGE_KEY) === 'true';
+    // Mute always starts OFF on a fresh page load — see AUDIO_MUTE_STORAGE_KEY
+    // doc above for the why. Clean up any leftover persisted mute value from
+    // before this policy change (a one-time migration; harmless when storage
+    // is empty).
+    this.muted = false;
+    this.storage.removeItem(AUDIO_MUTE_STORAGE_KEY);
+
+    // Volumes DO persist — they're a preference worth remembering across
+    // sessions ("the kid likes music quiet").
     this.volumes = {
       sfx: this.readVolume('sfx'),
       midground: this.readVolume('midground'),
@@ -109,17 +122,17 @@ export class AudioManager {
   }
 
   /**
-   * Toggle mute. Persists to storage immediately so a tab close right after
-   * the toggle still preserves the choice. Idempotent.
+   * Toggle mute. Mute is **session-scoped** — applied immediately to all
+   * playback but NOT persisted across page loads. A page refresh always
+   * brings audio back. Idempotent.
    *
    * Implementations override to additionally update active loop volumes
    * (mute → drop loops to 0; unmute → restore to slider value). This base
-   * class only owns the persistence + event log.
+   * class only owns the in-memory state + event log.
    */
   setMuted(muted: boolean): void {
     if (this.muted === muted) return;
     this.muted = muted;
-    this.storage.setItem(AUDIO_MUTE_STORAGE_KEY, muted ? 'true' : 'false');
     _th.logToAi('AudioManager.setMuted', SeverityLevel.Information, {
       reason: muted ? 'muted' : 'unmuted',
     });

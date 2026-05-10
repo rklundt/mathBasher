@@ -52,41 +52,38 @@ describe('AudioManager', () => {
     storage = new FakeStorage();
   });
 
-  describe('mute persistence', () => {
+  describe('mute is session-scoped (NOT persisted)', () => {
+    /**
+     * Per user direction: mute must NEVER survive a page reload. A previous
+     * audio bug accidentally persisted muted=true and made the next session
+     * mysteriously silent; the reaction was "do not mute by default. period."
+     * These tests codify that policy so a future change can't quietly
+     * re-introduce mute persistence without breaking them.
+     */
+
     it('starts unmuted when storage has no record', () => {
       const am = new AudioManager(storage);
       expect(am.isMuted()).toBe(false);
     });
 
-    it('starts muted when storage has the muted flag set to "true"', () => {
+    it('STARTS UNMUTED EVEN IF STORAGE HAS A LEFTOVER "true" VALUE', () => {
+      // The load-bearing test: a stale persisted mute from a prior session
+      // (or a previous bug) does NOT carry over. Fresh page = unmuted.
       storage.setItem(AUDIO_MUTE_STORAGE_KEY, 'true');
       const am = new AudioManager(storage);
-      expect(am.isMuted()).toBe(true);
-    });
-
-    it('starts unmuted when storage has the muted flag explicitly "false"', () => {
-      storage.setItem(AUDIO_MUTE_STORAGE_KEY, 'false');
-      const am = new AudioManager(storage);
       expect(am.isMuted()).toBe(false);
     });
 
-    it('starts unmuted for any value that is not literally "true"', () => {
-      // Defensive: a corrupted localStorage value should not silently mute.
-      storage.setItem(AUDIO_MUTE_STORAGE_KEY, 'truthy');
-      const am = new AudioManager(storage);
-      expect(am.isMuted()).toBe(false);
+    it('clears the storage entry on construction so leftover values do not linger', () => {
+      // One-time migration safety net: the constructor scrubs the key.
+      // After AudioManager is constructed once, the storage key is empty.
+      storage.setItem(AUDIO_MUTE_STORAGE_KEY, 'true');
+      new AudioManager(storage);
+      expect(storage.getItem(AUDIO_MUTE_STORAGE_KEY)).toBeNull();
     });
   });
 
-  describe('setMuted', () => {
-    it('writes the new state to storage immediately', () => {
-      const am = new AudioManager(storage);
-      am.setMuted(true);
-      expect(storage.getItem(AUDIO_MUTE_STORAGE_KEY)).toBe('true');
-      am.setMuted(false);
-      expect(storage.getItem(AUDIO_MUTE_STORAGE_KEY)).toBe('false');
-    });
-
+  describe('setMuted (session-scoped behavior)', () => {
     it('updates in-memory state', () => {
       const am = new AudioManager(storage);
       expect(am.isMuted()).toBe(false);
@@ -96,22 +93,36 @@ describe('AudioManager', () => {
       expect(am.isMuted()).toBe(false);
     });
 
+    it('does NOT write to storage', () => {
+      // Mute is intentionally session-scoped — setMuted should leave the
+      // storage backend untouched (other than the constructor's one-time
+      // cleanup).
+      const am = new AudioManager(storage);
+      const baseline = storage.peek().size;
+      am.setMuted(true);
+      am.setMuted(false);
+      am.setMuted(true);
+      expect(storage.peek().size).toBe(baseline);
+      expect(storage.getItem(AUDIO_MUTE_STORAGE_KEY)).toBeNull();
+    });
+
     it('is idempotent — setting the same value twice does nothing', () => {
       const am = new AudioManager(storage);
       am.setMuted(true);
-      const writes1 = storage.peek().size;
+      const stateBeforeRedundantSet = am.isMuted();
       am.setMuted(true); // same value again
-      const writes2 = storage.peek().size;
-      expect(writes2).toBe(writes1);
+      expect(am.isMuted()).toBe(stateBeforeRedundantSet);
     });
 
-    it('persistence survives constructing a fresh AudioManager on the same storage', () => {
+    it('mute does NOT survive a fresh AudioManager on the same storage (refresh resets to unmuted)', () => {
       // Simulates a page refresh: shared storage, new AudioManager instance.
+      // The "first" session set mute; the "second" session must start
+      // unmuted regardless.
       const first = new AudioManager(storage);
       first.setMuted(true);
 
       const second = new AudioManager(storage);
-      expect(second.isMuted()).toBe(true);
+      expect(second.isMuted()).toBe(false);
     });
   });
 

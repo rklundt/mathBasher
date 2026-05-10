@@ -229,42 +229,24 @@ export class HudScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, w, h, baseFill);
     bg.setStrokeStyle(2, baseStroke);
 
-    // Speaker glyph: small back-rectangle (the magnet) + a triangular cone
-    // that touches the back's right edge AND widens outward (narrow at the
-    // back, wide at the front), then two wave-arc bars on the right. All
-    // shape primitives — no image asset.
+    // Speaker glyph as a Unicode emoji rendered by the OS's emoji font.
     //
-    // Geometry note (v2 — fix from initial 0.5.3 design): the previous
-    // version had the cone-triangle pointing the wrong way (wide-edge
-    // touching the back, apex away from it) AND a 2-unit gap between the
-    // back and the cone, which made the icon read as "two disconnected
-    // blobs" rather than a speaker. This version connects them at the seam
-    // and orients the cone correctly.
-    const speakerColor = 0xeaeaf2;
+    // Why emoji instead of composed primitives: two prior attempts at
+    // building a speaker out of rectangles + triangles produced shapes
+    // that didn't read as speakers (user feedback: "doesn't look like a
+    // speaker so I didn't realize what it was"). The Unicode speaker
+    // glyphs (🔊 unmuted / 🔇 muted) are purpose-built and universally
+    // recognized — every kid who's used a phone knows what these mean.
+    // Visual style varies slightly by OS (Apple/Microsoft/Android render
+    // their own emoji fonts) but the SHAPE is consistent everywhere.
+    const speakerGlyph = this.add
+      .text(0, 1, '🔊', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '22px',
+      })
+      .setOrigin(0.5);
 
-    // Back of the speaker (the "magnet" rectangle). Centered at x=-10,
-    // 6 wide × 10 tall → spans x=-13 to x=-7. Right edge at x=-7.
-    const speakerBack = this.add.rectangle(-10, 0, 6, 10, speakerColor);
-
-    // Cone — triangle with its NARROW point touching the back's right
-    // edge and widening to a wide right side. Vertices RELATIVE to the
-    // triangle's position (0, 0):
-    //   apex left:    (-7, 0)   ← touches speakerBack's right edge
-    //   top right:    (1, -8)   ← wide front, top
-    //   bottom right: (1, 8)    ← wide front, bottom
-    // Net positions are absolute since we place the triangle at (0, 0).
-    const speakerCone = this.add.triangle(0, 0, -7, 0, 1, -8, 1, 8, speakerColor);
-
-    // Two sound-wave bars to the right. Heights increase outward to suggest
-    // the wave shape that a real speaker icon's curved arcs would draw.
-    const wave1 = this.add.rectangle(6, 0, 2, 8, speakerColor);
-    const wave2 = this.add.rectangle(11, 0, 2, 14, speakerColor);
-
-    // Slash overlay (red diagonal) — visible when muted, hidden when on.
-    const slash = this.add.rectangle(0, 0, 30, 3, 0xef4444);
-    slash.setRotation(-Math.PI / 4);
-
-    container.add([bg, speakerBack, speakerCone, wave1, wave2, slash]);
+    container.add([bg, speakerGlyph]);
     container.setSize(w, h);
 
     const audio = getAudioManager();
@@ -272,14 +254,13 @@ export class HudScene extends Phaser.Scene {
 
     const repaint = (): void => {
       const muted = audio.isMuted();
-      wave1.setVisible(!muted);
-      wave2.setVisible(!muted);
-      slash.setVisible(muted);
-      // Dim the speaker glyph itself in muted state so "off" reads at a
-      // glance for the youngest players, not just from the slash overlay.
-      const speakerAlpha = muted ? 0.6 : 1;
-      speakerBack.setAlpha(speakerAlpha);
-      speakerCone.setAlpha(speakerAlpha);
+      // Switch the emoji to communicate state. 🔇 has the cancellation
+      // stroke baked in by the OS; we don't need a separate slash overlay
+      // anymore.
+      speakerGlyph.setText(muted ? '🔇' : '🔊');
+      // Slight dim when muted so the OFF state reads at a glance even
+      // for a kid who doesn't notice the cancellation stroke.
+      speakerGlyph.setAlpha(muted ? 0.65 : 1);
       // Focus ring: blue 3px stroke when keyboard-focused, normal otherwise.
       bg.setStrokeStyle(focused ? 3 : 2, focused ? focusStroke : baseStroke);
     };
