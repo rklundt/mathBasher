@@ -138,6 +138,43 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | First-load behavior: open the app in a fresh tab, press fire on Menu — no sound (audio not initialized yet); click Start, then go through to the round, fire — sound plays. (This verifies the iOS Safari first-interaction guard works.) |
 |   | Browser DevTools console shows no warnings about missing audio keys or playback errors during a normal round |
 
+## Settings (sprint 0.5.3)
+
+| ✓ | Check |
+|---|---|
+|   | From MenuScene, click **Settings** → SettingsScene appears with three rows: **Sound effects**, **Background ambience**, **Music**. Each shows a label, `−` button, percent value, `+` button. Defaults on first load: sfx 70%, midground 40%, music 50%. |
+|   | Click `+` on Sound effects → percent goes 70% → 80%; in next round, fire-1.mp3 plays louder |
+|   | Click `−` on Sound effects repeatedly until 0% → `−` button enters disabled visual state at 0; fire is silent in next round |
+|   | Click `+` repeatedly until 100% → `+` button enters disabled visual state at 100 |
+|   | Set sfx back to 70%; mute via HUD icon → fire still silent (master mute overrides slider) |
+|   | Unmute → fire returns at the slider value |
+|   | Tab through all controls in Settings; visible blue focus ring on the focused button; Enter/Space activates |
+|   | **Esc** on SettingsScene returns to caller (closes Settings, MenuScene reappears) |
+|   | Click **Back** button → same as Esc |
+|   | From MenuScene → Start a round → Esc to pause → click **Settings** on the pause overlay → SettingsScene appears LAYERED ON TOP of the pause overlay; gameplay stays paused |
+|   | From paused Settings, click Back → SettingsScene closes, PauseOverlay reappears, gameplay still paused |
+|   | From paused Settings, press Esc → same as Back |
+|   | Volumes persist across **page refresh** (set sfx to 30%, reload, open Settings → still 30%) |
+|   | Volumes persist across **round restart** (Game Over → Play Again → adjust mid-round → still applied next round) |
+
+## Active gameplay loops (sprint 0.5.3)
+
+| ✓ | Check |
+|---|---|
+|   | Start a round → background music (`loop-1.mp3`) plays from the moment the round begins |
+|   | Same start → skittering loop (`skittering-1.mp3`) plays continuously while the hero moves |
+|   | Hero death (let aliens reach the hero) → skittering stops; music continues |
+|   | Next wave starts after death anim → skittering resumes |
+|   | Pause via Esc or HUD button → BOTH loops freeze (no audio drift during pause) |
+|   | Resume → both loops continue from where they froze |
+|   | Quit to Menu from PauseOverlay → both loops stop cleanly (no music bleeding into MenuScene) |
+|   | Round complete (20 questions answered) → both loops stop cleanly during transition to GameOverScene |
+|   | Adjust music slider during gameplay (Esc → Settings → music − or +) → music volume changes IMMEDIATELY (no need to restart the round) |
+|   | Adjust midground slider during gameplay → skittering volume changes immediately |
+|   | Mute toggle during gameplay → both loops drop to silent; unmute restores them at their slider levels (no restart click) |
+|   | Browser DevTools console: `BootScene PreloadedSfx` log shows `reason: '4'` (the four preloaded keys: fire-1, fire-2, skittering-1, loop-1) |
+|   | No "key missing" or "not initialized" warnings during a normal round play |
+
 ## Pause + Escape (sprint 0.5.1)
 
 | ✓ | Check |

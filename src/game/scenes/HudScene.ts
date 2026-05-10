@@ -98,11 +98,20 @@ export class HudScene extends Phaser.Scene {
     const buttonsRoom = buttonWidth * 2 + buttonGap + 16; // pause + mute + gap + edge padding
 
     // Wire both icons through a KeyboardNavigator so Tab/Shift+Tab cycles
-    // them and Enter/Space activates the focused one. Without this the
-    // mute toggle is mouse-only — fails WCAG 2.1.1 for any kid on a
-    // Chromebook trackpad+keyboard. Pause has Esc as a backdoor; mute had
-    // none until this lands.
-    new KeyboardNavigator(this, [muteBtn, pauseBtn]);
+    // them and Enter activates the focused one. Without this the mute
+    // toggle is mouse-only — fails WCAG 2.1.1 for any kid on a Chromebook
+    // trackpad+keyboard. Pause has Esc as a backdoor; mute had none.
+    //
+    // `activateOnSpace: false` is LOAD-BEARING. HudScene runs in parallel
+    // with GameScene during a round, and Space is the FIRE key in
+    // InputSystem. Phaser dispatches the same Space keydown to both
+    // scenes; if KeyboardNavigator activates on Space here, every fire
+    // press also toggles whichever HUD icon currently has focus
+    // (typically Mute, the first tab stop). Real audible bug — every
+    // fire toggles mute → loops + fire flicker on/off. Disabling Space
+    // activation here keeps Tab + Enter for keyboard a11y while letting
+    // Space remain a clean fire input on GameScene.
+    new KeyboardNavigator(this, [muteBtn, pauseBtn], { activateOnSpace: false });
 
     this.counterText = this.add
       .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
@@ -220,19 +229,24 @@ export class HudScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, w, h, baseFill);
     bg.setStrokeStyle(2, baseStroke);
 
-    // Speaker glyph: small square (cone base) + triangle (horn) + two
-    // wave-line rectangles to the right. All shape primitives — no image.
-    const speakerColor = 0xeaeaf2;
-    const speakerBox = this.add.rectangle(-8, 0, 8, 10, speakerColor);
-    const speakerHorn = this.add.triangle(-2, 0, 0, -8, 0, 8, 8, 0, speakerColor);
-    const wave1 = this.add.rectangle(8, 0, 2, 10, speakerColor);
-    const wave2 = this.add.rectangle(13, 0, 2, 14, speakerColor);
+    // Speaker glyph as a Unicode emoji rendered by the OS's emoji font.
+    //
+    // Why emoji instead of composed primitives: two prior attempts at
+    // building a speaker out of rectangles + triangles produced shapes
+    // that didn't read as speakers (user feedback: "doesn't look like a
+    // speaker so I didn't realize what it was"). The Unicode speaker
+    // glyphs (🔊 unmuted / 🔇 muted) are purpose-built and universally
+    // recognized — every kid who's used a phone knows what these mean.
+    // Visual style varies slightly by OS (Apple/Microsoft/Android render
+    // their own emoji fonts) but the SHAPE is consistent everywhere.
+    const speakerGlyph = this.add
+      .text(0, 1, '🔊', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '22px',
+      })
+      .setOrigin(0.5);
 
-    // Slash overlay (red diagonal) — visible when muted, hidden when on.
-    const slash = this.add.rectangle(0, 0, 30, 3, 0xef4444);
-    slash.setRotation(-Math.PI / 4);
-
-    container.add([bg, speakerBox, speakerHorn, wave1, wave2, slash]);
+    container.add([bg, speakerGlyph]);
     container.setSize(w, h);
 
     const audio = getAudioManager();
@@ -240,14 +254,13 @@ export class HudScene extends Phaser.Scene {
 
     const repaint = (): void => {
       const muted = audio.isMuted();
-      wave1.setVisible(!muted);
-      wave2.setVisible(!muted);
-      slash.setVisible(muted);
-      // Dim the speaker glyph itself in muted state so "off" reads at a
-      // glance for the youngest players, not just from the slash overlay.
-      const speakerAlpha = muted ? 0.6 : 1;
-      speakerBox.setAlpha(speakerAlpha);
-      speakerHorn.setAlpha(speakerAlpha);
+      // Switch the emoji to communicate state. 🔇 has the cancellation
+      // stroke baked in by the OS; we don't need a separate slash overlay
+      // anymore.
+      speakerGlyph.setText(muted ? '🔇' : '🔊');
+      // Slight dim when muted so the OFF state reads at a glance even
+      // for a kid who doesn't notice the cancellation stroke.
+      speakerGlyph.setAlpha(muted ? 0.65 : 1);
       // Focus ring: blue 3px stroke when keyboard-focused, normal otherwise.
       bg.setStrokeStyle(focused ? 3 : 2, focused ? focusStroke : baseStroke);
     };
