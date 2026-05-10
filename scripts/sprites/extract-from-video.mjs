@@ -56,6 +56,13 @@
  *                       (tolerance - feather) of bg are fully transparent; pixels beyond
  *                       (tolerance + feather) are fully opaque; in between is a linear
  *                       alpha ramp. Feather=0 reproduces the old binary-alpha behavior.
+ *   --consistency N     cross-frame consistency restore threshold 0–100 (default 80) —
+ *                       after per-frame bg removal, look at each pixel position across
+ *                       all frames. If a pixel is opaque in ≥ N% of frames but transparent
+ *                       in some, those transparent frames are treated as flood-fill leaks
+ *                       and their alpha is restored to the consensus opaque value. Catches
+ *                       intermittent helmet-eating / sprite-dropout artifacts. Pass 0 to
+ *                       disable.
  *   --name-prefix S     output filename prefix (default "alien")
  *                       → produces alien-r0c0.webp, alien-r0c1.webp, ...
  *   --quality N         WebP quality 0–100 (default 90)
@@ -122,6 +129,7 @@ function parseArgs(args) {
     bg: 'auto',
     bgTolerance: 30,
     bgFeather: 10,
+    consistency: 80,
     namePrefix: 'alien',
     quality: 90,
     kind: 'alien',
@@ -151,6 +159,7 @@ function parseArgs(args) {
     else if (a === '--bg') opts.bg = args[++i];
     else if (a === '--bg-tolerance') opts.bgTolerance = parseInt(args[++i], 10);
     else if (a === '--bg-feather') opts.bgFeather = parseInt(args[++i], 10);
+    else if (a === '--consistency') opts.consistency = parseInt(args[++i], 10);
     else if (a === '--name-prefix') opts.namePrefix = args[++i];
     else if (a === '--quality') opts.quality = parseInt(args[++i], 10);
     else if (a === '--kind') opts.kind = args[++i];
@@ -264,6 +273,7 @@ Optional:
   --bg auto|"#hex"    background color (default "auto" — corner-sample)
   --bg-tolerance N    color-distance threshold 0–100 (default 30) — soft-alpha midpoint
   --bg-feather N      soft-alpha transition width 0–50 (default 10) — 0 = binary alpha
+  --consistency N     cross-frame consistency restore 0–100 (default 80) — 0 = disabled
   --name-prefix S     filename prefix (default "alien" → alien-r0c0.webp)
   --quality N         WebP quality 0–100 (default 90)
   --kind K            output folder kind (default "alien")
@@ -498,6 +508,79 @@ async function detectMargins(sharp, framePath, keyColor, tolerance, opts = {}) {
     left: left > 0 ? Math.max(0, left - safetyPx) : 0,
     right: right > 0 ? Math.max(0, right - safetyPx) : 0,
   };
+}
+
+/**
+ * Cross-frame consistency-restore pass.
+ *
+ * After per-frame bg removal, each pixel position has an alpha value
+ * across N frames. For most pixels this is consistent — fully opaque
+ * (alpha ≥ 200) for an in-sprite position, fully transparent
+ * (alpha < 50) for an out-of-sprite position. But flood-fill leaks
+ * happen sporadically: in some frames the sprite's pose creates a
+ * thin chain of bg-colored pixels from the cell edge into the sprite
+ * interior (e.g. an alien's near-white helmet that's normally enclosed
+ * by darker body pixels), and the flood-fill eats those interior
+ * pixels for those frames only.
+ *
+ * This pass detects + restores those leak victims:
+ *   - For each pixel position, count how many frames are "opaque" here
+ *     (alpha ≥ 200)
+ *   - If ≥ thresholdPercent of frames are opaque AND any frame is
+ *     transparent (alpha < 50): the transparent frames are flood-leak
+ *     victims. Restore them to the consensus opaque alpha.
+ *
+ * The consensus alpha is the AVERAGE alpha across frames where the
+ * pixel was opaque. Avoids picking a single max/min that might be an
+ * outlier.
+ *
+ * threshold = 0 disables this pass entirely. threshold = 100 only
+ * restores pixels that are opaque in EVERY frame except the leaks.
+ * threshold = 80 (default) is a good balance — catches sporadic leaks
+ * while preserving real animation events (a pixel that's opaque in
+ * 50% of frames and transparent in the other 50% is a real animation
+ * — left alone).
+ *
+ * Mutates the alpha channels in `frameBuffers` in place. Returns the
+ * count of (frame, pixel) restorations made.
+ */
+function consensusRestoreAlpha(frameBuffers, thresholdPercent) {
+  if (thresholdPercent <= 0) return 0;
+  const N = frameBuffers.length;
+  if (N === 0) return 0;
+  const { width, height } = frameBuffers[0];
+  const minOpaqueFrames = Math.ceil((N * thresholdPercent) / 100);
+  const OPAQUE_THRESHOLD = 200;
+  const TRANSPARENT_THRESHOLD = 50;
+  const pixelCount = width * height;
+  let restorations = 0;
+
+  for (let p = 0; p < pixelCount; p++) {
+    const alphaIdx = p * 4 + 3;
+    let opaqueCount = 0;
+    let opaqueAlphaSum = 0;
+    const transparentFrames = [];
+    for (let f = 0; f < N; f++) {
+      const alpha = frameBuffers[f].buf[alphaIdx];
+      if (alpha >= OPAQUE_THRESHOLD) {
+        opaqueCount++;
+        opaqueAlphaSum += alpha;
+      } else if (alpha < TRANSPARENT_THRESHOLD) {
+        transparentFrames.push(f);
+      }
+      // alpha in [50, 200) is anti-aliased edge — left alone, neither
+      // counted toward opaque consensus nor flagged as a leak.
+    }
+    if (opaqueCount >= minOpaqueFrames && transparentFrames.length > 0) {
+      // Restore all the leak frames to the average opaque alpha.
+      const restoredAlpha = Math.round(opaqueAlphaSum / opaqueCount);
+      for (const f of transparentFrames) {
+        frameBuffers[f].buf[alphaIdx] = restoredAlpha;
+        restorations++;
+      }
+    }
+  }
+  return restorations;
 }
 
 function parseHexColor(hex) {
@@ -749,6 +832,9 @@ async function main() {
     `  Bg removal: ${opts.bg === 'auto' ? 'auto-detect from corners' : opts.bg} ` +
       `(tolerance ${opts.bgTolerance}, feather ${opts.bgFeather})`,
   );
+  console.log(
+    `  Cross-frame consistency: ${opts.consistency === 0 ? 'disabled' : `restore at ≥${opts.consistency}% opaque consensus`}`,
+  );
   if (cellsToProcess < totalCells) {
     console.log(`  Cells to process: first ${cellsToProcess} (--max-cells)`);
   }
@@ -854,6 +940,12 @@ async function main() {
         });
       }
 
+      // Cross-frame consistency restore — catches flood-fill leak frames
+      // where the alien's pose creates a path through bg-colored pixels
+      // into the sprite interior. See consensusRestoreAlpha() doc for the
+      // algorithm. Pass --consistency 0 to disable.
+      const restorations = consensusRestoreAlpha(frameBuffers, opts.consistency);
+
       // Compose horizontal-row spritesheet via sharp's create + composite.
       // Each frame becomes one row-segment; total width = N × cell-width,
       // total height = cell-height.
@@ -894,8 +986,12 @@ async function main() {
         size: outBuf.length,
         frames: N,
         removedPct,
+        restorations,
       });
-      process.stdout.write(`\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed`.padEnd(80));
+      const restoreInfo = restorations > 0 ? `, ${restorations}px restored` : '';
+      process.stdout.write(
+        `\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed${restoreInfo}`.padEnd(80),
+      );
     }
     if (cellIdx >= cellsToProcess) break;
   }
