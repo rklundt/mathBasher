@@ -55,3 +55,43 @@ export function midgroundPath(key: MidgroundKey): string {
 export function musicPath(key: MusicKey): string {
   return `/assets/audio/music/${key}.mp3`;
 }
+
+/**
+ * Single source of truth for every audio asset the game preloads at boot.
+ *
+ * Derived programmatically from the three keys-per-kind const objects + the
+ * matching path helpers, so adding a new sound is a 1-line edit here in
+ * `audioKeys.ts` — no second change needed in `BootScene`. Pre-refactor
+ * (sprint 0.5.5) `BootScene.preload` hand-paired every key with its path
+ * helper, and the comment claiming "single source of truth" was aspirational
+ * (the list lived in BootScene). Now `BootScene.preload` just iterates this
+ * manifest with no per-kind branching.
+ *
+ * The `kind` field is currently unused at preload (Phaser's `load.audio` is
+ * kind-agnostic) but kept on every entry so future code that wants to
+ * iterate "every SFX key" or "every loopable asset" can filter by kind
+ * without re-deriving from the source const objects.
+ */
+export interface AudioManifestEntry {
+  readonly key: AudioKey;
+  readonly kind: 'sfx' | 'midground' | 'music';
+  readonly url: string;
+}
+
+export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
+  ...Object.values(SfxKeys).map<AudioManifestEntry>((key) => ({
+    key,
+    kind: 'sfx',
+    url: sfxPath(key),
+  })),
+  ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
+    key,
+    kind: 'midground',
+    url: midgroundPath(key),
+  })),
+  ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
+    key,
+    kind: 'music',
+    url: musicPath(key),
+  })),
+];

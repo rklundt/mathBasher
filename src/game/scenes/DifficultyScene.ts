@@ -11,7 +11,8 @@ import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
-import { getAudioManager } from '@/services/audioManagerFactory';
+import { text } from '@/game/ui/typography';
+import { setupScene } from '@/game/scenes/sceneSetup';
 
 /**
  * Difficulty selection. Two sections:
@@ -44,23 +45,12 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   create(): void {
-    _th.logToAi('DifficultyScene Started', SeverityLevel.Information);
-
-    // Re-bind the AudioManager — see GameSelectScene.create for rationale.
-    // The previous scene was shut down; PlaceholderButton's click SFX call
-    // needs a live scene reference or the first click here is silent.
-    getAudioManager().init(this);
+    setupScene(this);
 
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    this.add
-      .text(cx, height * 0.1, 'Pick Difficulty', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '36px',
-        color: '#eaeaf2',
-      })
-      .setOrigin(0.5);
+    text(this, cx, height * 0.1, 'Pick Difficulty', 'h3').setOrigin(0.5);
 
     // Defensive fallback: if for some reason the math registry has no
     // implemented generators (every entry is a stub), don't render an empty
@@ -70,6 +60,10 @@ export class DifficultyScene extends Phaser.Scene {
     // UI from silently bricking.
     if (getImplementedIds().length === 0) {
       this.renderEmptyState(cx, height);
+      // Empty-state Completed log uses the explicit form (with the
+      // `fallback` prop) to surface the rare condition in telemetry. The
+      // standard shutdown-time Completed log from setupScene() will still
+      // also fire when the scene later transitions away.
       _th.logToAi('DifficultyScene Completed', SeverityLevel.Information, {
         fallback: 'no-implemented-generators',
       });
@@ -106,26 +100,20 @@ export class DifficultyScene extends Phaser.Scene {
     wireEscBack(this, () => this.scene.start(SceneKeys.GameSelect));
 
     this.refreshSelection();
-
-    _th.logToAi('DifficultyScene Completed', SeverityLevel.Information);
   }
 
   private backButton?: PlaceholderButton;
 
   private renderEmptyState(cx: number, height: number): void {
-    this.add
-      .text(
-        cx,
-        height * 0.45,
-        'No math types available yet — check back soon!',
-        {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '24px',
-          color: '#facc15',
-          align: 'center',
-        },
-      )
-      .setOrigin(0.5);
+    const msg = text(
+      this,
+      cx,
+      height * 0.45,
+      'No math types available yet — check back soon!',
+      'accent',
+    );
+    msg.setOrigin(0.5);
+    msg.setStyle({ align: 'center' });
 
     const back = new PlaceholderButton({
       scene: this,
@@ -140,13 +128,7 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, y: number): void {
-    this.add
-      .text(cx, y - 50, 'Math Type', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
-        color: '#9ca3af',
-      })
-      .setOrigin(0.5);
+    text(this, cx, y - 50, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
@@ -179,13 +161,7 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderSpeeds(cx: number, y: number): void {
-    this.add
-      .text(cx, y - 50, 'Speed', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
-        color: '#9ca3af',
-      })
-      .setOrigin(0.5);
+    text(this, cx, y - 50, 'Speed', 'sectionLabel').setOrigin(0.5);
 
     const speeds: { key: SpeedKey; label: string }[] = [
       { key: 'slow', label: 'Slow' },

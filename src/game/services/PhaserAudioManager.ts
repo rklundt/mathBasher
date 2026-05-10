@@ -39,16 +39,6 @@ export class PhaserAudioManager extends AudioManager {
   private scene: Phaser.Scene | null = null;
   private readonly loops: Map<string, LoopRecord> = new Map();
 
-  // PRIOR ATTEMPT NOTE: a one-shot Sound cache was tried in commit 0852b04
-  // to avoid the create-on-every-fire / auto-destroy-on-complete churn in
-  // Phaser's internal sounds[] array, hypothesizing that churn was causing
-  // active loops to stutter on each fire. That hypothesis didn't pan out
-  // (user playtest 2026-05-09: behavior changed pattern but didn't resolve).
-  // Reverted to the canonical `scene.sound.play(key, config)` shortcut.
-  // The actual root cause turned out to be the AudioManager binding to a
-  // shut-down scene (MenuScene) instead of the currently-active scene
-  // (GameScene); see GameScene.create()'s audio.init(this) call.
-
   constructor(storage?: MinimalStorage) {
     super(storage);
   }
@@ -77,10 +67,16 @@ export class PhaserAudioManager extends AudioManager {
    * Idempotent: a second `init` call swaps the scene reference but doesn't
    * re-create the underlying sound manager (Phaser owns that lifetime).
    */
-  override init(scene: unknown): void {
-    // The base-class signature uses `unknown` so pure callers don't pull
-    // Phaser types into their import graph. Cast at the boundary.
-    this.scene = scene as Phaser.Scene;
+  override init(scene: Phaser.Scene): void {
+    // Subclass narrows the parameter from `unknown` (on the pure facade)
+    // to `Phaser.Scene` here. TypeScript permits this narrowing for
+    // method shorthand syntax (parameter bivariance) and the runtime
+    // contract is unchanged — every call site that reaches this method
+    // is in a Phaser scene module, where `Phaser.Scene` is the natural
+    // type. The pure base class still types `init(scene: unknown)` so
+    // pure callers (none today) wouldn't drag Phaser into their import
+    // graph.
+    this.scene = scene;
   }
 
   // ----- One-shot playback -----------------------------------------------
@@ -210,12 +206,25 @@ export class PhaserAudioManager extends AudioManager {
    * place: "volume = effectiveVolume01(kind)".
    */
   private applyVolume(sound: Phaser.Sound.BaseSound, kind: AudioKind): void {
-    const v = this.effectiveVolume01(kind);
-    // Phaser sound types vary (WebAudioSound, HTML5AudioSound, NoAudioSound)
-    // — they all support setVolume but the BaseSound type doesn't declare
-    // it. The cast is safe at runtime; if a future Phaser version drops
-    // setVolume from the concrete classes this would surface as a runtime
-    // error, but that's also the only realistic way it could go wrong.
-    (sound as Phaser.Sound.BaseSound & { setVolume(v: number): void }).setVolume(v);
+    setSoundVolume(sound, this.effectiveVolume01(kind));
   }
+}
+
+/**
+ * Set a Phaser sound's volume — a thin shim around the cast that
+ * `Phaser.Sound.BaseSound` makes necessary.
+ *
+ * Why a cast is required: Phaser's three concrete sound classes
+ * (`WebAudioSound`, `HTML5AudioSound`, `NoAudioSound`) ALL implement
+ * `setVolume(v: number)`, but the abstract `BaseSound` type doesn't
+ * declare it. Phaser's typing surfaces only the lowest common denominator
+ * to keep `BaseSound` truly abstract; consumers that hold a `BaseSound`
+ * reference (like our loop tracker) have to assert the volume capability
+ * themselves. The cast is safe at runtime — every concrete subclass has
+ * the method — and is centralized here so there's one place to audit if
+ * a future Phaser version changes the shape (none expected; setVolume has
+ * been on BaseSound's concrete subclasses since Phaser 3.0).
+ */
+function setSoundVolume(sound: Phaser.Sound.BaseSound, v: number): void {
+  (sound as Phaser.Sound.BaseSound & { setVolume(v: number): void }).setVolume(v);
 }

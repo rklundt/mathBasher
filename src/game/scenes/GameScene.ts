@@ -19,6 +19,7 @@ import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
+import { setupScene } from '@/game/scenes/sceneSetup';
 
 /**
  * The actual game. One round = `config.round.questionsPerRound` questions.
@@ -84,7 +85,13 @@ export class GameScene extends Phaser.Scene {
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
 
+    // Lifecycle telemetry + AudioManager binding. setupScene logs the
+    // standard `GameScene Started` / `GameScene Completed` lifecycle
+    // events with the round's mathId+speed for filtering. The `RoundStarted`
+    // domain event below is a separate concern (round began, not scene
+    // booted) and remains a distinct telemetry name.
     const props: TelemetryProps = { mathId: this.mathId, speed: this.speed };
+    setupScene(this, props);
     _th.logToAi('RoundStarted', SeverityLevel.Information, props);
 
     // Hud overlay (parallel scene), guarded against double-launch.
@@ -125,27 +132,20 @@ export class GameScene extends Phaser.Scene {
     // skittering. Both are tracked by AudioManager and respect their
     // per-kind volume sliders + master mute. They're stopped in
     // cleanup() and pause/resumed via the pause/resume contract.
-    //
-    // Re-bind the AudioManager to THIS scene before starting the loops.
-    // The first init() happened in MenuScene.Start onClick (iOS Safari
-    // first-gesture rule); MenuScene has long since shut down by the time
-    // GameScene runs. Phaser's per-scene `sound` proxy is tied to its
-    // owning scene's lifecycle — adding/playing sounds via a shut-down
-    // scene's proxy creates Sounds whose internal scheduling/update
-    // contract is owed to a dead scene. Symptoms include alternating
-    // audible/silent playback on rapid one-shots and stuttering loops
-    // (user playtest 2026-05-09). Re-binding here points the manager at
-    // the currently-active scene whose update loop is alive.
+    // (AudioManager was already bound to this scene by setupScene above,
+    // so no re-init needed here; the loops attach via the live binding.)
     const audio = getAudioManager();
-    audio.init(this);
     audio.playLoop(MusicKeys.Loop1, 'music');
     audio.playLoop(MidgroundKeys.Skittering1, 'midground');
 
     this.startNextQuestion();
 
+    // setupScene already registered a shutdown listener for the standard
+    // GameScene Completed log; this additional listener handles round
+    // cleanup (stopping loops, tearing down systems). Multiple shutdown
+    // listeners run independently — both fire on stop / scene transition.
     this.events.once('shutdown', () => {
       this.cleanup();
-      _th.logToAi('GameScene Completed', SeverityLevel.Information);
     });
   }
 
