@@ -27,18 +27,61 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**Sprint 0.5.3 in flight** — Audio content batch + Settings screen + first loops wired. PR forming on `sprint/0.5.3-audio-content-and-settings`.
+- **Sprint 0.5.4 next** — click-to-start splash (defer Phaser construction to a user-gesture splash overlay; eliminates the AudioContext auto-start browser warning, properly brackets iOS Safari's first-gesture audio context creation, gives a natural title-screen moment) plus button-click SFX wired to every PlaceholderButton + HUD icon (`button-click-1.mp3` already shipped via the audio pipeline, awaiting this sprint to wire it).
+- **Then 0.6** — mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
 
-What's already on the branch (committed, not yet released):
-- **Encoder gains a third `midground` kind** for atmospheric loops — 96 kbps mono at -22 LUFS (6 dB quieter than sfx so it sits underneath), silence-trim OFF by default to preserve loop boundaries (silence-trimming a loop file can chop into a non-zero-crossing sample and produce an audible click at the loop boundary). New `--trim` CLI flag complements the existing `--no-trim` for explicit override of per-kind defaults. The `--kind` validator now accepts `sfx | midground | music` and rejects any other value.
-- **5 new shipped MP3s**: `bloop-1.mp3` (sfx), `skittering-1.mp3` + `skittering-2.mp3` (midground), `loop-1.mp3` + `loop-2.mp3` (music). All produced via the established `pnpm audio:encode` pipeline. ElevenLabs source — covered by the existing `Generated assets / Game Audio` CREDITS entry.
+## [0.5.3] - 2026-05-10 — Audio content batch + Settings screen + first loops wired
 
-What's queued for the rest of the sprint:
-- **AudioManager per-kind volume + loop API** — replaces the single `DEFAULT_VOLUME` constant with per-kind volumes (sfx 70 / midground 40 / music 50 defaults), adds `playLoop` / `stopLoop` / `pauseAllLoops` / `resumeAllLoops` for looping audio, keeps mute as master that overrides all sliders.
-- **SettingsScene** — three stepped `−`/`+` volume controls (10% increments, 0–100%) for the three kinds, reachable from MenuScene and from PauseOverlay (stacks on top so pause + game state survive).
-- **Live wire-ups**: `loop-1.mp3` plays as gameplay background music; `skittering-1.mp3` plays as the hero's continuous movement loop. Both stop cleanly on round end / quit, pause + resume with the game (extending GameScene.pause/resume from 0.5.1), respond to live volume + mute changes without a restart.
+A round actually feels like a game now. Background music + the hero's "skittering" movement loop play under the action; pressing fire still produces a sample-aligned SFX; a Settings screen exposes per-kind volume controls reachable from both the title screen and the in-round pause overlay; and 5 new audio assets ship across all three audio kinds (sfx / midground / music). The encoder + AudioManager + SettingsScene + GameScene wire-ups all pull together for a coherent first audio experience.
 
-After 0.5.3 closes: every audio kind has at least one wired example, settings UI exists, and the audio content batch is shipped. **Then 0.6** picks up mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
+### Added — Audio content + encoder
+- **Encoder gains a third `midground` kind** for atmospheric loops — 96 kbps mono at -22 LUFS (6 dB quieter than sfx so it sits underneath), silence-trim OFF by default to preserve loop boundaries (trimming a loop file can chop into a non-zero-crossing sample and click at the loop boundary). New `--trim` CLI flag complements the existing `--no-trim` for explicit override of per-kind defaults. The `--kind` validator now accepts `sfx | midground | music` and rejects any other value.
+- **5 new shipped MP3s** in three new folders:
+  - sfx: `bloop-1.mp3` (9.5 KB, available but unwired this sprint)
+  - midground: `skittering-1.mp3` (35.5 KB, wired) + `skittering-2.mp3` (47.4 KB, available)
+  - music: `loop-1.mp3` (587 KB, wired) + `loop-2.mp3` (587 KB, available)
+- All produced via the established `pnpm audio:encode` pipeline. ElevenLabs source, covered by the existing `Generated assets / Game Audio` CREDITS entry — no new CREDITS rows needed since the generator is unchanged.
+
+### Added — AudioManager per-kind volumes + loop API
+- **`AudioKind = 'sfx' | 'midground' | 'music'`** type union plus exported `AUDIO_KINDS` (slider order) and `DEFAULT_VOLUMES` map (sfx 70 / midground 40 / music 50).
+- **Per-kind volume API**: `getVolume(kind)` / `setVolume(kind, percent)` with clamping, persistence to localStorage (one key per kind), and defensive fallback for corrupted/non-numeric/out-of-range values.
+- **Loop API**: `playLoop(key, kind): LoopHandle` / `stopLoop(handle)` / `pauseAllLoops()` / `resumeAllLoops()`. `LoopHandle = string` (the asset key). `Map<key, {kind, sound}>` enforces one-loop-per-key naturally.
+- **Live volume reactivity**: `onVolumeChanged(kind, percent)` hook walks every active loop OF THAT KIND and applies the new effective volume. The kid moving a slider mid-round hears the change immediately, no restart click.
+- **Master mute**: when muted, `effectiveVolume01(kind)` returns 0 for every kind; loops keep PLAYING at 0 volume (no jarring stop+restart on mute). Sliders preserve their pre-mute values.
+
+### Added — SettingsScene + entry points
+- **`src/game/scenes/SettingsScene.ts`** — three stepped `−`/`+` volume controls per kind (10% increments). Reads `audio.getVolume(kind)` every render — no local mirror that could drift. Boundaries (0% / 100%) disable the matching button via PlaceholderButton's existing disabled state. Tab + Enter navigation (no Space activation; see HudScene note below). Esc closes via `wireEscBack`.
+- **MenuScene Settings button** — launches SettingsScene parallel; Menu remains active underneath; `onBack` closes the scene.
+- **PauseOverlay Settings button** — same pattern; SettingsScene stacks on top of PauseOverlay; gameplay stays paused throughout.
+
+### Added — gameplay loop wire-ups
+- **`loop-1.mp3` as gameplay background music** — `audio.playLoop(MusicKeys.Loop1, 'music')` in `GameScene.create()`; `audio.stopLoop(MusicKeys.Loop1)` in cleanup. Volume tracks the music slider live.
+- **`skittering-1.mp3` as the hero's continuous movement loop** — starts in `create()`, stops during the death animation (`handleTimeout`), restarts in `afterQuestion` (no-op if already running). Volume tracks the midground slider live.
+- **GameScene.pause/resume extended** to call `audio.pauseAllLoops()` / `audio.resumeAllLoops()` — both loops freeze in place during the pause overlay, resume cleanly on Esc-to-resume.
+- **GameScene.cleanup also stops SettingsScene** if active (e.g. quit-to-menu while Settings was open from PauseOverlay).
+
+### Added — audioKeys.ts taxonomy
+- Three flat const objects with parallel naming: `SfxKeys`, `MidgroundKeys`, `MusicKeys` (plus type-level `SfxKey`, `MidgroundKey`, `MusicKey` and unified `AudioKey`). Three matching path helpers: `sfxPath`, `midgroundPath`, `musicPath`. Mirrors the `sceneKeys.ts` convention.
+
+### Added — tests
+- 24 new pure-TS tests in `AudioManager.test.ts` covering: per-kind defaults, persistence, clamping, corrupted-storage fallback, master mute interaction, hook firing, loop API contract (handle stability, idempotent stop, no-throws on empty manager), `AUDIO_KINDS` slider order, all defaults ≤ 80 ("never blast-loud" rule).
+- After in-flight policy change (mute is no longer persisted), tests now codify the load-bearing rule "STARTS UNMUTED EVEN IF STORAGE HAS A LEFTOVER `'true'` VALUE".
+- Test count: 70 → 93.
+
+### Fixed — real bugs caught during the sprint
+- **Space key was double-handled**. HudScene runs in parallel with GameScene during a round; both have keyboard listeners. `GameScene.InputSystem` listened for Space → fire; `HudScene.KeyboardNavigator` listened for Space → activate the focused control (the Mute icon, the first tab stop). Phaser dispatched the same Space keydown to both scenes, so every fire press also toggled mute multiple times (key auto-repeat amplified to 4-6 toggles). Audible alternating fire + flickering loops. Diagnostic logging on the AudioManager confirmed the root cause; fix added an `activateOnSpace` flag to `KeyboardNavigator` (default true; HudScene opts out), keeping Tab + Enter for WCAG 2.1.1 keyboard accessibility.
+- **Encoder filter ORDER was wrong for quiet inputs** — the chain was `trim → limiter → loudnorm`. With a quiet source (mean -39 dB), the limiter's -3.1 dB cap was a no-op (peaks already below it) and loudnorm's 23 dB boost pushed peaks past the -1.5 dBTP ceiling unchecked. Reordered to `trim → loudnorm → limiter` (with `level=disabled` from sprint 0.5.2 still set) so the limiter is the FINAL brick-wall safety net catching whatever loudnorm overshoots.
+
+### Changed — UX policy
+- **Mute is now session-scoped, not persisted across page reloads**. Per user direction after a previous bug accidentally persisted muted=true and made the next session mysteriously silent: "do not mute by default. period." Volumes still persist (those are kid preferences); mute resets to OFF on every page refresh. The constructor scrubs any leftover stored mute value as a one-time migration. Mute toggle still works WITHIN a session.
+- **HUD mute icon switched to Unicode emoji** — the composed-from-rectangles speaker glyph didn't read as a speaker. Replaced with `🔊` (unmuted) / `🔇` (muted) Unicode emoji rendered as a Phaser Text. Universally recognized; OS provides the rendering.
+- **SettingsScene label "Background ambience" → "Background sounds"** — plainer English for younger readers.
+
+### Notes
+- All six review agents passed at wrap-up. Two should-fix items folded in (PauseOverlay Esc routing guard; AudioManager naming consistency). Five nice-to-haves applied (rename `AudioKeys` → `SfxKeys`, BootScene preload count derived from list, SettingsScene warns on missing onBack, kid-friendlier label, future-account-prep storage comment).
+- Test count: 70 → 93. Bundle stays at ~1.5 MB JS (audio is loaded async by Phaser, not bundled).
+- New telemetry events: `AudioManager.setVolume`, `MenuScene.SettingsOpened`, `PauseOverlay.SettingsOpened`, `SettingsScene Started`/`Completed`. Two new reserved property names in telemetry-core: none added (sprint reused `from` and `reason`).
+- `button-click-1.mp3` was processed via the audio pipeline during the sprint window but kept untracked — sprint 0.5.4 picks it up to wire to button activations across the project.
 
 ## [0.5.2] - 2026-05-09 — First audio (fire SFX + audio infrastructure)
 
