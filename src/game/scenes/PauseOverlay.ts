@@ -5,8 +5,9 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { stackButtons } from '@/game/ui/MenuLayout';
+import { FONT_FAMILY, TEXT_PRIMARY } from '@/game/ui/typography';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 
 /**
@@ -60,45 +61,26 @@ export class PauseOverlay extends Phaser.Scene {
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.6);
     backdrop.setOrigin(0, 0);
 
+    // 56px primary "Paused" headline — between TextKind 'h2' (48px) and
+    // 'title' (64px). One-off; inline via FONT_FAMILY + TEXT_PRIMARY.
     this.add
       .text(width / 2, height * 0.32, 'Paused', {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '56px',
-        color: '#eaeaf2',
+        color: TEXT_PRIMARY,
       })
       .setOrigin(0.5);
 
-    const resumeBtn = new PlaceholderButton({
-      scene: this,
-      x: width / 2,
-      y: height * 0.46,
-      width: 280,
-      height: 64,
-      label: 'Resume',
-      onClick: () => this.handleResume(),
+    const buttons = stackButtons(this, {
+      centerY: height * 0.58,
+      items: [
+        { label: 'Resume', onClick: () => this.handleResume() },
+        { label: 'Settings', kind: 'secondary', onClick: () => this.handleSettings() },
+        { label: 'Quit to Menu', onClick: () => this.handleQuit() },
+      ],
     });
 
-    const settingsBtn = new PlaceholderButton({
-      scene: this,
-      x: width / 2,
-      y: height * 0.58,
-      width: 280,
-      height: 56,
-      label: 'Settings',
-      onClick: () => this.handleSettings(),
-    });
-
-    const quitBtn = new PlaceholderButton({
-      scene: this,
-      x: width / 2,
-      y: height * 0.7,
-      width: 280,
-      height: 64,
-      label: 'Quit to Menu',
-      onClick: () => this.handleQuit(),
-    });
-
-    new KeyboardNavigator(this, [resumeBtn, settingsBtn, quitBtn]);
+    new KeyboardNavigator(this, buttons);
 
     // Esc on the overlay = Resume. Round-trip through Esc means a kid can
     // open and close pause with one key, without needing to find the Resume

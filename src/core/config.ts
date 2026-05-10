@@ -44,6 +44,29 @@ export const config = {
     targetLanes: 4,
     /** safe-area padding in design pixels (1280x720 design canvas) */
     safeAreaPaddingPx: 16,
+    /**
+     * Canonical button dimensions across all menu scenes. Tuned for
+     * mouse + touch + keyboard accessibility:
+     *  - primary actions (Start, Resume, Play Again, Quit, Change Difficulty,
+     *    Main Menu): 280×64 — large enough to dominate the layout
+     *  - secondary actions (Settings, Back): 200×56 — clearly subordinate
+     *  - game-mode tiles (Alien Shoot, Coming soon): 320×200 — large
+     *    pictographic targets
+     *  - dense rows (Settings −/+ buttons, difficulty/speed tiles in
+     *    DifficultyScene): 56×56 / 160×64 / 200×80 — tight grid layouts
+     *
+     * All values respect the 44×44 Apple HIG minimum hit area. Pre-refactor
+     * (sprint 0.5.5) these numbers were sprinkled across 6 scenes; centralizing
+     * here means a "make all primary buttons 320 wide" change is a 1-line edit.
+     */
+    button: {
+      primaryW: 280,
+      primaryH: 64,
+      secondaryW: 200,
+      secondaryH: 56,
+      tileW: 320,
+      tileH: 200,
+    },
   },
 } as const;
 

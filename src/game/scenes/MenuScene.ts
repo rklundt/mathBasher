@@ -5,9 +5,10 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { getAudioManager } from '@/services/audioManagerFactory';
+import { stackButtons } from '@/game/ui/MenuLayout';
+import { text, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
+import { setupScene } from '@/game/scenes/sceneSetup';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 
 /**
@@ -25,76 +26,27 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    _th.logToAi('MenuScene Started', SeverityLevel.Information);
-
-    // Bind the AudioManager to THIS scene immediately, before any
-    // PlaceholderButton is constructed. PlaceholderButton's pointerdown
-    // handler plays a click SFX BEFORE invoking the user-supplied onClick;
-    // if the audio manager isn't yet bound to a live scene at that moment,
-    // `ensureReady()` returns false and the very first button click is
-    // silently dropped (logs `AudioManager.play.notInitialized`). Sprint
-    // 0.5.4 follow-up: previously this `init` call lived inside Start's
-    // onClick, which guaranteed the first Start click was silent.
-    //
-    // iOS Safari note: the user-gesture requirement is for AudioContext
-    // CREATION, not for `init()`. The AudioContext is already created
-    // (and unlocked) when Phaser is constructed inside the splash click
-    // handler in main.ts — by the time MenuScene.create() runs, the audio
-    // pipeline is hot. Binding here is safe.
-    getAudioManager().init(this);
+    setupScene(this);
 
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    this.add
-      .text(cx, height * 0.22, 'mathBasher', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '64px',
-        color: '#eaeaf2',
-      })
-      .setOrigin(0.5);
+    text(this, cx, height * 0.22, 'mathBasher', 'title').setOrigin(0.5);
+    text(this, cx, height * 0.32, 'Math, but with aliens.', 'subtitle').setOrigin(0.5);
 
-    this.add
-      .text(cx, height * 0.32, 'Math, but with aliens.', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
-        color: '#9ca3af',
-      })
-      .setOrigin(0.5);
-
-    const startButton = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.5,
-      width: 280,
-      height: 64,
-      label: 'Start',
-      onClick: () => this.scene.start(SceneKeys.GameSelect),
+    // Three-button menu stack centered ~60% down the canvas. Geometry
+    // (widths, heights, gaps) comes from `config.layout.button` via
+    // `stackButtons` so all menu scenes share one rhythm.
+    const buttons = stackButtons(this, {
+      centerY: height * 0.6,
+      items: [
+        { label: 'Start', onClick: () => this.scene.start(SceneKeys.GameSelect) },
+        { label: 'High Scores', onClick: () => this.showHighScoresPlaceholder() },
+        { label: 'Settings', kind: 'secondary', onClick: () => this.openSettings() },
+      ],
     });
 
-    const highScoresButton = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.62,
-      width: 280,
-      height: 64,
-      label: 'High Scores',
-      onClick: () => this.showHighScoresPlaceholder(),
-    });
-
-    const settingsButton = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.74,
-      width: 280,
-      height: 56,
-      label: 'Settings',
-      onClick: () => this.openSettings(),
-    });
-
-    new KeyboardNavigator(this, [startButton, highScoresButton, settingsButton]);
-
-    _th.logToAi('MenuScene Completed', SeverityLevel.Information);
+    new KeyboardNavigator(this, buttons);
   }
 
   /**
@@ -128,11 +80,14 @@ export class MenuScene extends Phaser.Scene {
       this.highScoresOverlay.destroy();
     }
     const { width, height } = this.scale;
+    // One-off style (18px amber); not worth a dedicated TextKind. Build
+    // inline using FONT_FAMILY + TEXT_AMBER constants so the literal
+    // `'system-ui, ...'` stays out of scene code.
     this.highScoresOverlay = this.add
       .text(width / 2, height * 0.78, 'No scores yet — play a round!', {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '18px',
-        color: '#facc15',
+        color: TEXT_AMBER,
       })
       .setOrigin(0.5);
     this.time.delayedCall(2000, () => {

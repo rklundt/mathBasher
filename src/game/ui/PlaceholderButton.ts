@@ -5,6 +5,20 @@
 import Phaser from 'phaser';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
+import {
+  SLATE_BG,
+  SLATE_HOVER,
+  DISABLED_BG,
+  BORDER_GREY,
+  BORDER_GREY_DISABLED,
+  FOCUS_BLUE,
+  SELECTED_AMBER,
+} from '@/game/ui/uiPalette';
+import {
+  FONT_FAMILY,
+  TEXT_PRIMARY,
+  TEXT_BUTTON_SUBTITLE,
+} from '@/game/ui/typography';
 
 export interface PlaceholderButtonOpts {
   scene: Phaser.Scene;
@@ -86,16 +100,16 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // world-to-local transform via its parent container automatically. Net:
     // the entire button surface is clickable, regardless of where the text
     // sits.
-    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, 0x1f2740);
+    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, SLATE_BG);
     this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height);
-    this.border.setStrokeStyle(2, 0x6b7280);
+    this.border.setStrokeStyle(2, BORDER_GREY);
     this.border.setFillStyle();
     this.add([this.bg, this.border]);
 
     const label = opts.scene.add.text(0, opts.subtitle ? -10 : 0, opts.label, {
-      fontFamily: 'system-ui, sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: '20px',
-      color: '#eaeaf2',
+      color: TEXT_PRIMARY,
     });
     label.setOrigin(0.5);
     this.add(label);
@@ -103,9 +117,9 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
     if (opts.subtitle) {
       const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '14px',
-        color: '#cbd5e1',
+        color: TEXT_BUTTON_SUBTITLE,
       });
       subtitle.setOrigin(0.5);
       this.add(subtitle);
@@ -123,10 +137,10 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
     // Hover state (only when enabled).
     this.bg.on('pointerover', () => {
-      if (!this._disabled) this.bg.setFillStyle(0x2a3454);
+      if (!this._disabled) this.bg.setFillStyle(SLATE_HOVER);
     });
     this.bg.on('pointerout', () => {
-      if (!this._disabled) this.bg.setFillStyle(0x1f2740);
+      if (!this._disabled) this.bg.setFillStyle(SLATE_BG);
     });
     // Click handler uses POINTERDOWN, not pointerup. pointerup is bug-shaped
     // here for two reasons:
@@ -200,9 +214,9 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // contrast on the dark canvas background. The previous setAlpha(0.55)
     // on the whole container dropped subtitle text below the 4.5:1 ratio.
     if (this._disabled) {
-      this.bg.setFillStyle(0x161b2c);
+      this.bg.setFillStyle(DISABLED_BG);
       this.bg.setAlpha(0.7);
-      this.border.setStrokeStyle(2, 0x374151);
+      this.border.setStrokeStyle(2, BORDER_GREY_DISABLED);
       this.border.setAlpha(0.7);
       this.textChildren.forEach((t) => t.setAlpha(1));
       this.setAlpha(1); // container itself stays full-alpha
@@ -216,14 +230,14 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // Border colors: focus > selected > normal. Focus uses a distinct blue
     // so it never gets confused with the amber selected state.
     if (this._focused) {
-      this.bg.setFillStyle(0x2a3454);
-      this.border.setStrokeStyle(3, 0x60a5fa); // blue for keyboard focus
+      this.bg.setFillStyle(SLATE_HOVER);
+      this.border.setStrokeStyle(3, FOCUS_BLUE);
     } else if (this._selected) {
-      this.bg.setFillStyle(0x2a3454);
-      this.border.setStrokeStyle(3, 0xfacc15); // amber for selected
+      this.bg.setFillStyle(SLATE_HOVER);
+      this.border.setStrokeStyle(3, SELECTED_AMBER);
     } else {
-      this.bg.setFillStyle(0x1f2740);
-      this.border.setStrokeStyle(2, 0x6b7280);
+      this.bg.setFillStyle(SLATE_BG);
+      this.border.setStrokeStyle(2, BORDER_GREY);
     }
   }
 }

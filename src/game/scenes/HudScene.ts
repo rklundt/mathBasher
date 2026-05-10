@@ -10,20 +10,10 @@ import type { Question } from '@/math/types';
 import type { GameScene } from '@/game/scenes/GameScene';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SfxKeys } from '@/core/audioKeys';
-import { KeyboardNavigator, type Focusable } from '@/game/ui/KeyboardNavigator';
-
-/**
- * The HUD icons (Pause, Mute) need to satisfy `Focusable` so a Chromebook
- * trackpad+keyboard kid can Tab through them — WCAG 2.1.1 says all
- * interactive controls must be keyboard-reachable. The shape is the
- * Container itself plus three small extra methods (focus state / activate
- * / disabled-ness). We extend Container in place rather than create a new
- * class because there are only two icon buttons today and they're tightly
- * coupled to HudScene; a generic IconButton helper waits for a third
- * caller (per the senior-dev review's "don't pre-extract for two callers").
- */
-type FocusableIconButton = Phaser.GameObjects.Container & Focusable;
+import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
+import { MUTE_ICON_BG, MUTE_ICON_HOVER } from '@/game/ui/uiPalette';
+import { FONT_FAMILY, TEXT_PRIMARY, TEXT_AMBER, TEXT_GREEN } from '@/game/ui/typography';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -67,19 +57,23 @@ export class HudScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, barHeight, 0x000000, 0.45);
     bg.setOrigin(0, 0);
 
+    // HUD text styles are tight (18-20px) to fit the 48px bar; build
+    // inline via FONT_FAMILY + named color constants. Not promoted to
+    // `text(... 'kind')` because each HUD label needs unique origin
+    // anchoring (left, center, right) — keeping the call chain explicit.
     this.scoreText = this.add
       .text(16, barHeight / 2, 'Score: 0', {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '18px',
-        color: '#eaeaf2',
+        color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);
 
     this.promptText = this.add
       .text(width / 2, barHeight / 2, '— + — = ?', {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '20px',
-        color: '#facc15',
+        color: TEXT_AMBER,
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
@@ -116,9 +110,9 @@ export class HudScene extends Phaser.Scene {
 
     this.counterText = this.add
       .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '18px',
-        color: '#eaeaf2',
+        color: TEXT_PRIMARY,
       })
       .setOrigin(1, 0.5);
 
@@ -145,166 +139,92 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
-   * Build the on-screen Pause button. Container with a slate background
-   * and two centered horizontal "pause bars" — universally recognized as
-   * the pause icon, no text needed. Hit area 44×44 device-independent px
-   * (Apple HIG minimum). On click OR Enter/Space (when focused) →
-   * openPauseOverlay.
-   *
-   * Returns a `FocusableIconButton` so KeyboardNavigator can include it
-   * in the HUD's tab order. Focus state paints a 3px blue ring (matches
-   * the focus convention used by PlaceholderButton in menu scenes).
+   * Build the on-screen Pause button. Two centered horizontal "pause bars"
+   * inside the standard IconButton wrapper — universally recognized, no
+   * text needed. Hit area 44×36 device-independent px (≥ 44 in the long
+   * dimension satisfies Apple HIG min hit area).
    */
-  private createPauseButton(rightX: number, centerY: number): FocusableIconButton {
+  private createPauseButton(rightX: number, centerY: number): IconButtonInstance {
     const w = 44;
     const h = 36;
-    const container = this.add.container(rightX - w / 2, centerY) as FocusableIconButton;
-    const baseFill = 0x1f2740;
-    const baseStroke = 0x6b7280;
-    const focusStroke = 0x60a5fa; // blue, matches PlaceholderButton focus ring
-    const bg = this.add.rectangle(0, 0, w, h, baseFill);
-    bg.setStrokeStyle(2, baseStroke);
-    const barColor = 0xeaeaf2;
-    const barW = 5;
-    const barH = 18;
-    const leftBar = this.add.rectangle(-6, 0, barW, barH, barColor);
-    const rightBar = this.add.rectangle(6, 0, barW, barH, barColor);
-    container.add([bg, leftBar, rightBar]);
-    container.setSize(w, h);
-
-    let focused = false;
-    const repaint = (): void => {
-      bg.setStrokeStyle(focused ? 3 : 2, focused ? focusStroke : baseStroke);
-    };
-
-    bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerover', () => bg.setFillStyle(0x2a3454));
-    bg.on('pointerout', () => bg.setFillStyle(baseFill));
-    bg.on('pointerdown', () => {
-      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
-      this.openPauseOverlay();
+    return createIconButton({
+      scene: this,
+      x: rightX - w / 2,
+      y: centerY,
+      width: w,
+      height: h,
+      render: (container) => {
+        const barColor = 0xeaeaf2;
+        const barW = 5;
+        const barH = 18;
+        const leftBar = this.add.rectangle(-6, 0, barW, barH, barColor);
+        const rightBar = this.add.rectangle(6, 0, barW, barH, barColor);
+        container.add([leftBar, rightBar]);
+        return undefined; // static glyph, no per-state refresh needed
+      },
+      onActivate: () => this.openPauseOverlay(),
     });
-
-    container.setFocused = (value: boolean): void => {
-      focused = value;
-      repaint();
-    };
-    container.activate = (): void => {
-      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
-      this.openPauseOverlay();
-    };
-    container.isDisabled = (): boolean => false;
-
-    return container;
   }
 
   /**
-   * On-screen mute toggle. Reads initial muted state from AudioManager
-   * (which itself read it from localStorage at boot), then keeps the
-   * visual in sync on every click or Enter/Space press (when focused).
+   * On-screen mute toggle. Speaker emoji glyph that flips 🔊 ↔ 🔇 based
+   * on AudioManager mute state. Warm-amber-tinted background distinguishes
+   * it from the Pause icon's pure slate so a kid mid-round doesn't confuse
+   * the two — visually warmer without screaming for attention.
    *
-   * Two visual states:
-   *   - audio on:    speaker shape, no slash
-   *   - muted:       speaker shape with a red diagonal slash overlay
-   * Plus: in the muted state the speaker glyph dims to 60% alpha so
-   * "off" reads at a glance for a 6-year-old (per support review nice-
-   * to-have).
+   * Why emoji instead of composed primitives: two prior attempts at
+   * building a speaker out of rectangles + triangles produced shapes that
+   * didn't read as speakers ("doesn't look like a speaker so I didn't
+   * realize what it was"). Unicode speaker glyphs are purpose-built and
+   * universally recognized — every kid who's used a phone knows what they
+   * mean. OS-specific rendering differs slightly but the shape is
+   * consistent everywhere.
    *
-   * Pure Phaser shapes (no image asset). Hit area 44×44 (Apple HIG min).
-   *
-   * Visually distinct from the Pause icon (which sits to its right): a
-   * warm-amber background instead of slate, so a kid mid-round who's
-   * reaching for "silence the game" doesn't accidentally grab "stop the
-   * round" because they look identical. (Sprint 0.7 art polish will
-   * iterate; this is the placeholder distinction.)
-   *
-   * Returns a `FocusableIconButton` so KeyboardNavigator can include it
-   * in the HUD's tab order.
+   * Click SFX fires BEFORE the mute toggle: turning mute ON gets an
+   * audible confirmation (SFX plays at pre-mute volume); turning mute
+   * OFF is silent (audio is muted at the moment of activation; visual
+   * state change is the confirmation). Documented in PLAYTEST.md.
    */
-  private createMuteButton(rightX: number, centerY: number): FocusableIconButton {
+  private createMuteButton(rightX: number, centerY: number): IconButtonInstance {
     const w = 44;
     const h = 36;
-    const container = this.add.container(rightX - w / 2, centerY) as FocusableIconButton;
-    // Warm-amber-tinted slate: still HUD-chrome family, but distinct from
-    // the Pause icon's pure slate.
-    const baseFill = 0x2a2640;
-    const baseStroke = 0x6b7280;
-    const focusStroke = 0x60a5fa;
-    const hoverFill = 0x3a3454;
-    const bg = this.add.rectangle(0, 0, w, h, baseFill);
-    bg.setStrokeStyle(2, baseStroke);
-
-    // Speaker glyph as a Unicode emoji rendered by the OS's emoji font.
-    //
-    // Why emoji instead of composed primitives: two prior attempts at
-    // building a speaker out of rectangles + triangles produced shapes
-    // that didn't read as speakers (user feedback: "doesn't look like a
-    // speaker so I didn't realize what it was"). The Unicode speaker
-    // glyphs (🔊 unmuted / 🔇 muted) are purpose-built and universally
-    // recognized — every kid who's used a phone knows what these mean.
-    // Visual style varies slightly by OS (Apple/Microsoft/Android render
-    // their own emoji fonts) but the SHAPE is consistent everywhere.
-    const speakerGlyph = this.add
-      .text(0, 1, '🔊', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '22px',
-      })
-      .setOrigin(0.5);
-
-    container.add([bg, speakerGlyph]);
-    container.setSize(w, h);
-
     const audio = getAudioManager();
-    let focused = false;
 
-    const repaint = (): void => {
-      const muted = audio.isMuted();
-      // Switch the emoji to communicate state. 🔇 has the cancellation
-      // stroke baked in by the OS; we don't need a separate slash overlay
-      // anymore.
-      speakerGlyph.setText(muted ? '🔇' : '🔊');
-      // Slight dim when muted so the OFF state reads at a glance even
-      // for a kid who doesn't notice the cancellation stroke.
-      speakerGlyph.setAlpha(muted ? 0.65 : 1);
-      // Focus ring: blue 3px stroke when keyboard-focused, normal otherwise.
-      bg.setStrokeStyle(focused ? 3 : 2, focused ? focusStroke : baseStroke);
-    };
-    repaint();
+    return createIconButton({
+      scene: this,
+      x: rightX - w / 2,
+      y: centerY,
+      width: w,
+      height: h,
+      baseFill: MUTE_ICON_BG,
+      hoverFill: MUTE_ICON_HOVER,
+      render: (container) => {
+        const speakerGlyph = this.add
+          .text(0, 1, '🔊', {
+            fontFamily: FONT_FAMILY,
+            fontSize: '22px',
+          })
+          .setOrigin(0.5);
+        container.add(speakerGlyph);
 
-    bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerover', () => bg.setFillStyle(hoverFill));
-    bg.on('pointerout', () => bg.setFillStyle(baseFill));
-    bg.on('pointerdown', () => {
-      // Click SFX BEFORE the mute toggle. When activating "mute on", the
-      // SFX still plays at the pre-mute volume (audible confirmation of
-      // the mute action); when activating "mute off", the SFX is a no-op
-      // because audio is currently muted (silently unmutes). Acceptable
-      // edge case: clicking to UNMUTE produces no click sound, but the
-      // visual state change makes the action obvious.
-      audio.play(SfxKeys.ButtonClick1, 'sfx');
-      audio.setMuted(!audio.isMuted());
-      repaint();
+        // Refresh closure — re-evaluates glyph + alpha against current
+        // mute state. IconButton wrapper invokes this on focus changes
+        // AND right after every activation, so toggling mute auto-paints
+        // the new emoji without any extra wiring here.
+        const refresh = (): void => {
+          const muted = audio.isMuted();
+          speakerGlyph.setText(muted ? '🔇' : '🔊');
+          // Dim the OFF state so it reads at a glance even for a 6yo
+          // who doesn't notice the OS-rendered cancellation stroke.
+          speakerGlyph.setAlpha(muted ? 0.65 : 1);
+        };
+        refresh(); // initial paint reflects boot-time mute state
+        return refresh;
+      },
+      onActivate: () => audio.setMuted(!audio.isMuted()),
     });
-
-    container.setFocused = (value: boolean): void => {
-      focused = value;
-      repaint();
-    };
-    container.activate = (): void => {
-      audio.play(SfxKeys.ButtonClick1, 'sfx');
-      audio.setMuted(!audio.isMuted());
-      repaint();
-    };
-    container.isDisabled = (): boolean => false;
-
-    return container;
   }
 
-  /**
-   * Launch the PauseOverlay in parallel and put GameScene into its paused
-   * state. Guarded against double-launch — Esc + Pause-button mash should
-   * only ever produce one overlay.
-   */
   /**
    * Resolve the live GameScene reference. `this.scene.get(...)` returns
    * `Phaser.Scene | null`; this method centralizes the cast to the typed
@@ -315,6 +235,11 @@ export class HudScene extends Phaser.Scene {
     return this.scene.get(SceneKeys.Game) as GameScene | null;
   }
 
+  /**
+   * Launch the PauseOverlay in parallel and put GameScene into its paused
+   * state. Guarded against double-launch — Esc + Pause-button mash should
+   * only ever produce one overlay.
+   */
   private openPauseOverlay(): void {
     const gameScene = this.getGameScene();
     if (!gameScene || gameScene.isPaused()) return;
@@ -406,9 +331,9 @@ export class HudScene extends Phaser.Scene {
   private popupScoreDelta(delta: number): void {
     const popup = this.add
       .text(80, 60, `+${delta}`, {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '20px',
-        color: '#34d399',
+        color: TEXT_GREEN,
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
