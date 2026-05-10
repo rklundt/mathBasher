@@ -35,14 +35,16 @@
  *                       without doing a full extract. Use this BEFORE every
  *                       extract — eyeball whether the grid lines align with
  *                       the actual sprite cells.
- *   --margin N          crop N pixels off ALL four sides of the source video
+ *   --margin N|auto     crop N pixels off ALL four sides of the source video
  *                       before slicing into cells. Useful when the source
  *                       has a uniform border around the actual sprite grid.
- *                       Default 0.
- *   --margin-top N      override --margin for the top edge only
- *   --margin-bottom N   override --margin for the bottom edge only
- *   --margin-left N     override --margin for the left edge only
- *   --margin-right N    override --margin for the right edge only
+ *                       Default 0. Pass "auto" to detect each side's margin
+ *                       independently by scanning inward from each edge for
+ *                       the first row/column with significant non-bg content.
+ *   --margin-top N      override --margin for the top edge only (numeric only)
+ *   --margin-bottom N   override --margin for the bottom edge only (numeric only)
+ *   --margin-left N     override --margin for the left edge only (numeric only)
+ *   --margin-right N    override --margin for the right edge only (numeric only)
  *   --fps N             extract this many frames per second (default 12)
  *   --cell-size N       output px per frame, square bounding box (default 96).
  *                       Frames preserve source aspect via fit:inside, so
@@ -127,7 +129,13 @@ function parseArgs(args) {
     else if (a === '--rows') opts.rows = parseInt(args[++i], 10);
     else if (a === '--cols') opts.cols = parseInt(args[++i], 10);
     else if (a === '--verify-grid') opts.verifyGrid = true;
-    else if (a === '--margin') opts.margin = parseInt(args[++i], 10);
+    else if (a === '--margin') {
+      // Special-case "auto" — passes through as a string; numeric path
+      // parses to int. Per-side overrides remain numeric-only because
+      // mixing "auto" with explicit overrides is more confusing than helpful.
+      const next = args[++i];
+      opts.margin = next === 'auto' ? 'auto' : parseInt(next, 10);
+    }
     else if (a === '--margin-top') opts.marginTop = parseInt(args[++i], 10);
     else if (a === '--margin-bottom') opts.marginBottom = parseInt(args[++i], 10);
     else if (a === '--margin-left') opts.marginLeft = parseInt(args[++i], 10);
@@ -195,14 +203,26 @@ function parseArgs(args) {
   }
 
   // Resolve per-side margins: each per-side flag overrides --margin if set.
-  // After this block, opts.{top,bottom,left,right} hold the resolved values.
-  opts.top = opts.marginTop !== null ? opts.marginTop : opts.margin;
-  opts.bottom = opts.marginBottom !== null ? opts.marginBottom : opts.margin;
-  opts.left = opts.marginLeft !== null ? opts.marginLeft : opts.margin;
-  opts.right = opts.marginRight !== null ? opts.marginRight : opts.margin;
+  // For numeric --margin, the result is each side = its override or the
+  // uniform value. For --margin auto, leave opts.{top,bottom,left,right}
+  // as null sentinels — they get filled in later by detectMargins() after
+  // we have a frame to scan. Per-side overrides still win over auto-detect
+  // (so `--margin auto --margin-top 0` says "auto-detect 3 sides, top=0").
+  opts.autoMargin = opts.margin === 'auto';
+  if (opts.autoMargin) {
+    opts.top = opts.marginTop;
+    opts.bottom = opts.marginBottom;
+    opts.left = opts.marginLeft;
+    opts.right = opts.marginRight;
+  } else {
+    opts.top = opts.marginTop !== null ? opts.marginTop : opts.margin;
+    opts.bottom = opts.marginBottom !== null ? opts.marginBottom : opts.margin;
+    opts.left = opts.marginLeft !== null ? opts.marginLeft : opts.margin;
+    opts.right = opts.marginRight !== null ? opts.marginRight : opts.margin;
+  }
 
   for (const side of ['top', 'bottom', 'left', 'right']) {
-    if (opts[side] < 0) {
+    if (opts[side] !== null && opts[side] < 0) {
       console.error(`Margin --margin-${side} must be ≥ 0 (got ${opts[side]})`);
       exit(1);
     }
@@ -376,6 +396,102 @@ async function detectBackgroundColor(sharp, framePath) {
   };
 }
 
+/**
+ * Auto-detect per-side margins by scanning inward from each edge of a
+ * frame, finding the first row/column that has more than `minContentPx`
+ * pixels significantly different from `keyColor`. Returns
+ * `{top, bottom, left, right}` in pixels.
+ *
+ * The scan reads the entire frame as raw RGBA once, then walks each
+ * edge using indexed addressing into that buffer (no per-row sharp
+ * extraction — would be ~4× slower).
+ *
+ * Conservatism: subtract `safetyPx` (default 1) from each detected
+ * margin so we don't crop into anti-aliased sprite edges. If the
+ * detected margin is zero (no border found), don't subtract — leaves
+ * margin=0 instead of going negative.
+ *
+ * `minContentPx` is the absolute pixel count threshold for "this
+ * row/column has real content" — defaults to 4 to filter out JPEG
+ * noise / anti-alias fringes that produce 1-3 stray non-bg pixels.
+ */
+async function detectMargins(sharp, framePath, keyColor, tolerance, opts = {}) {
+  const safetyPx = opts.safetyPx ?? 1;
+  const minContentPx = opts.minContentPx ?? 4;
+  const maxDist = tolerance * 4.41;
+  const maxDistSq = maxDist * maxDist;
+
+  // Read full frame as raw RGBA.
+  const { data, info } = await sharp(framePath).raw().toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+
+  // Helper: count non-bg pixels in row y, returning the count.
+  const countRowContent = (y) => {
+    let count = 0;
+    const rowStart = y * width * channels;
+    for (let x = 0; x < width; x++) {
+      const i = rowStart + x * channels;
+      const dr = data[i] - keyColor.r;
+      const dg = data[i + 1] - keyColor.g;
+      const db = data[i + 2] - keyColor.b;
+      if (dr * dr + dg * dg + db * db > maxDistSq) count++;
+    }
+    return count;
+  };
+  const countColContent = (x) => {
+    let count = 0;
+    for (let y = 0; y < height; y++) {
+      const i = (y * width + x) * channels;
+      const dr = data[i] - keyColor.r;
+      const dg = data[i + 1] - keyColor.g;
+      const db = data[i + 2] - keyColor.b;
+      if (dr * dr + dg * dg + db * db > maxDistSq) count++;
+    }
+    return count;
+  };
+
+  // Top: walk down, find first row with content.
+  let top = 0;
+  for (let y = 0; y < height; y++) {
+    if (countRowContent(y) >= minContentPx) {
+      top = y;
+      break;
+    }
+  }
+  // Bottom: walk up, find first row with content (margin is from edge).
+  let bottom = 0;
+  for (let y = height - 1; y >= 0; y--) {
+    if (countRowContent(y) >= minContentPx) {
+      bottom = height - 1 - y;
+      break;
+    }
+  }
+  // Left
+  let left = 0;
+  for (let x = 0; x < width; x++) {
+    if (countColContent(x) >= minContentPx) {
+      left = x;
+      break;
+    }
+  }
+  // Right
+  let right = 0;
+  for (let x = width - 1; x >= 0; x--) {
+    if (countColContent(x) >= minContentPx) {
+      right = width - 1 - x;
+      break;
+    }
+  }
+
+  // Apply safety buffer (don't crop into anti-aliased edges).
+  return {
+    top: top > 0 ? Math.max(0, top - safetyPx) : 0,
+    bottom: bottom > 0 ? Math.max(0, bottom - safetyPx) : 0,
+    left: left > 0 ? Math.max(0, left - safetyPx) : 0,
+    right: right > 0 ? Math.max(0, right - safetyPx) : 0,
+  };
+}
+
 function parseHexColor(hex) {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
   if (!m) throw new Error(`Invalid hex color: "${hex}". Expected "#RRGGBB" or "RRGGBB".`);
@@ -498,6 +614,54 @@ async function main() {
   console.log(`\nProbing ${opts.video}...`);
   const probe = await probeVideo(ffmpegPath, opts.video);
 
+  console.log(`  Source: ${probe.width}×${probe.height}, ${probe.fps ?? '?'} fps, ${probe.duration?.toFixed(2) ?? '?'}s`);
+
+  // ---- Step 1b: if --margin auto, run pre-detection on a single frame ----
+  // Both verify-grid and main extract need margin + bg color resolved before
+  // the cell math runs. Pre-extract just frame 0 for this purpose; the main
+  // extract's full-fps frame loop happens later.
+  if (opts.autoMargin || opts.bg === 'auto') {
+    await mkdir(TEMP_DIR, { recursive: true });
+    const probeFramePath = join(TEMP_DIR, 'probe-frame.png');
+    await new Promise((res, rej) => {
+      const p = spawn(
+        ffmpegPath,
+        ['-y', '-i', opts.video, '-vframes', '1', probeFramePath],
+        { stdio: ['ignore', 'ignore', 'pipe'] },
+      );
+      p.on('close', (code) => (code === 0 ? res() : rej(new Error('frame 0 extract failed'))));
+      p.on('error', rej);
+    });
+
+    // Resolve bg color first — margin detection needs it.
+    if (opts.bg === 'auto') {
+      const bg = await detectBackgroundColor(sharp, probeFramePath);
+      opts.bgResolved = bg;
+      console.log(
+        `  Auto-detected background: rgb(${bg.r}, ${bg.g}, ${bg.b}) = ` +
+          `#${bg.r.toString(16).padStart(2, '0')}${bg.g.toString(16).padStart(2, '0')}${bg.b.toString(16).padStart(2, '0')}`,
+      );
+    } else {
+      opts.bgResolved = parseHexColor(opts.bg);
+    }
+
+    if (opts.autoMargin) {
+      const auto = await detectMargins(sharp, probeFramePath, opts.bgResolved, opts.bgTolerance);
+      // Per-side overrides win over auto-detect (e.g. `--margin auto
+      // --margin-top 0` says "auto-detect 3 sides, force top to 0").
+      opts.top = opts.marginTop !== null ? opts.marginTop : auto.top;
+      opts.bottom = opts.marginBottom !== null ? opts.marginBottom : auto.bottom;
+      opts.left = opts.marginLeft !== null ? opts.marginLeft : auto.left;
+      opts.right = opts.marginRight !== null ? opts.marginRight : auto.right;
+      console.log(
+        `  Auto-detected margins: top=${auto.top}, right=${auto.right}, bottom=${auto.bottom}, left=${auto.left}px` +
+          (opts.marginTop !== null || opts.marginRight !== null || opts.marginBottom !== null || opts.marginLeft !== null
+            ? ' (some sides overridden by explicit --margin-* flags)'
+            : ''),
+      );
+    }
+  }
+
   // Effective grid area = source dimensions minus per-side margins.
   // All cell math operates on this inner rectangle, NOT the raw video.
   const effW = probe.width - opts.left - opts.right;
@@ -516,7 +680,6 @@ async function main() {
   const totalCells = opts.gridRows * opts.gridCols;
   const cellsToProcess = opts.maxCells ?? totalCells;
 
-  console.log(`  Source: ${probe.width}×${probe.height}, ${probe.fps ?? '?'} fps, ${probe.duration?.toFixed(2) ?? '?'}s`);
   if (opts.top || opts.right || opts.bottom || opts.left) {
     console.log(`  Margin: top=${opts.top}, right=${opts.right}, bottom=${opts.bottom}, left=${opts.left}px`);
     console.log(`  Effective grid area: ${effW}×${effH} (after margin crop)`);
@@ -552,9 +715,13 @@ async function main() {
   }
   console.log(`  Extracted ${frameFiles.length} frames`);
 
-  // ---- Step 3: detect background color (or parse explicit) ----
+  // ---- Step 3: resolve background color ----
+  // If pre-detection ran (auto-margin or auto-bg), opts.bgResolved is
+  // already set. Otherwise resolve from frame 0 of the just-extracted batch.
   let bgColor;
-  if (opts.bg === 'auto') {
+  if (opts.bgResolved) {
+    bgColor = opts.bgResolved;
+  } else if (opts.bg === 'auto') {
     bgColor = await detectBackgroundColor(sharp, frameFiles[0]);
     console.log(
       `  Auto-detected background: rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b}) = #${bgColor.r.toString(16).padStart(2, '0')}${bgColor.g.toString(16).padStart(2, '0')}${bgColor.b.toString(16).padStart(2, '0')}`,
