@@ -229,19 +229,42 @@ export class HudScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, w, h, baseFill);
     bg.setStrokeStyle(2, baseStroke);
 
-    // Speaker glyph: small square (cone base) + triangle (horn) + two
-    // wave-line rectangles to the right. All shape primitives — no image.
+    // Speaker glyph: small back-rectangle (the magnet) + a triangular cone
+    // that touches the back's right edge AND widens outward (narrow at the
+    // back, wide at the front), then two wave-arc bars on the right. All
+    // shape primitives — no image asset.
+    //
+    // Geometry note (v2 — fix from initial 0.5.3 design): the previous
+    // version had the cone-triangle pointing the wrong way (wide-edge
+    // touching the back, apex away from it) AND a 2-unit gap between the
+    // back and the cone, which made the icon read as "two disconnected
+    // blobs" rather than a speaker. This version connects them at the seam
+    // and orients the cone correctly.
     const speakerColor = 0xeaeaf2;
-    const speakerBox = this.add.rectangle(-8, 0, 8, 10, speakerColor);
-    const speakerHorn = this.add.triangle(-2, 0, 0, -8, 0, 8, 8, 0, speakerColor);
-    const wave1 = this.add.rectangle(8, 0, 2, 10, speakerColor);
-    const wave2 = this.add.rectangle(13, 0, 2, 14, speakerColor);
+
+    // Back of the speaker (the "magnet" rectangle). Centered at x=-10,
+    // 6 wide × 10 tall → spans x=-13 to x=-7. Right edge at x=-7.
+    const speakerBack = this.add.rectangle(-10, 0, 6, 10, speakerColor);
+
+    // Cone — triangle with its NARROW point touching the back's right
+    // edge and widening to a wide right side. Vertices RELATIVE to the
+    // triangle's position (0, 0):
+    //   apex left:    (-7, 0)   ← touches speakerBack's right edge
+    //   top right:    (1, -8)   ← wide front, top
+    //   bottom right: (1, 8)    ← wide front, bottom
+    // Net positions are absolute since we place the triangle at (0, 0).
+    const speakerCone = this.add.triangle(0, 0, -7, 0, 1, -8, 1, 8, speakerColor);
+
+    // Two sound-wave bars to the right. Heights increase outward to suggest
+    // the wave shape that a real speaker icon's curved arcs would draw.
+    const wave1 = this.add.rectangle(6, 0, 2, 8, speakerColor);
+    const wave2 = this.add.rectangle(11, 0, 2, 14, speakerColor);
 
     // Slash overlay (red diagonal) — visible when muted, hidden when on.
     const slash = this.add.rectangle(0, 0, 30, 3, 0xef4444);
     slash.setRotation(-Math.PI / 4);
 
-    container.add([bg, speakerBox, speakerHorn, wave1, wave2, slash]);
+    container.add([bg, speakerBack, speakerCone, wave1, wave2, slash]);
     container.setSize(w, h);
 
     const audio = getAudioManager();
@@ -255,8 +278,8 @@ export class HudScene extends Phaser.Scene {
       // Dim the speaker glyph itself in muted state so "off" reads at a
       // glance for the youngest players, not just from the slash overlay.
       const speakerAlpha = muted ? 0.6 : 1;
-      speakerBox.setAlpha(speakerAlpha);
-      speakerHorn.setAlpha(speakerAlpha);
+      speakerBack.setAlpha(speakerAlpha);
+      speakerCone.setAlpha(speakerAlpha);
       // Focus ring: blue 3px stroke when keyboard-focused, normal otherwise.
       bg.setStrokeStyle(focused ? 3 : 2, focused ? focusStroke : baseStroke);
     };
