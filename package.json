@@ -27,7 +27,8 @@
     "audio:encode": "node scripts/audio/encode.mjs",
     "audio:probe": "node scripts/audio/probe.mjs",
     "sprite:process": "node scripts/sprites/process.mjs",
-    "sprite:probe": "node scripts/sprites/probe.mjs"
+    "sprite:probe": "node scripts/sprites/probe.mjs",
+    "sprite:extract": "node scripts/sprites/extract-from-video.mjs"
   },
   "engines": {
     "node": ">=20.0.0",
