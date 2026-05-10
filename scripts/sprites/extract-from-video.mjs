@@ -50,7 +50,12 @@
  *                       Frames preserve source aspect via fit:inside, so
  *                       non-square source cells produce non-square output.
  *   --bg auto|"#hex"    background color to remove (default "auto" — sample frame corners)
- *   --bg-tolerance N    color-distance threshold 0–100 (default 30)
+ *   --bg-tolerance N    color-distance threshold 0–100 (default 30) — pixels at this
+ *                       distance from bg are 50% transparent (the soft-alpha midpoint)
+ *   --bg-feather N      soft-alpha transition width 0–50 (default 10) — pixels within
+ *                       (tolerance - feather) of bg are fully transparent; pixels beyond
+ *                       (tolerance + feather) are fully opaque; in between is a linear
+ *                       alpha ramp. Feather=0 reproduces the old binary-alpha behavior.
  *   --name-prefix S     output filename prefix (default "alien")
  *                       → produces alien-r0c0.webp, alien-r0c1.webp, ...
  *   --quality N         WebP quality 0–100 (default 90)
@@ -116,6 +121,7 @@ function parseArgs(args) {
     cellSize: 96,
     bg: 'auto',
     bgTolerance: 30,
+    bgFeather: 10,
     namePrefix: 'alien',
     quality: 90,
     kind: 'alien',
@@ -144,6 +150,7 @@ function parseArgs(args) {
     else if (a === '--cell-size') opts.cellSize = parseInt(args[++i], 10);
     else if (a === '--bg') opts.bg = args[++i];
     else if (a === '--bg-tolerance') opts.bgTolerance = parseInt(args[++i], 10);
+    else if (a === '--bg-feather') opts.bgFeather = parseInt(args[++i], 10);
     else if (a === '--name-prefix') opts.namePrefix = args[++i];
     else if (a === '--quality') opts.quality = parseInt(args[++i], 10);
     else if (a === '--kind') opts.kind = args[++i];
@@ -255,7 +262,8 @@ Optional:
   --fps N             frames per second to extract (default 12)
   --cell-size N       output px per frame, square bounding box (default 96)
   --bg auto|"#hex"    background color (default "auto" — corner-sample)
-  --bg-tolerance N    color-distance threshold 0–100 (default 30)
+  --bg-tolerance N    color-distance threshold 0–100 (default 30) — soft-alpha midpoint
+  --bg-feather N      soft-alpha transition width 0–50 (default 10) — 0 = binary alpha
   --name-prefix S     filename prefix (default "alien" → alien-r0c0.webp)
   --quality N         WebP quality 0–100 (default 90)
   --kind K            output folder kind (default "alien")
@@ -503,96 +511,137 @@ function parseHexColor(hex) {
 }
 
 /**
- * Apply background removal to a raw RGBA buffer in place using a
- * **flood-fill from the cell edges**.
+ * Apply background removal to a raw RGBA buffer in place using
+ * **flood-fill from cell edges + soft alpha**.
  *
- * Why flood-fill instead of "every pixel within tolerance of the bg color
- * becomes transparent": the simpler color-key approach incorrectly eats
- * sprite-interior pixels that happen to match the bg color (e.g. an alien
- * with a near-white helmet on a white background — the helmet vanishes).
- * Flood-fill avoids this by only marking pixels that are CONNECTED to the
- * cell border via a chain of bg-colored pixels. An interior region of
- * bg-colored pixels enclosed by non-bg sprite pixels stays opaque.
+ * Two pieces:
  *
- * Algorithm:
- *   1. Mark every pixel within `tolerance` of `keyColor` as "potentially bg"
- *   2. BFS from every border pixel that's potentially-bg, expanding only
- *      to neighboring potentially-bg pixels
- *   3. Set alpha=0 on every pixel reached by the flood
+ * 1. **Flood-fill** — only edge-connected bg-colored pixels become
+ *    transparent. An interior region of bg-colored pixels enclosed by
+ *    non-bg sprite pixels (e.g. an alien's white helmet on a white
+ *    background) stays opaque because the flood can't reach it from
+ *    the cell borders without crossing sprite pixels. Without flood-fill,
+ *    a simple color-key would eat the helmet too.
  *
- * Tolerance is 0–100; we map that to a max distance of `tolerance × 4.41`
- * (since the max RGB euclidean distance is sqrt(3 × 255²) ≈ 441).
+ * 2. **Soft alpha** — instead of binary "transparent or fully opaque,"
+ *    edge-connected pixels get partial alpha proportional to their
+ *    color distance from bg. Source videos have anti-aliased sprite
+ *    edges (pixels that are partial blends of sprite + bg color); with
+ *    binary alpha, those edge pixels stayed fully opaque WITH their
+ *    bg-tinted RGB, producing visible halos against dark canvas
+ *    backgrounds. With soft alpha, those pixels fade out smoothly and
+ *    the halos disappear.
+ *
+ * Soft-alpha math (in color-distance space, where dist = euclidean RGB
+ * distance from keyColor):
+ *   - Within innerDist (= (tolerance − feather) × 4.41): alpha = 0
+ *   - Beyond outerDist (= (tolerance + feather) × 4.41): alpha = 255
+ *   - In the [innerDist, outerDist] band: linear ramp from 0 to 255
+ *
+ * `tolerance` (0–100) is the midpoint of the soft transition (50% alpha
+ * at this distance). `feather` (0–50) is the half-width of the
+ * transition band. feather=0 reproduces the old binary-alpha behavior.
+ *
+ * The factor 4.41 maps tolerance/feather percentage to RGB euclidean
+ * distance (since the max distance is sqrt(3 × 255²) ≈ 441).
  *
  * Caveat: if a sprite touches the cell edge AND has bg-colored pixels at
- * the edge, the flood will leak through that contact point and eat sprite
- * pixels along the connected interior chain. In practice mathBasher's
- * source videos pad each grid cell with bg around the sprite, so this
- * rarely matters — but if a future input doesn't, we'd want a 1-pixel
- * margin sample rather than the literal edge.
+ * the contact point, the flood will leak through that gap and eat sprite
+ * pixels along the connected interior chain. mathBasher's source videos
+ * pad each grid cell with bg around the sprite, so this rarely matters.
  *
- * Returns the count of pixels made transparent (for the caller to report).
+ * Returns the count of pixels with alpha < 255 (for the caller to report).
  */
-function removeBackgroundInPlace(buf, width, height, keyColor, tolerance) {
-  const maxDist = tolerance * 4.41;
+function removeBackgroundInPlace(buf, width, height, keyColor, tolerance, feather) {
+  // Resolve transition zone in color-distance space. Clamp the inner
+  // bound at 0 to avoid negative thresholds when feather > tolerance.
+  const innerDist = Math.max(0, (tolerance - feather)) * 4.41;
+  const outerDist = (tolerance + feather) * 4.41;
+  const innerDistSq = innerDist * innerDist;
+  const outerDistSq = outerDist * outerDist;
+  const transitionWidth = outerDist - innerDist;
   const N = width * height;
 
-  // Pass 1: build the "potentially bg" mask. Single linear scan, no
-  // sqrt — squared distance compared to squared threshold (faster).
-  const maxDistSq = maxDist * maxDist;
-  const isPotentialBg = new Uint8Array(N);
+  // Pass 1: build the "flood-eligible" mask. Any pixel within outerDist
+  // of bg is a candidate for the flood-fill. We need outerDist (not just
+  // tolerance) here so the flood can walk through pixels that should end
+  // up partially transparent — without this, those edge-band pixels
+  // wouldn't be reachable from the cell border.
+  const isFloodEligible = new Uint8Array(N);
   for (let p = 0; p < N; p++) {
     const dr = buf[p * 4] - keyColor.r;
     const dg = buf[p * 4 + 1] - keyColor.g;
     const db = buf[p * 4 + 2] - keyColor.b;
-    if (dr * dr + dg * dg + db * db <= maxDistSq) {
-      isPotentialBg[p] = 1;
+    if (dr * dr + dg * dg + db * db <= outerDistSq) {
+      isFloodEligible[p] = 1;
     }
   }
 
-  // Pass 2: BFS flood-fill from all border pixels that are potential-bg.
-  // Use a typed array as a queue with a head pointer (NOT Array.shift —
-  // shift is O(n), would be quadratic for ~4096 pixels).
+  // Pass 2: BFS flood-fill from all border pixels that are flood-eligible.
+  // Typed-array queue with head pointer (NOT Array.shift — quadratic).
   const visited = new Uint8Array(N);
-  const queue = new Int32Array(N); // worst case: every pixel in queue once
+  const queue = new Int32Array(N);
   let head = 0;
   let tail = 0;
 
-  const enqueueIfPotential = (idx) => {
+  const enqueueIfEligible = (idx) => {
     if (idx < 0 || idx >= N) return;
-    if (visited[idx] || !isPotentialBg[idx]) return;
+    if (visited[idx] || !isFloodEligible[idx]) return;
     visited[idx] = 1;
     queue[tail++] = idx;
   };
 
-  // Seed with every border pixel that's potential-bg.
   for (let x = 0; x < width; x++) {
-    enqueueIfPotential(x); // top row
-    enqueueIfPotential((height - 1) * width + x); // bottom row
+    enqueueIfEligible(x);
+    enqueueIfEligible((height - 1) * width + x);
   }
   for (let y = 0; y < height; y++) {
-    enqueueIfPotential(y * width); // left column
-    enqueueIfPotential(y * width + (width - 1)); // right column
+    enqueueIfEligible(y * width);
+    enqueueIfEligible(y * width + (width - 1));
   }
 
   while (head < tail) {
     const idx = queue[head++];
     const x = idx % width;
     const y = (idx / width) | 0;
-    if (x > 0) enqueueIfPotential(idx - 1);
-    if (x < width - 1) enqueueIfPotential(idx + 1);
-    if (y > 0) enqueueIfPotential(idx - width);
-    if (y < height - 1) enqueueIfPotential(idx + width);
+    if (x > 0) enqueueIfEligible(idx - 1);
+    if (x < width - 1) enqueueIfEligible(idx + 1);
+    if (y > 0) enqueueIfEligible(idx - width);
+    if (y < height - 1) enqueueIfEligible(idx + width);
   }
 
-  // Pass 3: write alpha=0 on every pixel reached by the flood.
-  let removed = 0;
+  // Pass 3: write soft alpha for every flood-reached pixel based on its
+  // distance from bg. Pixels NOT reached (interior near-bg, like the
+  // alien's helmet) keep their original alpha (255 from ensureAlpha()).
+  let modified = 0;
   for (let p = 0; p < N; p++) {
-    if (visited[p]) {
-      buf[p * 4 + 3] = 0;
-      removed++;
+    if (!visited[p]) continue;
+    const dr = buf[p * 4] - keyColor.r;
+    const dg = buf[p * 4 + 1] - keyColor.g;
+    const db = buf[p * 4 + 2] - keyColor.b;
+    const distSq = dr * dr + dg * dg + db * db;
+
+    let alpha;
+    if (distSq <= innerDistSq) {
+      alpha = 0;
+    } else if (transitionWidth === 0 || distSq >= outerDistSq) {
+      // feather=0 reproduces binary alpha: at innerDist exactly, alpha
+      // jumps from 0 to 255. Otherwise this branch handles the >= outer
+      // case (rare; would only hit on float-rounding edge).
+      alpha = 255;
+    } else {
+      // Lerp in distance space (sqrt for visual correctness).
+      const dist = Math.sqrt(distSq);
+      const t = (dist - innerDist) / transitionWidth;
+      alpha = Math.round(t * 255);
+    }
+
+    if (alpha < 255) {
+      buf[p * 4 + 3] = alpha;
+      modified++;
     }
   }
-  return removed;
+  return modified;
 }
 
 // ------------------------------------------------------------------
@@ -696,7 +745,10 @@ async function main() {
 
   console.log(`  Extract: ${opts.fps} fps → ~${expectedFrames} frames per cell`);
   console.log(`  Output:  ${opts.cellSize}×${opts.cellSize} per frame, WebP q${opts.quality}`);
-  console.log(`  Bg removal: ${opts.bg === 'auto' ? 'auto-detect from corners' : opts.bg} (tolerance ${opts.bgTolerance})`);
+  console.log(
+    `  Bg removal: ${opts.bg === 'auto' ? 'auto-detect from corners' : opts.bg} ` +
+      `(tolerance ${opts.bgTolerance}, feather ${opts.bgFeather})`,
+  );
   if (cellsToProcess < totalCells) {
     console.log(`  Cells to process: first ${cellsToProcess} (--max-cells)`);
   }
@@ -790,6 +842,7 @@ async function main() {
           cellBuffer.info.height,
           bgColor,
           opts.bgTolerance,
+          opts.bgFeather,
         );
         totalRemoved += removed;
         totalPixels += cellBuffer.info.width * cellBuffer.info.height;
