@@ -32,6 +32,19 @@ import { getAudioManager } from '@/services/audioManagerFactory';
  * 0.5.4's silent-first-click follow-up. Hoisting it here means a
  * future sprint that adds (say) safe-area calculation for mobile only
  * has to touch this file, not 5 scenes.
+ *
+ * TELEMETRY SEMANTICS: the `<sceneKey> Completed` event fires on
+ * Phaser's `shutdown` event — i.e. when the scene is stopped or
+ * transitioned away from — NOT at the end of `create()`. This is a
+ * deliberate change from the pre-refactor mix where 3 scenes
+ * (MenuScene, GameSelectScene, DifficultyScene) logged Completed at
+ * end of `create()` while the other 5 logged on shutdown. Standardizing
+ * on shutdown means `Completed - Started` gives true scene-active
+ * duration, which is more useful than "create finished." App Insights
+ * queries that depended on the old at-end-of-create timing will now
+ * see Completed events arrive seconds-to-minutes later (whenever the
+ * user actually leaves the scene). Document this if/when telemetry
+ * dashboards land in a future sprint.
  */
 export function setupScene(scene: Phaser.Scene, extraProps?: TelemetryProps): void {
   const sceneKey = scene.scene.key;

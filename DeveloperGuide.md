@@ -216,16 +216,21 @@ mathBasher/
 ├── index.html           Vite entry HTML (splash overlay + canvas mount)
 │
 ├── src/                 BROWSER-SIDE TYPESCRIPT
-│   ├── main.ts          entry; wires splash click handler that lazily instantiates Phaser
-│   ├── main.test.ts     static contract test: Phaser.Game must NOT be at top level
+│   ├── main.ts          thin entry; wires splash click handler → calls bootGame()
+│   ├── main.test.ts     static contract tests: main.ts has no Phaser import; boot.ts has no top-level Phaser.Game
+│   ├── app/             top-of-graph orchestration (composes core + services + game/scenes)
+│   │   └── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
 │   ├── game/            rendering layer (the only folder that imports phaser)
 │   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay, Settings, Attribution
+│   │   │                (sceneSetup.ts — shared lifecycle helper for owning scenes)
 │   │   ├── entities/    Hero, Alien, Projectile (sprites with animation state)
 │   │   ├── systems/     WaveSystem, InputSystem, HitSystem, waveKinematics (own state, no rendering)
 │   │   │                (waveKinematics is pure — has __tests__/ alongside)
 │   │   ├── services/    Phaser-coupled services (pure facades live in /src/services/)
 │   │   │   └── PhaserAudioManager.ts  scene-bound audio playback + loop tracking
-│   │   └── ui/          PlaceholderButton, KeyboardNavigator, EscBackHandler, TouchFireButton, etc.
+│   │   └── ui/          PlaceholderButton, IconButton, KeyboardNavigator, EscBackHandler,
+│   │                    TouchFireButton, MenuLayout (+ pure menuLayoutGeometry.ts),
+│   │                    typography, uiPalette
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
 │   │   ├── distractors.ts       distractor-picking helpers
@@ -470,6 +475,11 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | How does the boot sequence work? | The page loads `index.html` which renders a splash overlay (`<div id="splash">` with title + Tap-to-play button). `src/main.ts` runs at module load but ONLY wires the splash button's click handler — `Phaser.Game` construction is deferred. On click, the `startGame()` function constructs the AudioManager singleton, then `new Phaser.Game(...)` (this is when the AudioContext is created, inside a user-gesture context — eliminates the browser's `AudioContext was prevented from starting automatically` warning), then hides the splash. BootScene then runs for ~250ms (no title text — splash already showed it), launches AttributionScene in parallel, transitions to MenuScene. A static contract test in `src/main.test.ts` enforces that `new Phaser.Game(` never appears at top level. |
 | Where do button click sounds play? | `PlaceholderButton.playClickSfx()` calls `getAudioManager().play(SfxKeys.ButtonClick1, 'sfx')` from BOTH the pointerdown handler AND the `activate()` keyboard path. The two HUD icon buttons (Pause + Mute) are not PlaceholderButtons but inline the same call from their pointerdown + activate paths. Disabled buttons skip the sound (the click handler short-circuits). Volume rides on the SFX slider; master mute silences. Edge case: clicking the Mute icon to UNMUTE produces no click sound (audio is muted at the moment of activation); the visual state change is the confirmation. |
 | What's the `?autostart` URL param? | Dev convenience. `http://localhost:5173/?autostart` skips the splash and boots Phaser directly — same code path as the click handler, just triggered immediately on page load. Saves a click on every HMR reload during heavy iteration. Production users never see this param. |
+| Where does Phaser get constructed? | `src/app/boot.ts` exports `bootGame()`, called from `src/main.ts` inside the splash button's click handler (or via `?autostart`). `main.ts` itself does NOT import Phaser — that contract is enforced by a static test in `main.test.ts`. The pre-0.5.5 model put the construction directly in `main.ts`; the boot logic was extracted into its own module so future Phase 1 mobile concerns (orientation gate, asset-preload progress bar, WebAudio fallback) can land in one focused file. |
+| Where do button colors live? | `src/game/ui/uiPalette.ts` — all button-state hex constants (`SLATE_BG`, `SLATE_HOVER`, `BORDER_GREY`, `FOCUS_BLUE`, `SELECTED_AMBER`, `DISABLED_BG`, plus the warm-amber `MUTE_ICON_BG`/`MUTE_ICON_HOVER` for the HUD mute toggle). `PlaceholderButton`, `IconButton`, and the splash `index.html` CSS all reference these values; CSS is hand-synced (the splash loads before any TS module). A "make all controls higher-contrast for outdoor phone use" change is a 1-file edit. |
+| Where do text styles live? | `src/game/ui/typography.ts` — `FONT_FAMILY` constant + named `TEXT_*` color constants + a `text(scene, x, y, str, kind)` helper that picks size + color + weight from a vocabulary of 12 named `TextKind`s (`title`, `h2`, `h3`, `body`, `subtitle`, `prompt`, `accent`, `success`, `warning`, `stars`, `sectionLabel`, `bodyMuted`). Scenes use the helper; one-off sizes inline `{ fontFamily: FONT_FAMILY, ... }` and reference the named color constants. The `'system-ui, sans-serif'` literal appears nowhere outside this file. |
+| How do I add a new menu screen? | Extend `Phaser.Scene`, call `setupScene(this)` as the FIRST line of `create()` (logs Started + binds AudioManager + registers shutdown listener for Completed), then use `stackButtons(scene, { centerY, items: [{ label, onClick, kind }] })` from `MenuLayout.ts` to build the button stack. Pass the returned buttons to `new KeyboardNavigator(this, buttons)`. Use `wireEscBack(this, () => this.scene.start(SceneKeys.X))` for Esc back-stack. Register the scene class in `src/app/boot.ts`'s scene array (NOT in `main.ts` anymore) and add its key to `src/core/sceneKeys.ts`. |
+| Where do I add a new audio asset? | One line in `src/core/audioKeys.ts` — add the key to `SfxKeys` (or `MidgroundKeys` / `MusicKeys`). The `AUDIO_MANIFEST` const at the bottom of the same file derives URLs programmatically, and `BootScene.preload` iterates the manifest with no per-kind branching. Adding a new sound is a 1-file change; BootScene needs zero edits. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---

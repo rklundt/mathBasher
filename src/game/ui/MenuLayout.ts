@@ -3,10 +3,11 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type Phaser from 'phaser';
-import { config } from '@/core/config';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
 
-export type ButtonKind = 'primary' | 'secondary';
+export type { ButtonKind };
+export { computeStackSlots };
 
 export interface StackItem {
   label: string;
@@ -50,6 +51,18 @@ export interface StackOpts {
  * item's `kind` (defaulting to `primary`). The pixel gap defaults to
  * 12px which produces a comfortable stack at both 720p and 1080p
  * design heights.
+ *
+ * INTENTIONAL VISUAL CHANGE FROM PRE-REFACTOR: the `kind: 'secondary'`
+ * branch picks `secondaryW` (200px) — narrower than primary (280px) —
+ * AND uses the smaller height. Pre-refactor, several scenes' "secondary"
+ * actions (MenuScene.Settings, PauseOverlay.Settings, GameOverScene
+ * Change-Difficulty + Main-Menu) were rendered at PRIMARY width (280)
+ * with only the height differing. The refactor now makes secondary
+ * actions visibly narrower, so primary actions read as more important.
+ * If a caller wants a secondary action at primary width (consistent
+ * column rather than tapered stack), pass `kind: 'primary'` explicitly.
+ * Y-positions on stacked menus may drift up to ~15px from pre-refactor
+ * values because total stack height is now slightly smaller.
  */
 export function stackButtons(
   scene: Phaser.Scene,
@@ -59,44 +72,20 @@ export function stackButtons(
   const cx = opts.centerX ?? sceneW / 2;
   const gap = opts.gap ?? 12;
   const items = opts.items;
+  const slots = computeStackSlots(cx, opts.centerY, gap, items);
 
-  // Compute total height first so we can center the stack on `centerY`.
-  const heights = items.map((it) =>
-    (it.kind ?? 'primary') === 'primary'
-      ? config.layout.button.primaryH
-      : config.layout.button.secondaryH,
-  );
-  const totalHeight = heights.reduce((sum, h) => sum + h, 0) + gap * (items.length - 1);
-
-  let y = opts.centerY - totalHeight / 2;
-  const buttons: PlaceholderButton[] = [];
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const kind = item.kind ?? 'primary';
-    const w =
-      kind === 'primary'
-        ? config.layout.button.primaryW
-        : config.layout.button.secondaryW;
-    const h = heights[i];
-    const buttonY = y + h / 2;
-
-    buttons.push(
+  return items.map(
+    (item, i) =>
       new PlaceholderButton({
         scene,
-        x: cx,
-        y: buttonY,
-        width: w,
-        height: h,
+        x: slots[i].x,
+        y: slots[i].y,
+        width: slots[i].width,
+        height: slots[i].height,
         label: item.label,
         ...(item.subtitle !== undefined && { subtitle: item.subtitle }),
         ...(item.onClick !== undefined && { onClick: item.onClick }),
         ...(item.disabled !== undefined && { disabled: item.disabled }),
       }),
-    );
-
-    y += h + gap;
-  }
-
-  return buttons;
+  );
 }
