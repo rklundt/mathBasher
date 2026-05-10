@@ -29,16 +29,18 @@ export const config = {
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {
-      // Sprint 0.5.5: descent + penalty rates bumped uniformly +10% across
-      // all three tiers (playtest feedback — game felt sluggish even at
-      // 'fast'). Score multipliers unchanged. Old values preserved in
-      // commit history if a future tune needs to revert.
-      //   slow:   40 → 44   px/s descent;  120 → 132  penalty
-      //   medium: 60 → 66   px/s descent;  180 → 198  penalty
-      //   fast:   90 → 99   px/s descent;  270 → 297  penalty
-      slow: { multiplier: 1.0, descentPxPerSec: 44, penaltyPxPerSec: 132 },
-      medium: { multiplier: 1.25, descentPxPerSec: 66, penaltyPxPerSec: 198 },
-      fast: { multiplier: 1.5, descentPxPerSec: 99, penaltyPxPerSec: 297 },
+      // Sprint 0.5.5: descent + penalty rates bumped uniformly across all
+      // three tiers (playtest feedback — game felt sluggish even at 'fast').
+      // Two passes applied during the sprint: first +10%, then a second +10%
+      // on top, for a cumulative ~21% increase from the v0.5.4 baseline.
+      // Score multipliers unchanged (still 1.0 / 1.25 / 1.5). Baseline
+      // values preserved in commit history if a future tune needs to revert.
+      //   slow:   40 → 48   px/s descent;  120 → 145  penalty
+      //   medium: 60 → 73   px/s descent;  180 → 218  penalty
+      //   fast:   90 → 109  px/s descent;  270 → 327  penalty
+      slow: { multiplier: 1.0, descentPxPerSec: 48, penaltyPxPerSec: 145 },
+      medium: { multiplier: 1.25, descentPxPerSec: 73, penaltyPxPerSec: 218 },
+      fast: { multiplier: 1.5, descentPxPerSec: 109, penaltyPxPerSec: 327 },
     },
   },
   hero: {
