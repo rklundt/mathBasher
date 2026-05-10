@@ -38,8 +38,9 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 
-# Claude Code workspace artifacts (NEVER commit these)
-# These are local development scaffolding and should not appear in the public repo.
+# Internal workspace files (NEVER commit these)
+# Local development scaffolding — workflow notes, sprint planning drafts,
+# ADR working copies, etc. — that should not appear in the public repo.
 CLAUDE.md
 .claude/
 .sprints/
