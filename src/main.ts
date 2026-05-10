@@ -14,6 +14,7 @@ import { GameScene } from '@/game/scenes/GameScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
+import { SettingsScene } from '@/game/scenes/SettingsScene';
 import { AttributionScene } from '@/game/scenes/AttributionScene';
 
 _th.logToAi('AppBoot Started', SeverityLevel.Information);
@@ -49,9 +50,12 @@ new Phaser.Game({
   },
   // Order matters: BootScene starts first (auto-starts because it's at index
   // 0 with no auto-start override). AttributionScene MUST be registered LAST
-  // so it renders on top of every other scene's content. PauseOverlay sits
-  // just before Attribution so it covers GameScene + HudScene but the §7(b)
-  // attribution footer stays visible even while paused.
+  // so it renders on top of every other scene's content. PauseOverlay and
+  // SettingsScene sit just before Attribution so they cover GameScene + HudScene
+  // but the §7(b) attribution footer stays visible even while paused or while
+  // adjusting settings. SettingsScene is registered AFTER PauseOverlay so when
+  // launched from Pause, SettingsScene visually stacks on top of the pause
+  // overlay (its parallel-scene render order respects registration order).
   scene: [
     BootScene,
     MenuScene,
@@ -61,6 +65,7 @@ new Phaser.Game({
     HudScene,
     GameOverScene,
     PauseOverlay,
+    SettingsScene,
     AttributionScene,
   ],
 });

@@ -18,7 +18,7 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { AudioKeys } from '@/core/audioKeys';
+import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
 
 /**
  * The actual game. One round = `config.round.questionsPerRound` questions.
@@ -121,6 +121,26 @@ export class GameScene extends Phaser.Scene {
     this.inputSystem = new InputSystem(this);
     this.inputSystem.onFire(() => this.handleFire());
 
+    // Start the active-round loops: background music + hero movement
+    // skittering. Both are tracked by AudioManager and respect their
+    // per-kind volume sliders + master mute. They're stopped in
+    // cleanup() and pause/resumed via the pause/resume contract.
+    //
+    // Re-bind the AudioManager to THIS scene before starting the loops.
+    // The first init() happened in MenuScene.Start onClick (iOS Safari
+    // first-gesture rule); MenuScene has long since shut down by the time
+    // GameScene runs. Phaser's per-scene `sound` proxy is tied to its
+    // owning scene's lifecycle — adding/playing sounds via a shut-down
+    // scene's proxy creates Sounds whose internal scheduling/update
+    // contract is owed to a dead scene. Symptoms include alternating
+    // audible/silent playback on rapid one-shots and stuttering loops
+    // (user playtest 2026-05-09). Re-binding here points the manager at
+    // the currently-active scene whose update loop is alive.
+    const audio = getAudioManager();
+    audio.init(this);
+    audio.playLoop(MusicKeys.Loop1, 'music');
+    audio.playLoop(MidgroundKeys.Skittering1, 'midground');
+
     this.startNextQuestion();
 
     this.events.once('shutdown', () => {
@@ -164,10 +184,11 @@ export class GameScene extends Phaser.Scene {
     // Play SFX BEFORE spawning the projectile so the sound is sample-aligned
     // with the visual fire. Phaser caches the decoded buffer at preload, so
     // play() is effectively zero-latency. AudioManager respects the mute
-    // toggle and the volume cap; if init() hasn't fired yet (e.g. dev hot
-    // reload skips MenuScene) play() is a silent no-op rather than a crash.
-    // Always fire-1 in this sprint; alt-fire variety is a later sprint.
-    getAudioManager().play(AudioKeys.Fire1);
+    // toggle + per-kind volume slider; if init() hasn't fired yet (e.g. dev
+    // hot reload skips MenuScene) play() is a silent no-op rather than a
+    // crash. Kind is explicit ('sfx') for clarity even though it's the
+    // default — makes the playback category obvious at the call site.
+    getAudioManager().play(SfxKeys.Fire1, 'sfx');
     this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
   }
 
@@ -213,6 +234,11 @@ export class GameScene extends Phaser.Scene {
       wasCorrect: false,
       usedWrongShot: this.waveSystem.hasUsedWrongShot(),
     });
+    // Stop the skittering loop while the hero dies — the movement sound
+    // shouldn't continue when the box is incapacitated. afterQuestion
+    // restarts it before the next wave begins. Music keeps playing
+    // through the death anim (the round isn't over).
+    getAudioManager().stopLoop(MidgroundKeys.Skittering1);
     this.hero.playDeathAnim(() => {
       this.afterQuestion(false);
     });
@@ -236,6 +262,11 @@ export class GameScene extends Phaser.Scene {
     this.waveSystem.clearWave(true);
     this.questionIndex += 1;
     this.transitioning = false;
+    // Restart the hero skittering loop in case it was stopped during
+    // the death anim. playLoop is a no-op if the loop is already
+    // active (correct hits never stop it), so this is safe to call
+    // unconditionally on every wave transition.
+    getAudioManager().playLoop(MidgroundKeys.Skittering1, 'midground');
     this.startNextQuestion();
   }
 
@@ -286,11 +317,20 @@ export class GameScene extends Phaser.Scene {
     this.projectile = null;
     this.waveSystem?.clearWave(true);
     this.inputSystem?.destroy();
+    // Stop both active loops cleanly. stopLoop is idempotent so calling
+    // on a loop that's already stopped (e.g. skittering after a death
+    // anim that didn't restart before round end) is a safe no-op.
+    const audio = getAudioManager();
+    audio.stopLoop(MusicKeys.Loop1);
+    audio.stopLoop(MidgroundKeys.Skittering1);
     if (this.scene.isActive(SceneKeys.Hud)) {
       this.scene.stop(SceneKeys.Hud);
     }
     if (this.scene.isActive(SceneKeys.PauseOverlay)) {
       this.scene.stop(SceneKeys.PauseOverlay);
+    }
+    if (this.scene.isActive(SceneKeys.Settings)) {
+      this.scene.stop(SceneKeys.Settings);
     }
   }
 
@@ -320,6 +360,10 @@ export class GameScene extends Phaser.Scene {
     this.waveSystem?.pause();
     this.inputSystem?.setPaused(true);
     this.tweens.pauseAll();
+    // Pause every active audio loop (gameplay music + hero skittering).
+    // pauseAllLoops uses Phaser's Sound.pause under the hood so the loops
+    // freeze in place — resume picks up at the same playback position.
+    getAudioManager().pauseAllLoops();
     if (this.scene.isActive(SceneKeys.Hud)) {
       this.scene.pause(SceneKeys.Hud);
     }
@@ -335,6 +379,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.paused) return;
     this.paused = false;
     this.waveSystem?.resume();
+    // Resume the loops we paused — symmetric with pause().
+    getAudioManager().resumeAllLoops();
     this.inputSystem?.setPaused(false);
     this.tweens.resumeAll();
     if (this.scene.isPaused(SceneKeys.Hud)) {

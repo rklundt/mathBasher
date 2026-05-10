@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { getAudioManager } from '@/services/audioManagerFactory';
+import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 
 /**
  * Title screen. Two actions: Start (-> GameSelect) and High Scores
@@ -75,9 +76,35 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.showHighScoresPlaceholder(),
     });
 
-    new KeyboardNavigator(this, [startButton, highScoresButton]);
+    const settingsButton = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y: height * 0.74,
+      width: 280,
+      height: 56,
+      label: 'Settings',
+      onClick: () => this.openSettings(),
+    });
+
+    new KeyboardNavigator(this, [startButton, highScoresButton, settingsButton]);
 
     _th.logToAi('MenuScene Completed', SeverityLevel.Information);
+  }
+
+  /**
+   * Launch the SettingsScene as a parallel scene on top of this one.
+   * MenuScene stays active underneath; the `onBack` callback stops
+   * SettingsScene and Menu reappears (it was never stopped). Same
+   * pattern as opening Settings from PauseOverlay — SettingsScene
+   * doesn't know which caller it was launched from.
+   */
+  private openSettings(): void {
+    if (this.scene.isActive(SceneKeys.Settings)) return; // guard double-open
+    _th.logToAi('MenuScene.SettingsOpened', SeverityLevel.Information);
+    const init: SettingsSceneInit = {
+      onBack: () => this.scene.stop(SceneKeys.Settings),
+    };
+    this.scene.launch(SceneKeys.Settings, init);
   }
 
   private highScoresOverlay?: Phaser.GameObjects.Text;

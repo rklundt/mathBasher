@@ -43,15 +43,37 @@ export interface Focusable {
  * Disabled focusables are skipped during navigation. The navigator updates
  * each one's `focused` state so the focusable can render a visible focus
  * ring distinct from any selected ring.
+ *
+ * The `options.activateOnSpace` flag (default true) controls whether Space
+ * activates the focused control. Most scenes want it (Space + Enter both
+ * activate is the standard menu UX). HudScene specifically opts out:
+ * HudScene runs in parallel with GameScene during a round, and Space is the
+ * fire key in GameScene's InputSystem. If both scenes activate on Space,
+ * each fire press also toggles whichever HUD icon currently has focus
+ * (typically the Mute icon, the first tab stop) — which produces a real
+ * audible bug where every fire toggles mute rapidly. Tab + Enter alone
+ * still satisfies WCAG 2.1.1 for the HUD icons.
  */
+export interface KeyboardNavigatorOptions {
+  /**
+   * When true (default), Space activates the focused control just like
+   * Enter. Pass false on scenes where Space conflicts with another
+   * input handler (HudScene during gameplay).
+   */
+  activateOnSpace?: boolean;
+}
+
 export class KeyboardNavigator {
   private focusedIndex: number;
   private readonly shiftKey: Phaser.Input.Keyboard.Key;
+  private readonly activateOnSpace: boolean;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly buttons: Focusable[],
+    options?: KeyboardNavigatorOptions,
   ) {
+    this.activateOnSpace = options?.activateOnSpace ?? true;
     if (!scene.input.keyboard) {
       // Some test environments lack the keyboard plugin; bail gracefully.
       this.focusedIndex = -1;
@@ -65,14 +87,18 @@ export class KeyboardNavigator {
     // detect Shift+Tab); the others are pure event-driven.
     scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TAB);
     scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    if (this.activateOnSpace) {
+      scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    }
     this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
     // Phaser fires a global Tab handler that lets the browser default
     // focus-jump escape the canvas. We swallow it here.
     scene.input.keyboard.on('keydown-TAB', this.handleTab, this);
     scene.input.keyboard.on('keydown-ENTER', this.activateFocused, this);
-    scene.input.keyboard.on('keydown-SPACE', this.activateFocused, this);
+    if (this.activateOnSpace) {
+      scene.input.keyboard.on('keydown-SPACE', this.activateFocused, this);
+    }
 
     // Initial paint of the focus state.
     this.applyFocusState();
@@ -122,6 +148,8 @@ export class KeyboardNavigator {
     if (!this.scene.input.keyboard) return;
     this.scene.input.keyboard.off('keydown-TAB', this.handleTab, this);
     this.scene.input.keyboard.off('keydown-ENTER', this.activateFocused, this);
-    this.scene.input.keyboard.off('keydown-SPACE', this.activateFocused, this);
+    if (this.activateOnSpace) {
+      this.scene.input.keyboard.off('keydown-SPACE', this.activateFocused, this);
+    }
   }
 }

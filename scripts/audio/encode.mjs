@@ -17,14 +17,20 @@
  *   4. Encode to MP3 at the project's standard rate
  *
  * Defaults match the audio guidance documented for this project:
- *   --kind sfx    -> 96 kbps mono   (aggressive trim, normalized for SFX)
- *   --kind music  -> 160 kbps stereo (gentle trim, music-loudness normalized)
+ *   --kind sfx       -> 96 kbps mono,   -16 LUFS, trim ON  (one-shot SFX: fire, hit, click)
+ *   --kind midground -> 96 kbps mono,   -22 LUFS, trim OFF (atmospheric LOOPS: skittering,
+ *                                                          movement, ambient — sit UNDER
+ *                                                          one-shot SFX; loops MUST not be
+ *                                                          silence-trimmed or the loop
+ *                                                          boundary clicks)
+ *   --kind music     -> 160 kbps stereo, -18 LUFS, trim ON  (full musical loops + tracks)
  *
  * Usage:
- *   node scripts/audio/encode.mjs <input> <output> [--kind sfx|music] [--no-trim]
+ *   node scripts/audio/encode.mjs <input> <output> [--kind sfx|midground|music] [--no-trim] [--trim]
  *
  * Or via the pnpm wrapper:
  *   pnpm audio:encode .audio-source/raw/fire/take-1.wav public/assets/audio/sfx/fire-1.mp3
+ *   pnpm audio:encode --kind midground in.wav public/assets/audio/midground/skittering-1.mp3
  *   pnpm audio:encode --kind music input.wav public/assets/audio/music/menu-loop.mp3
  *
  * Reproducibility: the recipe lives here, not in tribal knowledge. Whoever
@@ -51,7 +57,9 @@ if (!ffmpegPath) {
 const argv = process.argv.slice(2);
 const positional = [];
 let kind = 'sfx';
-let trim = true;
+// `trim` is tri-state to support kind-aware defaults: undefined means "use
+// the kind's default", true/false are explicit overrides from the CLI.
+let trim;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -59,6 +67,8 @@ for (let i = 0; i < argv.length; i++) {
     kind = argv[++i];
   } else if (a === '--no-trim') {
     trim = false;
+  } else if (a === '--trim') {
+    trim = true;
   } else if (a === '-h' || a === '--help') {
     printHelp();
     process.exit(0);
@@ -85,8 +95,8 @@ if (!existsSync(input)) {
   process.exit(1);
 }
 
-if (kind !== 'sfx' && kind !== 'music') {
-  console.error(`--kind must be "sfx" or "music" (got "${kind}")`);
+if (kind !== 'sfx' && kind !== 'midground' && kind !== 'music') {
+  console.error(`--kind must be "sfx", "midground", or "music" (got "${kind}")`);
   process.exit(2);
 }
 
@@ -106,6 +116,29 @@ const profiles = {
     loudnormI: -16,
     loudnormTP: -1.5,
     loudnormLRA: 11,
+    // Trim leading/trailing silence by default — one-shot SFX should
+    // start instantly when triggered.
+    trimDefault: true,
+  },
+  midground: {
+    // Atmospheric loops that play UNDER one-shot SFX (e.g. skittering
+    // alien movement, ambient hum). Same fidelity as SFX (96k mono is
+    // plenty for ambient layers), but quieter loudness target so they
+    // sit beneath fire/click sounds without overpowering. Same true-peak
+    // ceiling as SFX/music for kid-safe playback.
+    bitrate: '96k',
+    channels: 1,
+    sampleRate: 44100,
+    loudnormI: -22, // 6 dB under sfx target — sits in the background
+    loudnormTP: -1.5,
+    loudnormLRA: 11,
+    // Trim is OFF by default for loops. Silence-trimming a loop file
+    // can chop into a non-zero-crossing sample, producing an audible
+    // click at the loop boundary. Loops should be authored with clean
+    // boundaries; the encoder's job is to encode them faithfully, not
+    // to reshape them. Override with `--trim` if a particular source
+    // genuinely has unwanted silence padding.
+    trimDefault: false,
   },
   music: {
     bitrate: '160k',
@@ -114,9 +147,17 @@ const profiles = {
     loudnormI: -18,
     loudnormTP: -1.5,
     loudnormLRA: 11,
+    trimDefault: true,
   },
 };
 const profile = profiles[kind];
+
+// Apply the kind's default trim policy if the CLI didn't specify one.
+// Explicit --trim or --no-trim wins; otherwise sfx/music default to
+// trimming, midground (loops) defaults to NOT trimming.
+if (trim === undefined) {
+  trim = profile.trimDefault;
+}
 
 // --- Filter chain ------------------------------------------------------------
 
@@ -205,19 +246,24 @@ function printHelp() {
   console.log(
     [
       '',
-      'Usage: node scripts/audio/encode.mjs <input> <output> [--kind sfx|music] [--no-trim]',
+      'Usage: node scripts/audio/encode.mjs <input> <output> [--kind sfx|midground|music] [--no-trim|--trim]',
       '',
-      'Encodes a raw audio file (WAV/FLAC/etc.) to a properly trimmed,',
-      'loudness-normalized, metadata-stripped MP3 ready for public/assets/audio/.',
+      'Encodes a raw audio file (WAV/FLAC/etc.) to a properly normalized,',
+      'metadata-stripped MP3 ready for public/assets/audio/.',
       '',
       'Examples:',
       '  node scripts/audio/encode.mjs .audio-source/raw/fire/t1.wav public/assets/audio/sfx/fire-1.mp3',
+      '  node scripts/audio/encode.mjs --kind midground in.wav public/assets/audio/midground/skittering-1.mp3',
       '  node scripts/audio/encode.mjs --kind music in.wav public/assets/audio/music/menu-loop.mp3',
       '',
       'Flags:',
-      '  --kind sfx|music   encoding profile (default: sfx — 96k mono)',
-      '                                            music — 160k stereo',
-      '  --no-trim          skip silence trimming (use when source is already trimmed)',
+      '  --kind sfx         96 kbps mono,   -16 LUFS  (one-shot SFX; trim default ON)',
+      '         midground   96 kbps mono,   -22 LUFS  (atmospheric loops; trim default OFF',
+      '                                                — silence-trimming a loop creates',
+      '                                                clicks at the loop boundary)',
+      '         music       160 kbps stereo, -18 LUFS  (musical loops/tracks; trim default ON)',
+      '  --no-trim          skip silence trimming (override; default depends on --kind)',
+      '  --trim             force silence trimming (override; default depends on --kind)',
       '',
     ].join('\n'),
   );

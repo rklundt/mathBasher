@@ -27,7 +27,18 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- Sprint 0.6 next: mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
+**Sprint 0.5.3 in flight** — Audio content batch + Settings screen + first loops wired. PR forming on `sprint/0.5.3-audio-content-and-settings`.
+
+What's already on the branch (committed, not yet released):
+- **Encoder gains a third `midground` kind** for atmospheric loops — 96 kbps mono at -22 LUFS (6 dB quieter than sfx so it sits underneath), silence-trim OFF by default to preserve loop boundaries (silence-trimming a loop file can chop into a non-zero-crossing sample and produce an audible click at the loop boundary). New `--trim` CLI flag complements the existing `--no-trim` for explicit override of per-kind defaults. The `--kind` validator now accepts `sfx | midground | music` and rejects any other value.
+- **5 new shipped MP3s**: `bloop-1.mp3` (sfx), `skittering-1.mp3` + `skittering-2.mp3` (midground), `loop-1.mp3` + `loop-2.mp3` (music). All produced via the established `pnpm audio:encode` pipeline. ElevenLabs source — covered by the existing `Generated assets / Game Audio` CREDITS entry.
+
+What's queued for the rest of the sprint:
+- **AudioManager per-kind volume + loop API** — replaces the single `DEFAULT_VOLUME` constant with per-kind volumes (sfx 70 / midground 40 / music 50 defaults), adds `playLoop` / `stopLoop` / `pauseAllLoops` / `resumeAllLoops` for looping audio, keeps mute as master that overrides all sliders.
+- **SettingsScene** — three stepped `−`/`+` volume controls (10% increments, 0–100%) for the three kinds, reachable from MenuScene and from PauseOverlay (stacks on top so pause + game state survive).
+- **Live wire-ups**: `loop-1.mp3` plays as gameplay background music; `skittering-1.mp3` plays as the hero's continuous movement loop. Both stop cleanly on round end / quit, pause + resume with the game (extending GameScene.pause/resume from 0.5.1), respond to live volume + mute changes without a restart.
+
+After 0.5.3 closes: every audio kind has at least one wired example, settings UI exists, and the audio content batch is shipped. **Then 0.6** picks up mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
 
 ## [0.5.2] - 2026-05-09 — First audio (fire SFX + audio infrastructure)
 

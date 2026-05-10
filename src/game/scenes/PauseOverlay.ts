@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 
 /**
  * Translucent overlay that floats above GameScene + HudScene while a round
@@ -70,24 +71,34 @@ export class PauseOverlay extends Phaser.Scene {
     const resumeBtn = new PlaceholderButton({
       scene: this,
       x: width / 2,
-      y: height * 0.5,
+      y: height * 0.46,
       width: 280,
       height: 64,
       label: 'Resume',
       onClick: () => this.handleResume(),
     });
 
+    const settingsBtn = new PlaceholderButton({
+      scene: this,
+      x: width / 2,
+      y: height * 0.58,
+      width: 280,
+      height: 56,
+      label: 'Settings',
+      onClick: () => this.handleSettings(),
+    });
+
     const quitBtn = new PlaceholderButton({
       scene: this,
       x: width / 2,
-      y: height * 0.62,
+      y: height * 0.7,
       width: 280,
       height: 64,
       label: 'Quit to Menu',
       onClick: () => this.handleQuit(),
     });
 
-    new KeyboardNavigator(this, [resumeBtn, quitBtn]);
+    new KeyboardNavigator(this, [resumeBtn, settingsBtn, quitBtn]);
 
     // Esc on the overlay = Resume. Round-trip through Esc means a kid can
     // open and close pause with one key, without needing to find the Resume
@@ -105,10 +116,35 @@ export class PauseOverlay extends Phaser.Scene {
   }
 
   private handleResume(): void {
+    // Guard: when SettingsScene is launched on top of this overlay (via the
+    // Settings button), Phaser still routes input to BOTH scenes. Pressing
+    // Esc to dismiss SettingsScene would otherwise also fire this handler
+    // and accidentally resume the game underneath. Skip when Settings is
+    // active; SettingsScene's own Esc handler closes the settings panel
+    // and a subsequent Esc on this overlay (with Settings now gone) resumes
+    // as expected. Mirrors the double-launch guard pattern in
+    // `handleSettings` below.
+    if (this.scene.isActive(SceneKeys.Settings)) return;
     this.resumeFn?.();
   }
 
   private handleQuit(): void {
     this.quitFn?.();
+  }
+
+  /**
+   * Open the SettingsScene STACKED on top of this overlay. Pause stays
+   * active underneath so the kid sees Settings layered over Pause; on
+   * Back, Settings stops and Pause is the foreground again. Game stays
+   * paused throughout — neither this scene nor SettingsScene resumes
+   * the game, only the explicit Resume button does.
+   */
+  private handleSettings(): void {
+    if (this.scene.isActive(SceneKeys.Settings)) return; // guard double-open
+    _th.logToAi('PauseOverlay.SettingsOpened', SeverityLevel.Information);
+    const init: SettingsSceneInit = {
+      onBack: () => this.scene.stop(SceneKeys.Settings),
+    };
+    this.scene.launch(SceneKeys.Settings, init);
   }
 }
