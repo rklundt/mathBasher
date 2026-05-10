@@ -251,7 +251,6 @@ mathBasher/
 │       └── audio/       shipped MP3s (sfx/, music/) — MP3 only, see scripts/audio/
 │
 ├── scripts/             developer tooling (NOT shipped, NOT bundled)
-│   ├── check-tooling-leaks.sh   leak scanner (CI + pre-commit)
 │   └── audio/                   audio processing (encode, probe)
 │       ├── encode.mjs           one-pass trim + loudnorm + MP3 encode
 │       └── probe.mjs            inspect a file (duration, channels, peak/mean dB)
