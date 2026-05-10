@@ -10,6 +10,7 @@ import type { Question } from '@/math/types';
 import type { GameScene } from '@/game/scenes/GameScene';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { getAudioManager } from '@/services/audioManagerFactory';
+import { SfxKeys } from '@/core/audioKeys';
 import { KeyboardNavigator, type Focusable } from '@/game/ui/KeyboardNavigator';
 
 /**
@@ -179,13 +180,17 @@ export class HudScene extends Phaser.Scene {
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => bg.setFillStyle(0x2a3454));
     bg.on('pointerout', () => bg.setFillStyle(baseFill));
-    bg.on('pointerdown', () => this.openPauseOverlay());
+    bg.on('pointerdown', () => {
+      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
+      this.openPauseOverlay();
+    });
 
     container.setFocused = (value: boolean): void => {
       focused = value;
       repaint();
     };
     container.activate = (): void => {
+      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
       this.openPauseOverlay();
     };
     container.isDisabled = (): boolean => false;
@@ -270,6 +275,13 @@ export class HudScene extends Phaser.Scene {
     bg.on('pointerover', () => bg.setFillStyle(hoverFill));
     bg.on('pointerout', () => bg.setFillStyle(baseFill));
     bg.on('pointerdown', () => {
+      // Click SFX BEFORE the mute toggle. When activating "mute on", the
+      // SFX still plays at the pre-mute volume (audible confirmation of
+      // the mute action); when activating "mute off", the SFX is a no-op
+      // because audio is currently muted (silently unmutes). Acceptable
+      // edge case: clicking to UNMUTE produces no click sound, but the
+      // visual state change makes the action obvious.
+      audio.play(SfxKeys.ButtonClick1, 'sfx');
       audio.setMuted(!audio.isMuted());
       repaint();
     });
@@ -279,6 +291,7 @@ export class HudScene extends Phaser.Scene {
       repaint();
     };
     container.activate = (): void => {
+      audio.play(SfxKeys.ButtonClick1, 'sfx');
       audio.setMuted(!audio.isMuted());
       repaint();
     };

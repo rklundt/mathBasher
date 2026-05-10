@@ -12,6 +12,7 @@ import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
+import { getAudioManager } from '@/services/audioManagerFactory';
 
 export interface GameOverData {
   score: number;
@@ -60,6 +61,12 @@ export class GameOverScene extends Phaser.Scene {
     if (this.roundData.speed) props.speed = this.roundData.speed;
 
     _th.logToAi('GameOverScene Started', SeverityLevel.Information, props);
+
+    // Re-bind the AudioManager — see GameSelectScene.create for rationale.
+    // GameScene also called init(this) on its own boot, but it's now shut
+    // down. Without this re-bind, the first Play Again / Change Difficulty
+    // / Main Menu click is silent.
+    getAudioManager().init(this);
 
     // Save the score asynchronously and check for new high score. The
     // IScoreStore methods are Promise-returning so a future ApiScoreStore is a
