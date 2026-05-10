@@ -175,6 +175,50 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | Browser DevTools console: `BootScene PreloadedSfx` log shows `reason: '4'` in v0.5.3 / `'5'` in v0.5.4+ (the four/five preloaded keys: fire-1, fire-2, skittering-1, loop-1, button-click-1) |
 |   | No "key missing" or "not initialized" warnings during a normal round play |
 
+## Mobile + responsive (sprint 0.6)
+
+This sprint adds the mobile playability layer: 16:9 letterboxed scaling, a portrait-rotate prompt for phones, and an on-screen FIRE button for touch. Run a sweep across multiple viewports + a real phone if possible.
+
+### Story 5 — Viewport spot-check (Chrome DevTools device toolbar)
+
+For each viewport: confirm no clipping of hero/aliens, no off-canvas text, fire button reachable with thumb in landscape, prompt readable, AttributionScene footer visible and not overlapping the fire button, no JS console errors.
+
+| ✓ | Viewport | Resolution | Notes |
+|---|---|---|---|
+|   | iPhone SE landscape | 667×375 | Tightest mobile aspect; verify the portrait overlay does NOT show in landscape |
+|   | iPhone 14 Pro landscape | 852×393 | Modern phone aspect; safe-area check matters here |
+|   | iPad Mini landscape | 1024×768 | 4:3 tablet — letterboxing on left/right is expected |
+|   | Pixel 7 landscape | 915×412 | Android comparison |
+|   | 1280×720 desktop | exact design canvas — should fill perfectly with no letterboxing |
+|   | 1920×1080 desktop | 16:9 — uniform 1.5× scale, full canvas |
+|   | Ultra-wide 21:9 | 2560×1080 | Vertical letterboxing on top/bottom is expected |
+|   | iPhone SE PORTRAIT | 375×667 | Rotate-overlay should appear ("Please rotate your device"); flipping back to landscape dismisses it cleanly |
+
+### Story 6 — Performance sanity (Chrome DevTools Performance / CPU throttle)
+
+| ✓ | Check |
+|---|---|
+|   | Frame rate stays above ~50 fps during a full Add-to-10 / Fast round on an unthrottled machine |
+|   | With Chrome's CPU 4× slowdown active (proxies a mid-tier Android), frame rate stays above ~30 fps and gameplay remains playable (aliens still descend smoothly, fire isn't laggy) |
+|   | No console warnings about object pooling, texture limits, or audio context state |
+|   | Memory profile across a full 5-round session shows no obvious leak (heap settles after garbage collection between rounds) |
+
+### Sprint-0.6 functional checks
+
+| ✓ | Check |
+|---|---|
+|   | **Touch fire button visible**: on a touchscreen Chromebook / Surface / phone in landscape, a circular amber FIRE button is anchored bottom-right above the attribution footer with at least 8px clearance. Hit area is generous (a sloppy thumb tap registers). |
+|   | **Touch fire button hidden on mouse-only desktop**: opening the page on a mouse-only laptop hides the button by default. If you simulate a touch event in DevTools (Sensors → Touch: Force enabled), the button appears for the rest of the session. |
+|   | **Press visual**: pressing the FIRE button shrinks it slightly + bumps opacity to 100% on `pointerdown`; releasing restores normal. No tween lag. |
+|   | **No double-fire**: tapping the fire button does NOT also trigger the canvas-wide tap-to-fire listener (cooldown wouldn't allow both anyway, but verify the button's own click is the only one that registers — telemetry should show one fire event per tap, not two). |
+|   | **Tap-anywhere-on-canvas still fires**: tapping the empty space of the game canvas (not on the fire button) still triggers a shot — the carry-over from sprint 0.5 is preserved. |
+|   | **No-fire on menu buttons**: clicking PlaceholderButtons in MenuScene / GameSelect / Difficulty / GameOver / Pause / Settings does NOT fire a shot. InputSystem only listens during GameScene. |
+|   | **Portrait overlay on phone**: load the page on a real phone in portrait — the rotate prompt covers everything (above the splash, above the canvas). Rotating to landscape dismisses it within ~1 second. The animated phone-glyph icon visibly suggests the rotation motion. |
+|   | **Orientation flip mid-round**: start a round on a phone in landscape, rotate to portrait — overlay appears (game keeps running underneath but isn't visible). Rotate back to landscape — game resumes visible play; canvas re-fits to the new viewport (no zero-size frame, no clipping). |
+|   | **Letterboxing on off-ratio**: at iPad Mini 4:3 (1024×768), the canvas is centered horizontally with `#0b1020` bands on left + right. On an ultra-wide 21:9, bands appear on top + bottom. Bands match the in-game backdrop color so they read as intentional. |
+|   | **AttributionScene footer always visible**: at every viewport, the four-line attribution footer is visible at the bottom of the canvas. The TouchFireButton sits above it, never overlapping. |
+|   | **Desktop play unchanged**: on a 1920×1080 desktop, mouse + Space keyboard play feels identical to v0.5.5. No fire button shown (no touch). |
+
 ## Refactor pass + 10% speed bump (sprint 0.5.5)
 
 This sprint is **internal-only refactor + a one-knob tuning change** — no new features. Run a quick visual + behavioral sweep to confirm nothing regressed.

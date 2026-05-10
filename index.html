@@ -47,6 +47,56 @@
          state never fires. */
       #splash button:active { background: #161b2c; transform: translateY(1px); }
       #splash.hidden { display: none; }
+
+      /* Portrait-rotate overlay (sprint 0.6). Hidden by default; the media
+         query below shows it when a phone-sized viewport is in portrait.
+         The game is designed for landscape (1280×720) — portrait would
+         either letterbox heavily (with FIT) or break gameplay tuning, so
+         we gate the experience until the user rotates. The overlay sits
+         above EVERYTHING (z-index higher than splash) so it can intercept
+         a portrait-load too: even if the splash is the foreground UI, the
+         rotate prompt takes precedence on a portrait phone.
+
+         Why a phone-only media query (max-width: 900px): a desktop user
+         resizing to a portrait window pose isn't a real player; we don't
+         want to nag them. 900px catches phones up to iPhone Pro Max in
+         portrait but excludes most tablets and all desktop windows. */
+      #rotate-overlay {
+        display: none;
+        position: fixed; inset: 0; z-index: 100;
+        background: #0b1020;
+        flex-direction: column;
+        align-items: center; justify-content: center; gap: 1.5rem;
+        color: #eaeaf2;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 2rem;
+        text-align: center;
+      }
+      #rotate-overlay .glyph {
+        /* Pure-CSS rotated phone glyph — a slim rectangle with a small
+           inset speaker dot, animated to suggest the rotation motion.
+           No SVG needed; works on every browser without an asset. */
+        width: 56px; height: 96px;
+        border: 3px solid #eaeaf2; border-radius: 8px;
+        position: relative;
+        animation: rotateHint 2s ease-in-out infinite;
+      }
+      #rotate-overlay .glyph::after {
+        content: '';
+        position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+        width: 18px; height: 3px;
+        background: #eaeaf2; border-radius: 2px;
+      }
+      @keyframes rotateHint {
+        0%, 40% { transform: rotate(0deg); }
+        50%, 90% { transform: rotate(-90deg); }
+        100% { transform: rotate(0deg); }
+      }
+      #rotate-overlay h2 { font-size: 1.5rem; margin: 0; }
+      #rotate-overlay p { font-size: 1rem; margin: 0; color: #9ca3af; max-width: 300px; }
+      @media (orientation: portrait) and (max-width: 900px) {
+        #rotate-overlay { display: flex; }
+      }
     </style>
   </head>
   <body>
@@ -54,6 +104,11 @@
       <h1>mathBasher</h1>
       <p>Math, but with aliens.</p>
       <button id="splash-start" type="button" autofocus>Tap to play</button>
+    </div>
+    <div id="rotate-overlay" role="alert" aria-live="polite">
+      <div class="glyph" aria-hidden="true"></div>
+      <h2>Please rotate your device</h2>
+      <p>mathBasher plays best in landscape — turn your phone sideways to play.</p>
     </div>
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>

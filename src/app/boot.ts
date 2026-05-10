@@ -57,15 +57,30 @@ export function bootGame(): void {
   // construction itself is benign.
   createAudioManager();
 
-  new Phaser.Game({
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
     backgroundColor: '#0b1020',
     scale: {
+      // FIT preserves the 16:9 design aspect ratio and letterboxes anything
+      // off-ratio (taller / wider devices). The page CSS paints the area
+      // outside the canvas in `#0b1020` so letterbox bands look intentional
+      // (matches the in-game backdrop). RESIZE was rejected — it would
+      // require every scene to recompute layout on every viewport change,
+      // and a fixed-aspect arcade game gains nothing from it. Full rationale
+      // in `src/core/SCALE.md`.
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: 1280,
       height: 720,
+      // Parent the Phaser canvas to `#game` (matches the index.html DOM)
+      // and let Phaser expand the parent to fill its container so the FIT
+      // calculation has the right viewport to fit INTO. Without
+      // expandParent, Phaser sometimes computes against the parent's
+      // intrinsic content size (zero before render) and renders at 0×0 on
+      // first paint until a resize event fires.
+      parent: 'game',
+      expandParent: true,
     },
     physics: {
       default: 'arcade',
@@ -100,6 +115,20 @@ export function bootGame(): void {
   // than removing the node — keeps the DOM stable for any future
   // teardown / replay / dev-tools inspection.
   document.getElementById('splash')?.classList.add('hidden');
+
+  // On mobile rotation, the CSS media query in index.html hides the
+  // rotate-overlay automatically. Phaser's ScaleManager already listens
+  // to `window.resize` events natively, and most mobile browsers fire
+  // resize on orientationchange — but a few (older iOS Safari especially)
+  // fire orientationchange WITHOUT a paired resize. Belt-and-braces: when
+  // we hear orientationchange, trigger Phaser's refresh() explicitly so
+  // the canvas re-fits to the new viewport without waiting for the user
+  // to manually resize.
+  window.addEventListener('orientationchange', () => {
+    // Defer one frame so the browser has a chance to update window
+    // dimensions before Phaser reads them.
+    requestAnimationFrame(() => game.scale.refresh());
+  });
 
   _th.logToAi('AppBoot Completed', SeverityLevel.Information);
 }
