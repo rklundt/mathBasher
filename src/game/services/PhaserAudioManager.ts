@@ -39,6 +39,27 @@ export class PhaserAudioManager extends AudioManager {
   private scene: Phaser.Scene | null = null;
   private readonly loops: Map<string, LoopRecord> = new Map();
 
+  /**
+   * Cached one-shot Sound instances, keyed by audio key. Created lazily on
+   * first `play()` for a key, then reused on every subsequent play.
+   *
+   * WHY: the Phaser shortcut `scene.sound.play(key, config)` is equivalent
+   * to `add(key).play(config)` followed by an auto-destroy when the sound
+   * completes. Doing this on every fire (Space mashed at, say, 5 Hz)
+   * churns the internal `sounds[]` array — add, play, complete, destroy,
+   * splice — many times per second. Empirically, that churn
+   * audibly interferes with other playing Sounds in the same manager
+   * (gameplay music + skittering loop "switch on then off" on every fire,
+   * per playtest 2026-05-09).
+   *
+   * Caching the Sound and calling `play()` on the SAME instance avoids the
+   * add/remove churn entirely. Phaser sounds support repeated `play()`
+   * calls (each restarts playback from the beginning). The cached Sound
+   * lives for the page lifetime — small memory cost for a small handful
+   * of SFX keys, no GC pressure.
+   */
+  private readonly oneShotSounds: Map<string, Phaser.Sound.BaseSound> = new Map();
+
   constructor(storage?: MinimalStorage) {
     super(storage);
   }
@@ -64,12 +85,26 @@ export class PhaserAudioManager extends AudioManager {
    * Play a loaded sound. Volume is determined by the kind's slider value
    * combined with the master mute (see `effectiveVolume01`). Missing keys
    * log Warning and return silently.
+   *
+   * Uses cached Sound instances per `oneShotSounds` (see field doc) — the
+   * same Sound is reused across plays so we don't churn Phaser's internal
+   * sounds[] array on every fire, which empirically interferes with active
+   * loops.
    */
   override play(key: string, kind: AudioKind = 'sfx'): void {
     if (!this.ensureReady(key)) return;
     const volume = this.effectiveVolume01(kind);
     if (volume === 0) return; // silent — nothing to play
-    this.scene!.sound.play(key, { volume });
+
+    let sound = this.oneShotSounds.get(key);
+    if (!sound) {
+      sound = this.scene!.sound.add(key);
+      this.oneShotSounds.set(key, sound);
+    }
+    // play() with config restarts the sound from the beginning at the new
+    // volume. Safe to call repeatedly even while the previous play is
+    // still finishing — Phaser interrupts and restarts.
+    sound.play({ volume });
   }
 
   // ----- Loop playback ---------------------------------------------------
