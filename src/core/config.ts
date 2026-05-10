@@ -54,6 +54,16 @@ export const config = {
     /** safe-area padding in design pixels (1280x720 design canvas) */
     safeAreaPaddingPx: 16,
     /**
+     * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
+     * design pixels. Load-bearing for legal compliance — the footer must
+     * always be fully visible. `TouchFireButton` reads this to position
+     * itself ABOVE the footer with a clearance gap (so the button never
+     * overlaps the footer's clickable Source URL). Centralized here so a
+     * future footer redesign automatically repositions every dependent
+     * widget. Mirrors the literal in `AttributionScene.create`.
+     */
+    attributionFooterHeightPx: 56,
+    /**
      * Canonical button dimensions across all menu scenes. Tuned for
      * mouse + touch + keyboard accessibility:
      *  - primary actions (Start, Resume, Play Again, Quit, Change Difficulty,
@@ -75,6 +85,26 @@ export const config = {
       secondaryH: 56,
       tileW: 320,
       tileH: 200,
+    },
+    /**
+     * On-screen FIRE button (`TouchFireButton`) sizing + positioning.
+     * Tunable from config so a playtest tweak (button bigger / smaller /
+     * higher / left-handed) is a 1-line change instead of an edit to
+     * `src/game/ui/TouchFireButton.ts`.
+     *
+     *  - `radiusPx` — visual radius of the circular button (80px diameter).
+     *  - `hitPadPx` — extra radius added to the hit area for thumb
+     *    tolerance. Total hit-circle radius = `radiusPx + hitPadPx`.
+     *  - `footerClearancePx` — vertical gap between the BOTTOM of the
+     *    button's hit area and the TOP of the AttributionScene footer.
+     *    Bumped to 16 (was 8) to prevent the hit-circle from bleeding
+     *    into the footer's Source-URL click zone (Senior Dev finding,
+     *    sprint 0.6 wrap-up review).
+     */
+    touchFire: {
+      radiusPx: 40,
+      hitPadPx: 14,
+      footerClearancePx: 16,
     },
   },
 } as const;

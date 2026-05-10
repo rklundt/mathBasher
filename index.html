@@ -105,10 +105,13 @@
       <p>Math, but with aliens.</p>
       <button id="splash-start" type="button" autofocus>Tap to play</button>
     </div>
-    <div id="rotate-overlay" role="alert" aria-live="polite">
+    <!-- aria-live="polite" alone (no role="alert") — `role=alert` implies
+         assertive announcement, which contradicts polite. The rotate prompt
+         is instructional, not emergent, so polite is the right pairing. -->
+    <div id="rotate-overlay" aria-live="polite">
       <div class="glyph" aria-hidden="true"></div>
-      <h2>Please rotate your device</h2>
-      <p>mathBasher plays best in landscape — turn your phone sideways to play.</p>
+      <h2>Turn your phone sideways!</h2>
+      <p>mathBasher plays better wide.</p>
     </div>
     <div id="game"></div>
     <script type="module" src="/src/main.ts"></script>

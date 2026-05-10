@@ -14,15 +14,19 @@ export interface TouchFireButtonOpts {
 
 /**
  * Layout constants. These are anchored to the bottom-right of the design
- * canvas (1280×720). The AttributionScene footer is 56px tall; the fire
- * button sits ABOVE the footer with 8px clearance so the §7(b) attribution
- * stays visible and the button never overlaps it (load-bearing license
- * constraint).
+ * canvas (1280×720). The AttributionScene footer is `attributionFooterHeightPx`
+ * tall; the fire button sits ABOVE the footer with `footerClearancePx`
+ * gap so the §7(b) attribution stays visible AND the button's hit-circle
+ * doesn't bleed into the footer's Source-URL click zone (load-bearing
+ * license constraint + a real bug caught in 0.6 wrap-up review).
+ *
+ * All values come from `config.layout` so a playtest-driven tweak is a
+ * 1-line config edit, not a source change here.
  */
-const FOOTER_HEIGHT = 56; // matches AttributionScene's `footerHeight`
-const FOOTER_CLEARANCE = 8;
-const RADIUS = 40; // 80px diameter — well above the 64×64 minimum
-const HIT_PAD = 14; // bumps the hit area to a ~108px circle for thumb tolerance
+const FOOTER_HEIGHT = config.layout.attributionFooterHeightPx;
+const FOOTER_CLEARANCE = config.layout.touchFire.footerClearancePx;
+const RADIUS = config.layout.touchFire.radiusPx;
+const HIT_PAD = config.layout.touchFire.hitPadPx;
 
 /**
  * On-screen FIRE button for touch devices. Anchored to the bottom-right,

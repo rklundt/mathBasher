@@ -124,10 +124,20 @@ export function bootGame(): void {
   // we hear orientationchange, trigger Phaser's refresh() explicitly so
   // the canvas re-fits to the new viewport without waiting for the user
   // to manually resize.
-  window.addEventListener('orientationchange', () => {
+  //
+  // Cleanup on game destroy. In production this never fires (the page
+  // lives until full reload), but Vite HMR can re-execute boot.ts in
+  // module-only mode, which would stack listeners. Pairing the listener
+  // with a Phaser DESTROY teardown means any future restart-the-game
+  // path (or HMR boundary that re-runs boot.ts) gets a clean slate.
+  const onOrientationChange = (): void => {
     // Defer one frame so the browser has a chance to update window
     // dimensions before Phaser reads them.
     requestAnimationFrame(() => game.scale.refresh());
+  };
+  window.addEventListener('orientationchange', onOrientationChange);
+  game.events.once(Phaser.Core.Events.DESTROY, () => {
+    window.removeEventListener('orientationchange', onOrientationChange);
   });
 
   _th.logToAi('AppBoot Completed', SeverityLevel.Information);
