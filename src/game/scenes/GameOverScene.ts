@@ -9,10 +9,11 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { stackButtons } from '@/game/ui/MenuLayout';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
-import { getAudioManager } from '@/services/audioManagerFactory';
+import { text, FONT_FAMILY, TEXT_AMBER_WARM } from '@/game/ui/typography';
+import { setupScene } from '@/game/scenes/sceneSetup';
 
 export interface GameOverData {
   score: number;
@@ -60,13 +61,10 @@ export class GameOverScene extends Phaser.Scene {
     if (this.roundData.mathId) props.mathId = this.roundData.mathId;
     if (this.roundData.speed) props.speed = this.roundData.speed;
 
-    _th.logToAi('GameOverScene Started', SeverityLevel.Information, props);
-
-    // Re-bind the AudioManager — see GameSelectScene.create for rationale.
-    // GameScene also called init(this) on its own boot, but it's now shut
-    // down. Without this re-bind, the first Play Again / Change Difficulty
-    // / Main Menu click is silent.
-    getAudioManager().init(this);
+    // setupScene forwards the round-specific props onto the Started event
+    // for telemetry filtering (so a query can answer "what's the average
+    // round score across passed runs of add-to-10 at medium speed").
+    setupScene(this, props);
 
     // Save the score asynchronously and check for new high score. The
     // IScoreStore methods are Promise-returning so a future ApiScoreStore is a
@@ -81,21 +79,20 @@ export class GameOverScene extends Phaser.Scene {
     const cx = width / 2;
 
     const headline = this.roundData.passed ? 'Round Complete!' : 'Round Done — Try Again?';
-    this.add
-      .text(cx, height * 0.18, headline, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '40px',
-        color: this.roundData.passed ? '#34d399' : '#fbbf24',
-      })
+    text(this, cx, height * 0.18, headline, this.roundData.passed ? 'success' : 'warning')
       .setOrigin(0.5);
 
+    // 24px primary text on a multi-line score-summary line — close to body
+    // sizing but two-up. Inline (with FONT_FAMILY) so the literal stays
+    // in typography.ts only; not promoting to a TextKind because no other
+    // scene needs this exact size.
     this.add
       .text(
         cx,
         height * 0.32,
         `Score: ${this.roundData.score}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`,
         {
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: FONT_FAMILY,
           fontSize: '24px',
           color: '#eaeaf2',
           align: 'center',
@@ -103,61 +100,41 @@ export class GameOverScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    this.add
-      .text(cx, height * 0.46, this.renderStars(), {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '40px',
-        color: '#facc15',
-      })
-      .setOrigin(0.5);
+    text(this, cx, height * 0.46, this.renderStars(), 'stars').setOrigin(0.5);
 
-    const playAgain = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.62,
-      width: 240,
-      height: 56,
-      label: 'Play Again',
-      onClick: () => {
-        // Defensive: re-set Settings to the round we just played, so a Play
-        // Again works even if a future code path resets Settings (e.g. on
-        // round-end cleanup that hasn't been written yet). GameScene reads
-        // Settings on create, so this is enough to preserve the user's
-        // intent across the bounce.
-        if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
-        if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
-        this.scene.start(SceneKeys.Game);
-      },
+    const buttons = stackButtons(this, {
+      centerY: height * 0.72,
+      items: [
+        {
+          label: 'Play Again',
+          onClick: () => {
+            // Defensive: re-set Settings to the round we just played, so
+            // Play Again works even if a future code path resets Settings
+            // (e.g. on round-end cleanup that hasn't been written yet).
+            // GameScene reads Settings on create, so this is enough to
+            // preserve the user's intent across the bounce.
+            if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
+            if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
+            this.scene.start(SceneKeys.Game);
+          },
+        },
+        {
+          label: 'Change Difficulty',
+          kind: 'secondary',
+          onClick: () => this.scene.start(SceneKeys.Difficulty),
+        },
+        {
+          label: 'Main Menu',
+          kind: 'secondary',
+          onClick: () => this.scene.start(SceneKeys.Menu),
+        },
+      ],
     });
 
-    const changeDifficulty = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.72,
-      width: 240,
-      height: 56,
-      label: 'Change Difficulty',
-      onClick: () => this.scene.start(SceneKeys.Difficulty),
-    });
-
-    const mainMenu = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.82,
-      width: 240,
-      height: 56,
-      label: 'Main Menu',
-      onClick: () => this.scene.start(SceneKeys.Menu),
-    });
-
-    new KeyboardNavigator(this, [playAgain, changeDifficulty, mainMenu]);
+    new KeyboardNavigator(this, buttons);
 
     // Esc on Game Over = Main Menu (matches the existing button's destination).
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
-
-    this.events.once('shutdown', () => {
-      _th.logToAi('GameOverScene Completed', SeverityLevel.Information);
-    });
   }
 
   private renderStars(): string {
@@ -203,11 +180,13 @@ export class GameOverScene extends Phaser.Scene {
 
     if (isNewHighScore && this.scene.isActive()) {
       const { width, height } = this.scale;
+      // One-off badge style (22px bold warm-amber). Inline via FONT_FAMILY
+      // + TEXT_AMBER_WARM constants to keep the font literal centralized.
       const badge = this.add
         .text(width / 2, height * 0.54, '★ New High Score! ★', {
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: FONT_FAMILY,
           fontSize: '22px',
-          color: '#fbbf24',
+          color: TEXT_AMBER_WARM,
           fontStyle: 'bold',
         })
         .setOrigin(0.5);

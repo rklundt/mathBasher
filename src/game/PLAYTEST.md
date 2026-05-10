@@ -175,6 +175,21 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | Browser DevTools console: `BootScene PreloadedSfx` log shows `reason: '4'` in v0.5.3 / `'5'` in v0.5.4+ (the four/five preloaded keys: fire-1, fire-2, skittering-1, loop-1, button-click-1) |
 |   | No "key missing" or "not initialized" warnings during a normal round play |
 
+## Refactor pass + 10% speed bump (sprint 0.5.5)
+
+This sprint is **internal-only refactor + a one-knob tuning change** — no new features. Run a quick visual + behavioral sweep to confirm nothing regressed.
+
+| ✓ | Check |
+|---|---|
+|   | **Speed bump (Story I)**: aliens descend ~21% faster than v0.5.4 across all three tiers (Slow / Medium / Fast) — applied as two cumulative +10% passes during the sprint. Wrong-shot penalty acceleration is also ~21% faster. The game should feel snappier — not frantic — at every tier. Numbers in `src/core/config.ts`: slow 48 px/s, medium 73 px/s, fast 109 px/s descent. |
+|   | First-button-click in every owning scene plays SFX (regression check from 0.5.4 follow-up — re-verify after sprint 0.5.5's `setupScene` migration): Menu Start, GameSelect Alien-Shoot, Difficulty math tile, GameOver Play-Again all chirp on first click. |
+|   | **Visual rhythm (Story D drift)** — MenuScene's three-button stack (Start, High Scores, Settings) looks intentional. Settings button is now narrower than Start + High Scores (200×56 vs 280×64) to read as the secondary action. PauseOverlay (Resume / Settings / Quit) shows the same primary/secondary hierarchy. GameOverScene's Play-Again button is wider (280) than Change-Difficulty + Main-Menu (200). If any of these look "wrong" rather than "intentional," flag for revisit — pre-refactor, all menu buttons were uniform width. |
+|   | HUD Pause icon click → pause overlay, audible click. HUD Mute icon click → 🔊 ↔ 🔇 emoji flips immediately on click; click sound plays going UNMUTED → MUTED, silent going the other way (audio is muted at moment of activation; visual flip is the confirmation). |
+|   | Settings volume sliders still work; live-update mid-round still works (slider drag while a loop is playing changes loudness instantly). |
+|   | Browser DevTools Console — no warnings, no missing-key errors, no `AudioContext was prevented from starting automatically`, no React/Phaser dev-mode complaints. |
+|   | Telemetry log stream — `<sceneKey> Started` and `<sceneKey> Completed` events fire for every scene transition. Note: `Completed` now fires on shutdown (not at end of `create()`) — this is a deliberate standardization in 0.5.5; if querying App Insights, expect `Completed` to arrive whenever the user actually leaves the scene, not immediately after Started. |
+|   | DifficultyScene empty-state branch (only triggered if every math generator is stubbed — not reachable in practice today): if you can manually trigger it, the "No math types available yet" copy renders 28px bold amber (was 24px non-bold pre-refactor — minor cosmetic drift, intentional). |
+
 ## Click-to-start splash + button-click SFX (sprint 0.5.4)
 
 | ✓ | Check |

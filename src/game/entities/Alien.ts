@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { advanceY } from '@/game/systems/waveKinematics';
+import { FONT_FAMILY, TEXT_WHITE } from '@/game/ui/typography';
 
 export interface AlienOpts {
   scene: Phaser.Scene;
@@ -48,9 +49,9 @@ export class Alien extends Phaser.GameObjects.Container {
     this.chassis.setStrokeStyle(2, 0x6366f1);
 
     this.answerText = opts.scene.add.text(0, 0, String(opts.answer), {
-      fontFamily: 'system-ui, sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: '32px',
-      color: '#ffffff',
+      color: TEXT_WHITE,
       fontStyle: 'bold',
     });
     this.answerText.setOrigin(0.5);

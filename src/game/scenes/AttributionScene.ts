@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { attribution } from '@/core/attribution';
+import { FONT_FAMILY, TEXT_PRIMARY, TEXT_BLUE } from '@/game/ui/typography';
 
 /**
  * Persistent parallel scene that renders the AGPL §7(b) UI attribution footer
@@ -52,17 +53,17 @@ export class AttributionScene extends Phaser.Scene {
     const leftText = `${attribution.productName}  •  ${attribution.copyrightLine}  •  ${attribution.licenseLine}`;
     this.add
       .text(16, height - footerHeight / 2, leftText, {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '12px',
-        color: '#eaeaf2',
+        color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);
 
     const sourceLabel = this.add
       .text(width - 16, height - footerHeight / 2, `Source: ${attribution.sourceUrl}`, {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '12px',
-        color: '#60a5fa',
+        color: TEXT_BLUE,
       })
       .setOrigin(1, 0.5);
 

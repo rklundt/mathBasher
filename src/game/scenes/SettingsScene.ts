@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
+import { text, FONT_FAMILY, TEXT_PRIMARY } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
 
@@ -85,21 +86,8 @@ export class SettingsScene extends Phaser.Scene {
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
     backdrop.setOrigin(0, 0);
 
-    this.add
-      .text(width / 2, height * 0.12, 'Settings', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '48px',
-        color: '#eaeaf2',
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(width / 2, height * 0.22, 'Volume', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
-        color: '#9ca3af',
-      })
-      .setOrigin(0.5);
+    text(this, width / 2, height * 0.12, 'Settings', 'h2').setOrigin(0.5);
+    text(this, width / 2, height * 0.22, 'Volume', 'sectionLabel').setOrigin(0.5);
 
     const audio = getAudioManager();
     const tabOrder: PlaceholderButton[] = [];
@@ -152,24 +140,21 @@ export class SettingsScene extends Phaser.Scene {
     cx: number,
     y: number,
   ): PlaceholderButton[] {
-    // Label to the left of the controls.
+    // Label to the left of the controls. 22px sits between TextKind
+    // 'subtitle' (20px) and 'accent' (28px); inline with FONT_FAMILY +
+    // TEXT_PRIMARY since this row layout is unique to SettingsScene.
     this.add
       .text(cx - 240, y, KIND_LABELS[kind], {
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: FONT_FAMILY,
         fontSize: '22px',
-        color: '#eaeaf2',
+        color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);
 
     // Percent text — declared first so the closures below can update it.
-    const percentText = this.add
-      .text(cx + 100, y, `${audio.getVolume(kind)}%`, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '28px',
-        color: '#facc15',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    // Standard 'accent' kind matches the 28px bold amber treatment.
+    const percentText = text(this, cx + 100, y, `${audio.getVolume(kind)}%`, 'accent');
+    percentText.setOrigin(0.5);
 
     // Minus button on the left of the percent.
     const minusBtn = new PlaceholderButton({

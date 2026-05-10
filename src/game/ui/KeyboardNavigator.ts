@@ -65,7 +65,16 @@ export interface KeyboardNavigatorOptions {
 
 export class KeyboardNavigator {
   private focusedIndex: number;
-  private readonly shiftKey: Phaser.Input.Keyboard.Key;
+  /**
+   * Stored Shift key — needed to detect Shift+Tab for reverse focus
+   * navigation. `null` when the scene has no keyboard plugin (some test
+   * environments). Accessing methods on `shiftKey` is gated by an
+   * early-return on the no-keyboard branch in the constructor; the
+   * keydown handlers below would never fire without a keyboard plugin.
+   * Pre-refactor (sprint 0.5.5) this was `{} as Phaser.Input.Keyboard.Key`
+   * — a sentinel cast that lied about the type. Nullable is honest.
+   */
+  private readonly shiftKey: Phaser.Input.Keyboard.Key | null;
   private readonly activateOnSpace: boolean;
 
   constructor(
@@ -77,7 +86,7 @@ export class KeyboardNavigator {
     if (!scene.input.keyboard) {
       // Some test environments lack the keyboard plugin; bail gracefully.
       this.focusedIndex = -1;
-      this.shiftKey = {} as Phaser.Input.Keyboard.Key;
+      this.shiftKey = null;
       return;
     }
 
@@ -115,7 +124,10 @@ export class KeyboardNavigator {
   private handleTab(event: KeyboardEvent): void {
     event.preventDefault();
     if (this.buttons.length === 0) return;
-    const direction = this.shiftKey.isDown ? -1 : 1;
+    // shiftKey is null only when the scene has no keyboard plugin, in
+    // which case Tab keydown can't fire and this code is unreachable.
+    // The optional-chained read is a belt-and-braces guard.
+    const direction = this.shiftKey?.isDown ? -1 : 1;
     this.moveFocus(direction);
   }
 
