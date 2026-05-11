@@ -8,7 +8,6 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
-  FRAMES_PER_SPRITE,
   SPRITE_FPS,
   alienAnimKey,
   alienSpritePath,
@@ -144,15 +143,22 @@ export class BootScene extends Phaser.Scene {
     // Create one looping animation per alien sprite. Phaser's anims manager
     // is global-to-the-game (not per-scene), so these are registered once
     // here and any scene can `sprite.play(alienAnimKey(key))` later.
+    //
+    // We use the spritesheet's ACTUAL frame count (Phaser's default when
+    // `end` is omitted = "last frame in the spritesheet") rather than the
+    // canonical FRAMES_PER_SPRITE constant. Variable frame counts across
+    // batches are normal: ffmpeg's frame-rate filter can dedup repeated
+    // source frames, so a "5.21s × 12 fps" source might produce 47-63
+    // frames depending on encoding quirks. Hardcoding `end: 62` against
+    // a 47-frame WebP made Phaser fall back to frame 0 for the missing
+    // 15 frames, breaking the loop visibly. (Story 6 of sprint 0.6.3.)
     for (const key of ALIEN_SPRITE_KEYS) {
       const animKey = alienAnimKey(key);
       if (this.anims.exists(animKey)) continue; // idempotent on hot-reload
       this.anims.create({
         key: animKey,
-        frames: this.anims.generateFrameNumbers(key, {
-          start: 0,
-          end: FRAMES_PER_SPRITE - 1,
-        }),
+        // Omit `end` → Phaser uses all frames present in the spritesheet.
+        frames: this.anims.generateFrameNumbers(key, { start: 0 }),
         frameRate: SPRITE_FPS,
         repeat: -1,
       });

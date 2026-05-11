@@ -19,7 +19,23 @@
  * `SPRITE_FPS` from a 24 fps source (24÷12 = clean integer downsample).
  */
 
-/** Number of frames in every alien spritesheet (5.21s source × 12 fps). */
+/**
+ * Canonical / expected frame count per spritesheet, assuming the source
+ * video is the standard 5.21s at 24 fps and the extractor runs at 12 fps.
+ *
+ * **DO NOT trust this for animation registration.** The pipeline can
+ * produce variable frame counts in practice — ffmpeg's frame-rate
+ * filter dedups repeated source frames, so a source with VFR encoding
+ * or a slight duration mismatch produces fewer than 63 actual frames.
+ * Phaser's `generateFrameNumbers(key, { start: 0 })` (omit `end`)
+ * uses the spritesheet's actual frame count at runtime — always
+ * prefer that over hardcoding this constant.
+ *
+ * This constant is kept as documentation for the *target* source-video
+ * shape ("aim for ~5.21s at 12 fps when generating new alien videos")
+ * and for the CSS preview's default duration calculation. Sprint 0.6.3
+ * Story 6 captures the rationale for not trusting it elsewhere.
+ */
 export const FRAMES_PER_SPRITE = 63;
 
 /** Animation playback rate (frames per second). Matches extract --fps. */
