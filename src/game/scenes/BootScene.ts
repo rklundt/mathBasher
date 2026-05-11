@@ -6,6 +6,14 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
+import {
+  ALIEN_SPRITE_KEYS,
+  FRAMES_PER_SPRITE,
+  SPRITE_FPS,
+  alienAnimKey,
+  alienSpritePath,
+  pickSpriteTier,
+} from '@/core/spriteKeys';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -19,20 +27,32 @@ import { AUDIO_MANIFEST } from '@/core/audioKeys';
 export class BootScene extends Phaser.Scene {
   static readonly key = SceneKeys.Boot;
 
+  /**
+   * The sprite tier picked at preload-time. Cached so the `complete` log
+   * + the create-time animation builder both reference the same value
+   * without re-deriving from the viewport (which can technically change
+   * between preload and create on a slow boot).
+   */
+  private spriteTier: 128 | 192 = 128;
+
   constructor() {
     super(BootScene.key);
   }
 
   /**
-   * Preload SFX assets. Phaser caches them as decoded PCM AudioBuffers, so
-   * later `scene.sound.play(key)` calls have zero decode cost — perfect for
-   * arcade-style fire-on-keypress where any latency is felt.
+   * Preload SFX + sprite assets. Phaser caches audio as decoded PCM
+   * AudioBuffers and sprites as GPU textures, so later `scene.sound.play(key)`
+   * and `scene.add.sprite(0, 0, key)` calls have zero decode/upload cost.
    *
    * NOTE: BootScene only LOADS the assets here. The AudioManager's `init()`
    * call (which binds to a scene's sound manager) MUST happen later, in
    * MenuScene's first user-gesture handler — not here. iOS Safari blocks
    * WebAudioContext creation outside a user gesture, and an init from
    * BootScene silently fails on iOS even though Chrome/Firefox tolerate it.
+   *
+   * Sprite tier (128 vs 192) is picked once from the live viewport per
+   * ADR-0010. No mid-session re-tier — the loaded textures are baked into
+   * the GPU atlas and a viewport resize doesn't trigger a reload.
    */
   preload(): void {
     // AUDIO_MANIFEST in `src/core/audioKeys.ts` is the single source of
@@ -42,15 +62,48 @@ export class BootScene extends Phaser.Scene {
     for (const entry of AUDIO_MANIFEST) {
       this.load.audio(entry.key, entry.url);
     }
+
+    // Sprite preload — pick tier from viewport × DPR, then load every
+    // alien spritesheet at that tier. Spritesheet frame width = tier
+    // (each WebP is a horizontal row of FRAMES_PER_SPRITE square frames).
+    this.spriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
+    for (const key of ALIEN_SPRITE_KEYS) {
+      this.load.spritesheet(key, alienSpritePath(key, this.spriteTier), {
+        frameWidth: this.spriteTier,
+        frameHeight: this.spriteTier,
+      });
+    }
+
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
         reason: String(AUDIO_MANIFEST.length),
+      });
+      _th.logToAi('BootScene PreloadedSprites', SeverityLevel.Information, {
+        spriteTier: String(this.spriteTier),
+        reason: String(ALIEN_SPRITE_KEYS.length),
       });
     });
   }
 
   create(): void {
     _th.logToAi('BootScene Started', SeverityLevel.Information);
+
+    // Create one looping animation per alien sprite. Phaser's anims manager
+    // is global-to-the-game (not per-scene), so these are registered once
+    // here and any scene can `sprite.play(alienAnimKey(key))` later.
+    for (const key of ALIEN_SPRITE_KEYS) {
+      const animKey = alienAnimKey(key);
+      if (this.anims.exists(animKey)) continue; // idempotent on hot-reload
+      this.anims.create({
+        key: animKey,
+        frames: this.anims.generateFrameNumbers(key, {
+          start: 0,
+          end: FRAMES_PER_SPRITE - 1,
+        }),
+        frameRate: SPRITE_FPS,
+        repeat: -1,
+      });
+    }
 
     // No title text rendered here anymore — the splash overlay (in
     // index.html, dismissed by main.ts after the first user gesture)

@@ -4,6 +4,8 @@
 
 import Phaser from 'phaser';
 import { Alien } from '@/game/entities/Alien';
+import { config } from '@/core/config';
+import { pickRandomAlienSpriteKey } from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 
 export interface WaveSystemOpts {
@@ -94,7 +96,17 @@ export class WaveSystem {
         lane,
         answer,
         descentSpeedPxPerSec: speed,
+        // Per-block random sprite (sprint 0.6.3). Each new block gets its
+        // own random pick — same answer can wear different faces. Sprint
+        // 0.7's curation pass will narrow the pool to keepers.
+        spriteKey: pickRandomAlienSpriteKey(),
       });
+      // Pre-fall jiggle phase (sprint 0.6.3). Each alien oscillates around
+      // its lane center for `preFallJiggleMs` before descending. Gives the
+      // player a deliberate window to read the equation before action starts.
+      // Pause-aware automatically: WaveSystem.update early-returns during
+      // pause, so jiggle elapsed time freezes/resumes cleanly.
+      alien.setJigglePhase(config.wave.preFallJiggleMs, config.wave.preFallJiggleAmplitudePx);
       this.aliens.push(alien);
       if (answer === question.correctAnswer && this.correctAnswerLane < 0) {
         this.correctAnswerLane = lane;
