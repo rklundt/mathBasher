@@ -147,7 +147,7 @@ export class WaveSystem {
     }
   }
 
-  /** True if `usedWrongShotPenalty()` has been called this wave. */
+  /** True if `applyWrongShotPenalty()` has been called this wave. */
   hasUsedWrongShot(): boolean {
     return this.penaltyApplied;
   }

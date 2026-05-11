@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { advanceY } from '@/game/systems/waveKinematics';
 import { FONT_FAMILY, TEXT_WHITE } from '@/game/ui/typography';
 import { alienAnimKey } from '@/core/spriteKeys';
+import { config } from '@/core/config';
 
 export interface AlienOpts {
   scene: Phaser.Scene;
@@ -161,9 +162,9 @@ export class Alien extends Phaser.GameObjects.Container {
         this.jiggleRemainingMs = 0;
         return;
       }
-      // Sine oscillation at ~3 Hz (3 wiggles per second). Frequency is local
-      // to this method — the visual is not load-bearing enough to lift to config.
-      const omega = 2 * Math.PI * 3;
+      // Sine oscillation at `config.wave.preFallJiggleHz` Hz (default 3 = three
+      // wiggles per second during the 1-second jiggle window).
+      const omega = 2 * Math.PI * config.wave.preFallJiggleHz;
       this.x = this.spawnX + Math.sin((this.jiggleElapsedMs / 1000) * omega) * this.jiggleAmplitudePx;
       return;
     }
@@ -180,11 +181,6 @@ export class Alien extends Phaser.GameObjects.Container {
     this.jiggleRemainingMs = durationMs;
     this.jiggleElapsedMs = 0;
     this.jiggleAmplitudePx = amplitudePx;
-  }
-
-  /** True while the alien is in its pre-fall jiggle phase (not yet descending). */
-  isJiggling(): boolean {
-    return this.jiggleRemainingMs > 0;
   }
 
   /** Change descent speed mid-flight (used for the wrong-shot speed penalty). */

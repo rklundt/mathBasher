@@ -77,6 +77,14 @@ export const config = {
      */
     preFallJiggleMs: 1000,
     preFallJiggleAmplitudePx: 4,
+    /**
+     * Jiggle oscillation frequency in Hz (wiggles per second). 3 Hz = three
+     * left-right wiggles during the 1-second jiggle window — fast enough
+     * to read as "coming loose" anticipation, slow enough to not look
+     * frantic. Lifted to config in sprint 0.6.3's wrap-up review for
+     * symmetry with the other jiggle knobs.
+     */
+    preFallJiggleHz: 3,
   },
   hero: {
     /**

@@ -12,6 +12,7 @@ import {
   alienAnimKey,
   alienSpritePath,
   pickSpriteTier,
+  type SpriteTier,
 } from '@/core/spriteKeys';
 import { FONT_FAMILY } from '@/game/ui/typography';
 
@@ -33,7 +34,7 @@ export class BootScene extends Phaser.Scene {
    * without re-deriving from the viewport (which can technically change
    * between preload and create on a slow boot).
    */
-  private spriteTier: 128 | 192 = 128;
+  private spriteTier: SpriteTier = 128;
 
   constructor() {
     super(BootScene.key);
@@ -72,7 +73,10 @@ export class BootScene extends Phaser.Scene {
 
     // Sprite preload — pick tier from viewport × DPR, then load every
     // alien spritesheet at that tier. Spritesheet frame width = tier
-    // (each WebP is a horizontal row of FRAMES_PER_SPRITE square frames).
+    // (each WebP is a horizontal row of frames, each tier×tier px square).
+    // Frame COUNT per spritesheet varies per batch (see Story 6 below);
+    // we don't pass it to load.spritesheet — Phaser derives count at
+    // animation-build time from the loaded texture's actual width.
     this.spriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
     for (const key of ALIEN_SPRITE_KEYS) {
       this.load.spritesheet(key, alienSpritePath(key, this.spriteTier), {
