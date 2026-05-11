@@ -77,7 +77,7 @@ export const ALIEN_SPRITE_BATCHES: readonly AlienSpriteBatch[] = [
   { prefix: 'alien2', rows: 3, cols: 3 },
   { prefix: 'alien3', rows: 3, cols: 3 },
   { prefix: 'alien4', rows: 3, cols: 3 },
-  // alien5 pending processing (source video in raw/).
+  { prefix: 'alien5', rows: 3, cols: 3 },
 ];
 
 /**
