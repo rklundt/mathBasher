@@ -75,8 +75,10 @@ interface AlienSpriteBatch {
 export const ALIEN_SPRITE_BATCHES: readonly AlienSpriteBatch[] = [
   { prefix: 'alien1', rows: 3, cols: 3 },
   { prefix: 'alien2', rows: 3, cols: 3 },
-  { prefix: 'alien3', rows: 3, cols: 4 },
-  // alien4, alien5 pending re-generation at new option-C dark-bg defaults.
+  // alien3 skipped — source had translating aliens across cell boundaries
+  // that two regen attempts couldn't prompt away. Revisit later if needed.
+  { prefix: 'alien4', rows: 2, cols: 4 },
+  // alien5 pending re-generation at new option-C dark-bg defaults.
 ];
 
 /**
