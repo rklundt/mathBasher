@@ -42,11 +42,17 @@ export class Alien extends Phaser.GameObjects.Container {
 
   /**
    * Display size of the optional rider-sprite in design pixels (square).
-   * Smaller than the chassis so the number text below stays the focal
-   * point. The sprite scales DOWN from its native source (128 or 192 per
-   * tier) — both tiers downscale cleanly to this size on every viewport.
+   * Larger than the chassis WIDTH (80) so the creature visibly extends
+   * past the block on each side and reads as the dominant visual, with
+   * the number block as the "vehicle" below. The sprite scales DOWN
+   * from its native source (128 or 192 per tier) — both tiers downscale
+   * cleanly to this size on every viewport.
+   *
+   * Tuning history:
+   *   v0.6.3 playtest: 64 → 96. 64 looked too small / disconnected
+   *     from the block. 96 makes the creature the focal point.
    */
-  static readonly SPRITE_SIZE = 64;
+  static readonly SPRITE_SIZE = 96;
 
   /**
    * Vertical gap between the BOTTOM of the rider-sprite and the TOP of
