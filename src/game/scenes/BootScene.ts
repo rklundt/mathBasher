@@ -14,6 +14,7 @@ import {
   alienSpritePath,
   pickSpriteTier,
 } from '@/core/spriteKeys';
+import { FONT_FAMILY } from '@/game/ui/typography';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -55,6 +56,13 @@ export class BootScene extends Phaser.Scene {
    * the GPU atlas and a viewport resize doesn't trigger a reload.
    */
   preload(): void {
+    // Loading bar (sprint 0.6.3) — prior to 0.6.3, BootScene preloaded
+    // ~0.5 MB of audio in <100ms and an empty canvas was tolerable. With
+    // the 45-spritesheet preload (10-20 MB depending on tier), a 1-3
+    // second hang felt like the app froze. The bar fills the gap visually
+    // and replaces the prior 250ms `delayedCall` mask in `create()`.
+    this.buildLoadingBar();
+
     // AUDIO_MANIFEST in `src/core/audioKeys.ts` is the single source of
     // truth for every preloadable audio asset. Adding a new sound is a
     // 1-line edit there — this loop and the completion log both derive
@@ -85,6 +93,51 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Render a centered progress bar + "Loading…" label. Wires
+   * `load.on('progress', ...)` so the bar fills as assets arrive. All
+   * geometry is in design-canvas units (1280×720); FIT scaling handles
+   * device-pixel translation per `boot.ts`'s scale config.
+   *
+   * Visual: dark slate background plate (matches `#0b1020` canvas bg
+   * + the index.html splash palette so the splash → boot transition
+   * reads as continuous), thin amber fill that grows left-to-right,
+   * "Loading…" label above. No assets needed — pure shapes + text.
+   */
+  private buildLoadingBar(): void {
+    const W = this.scale.gameSize.width;
+    const H = this.scale.gameSize.height;
+    const BAR_W = 400;
+    const BAR_H = 24;
+    const BAR_PAD = 2; // inner gap between background and fill
+    const FILL_MAX = BAR_W - BAR_PAD * 2;
+
+    // Label above the bar.
+    this.add
+      .text(W / 2, H / 2 - 32, 'Loading…', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '20px',
+        color: '#f1f5f9',
+      })
+      .setOrigin(0.5);
+
+    // Bar background — slate plate with subtle outline.
+    this.add
+      .rectangle(W / 2, H / 2, BAR_W, BAR_H, 0x1e293b)
+      .setStrokeStyle(2, 0x475569);
+
+    // Bar fill — amber (matches the FIRE button + UI accent palette).
+    // Origin (0, 0.5) so width can grow from the LEFT edge anchored at
+    // (W/2 - FILL_MAX/2). Updated each `progress` event.
+    const fill = this.add
+      .rectangle(W / 2 - FILL_MAX / 2, H / 2, 0, BAR_H - BAR_PAD * 2, 0xfbbf24)
+      .setOrigin(0, 0.5);
+
+    this.load.on('progress', (value: number) => {
+      fill.width = FILL_MAX * value;
+    });
+  }
+
   create(): void {
     _th.logToAi('BootScene Started', SeverityLevel.Information);
 
@@ -105,28 +158,15 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // No title text rendered here anymore — the splash overlay (in
-    // index.html, dismissed by main.ts after the first user gesture)
-    // already showed the title before this scene even mounted. Repeating
-    // the title here would feel like a stutter.
-    //
-    // The 250ms delay is a deliberate calm-the-flicker beat: the splash
-    // dismiss → BootScene mount → MenuScene start chain happens in a
-    // single rAF on a fast machine, which produces a visible flash of the
-    // empty boot canvas before MenuScene paints. 250ms is just long enough
-    // to feel like "the splash faded into the menu" rather than "things
-    // popped." Tested values: 0ms / 100ms feel jumpy; 500ms feels sluggish;
-    // 250ms is the sweet spot. When a real loading bar lands in the
-    // art-polish milestone (asset count grows past trivial), this delay
-    // becomes unnecessary — the bar itself fills the same role.
-    //
-    // The slate background fills the canvas during the brief wait — same
-    // color as the splash + the rest of the HUD chrome, so the transition
-    // from splash → boot → menu reads as continuous, not flickery.
-    this.time.delayedCall(250, () => {
-      this.scene.launch(SceneKeys.Attribution);
-      this.scene.start(SceneKeys.Menu);
-    });
+    // Hand off to the menu. The 250ms `delayedCall` calm-the-flicker beat
+    // that lived here in 0.5/0.6 was a workaround for "empty canvas flash"
+    // when preload was trivial (~0.5 MB audio in <100ms). Sprint 0.6.3's
+    // 45-spritesheet preload (10-20 MB) takes long enough that a loading
+    // bar in `preload()` is the visible content; the delay is no longer
+    // needed and removing it makes the boot feel snappier on fast loads.
+    // (See `buildLoadingBar()` in `preload()` above.)
+    this.scene.launch(SceneKeys.Attribution);
+    this.scene.start(SceneKeys.Menu);
 
     _th.logToAi('BootScene Completed', SeverityLevel.Information);
   }
