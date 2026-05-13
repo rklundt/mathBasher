@@ -19,6 +19,7 @@ import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
+import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 
@@ -212,6 +213,7 @@ export class GameScene extends Phaser.Scene {
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
       this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
       this.hero.playHitAnim();
+      this.playCorrectHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(true, () => {
         // Fade the rest of the wave smoothly so it doesn't snap-disappear.
         const survivors = this.waveSystem.liveAliens();
@@ -230,6 +232,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Wrong shot: explode the wrong alien, accelerate the rest, wave continues.
       this.waveSystem.applyWrongShotPenalty();
+      this.playWrongHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(false, () => {
         // No state change beyond the alien being gone + speed boost applied.
       });
@@ -239,6 +242,68 @@ export class GameScene extends Phaser.Scene {
         speed: this.speed,
       });
     }
+  }
+
+  /**
+   * Sprint 0.7 Story 4 — visual feedback for a correct hit.
+   *
+   * Two layers of effect:
+   *   1. A green particle burst at the alien's position — `light_01` and
+   *      `flare_01` mixed (additive blend) gives a "burst of light" look.
+   *      ~12 particles, 400ms lifespan, fans outward.
+   *   2. A brief screen flash (camera.flash) — green tint, 120ms — sells
+   *      the "you got it right!" moment at a body-level (peripheral vision
+   *      catches the flash even if eyes were on a different alien).
+   *
+   * The emitter is created on the fly and self-destructs after its
+   * lifespan + buffer. No long-lived emitter pool — the rate of correct
+   * hits is low (one per question max) and the JS GC handles the
+   * short-lived particles fine.
+   */
+  private playCorrectHitFeedback(x: number, y: number): void {
+    const burst = this.add.particles(x, y, ParticleSpriteKeys.Light01, {
+      speed: { min: 60, max: 200 },
+      scale: { start: 0.4, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 400,
+      tint: 0x22c55e, // green
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    burst.explode(12);
+    this.time.delayedCall(500, () => burst.destroy());
+    this.cameras.main.flash(120, 34, 197, 94, false); // green RGB
+  }
+
+  /**
+   * Sprint 0.7 Story 4 — visual feedback for a wrong hit.
+   *
+   * Two layers of effect:
+   *   1. A red particle burst at the alien's position — `spark_05` (faster,
+   *      sharper than the correct-hit `light_01`) tinted red. ~15 particles
+   *      with a slightly shorter lifespan than the correct burst (350ms vs
+   *      400ms) so wrong-hits feel snappier / less rewarding.
+   *   2. A camera shake — intensity 0.005, duration 150ms. Subtle but
+   *      kinaesthetically noticeable; pairs with the red flash to sell
+   *      "you got it wrong" without being punishing.
+   *
+   * No screen flash on wrong (the green flash on correct should remain
+   * the more visually rewarding signal — red flash would compete and
+   * confuse).
+   */
+  private playWrongHitFeedback(x: number, y: number): void {
+    const burst = this.add.particles(x, y, ParticleSpriteKeys.Spark05, {
+      speed: { min: 80, max: 250 },
+      scale: { start: 0.35, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 350,
+      tint: 0xef4444, // red
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    burst.explode(15);
+    this.time.delayedCall(450, () => burst.destroy());
+    this.cameras.main.shake(150, 0.005);
   }
 
   private handleTimeout(): void {
