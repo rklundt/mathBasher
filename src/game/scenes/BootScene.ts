@@ -9,6 +9,7 @@ import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
   SPRITE_FPS,
+  SPRITE_MANIFEST,
   alienAnimKey,
   alienSpritePath,
   pickSpriteTier,
@@ -71,10 +72,11 @@ export class BootScene extends Phaser.Scene {
       this.load.audio(entry.key, entry.url);
     }
 
-    // Sprite preload — pick tier from viewport × DPR, then load every
-    // alien spritesheet at that tier. Spritesheet frame width = tier
-    // (each WebP is a horizontal row of frames, each tier×tier px square).
-    // Frame COUNT per spritesheet varies per batch (see Story 6 below);
+    // === Alien sprites (tiered, animated spritesheets) ===
+    // Pick tier from viewport × DPR, then load every alien spritesheet
+    // at that tier. Spritesheet frame width = tier (each WebP is a
+    // horizontal row of frames, each tier×tier px square). Frame COUNT
+    // per spritesheet varies per batch (see comment in create() below);
     // we don't pass it to load.spritesheet — Phaser derives count at
     // animation-build time from the loaded texture's actual width.
     this.spriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
@@ -85,13 +87,30 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
+    // === Non-alien sprites (single-frame static images) ===
+    // SPRITE_MANIFEST is derived from per-kind const objects in
+    // `src/core/spriteKeys.ts` (Hero/Projectile/Ui/Particle/Bg).
+    // Adding a new asset is a 1-line edit in spriteKeys.ts — this loop
+    // automatically picks it up. Each entry's `url` is already kind-aware
+    // (e.g. `/assets/sprites/hero/speeder-1.png`, no tier subfolder for
+    // non-alien kinds per ADR-0010's "aliens-only tier strategy" decision).
+    //
+    // All non-alien sprites use `load.image` (single frame), NOT
+    // `load.spritesheet`. None of the current Story 1 assets are animated
+    // spritesheets. When that changes (e.g. a hero idle anim, particle
+    // burst sequence), the manifest entry can grow a frameWidth/frameHeight
+    // hint and this loop can branch on it.
+    for (const entry of SPRITE_MANIFEST) {
+      this.load.image(entry.key, entry.url);
+    }
+
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
         reason: String(AUDIO_MANIFEST.length),
       });
       _th.logToAi('BootScene PreloadedSprites', SeverityLevel.Information, {
         spriteTier: String(this.spriteTier),
-        reason: String(ALIEN_SPRITE_KEYS.length),
+        reason: String(ALIEN_SPRITE_KEYS.length + SPRITE_MANIFEST.length),
       });
     });
   }
