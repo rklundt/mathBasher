@@ -43,6 +43,7 @@ export type TelemetryPropName =
   | 'sessionId'
   | 'disclaimerType'
   | 'route'
+  | 'spriteTier'
   | 'port'
   | 'host'
   | 'signal'
