@@ -101,12 +101,16 @@ const PROFILES = {
     description: 'explosion/glow/smoke — 64×64 max',
   },
   bg: {
-    maxDim: 512,
+    // Bumped from 512 → 1280 in sprint 0.7 Story 1 so the gameplay-canvas
+    // nebula keeps full 1280×720 resolution. Smaller bg tiles (e.g. a
+    // parallax star strip) still naturally cap at their source size since
+    // resize is fit:'inside' with no enlargement.
+    maxDim: 1280,
     palette: false, // gradients + smooth color need full RGB
     compressionLevel: 9,
     quality: 90,
     folder: 'public/assets/sprites/bg',
-    description: 'parallax/tile art — 512×512 max, full RGB',
+    description: 'parallax/tile art — 1280×1280 max, full RGB',
   },
 };
 
@@ -115,7 +119,7 @@ const PROFILES = {
 // ------------------------------------------------------------------
 
 function parseArgs(args) {
-  const opts = { kind: 'alien', resize: true, name: null };
+  const opts = { kind: 'alien', resize: true, name: null, brightness: 1.0 };
   const positional = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -127,6 +131,13 @@ function parseArgs(args) {
       opts.resize = false;
     } else if (a === '--resize') {
       opts.resize = true;
+    } else if (a === '--brightness') {
+      const v = parseFloat(args[++i]);
+      if (Number.isNaN(v) || v <= 0 || v > 2) {
+        console.error(`--brightness must be a positive number ≤ 2.0 (got "${args[i]}")`);
+        exit(1);
+      }
+      opts.brightness = v;
     } else if (a === '--help' || a === '-h') {
       printHelp();
       exit(0);
@@ -183,7 +194,10 @@ Output path resolution (in priority order):
 ${Object.entries(PROFILES).map(([k, p]) => `       ${k.padEnd(11)} ${p.folder}/`).join('\n')}
 
 Defaults to --kind alien if --kind is omitted.
---no-resize skips the resize pass (use when input is already at target size).`);
+--no-resize skips the resize pass (use when input is already at target size).
+--brightness N multiplies output brightness via sharp's .modulate() (default 1.0
+  = unchanged). Useful for taming visually-busy bg assets so they don't compete
+  with foreground sprites — e.g. --brightness 0.6 = 40% darker.`);
 }
 
 // ------------------------------------------------------------------
@@ -210,8 +224,13 @@ async function main() {
   }
 
   const ext = extname(opts.input).toLowerCase();
-  if (ext !== '.png') {
-    console.error(`Input must be PNG (got ${ext}). Sprite pipeline assumes PNG with transparent background.`);
+  // Most kinds need transparency (PNG). The `bg` kind doesn't — gradients
+  // compress better in JPG, so we accept JPG for bg inputs too.
+  const allowedExts = opts.kind === 'bg' ? ['.png', '.jpg', '.jpeg'] : ['.png'];
+  if (!allowedExts.includes(ext)) {
+    console.error(
+      `Input extension ${ext} not allowed for --kind ${opts.kind}. Allowed: ${allowedExts.join(', ')}.`,
+    );
     exit(1);
   }
 
@@ -244,6 +263,13 @@ async function main() {
       fit: 'inside',
       withoutEnlargement: true,
     });
+  }
+
+  // Brightness adjustment via sharp's modulate. brightness=1.0 is no-op;
+  // 0.6 = 40% darker (good for taming busy backdrops). Applied BEFORE
+  // PNG quantization so the darkened pixels are what get palette-mapped.
+  if (opts.brightness !== 1.0) {
+    pipeline = pipeline.modulate({ brightness: opts.brightness });
   }
 
   // PNG output config. `palette: true` for kinds that quantize cleanly

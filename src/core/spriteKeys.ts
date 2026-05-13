@@ -191,9 +191,15 @@ export const ParticleSpriteKeys = {
  * procedurally; decision made during Story 6 implementation.
  */
 export const BgSpriteKeys = {
-  // StarsFar: 'stars-far',
-  // StarsNear: 'stars-near',
-  // NebulaGradient: 'nebula-gradient',
+  /**
+   * Gameplay backdrop — Midjourney-generated dark purple/blue nebula,
+   * darkened 40% via the processor to tame visual competition with
+   * foreground sprites. 1280×717 RGB. Loaded once at boot, rendered as
+   * the static base layer of `GameScene` (Story 6).
+   */
+  Nebula: 'nebula',
+  // StarsFar: 'stars-far',     // (planned — parallax stars, Story 6)
+  // StarsNear: 'stars-near',   // (planned — parallax stars, Story 6)
 } as const;
 
 /**
