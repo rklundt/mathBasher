@@ -87,7 +87,7 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // === Non-alien sprites (single-frame static images) ===
+    // === Non-alien sprites (single-frame images OR spritesheets) ===
     // SPRITE_MANIFEST is derived from per-kind const objects in
     // `src/core/spriteKeys.ts` (Hero/Projectile/Ui/Particle/Bg).
     // Adding a new asset is a 1-line edit in spriteKeys.ts — this loop
@@ -95,22 +95,45 @@ export class BootScene extends Phaser.Scene {
     // (e.g. `/assets/sprites/hero/speeder-1.png`, no tier subfolder for
     // non-alien kinds per ADR-0010's "aliens-only tier strategy" decision).
     //
-    // All non-alien sprites use `load.image` (single frame), NOT
-    // `load.spritesheet`. None of the current Story 1 assets are animated
-    // spritesheets. When that changes (e.g. a hero idle anim, particle
-    // burst sequence), the manifest entry can grow a frameWidth/frameHeight
-    // hint and this loop can branch on it.
+    // Branches on the optional `frameWidth` field: entries WITH it are
+    // animated spritesheets (use `load.spritesheet`); entries WITHOUT it
+    // are static single-frame images (use `load.image`). All current
+    // Story 1 entries are static — none of them have `frameWidth` set —
+    // so today this loop only ever takes the `load.image` path. The
+    // future-proofing exists so adding the first animated non-alien
+    // sprite is a data change in spriteKeys.ts (just set frameWidth on
+    // that entry), not a code change here.
     for (const entry of SPRITE_MANIFEST) {
-      this.load.image(entry.key, entry.url);
+      if (entry.frameWidth !== undefined) {
+        this.load.spritesheet(entry.key, entry.url, {
+          frameWidth: entry.frameWidth,
+          frameHeight: entry.frameHeight ?? entry.frameWidth,
+        });
+      } else {
+        this.load.image(entry.key, entry.url);
+      }
     }
 
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
         reason: String(AUDIO_MANIFEST.length),
       });
+      // Per-kind sprite count breakdown, packed as a space-delimited
+      // `key=value` string in the `reason` field. Eyeballable in logs;
+      // queryable in App Insights via `where reason contains 'hero='`.
+      // Zero-count kinds (e.g. projectile, since Story 1 uses runtime
+      // rendering for projectiles) are omitted naturally — the loop
+      // below only sees kinds that have at least one manifest entry.
+      const perKindCount: Record<string, number> = { alien: ALIEN_SPRITE_KEYS.length };
+      for (const entry of SPRITE_MANIFEST) {
+        perKindCount[entry.kind] = (perKindCount[entry.kind] ?? 0) + 1;
+      }
+      const perKindReason = Object.entries(perKindCount)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ');
       _th.logToAi('BootScene PreloadedSprites', SeverityLevel.Information, {
         spriteTier: String(this.spriteTier),
-        reason: String(ALIEN_SPRITE_KEYS.length + SPRITE_MANIFEST.length),
+        reason: perKindReason,
       });
     });
   }

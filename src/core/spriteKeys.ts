@@ -371,6 +371,24 @@ export interface SpriteManifestEntry {
   readonly kind: Exclude<SpriteKind, 'alien'>;
   readonly key: string;
   readonly url: string;
+  /**
+   * Optional spritesheet frame dimensions. If present, BootScene loads
+   * this entry as a spritesheet (`this.load.spritesheet(...)`); if absent,
+   * loads as a single image (`this.load.image(...)`).
+   *
+   * All current Story 1 entries are static single-frame images and
+   * leave both fields undefined. Future animated non-alien sprites
+   * (e.g. a hero idle anim, particle burst sequence) would populate
+   * these fields and the BootScene loop will route them to the
+   * spritesheet loader automatically. The point of having the fields
+   * here as `?` is so adding the first animated non-alien sprite is
+   * a data change (manifest entry update), not a code change (BootScene
+   * branching restructure).
+   *
+   * `frameHeight` defaults to `frameWidth` if omitted (square frames).
+   */
+  readonly frameWidth?: number;
+  readonly frameHeight?: number;
 }
 
 /**
