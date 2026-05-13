@@ -65,4 +65,30 @@ describe('addTo10 generator', () => {
     const b = Array.from({ length: 5 }, () => addTo10.generate(mulberry32(7)));
     expect(a).toEqual(b);
   });
+
+  // Sprint 0.6.3 Story 7 — added after playtest surfaced that the prior
+  // algorithm gave sum=10 ~27% of the time and sum=0 ~0.8%. The current
+  // algorithm picks the SUM uniformly first, so every sum 0-10 should
+  // appear roughly equally often.
+  describe('answer distribution (uniform over sums)', () => {
+    it('every sum 0-10 appears within ±25% of the expected 1/11 share', () => {
+      const ITERATIONS = 11000; // 1000 per sum at perfect uniformity
+      const EXPECTED_PER_SUM = ITERATIONS / 11;
+      const TOLERANCE = 0.25; // ±25% of expected — generous to dodge flakes
+      const rng = mulberry32(42);
+      const counts = new Array(11).fill(0);
+      for (let i = 0; i < ITERATIONS; i++) {
+        const q = addTo10.generate(rng);
+        counts[q.correctAnswer]++;
+      }
+      for (let sum = 0; sum <= 10; sum++) {
+        const ratio = counts[sum] / EXPECTED_PER_SUM;
+        expect(
+          ratio,
+          `sum=${sum} appeared ${counts[sum]} times (${(ratio * 100).toFixed(0)}% of expected)`,
+        ).toBeGreaterThan(1 - TOLERANCE);
+        expect(ratio).toBeLessThan(1 + TOLERANCE);
+      }
+    });
+  });
 });

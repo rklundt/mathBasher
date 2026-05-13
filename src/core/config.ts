@@ -58,8 +58,50 @@ export const config = {
       fast: { multiplier: 1.5, descentPxPerSec: 93, penaltyPxPerSec: 278 },
     },
   },
+  wave: {
+    /**
+     * Pre-fall "jiggle" phase — when a new question spawns, blocks appear
+     * at their starting positions and oscillate left-right in place for
+     * `preFallJiggleMs` milliseconds before starting to descend. Reads as
+     * "blocks coming loose" anticipation. Gives the player a deliberate
+     * window to read the equation + scan answer options before action
+     * starts, instead of mashing the fire button on a half-parsed prompt.
+     *
+     * `preFallJiggleAmplitudePx` is the peak left/right offset from each
+     * block's spawn position in design pixels. ±4 px is subtle enough to
+     * read as anticipation and not "the block is broken."
+     *
+     * Tuning history:
+     *   v0.6.3: introduced at 1000ms / ±4px after playtests where the
+     *     immediate-drop felt rushed for newer players.
+     */
+    preFallJiggleMs: 1000,
+    preFallJiggleAmplitudePx: 4,
+    /**
+     * Jiggle oscillation frequency in Hz (wiggles per second). 3 Hz = three
+     * left-right wiggles during the 1-second jiggle window — fast enough
+     * to read as "coming loose" anticipation, slow enough to not look
+     * frantic. Lifted to config in sprint 0.6.3's wrap-up review for
+     * symmetry with the other jiggle knobs.
+     */
+    preFallJiggleHz: 3,
+  },
   hero: {
-    runSpeedPxPerSec: 220,
+    /**
+     * Hero (yellow shooter block) horizontal movement speed.
+     *
+     * Tuning history (newest first):
+     *   v0.6.3 playtest — paired with sprint 0.6's −15% block descent,
+     *     the shooter still couldn't physically traverse to the right
+     *     answer in time once the player committed. +15% restores the
+     *     player's ability to act on a decision before the answer lands.
+     *     220 → 253 px/s (220 × 1.15 = 253).
+     *   v0.5 baseline: 220 px/s.
+     *
+     * Block descent rate (config.scoring.speed.{slow,medium,fast}) is
+     * NOT touched by this change — only shooter speed moves.
+     */
+    runSpeedPxPerSec: 253,
     fireCooldownMs: 200,
     projectileSpeedPxPerSec: 800,
   },

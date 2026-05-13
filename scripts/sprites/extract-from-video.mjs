@@ -979,9 +979,22 @@ async function main() {
             width: cellSourceW,
             height: cellSourceH,
           })
-          // Resize to target cell-size, preserving aspect (square cells from a
-          // square grid stay square; non-square cells get the longer side fit)
-          .resize(opts.cellSize, opts.cellSize, { fit: 'inside', withoutEnlargement: false })
+          // Resize to target cell-size with fit:'contain' + transparent
+          // padding. Produces SQUARE output regardless of source cell
+          // aspect — non-square source cells (e.g. portrait aliens from
+          // alien-video-4 at 132×199) get their longer dimension hit the
+          // cell-size and the shorter dimension padded with transparent
+          // pixels to fill the rest. Critical for downstream Phaser
+          // `load.spritesheet(key, url, { frameWidth: tier, frameHeight: tier })`
+          // which assumes every frame is exactly tier×tier — non-square
+          // outputs would misalign Phaser's frame boundaries.
+          // Square sources (e.g. alien1/2 at 208×208) produce square output
+          // with no padding, identical to the prior fit:'inside' behavior.
+          .resize(opts.cellSize, opts.cellSize, {
+            fit: 'contain',
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+            withoutEnlargement: false,
+          })
           // Make sure we have an alpha channel so we can mutate it
           .ensureAlpha()
           // Convert to raw RGBA so we can color-key
