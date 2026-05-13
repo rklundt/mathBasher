@@ -150,9 +150,33 @@ export function pickRandomAlienSpriteKey(): string {
  * (e.g. `Idle`, `EngineGlow`, `Damaged`). Values are the on-disk basename
  * minus the `.png` extension.
  */
+/**
+ * Hero ship sprite keys. Three Midjourney-generated variants — the game
+ * cycles through them so each new round can feature a different ship,
+ * matching the "alternate between speeders" design call from sprint 0.7
+ * Story 1 planning.
+ *
+ * All three are 192×108 (16:9) RGBA palette PNGs with true transparency.
+ * Source rendering faces RIGHT; `Hero.ts` will `setFlipX(true)` when the
+ * hero is moving left (Phaser handles the mirror at render time, no
+ * second asset needed).
+ */
 export const HeroSpriteKeys = {
-  // Idle: 'hero-idle',  // populated in Story 1
+  Speeder1: 'speeder-1',
+  Speeder2: 'speeder-2',
+  Speeder3: 'speeder-3',
 } as const;
+
+/**
+ * Pick a random hero sprite key from `HeroSpriteKeys`. Called once per
+ * round at hero spawn so each new round can feature a different ship
+ * (uniform random over the 3 speeders). Cheap variety; no per-frame cost.
+ * Mirrors `pickRandomAlienSpriteKey` style.
+ */
+export function pickRandomHeroSpriteKey(): string {
+  const keys = Object.values(HeroSpriteKeys);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
 
 /**
  * Projectile (laser/bullet) sprite keys. Populated in Story 1.
@@ -168,9 +192,28 @@ export const ProjectileSpriteKeys = {
  * Kenney's UI Pack. The 9-slice/panel approach for button backgrounds
  * + a separate set of icon sprites is the expected shape.
  */
+/**
+ * UI button 9-slice assets. Grey palette chosen during sprint 0.7 Story 1
+ * for neutrality (lets alien sprites + score numbers dominate). 9-slice
+ * scheme: `_l` (left cap) + `_m` (tileable middle) + `_r` (right cap)
+ * lets any button width be rendered from 3 source sprites.
+ *
+ * Two variants per button width:
+ *   - Default: matte non-gloss (resting state)
+ *   - Gloss: slight shiny variant (selected/active state)
+ *
+ * Rollback path: if Grey doesn't feel right in Story 7 (Menu polish), the
+ * raw files remain in `.sprite-source/raw/ui/` and re-processing with a
+ * different color is a 30-second re-run. The placeholder rounded-rect
+ * buttons in scenes continue to work until Story 7 explicitly swaps them.
+ */
 export const UiSpriteKeys = {
-  // ButtonBlue: 'button-blue',
-  // ButtonBlueHover: 'button-blue-hover',
+  GreyLargeL: 'grey-large_l',
+  GreyLargeM: 'grey-large_m',
+  GreyLargeR: 'grey-large_r',
+  GreyGlossLargeL: 'grey-gloss_large_l',
+  GreyGlossLargeM: 'grey-gloss_large_m',
+  GreyGlossLargeR: 'grey-gloss_large_r',
 } as const;
 
 /**
@@ -178,11 +221,39 @@ export const UiSpriteKeys = {
  * Story 1 from Kenney's Particle Pack. Used by emitters in hero death,
  * correct/wrong hit feedback, hero engine glow.
  */
+/**
+ * Particle effect sprite keys. 12 textures from Kenney's Particle Pack
+ * (CC0) covering the full range of effects mathBasher needs: hero engine
+ * glow, hero muzzle flash, correct-hit explosion, wrong-hit explosion,
+ * smoke trails, residual scorch marks. Plus 3 background star sizes
+ * for parallax (kept under particle kind since they're palette-PNG
+ * radial gradients — bg kind's RGB encoding bloated them 3× larger).
+ *
+ * Naming preserves the Kenney source filenames so the pack-to-game
+ * traceability is clear at a glance ("which Kenney file did this come
+ * from? oh, `circle_03` — that's the third circle variant").
+ */
 export const ParticleSpriteKeys = {
-  // Smoke: 'smoke',
-  // GlowYellow: 'glow-yellow',
-  // ExplosionGreen: 'explosion-green',
-  // ExplosionRed: 'explosion-red',
+  // Glow / light textures — hero engine glow, correct-hit flash
+  Circle03: 'circle_03',
+  Light01: 'light_01',
+  Flare01: 'flare_01',
+  // Fire / muzzle / spark — hero firing, explosions
+  Muzzle03: 'muzzle_03',
+  Flame03: 'flame_03',
+  Spark05: 'spark_05',
+  // Smoke / dirt / scorch — hero death, wrong-hit, residue
+  Smoke05: 'smoke_05',
+  Dirt02: 'dirt_02',
+  Dirt03: 'dirt_03',
+  Scorch02: 'scorch_02',
+  // Magic / trace — projectile trails, special effects
+  Magic02: 'magic_02',
+  Trace03: 'trace_03',
+  // Background parallax stars — three sizes for layered depth
+  Star03: 'star_03',
+  Star05: 'star_05',
+  Star07: 'star_07',
 } as const;
 
 /**

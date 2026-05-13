@@ -69,12 +69,17 @@ const PROFILES = {
     description: 'enemy sprites — 96×96 max bounding box',
   },
   hero: {
-    maxDim: 128,
+    // Bumped 128 → 192 in sprint 0.7 Story 1. Hero is a single static
+    // asset (one on screen, no animation); 192 ships universally crisp
+    // (downscales invisibly on phone, renders mostly-native on desktop)
+    // without paying the two-tier tooling cost the aliens needed. ~14 KB
+    // vs ~6 KB is a rounding error against the alien-sprite payload.
+    maxDim: 192,
     palette: true,
     compressionLevel: 9,
     quality: 90,
     folder: 'public/assets/sprites/hero',
-    description: 'player ship — 128×128 max',
+    description: 'player ship — 192×192 max',
   },
   projectile: {
     maxDim: 32,
