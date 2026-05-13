@@ -204,6 +204,32 @@ export class GameScene extends Phaser.Scene {
     // default — makes the playback category obvious at the call site.
     getAudioManager().play(SfxKeys.Fire1, 'sfx');
     this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
+    this.playMuzzleFlash(this.hero.x, this.hero.y - 30);
+  }
+
+  /**
+   * Sprint 0.7 Story 5 — brief muzzle flash at the hero's top edge on fire.
+   *
+   * A short-lived (~150ms) particle burst using `muzzle_03` tinted amber
+   * to match the projectile + hero engine palette. Emits 4 small particles
+   * with low spread so it reads as a single flash rather than a spray. The
+   * emitter self-destructs after 200ms. Called per fire event from
+   * `handleFire` — fire rate is bounded by the cooldown, so we never have
+   * more than ~5 flashes per second.
+   */
+  private playMuzzleFlash(x: number, y: number): void {
+    const flash = this.add.particles(x, y, ParticleSpriteKeys.Muzzle03, {
+      speed: { min: 10, max: 40 },
+      angle: { min: 260, max: 280 }, // mostly upward (270° = straight up)
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 150,
+      tint: 0xfacc15,
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    flash.explode(4);
+    this.time.delayedCall(200, () => flash.destroy());
   }
 
   private handleHit(alien: Alien): void {

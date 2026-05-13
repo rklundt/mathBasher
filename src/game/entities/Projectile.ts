@@ -4,10 +4,17 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
+import { ParticleSpriteKeys } from '@/core/spriteKeys';
 
 /**
- * Upward-moving projectile fired by the hero. Simple ellipse for v1; real
- * sprite art lands in the polish milestone.
+ * Upward-moving projectile fired by the hero.
+ *
+ * Visuals (sprint 0.7 Story 5): a `trace_03` particle texture from the
+ * Kenney Particle Pack, stretched vertically and tinted amber to read as
+ * a "laser beam." This is the option 1-a decision from Story 1 planning —
+ * use a particle-pack texture as the projectile rather than downloading a
+ * dedicated laser-sprite pack. trace_03 is a streak/trace texture that
+ * stretches cleanly along its long axis.
  *
  * Lifecycle: created at the hero's position when InputSystem emits 'fire',
  * advanced each frame in GameScene.update, destroyed on collision (HitSystem)
@@ -17,18 +24,23 @@ import { config } from '@/core/config';
  */
 export class Projectile extends Phaser.GameObjects.Container {
   static readonly WIDTH = 8;
-  static readonly HEIGHT = 18;
+  static readonly HEIGHT = 24;
 
-  private readonly chassis: Phaser.GameObjects.Ellipse;
+  private readonly sprite: Phaser.GameObjects.Image;
   private destroyed = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
     scene.add.existing(this);
 
-    this.chassis = scene.add.ellipse(0, 0, Projectile.WIDTH, Projectile.HEIGHT, 0xfacc15);
-    this.chassis.setStrokeStyle(1, 0xeab308);
-    this.add(this.chassis);
+    // Stretched trace texture as the laser body. ADD blend so it reads as
+    // glow against the dark canvas. Amber tint matches the hero's color
+    // identity (hero engine glow + UI accents are also amber).
+    this.sprite = scene.add.image(0, 0, ParticleSpriteKeys.Trace03);
+    this.sprite.setDisplaySize(Projectile.WIDTH, Projectile.HEIGHT);
+    this.sprite.setTint(0xfacc15);
+    this.sprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.add(this.sprite);
     this.setSize(Projectile.WIDTH, Projectile.HEIGHT);
   }
 
