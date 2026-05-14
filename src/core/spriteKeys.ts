@@ -168,14 +168,33 @@ export const HeroSpriteKeys = {
 } as const;
 
 /**
- * Pick a random hero sprite key from `HeroSpriteKeys`. Called once per
- * round at hero spawn so each new round can feature a different ship
- * (uniform random over the 3 speeders). Cheap variety; no per-frame cost.
- * Mirrors `pickRandomAlienSpriteKey` style.
+ * Module-scoped counter for `pickNextHeroSpriteKey` — round-robin picker
+ * state. Increments per call, modulo the key count picks the next ship.
+ * Resets only on full page reload. The semantics here is "alternate
+ * between speeders" (sprint 0.7 Story 3 design call) — a strict cycle
+ * rather than uniform random, so the player is GUARANTEED to see every
+ * ship across consecutive rounds rather than getting unlucky and missing
+ * one to RNG variance.
  */
-export function pickRandomHeroSpriteKey(): string {
+let _heroPickIndex = 0;
+
+/**
+ * Pick the next hero sprite key from `HeroSpriteKeys` in round-robin
+ * order. Called once per round at hero spawn so each new round shows
+ * the next ship in the cycle (rotates Speeder1 → Speeder2 → Speeder3
+ * → Speeder1 → ...). The sprint 0.7 Story 3 design intent was
+ * "alternate between speeders" — strict cycle, no RNG variance.
+ *
+ * The function NAME is `pickNext` (not `pickRandom`) to honestly
+ * reflect the round-robin strategy. The prior `pickRandomHeroSpriteKey`
+ * was renamed during Story 3 polish after playtest showed the random
+ * approach missed Speeder 3 on small sample sizes.
+ */
+export function pickNextHeroSpriteKey(): string {
   const keys = Object.values(HeroSpriteKeys);
-  return keys[Math.floor(Math.random() * keys.length)];
+  const key = keys[_heroPickIndex % keys.length];
+  _heroPickIndex += 1;
+  return key;
 }
 
 /**

@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
-import { pickRandomHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { pickNextHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
 
 /**
  * The auto-running hero at the bottom of the play area.
@@ -29,9 +29,18 @@ import { pickRandomHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
  * short (~400ms), informative-not-punishing.
  */
 export class Hero extends Phaser.GameObjects.Container {
-  /** Display dimensions in design pixels. Sprite native is 192×108 (16:9). */
-  static readonly WIDTH = 96;
-  static readonly HEIGHT = 54;
+  /**
+   * Display dimensions in design pixels. Sprite native is 192×108 (16:9).
+   *
+   * Tuning history (sprint 0.7 Story 3 playtest):
+   *   - First pass: 96×54 (0.5× scale). Felt too small / disconnected
+   *     from the 80×60 alien blocks the hero is shooting at.
+   *   - Current: 115×65 (~0.6× scale, +20% from first pass). Restores
+   *     visual mass parity with the aliens; height still preserves
+   *     the 16:9 source aspect (115 × 9/16 = 64.7 ≈ 65).
+   */
+  static readonly WIDTH = 115;
+  static readonly HEIGHT = 65;
 
   private readonly sprite: Phaser.GameObjects.Sprite;
   /**
@@ -55,10 +64,13 @@ export class Hero extends Phaser.GameObjects.Container {
     this.leftBound = leftBound;
     this.rightBound = rightBound;
 
-    // Pick a random ship from the 3 speeders. Each Hero instance gets its
-    // own random pick at construction — a new GameScene = new round =
-    // potentially different ship.
-    const heroKey = pickRandomHeroSpriteKey();
+    // Pick the next ship in the round-robin cycle. Each Hero instance
+    // gets the next key (Speeder1 → 2 → 3 → 1 → ...) so consecutive
+    // rounds show different ships in deterministic rotation. (Random
+    // picking was tried first but RNG variance meant Speeder 3 could
+    // go unseen across a short play session — switched to round-robin
+    // during Story 3 polish.)
+    const heroKey = pickNextHeroSpriteKey();
     this.sprite = scene.add.sprite(0, 0, heroKey);
     // Scale from native 192-wide to display 96-wide (factor 0.5). Preserves
     // 16:9 aspect (height auto-scales to 54).
@@ -71,10 +83,10 @@ export class Hero extends Phaser.GameObjects.Container {
     this.engineEmitter = scene.add.particles(0, 0, ParticleSpriteKeys.Circle03, {
       speed: { min: 20, max: 50 },
       angle: { min: 80, max: 100 }, // mostly straight down
-      scale: { start: 0.25, end: 0 },
-      alpha: { start: 0.5, end: 0 },
-      lifespan: 350,
-      frequency: 60, // emit every 60ms — subtle, not a fire hose
+      scale: { start: 0.3, end: 0 }, // bumped 0.25 → 0.3 for slightly more presence
+      alpha: { start: 0.75, end: 0 }, // bumped 0.5 → 0.75 per Story 3 playtest feedback
+      lifespan: 400, // bumped 350 → 400, slightly longer trail
+      frequency: 55, // bumped from 60 (slightly more particles)
       tint: 0xfacc15, // amber, matches the prior placeholder color
       blendMode: 'ADD', // additive so it reads as a glow, not a solid blob
     });

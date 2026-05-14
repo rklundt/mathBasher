@@ -23,8 +23,19 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
  * window).
  */
 export class Projectile extends Phaser.GameObjects.Container {
-  static readonly WIDTH = 8;
-  static readonly HEIGHT = 24;
+  /**
+   * Projectile display dimensions. Also drives the AABB hit area.
+   *
+   * Tuning history (sprint 0.7 Story 5 playtest):
+   *   - First pass: 8×24. Felt "too small by far" — disappeared against
+   *     the busy gameplay scene with hero, alien rider sprites, and
+   *     particle bursts in motion.
+   *   - Current: 14×40 (~75% larger in each dimension). Reads cleanly
+   *     as a "laser beam," gives a slightly more forgiving hit area
+   *     against the alien chassis (which is 80×60).
+   */
+  static readonly WIDTH = 14;
+  static readonly HEIGHT = 40;
 
   private readonly sprite: Phaser.GameObjects.Image;
   private destroyed = false;
