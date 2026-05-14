@@ -121,6 +121,23 @@ export class Alien extends Phaser.GameObjects.Container {
     // chassis so the number stays unobstructed; scaled to SPRITE_SIZE
     // (downscale from the 128 or 192 native source — both look crisp at
     // this display size on every viewport per ADR-0010 D3).
+    //
+    // Sprint 0.7 Story 6 follow-up: the alien sprites were extracted
+    // against a #0b1020 dark background (option C from sprint 0.6.3),
+    // so their edge pixels + any inherent translucency in the source
+    // AI art are tinted toward #0b1020. As long as the canvas BEHIND
+    // them was solid #0b1020, that translucency blended invisibly.
+    // Once Story 6 added the colorful nebula, the nebula started
+    // bleeding through the alien bodies — they read as ghostly /
+    // translucent instead of solid creatures.
+    //
+    // Fix: insert a #0b1020 backdrop Rectangle BETWEEN the chassis and
+    // the rider sprite. The backdrop re-creates the matched-bg
+    // compositing context the sprites were extracted against; the
+    // alien's translucent pixels now blend with the dark plate instead
+    // of with the nebula, restoring solid-looking aliens. Costs one
+    // extra rectangle per alien (4 aliens per wave = 4 extra rects;
+    // trivial).
     if (opts.spriteKey) {
       const sprite = opts.scene.add.sprite(0, 0, opts.spriteKey);
       // `frameWidth` from the loader is the native tier (128 or 192).
@@ -130,10 +147,23 @@ export class Alien extends Phaser.GameObjects.Container {
       sprite.y = -Alien.HEIGHT / 2 - Alien.SPRITE_CHASSIS_GAP;
       sprite.play(alienAnimKey(opts.spriteKey));
       this.riderSprite = sprite;
-      // Z-order: chassis (back) → riderSprite (middle) → answerText (front).
+      // Backdrop: same area as the rider sprite. Centered at the rider's
+      // center y (which is half of SPRITE_SIZE above the rider's bottom-
+      // aligned position). Size matches SPRITE_SIZE × SPRITE_SIZE (the
+      // pipeline pads-to-square so all riders are uniform). Solid
+      // `#0b1020` matching the canvas color baked into the sprites.
+      const riderCenterY = sprite.y - Alien.SPRITE_SIZE / 2;
+      const riderBackdrop = opts.scene.add.rectangle(
+        0,
+        riderCenterY,
+        Alien.SPRITE_SIZE,
+        Alien.SPRITE_SIZE,
+        0x0b1020,
+      );
+      // Z-order: chassis (back) → riderBackdrop → riderSprite → answerText (front).
       // answerText must stay on top so the number is always readable even
       // if a sprite happens to extend down into the chassis area.
-      this.add([this.chassis, sprite, this.answerText]);
+      this.add([this.chassis, riderBackdrop, sprite, this.answerText]);
     } else {
       this.riderSprite = null;
       this.add([this.chassis, this.answerText]);
