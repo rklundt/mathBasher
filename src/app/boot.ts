@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { createScoreStore } from '@/services/scoreStoreFactory';
 import { createAudioManager } from '@/services/audioManagerFactory';
 import { BootScene } from '@/game/scenes/BootScene';
+import { BackgroundScene } from '@/game/scenes/BackgroundScene';
 import { MenuScene } from '@/game/scenes/MenuScene';
 import { GameSelectScene } from '@/game/scenes/GameSelectScene';
 import { DifficultyScene } from '@/game/scenes/DifficultyScene';
@@ -97,8 +98,13 @@ export function bootGame(): void {
     // adjusting settings. SettingsScene is registered AFTER PauseOverlay so when
     // launched from Pause, SettingsScene visually stacks on top of the pause
     // overlay (its parallel-scene render order respects registration order).
+    // Scene registration order = render order (earlier = renders below
+    // later). BackgroundScene is second so its parallax + nebula renders
+    // BENEATH every gameplay scene. AttributionScene is last so the AGPL
+    // §7(b) footer renders ON TOP of everything else.
     scene: [
       BootScene,
+      BackgroundScene,
       MenuScene,
       GameSelectScene,
       DifficultyScene,

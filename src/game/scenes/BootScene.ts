@@ -210,13 +210,22 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // Hand off to the menu. The 250ms `delayedCall` calm-the-flicker beat
-    // that lived here in 0.5/0.6 was a workaround for "empty canvas flash"
-    // when preload was trivial (~0.5 MB audio in <100ms). Sprint 0.6.3's
-    // 45-spritesheet preload (10-20 MB) takes long enough that a loading
-    // bar in `preload()` is the visible content; the delay is no longer
-    // needed and removing it makes the boot feel snappier on fast loads.
+    // Hand off to the menu. Two parallel scenes get launched alongside:
+    //   - BackgroundScene first → renders BELOW everything else (nebula
+    //     + parallax stars; sprint 0.7 Story 6). Scene-registration order
+    //     in `boot.ts` puts Background early in the array so it draws
+    //     under Menu/Game/etc.
+    //   - AttributionScene last → renders ABOVE everything else (AGPL
+    //     §7(b) footer). Registration order puts it last in the array.
+    //
+    // The 250ms `delayedCall` calm-the-flicker beat that lived here in
+    // 0.5/0.6 was a workaround for "empty canvas flash" when preload was
+    // trivial (~0.5 MB audio in <100ms). Sprint 0.6.3's 45-spritesheet
+    // preload (10-20 MB) takes long enough that the loading bar in
+    // `preload()` is the visible content; the delay is no longer needed
+    // and removing it makes the boot feel snappier on fast loads.
     // (See `buildLoadingBar()` in `preload()` above.)
+    this.scene.launch(SceneKeys.Background);
     this.scene.launch(SceneKeys.Attribution);
     this.scene.start(SceneKeys.Menu);
 
