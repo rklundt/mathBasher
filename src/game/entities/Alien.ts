@@ -147,18 +147,29 @@ export class Alien extends Phaser.GameObjects.Container {
       sprite.y = -Alien.HEIGHT / 2 - Alien.SPRITE_CHASSIS_GAP;
       sprite.play(alienAnimKey(opts.spriteKey));
       this.riderSprite = sprite;
-      // Backdrop: same area as the rider sprite. Centered at the rider's
-      // center y (which is half of SPRITE_SIZE above the rider's bottom-
-      // aligned position). Size matches SPRITE_SIZE × SPRITE_SIZE (the
-      // pipeline pads-to-square so all riders are uniform). Solid
-      // `#0b1020` matching the canvas color baked into the sprites.
-      const riderCenterY = sprite.y - Alien.SPRITE_SIZE / 2;
-      const riderBackdrop = opts.scene.add.rectangle(
-        0,
-        riderCenterY,
-        Alien.SPRITE_SIZE,
-        Alien.SPRITE_SIZE,
-        0x0b1020,
+      // Backdrop: Graphics object drawing a rounded rectangle from the
+      // rider's TOP all the way down to the chassis's top edge (closing
+      // the SPRITE_CHASSIS_GAP so no nebula peeks through between plate
+      // and chassis). Width matches the chassis (Alien.WIDTH) — narrower
+      // than SPRITE_SIZE so the plate "sits on top of" the number block
+      // rather than hovering as a wide floating pad.
+      //
+      // Per-corner radii: TOP corners rounded (radius 10) for a polished
+      // softer look; BOTTOM corners flat so the plate visually flows into
+      // the (sharp-cornered) chassis below as one unit. Aliens wider than
+      // Alien.WIDTH (e.g. alien1's wide-tentacle octopus) will have their
+      // edges extend past the plate and show some nebula bleed-through
+      // beyond the plate's width — acceptable tradeoff per playtest call.
+      const plateHeight = Alien.SPRITE_SIZE + Alien.SPRITE_CHASSIS_GAP;
+      const plateTopY = -Alien.HEIGHT / 2 - plateHeight;
+      const riderBackdrop = opts.scene.add.graphics();
+      riderBackdrop.fillStyle(0x0b1020, 1);
+      riderBackdrop.fillRoundedRect(
+        -Alien.WIDTH / 2,
+        plateTopY,
+        Alien.WIDTH,
+        plateHeight,
+        { tl: 10, tr: 10, bl: 0, br: 0 },
       );
       // Z-order: chassis (back) → riderBackdrop → riderSprite → answerText (front).
       // answerText must stay on top so the number is always readable even
