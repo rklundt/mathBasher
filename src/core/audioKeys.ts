@@ -21,7 +21,35 @@ export const SfxKeys = {
   Fire1: 'fire-1',
   Fire2: 'fire-2',
   ButtonClick1: 'button-click-1',
+  // Hit-feedback SFX added in sprint 0.7 Story 14. Three variants each
+  // for correct + wrong so the same exact sound doesn't play 20 times
+  // in a row — gets grating fast. `pickRandomHitCorrectSfx` /
+  // `pickRandomHitWrongSfx` below select uniformly per hit.
+  HitCorrect1: 'hit-correct-1',
+  HitCorrect2: 'hit-correct-2',
+  HitCorrect3: 'hit-correct-3',
+  HitWrong1: 'hit-wrong-1',
+  HitWrong2: 'hit-wrong-2',
+  HitWrong3: 'hit-wrong-3',
 } as const;
+
+/**
+ * Pick a random correct-hit SFX from the 3 variants. Added in sprint 0.7
+ * Story 14 — audio variety prevents the same "ding" playing 20× per round.
+ * Uniform random over the 3 variants; uses Math.random for simplicity
+ * (consistent with `pickRandomAlienSpriteKey`). A seeded RNG could be
+ * substituted later if tournament/replay determinism becomes important.
+ */
+const HIT_CORRECT_KEYS = ['hit-correct-1', 'hit-correct-2', 'hit-correct-3'] as const;
+const HIT_WRONG_KEYS = ['hit-wrong-1', 'hit-wrong-2', 'hit-wrong-3'] as const;
+
+export function pickRandomHitCorrectSfx(): (typeof HIT_CORRECT_KEYS)[number] {
+  return HIT_CORRECT_KEYS[Math.floor(Math.random() * HIT_CORRECT_KEYS.length)];
+}
+
+export function pickRandomHitWrongSfx(): (typeof HIT_WRONG_KEYS)[number] {
+  return HIT_WRONG_KEYS[Math.floor(Math.random() * HIT_WRONG_KEYS.length)];
+}
 
 /** Atmospheric loop keys (midground kind — see encoder profile). */
 export const MidgroundKeys = {

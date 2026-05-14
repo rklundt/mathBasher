@@ -18,7 +18,13 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
+import {
+  SfxKeys,
+  MidgroundKeys,
+  MusicKeys,
+  pickRandomHitCorrectSfx,
+  pickRandomHitWrongSfx,
+} from '@/core/audioKeys';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
@@ -239,6 +245,11 @@ export class GameScene extends Phaser.Scene {
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
       this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
       this.hero.playHitAnim();
+      // SFX BEFORE particle/visual feedback so the audio is sample-aligned
+      // with the burst — Phaser caches decoded SFX at preload so play()
+      // is effectively zero-latency. Random pick across 3 variants per
+      // hit so the same chime doesn't loop 20× through a round.
+      getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx');
       this.playCorrectHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(true, () => {
         // Fade the rest of the wave smoothly so it doesn't snap-disappear.
@@ -258,6 +269,9 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Wrong shot: explode the wrong alien, accelerate the rest, wave continues.
       this.waveSystem.applyWrongShotPenalty();
+      // SFX BEFORE the visual burst (see comment in the correct-hit branch).
+      // Random pick across 3 wrong-hit variants.
+      getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
       this.playWrongHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(false, () => {
         // No state change beyond the alien being gone + speed boost applied.
