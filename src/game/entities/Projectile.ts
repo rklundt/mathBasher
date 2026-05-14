@@ -9,12 +9,20 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
 /**
  * Upward-moving projectile fired by the hero.
  *
- * Visuals (sprint 0.7 Story 5): a `trace_03` particle texture from the
- * Kenney Particle Pack, stretched vertically and tinted amber to read as
- * a "laser beam." This is the option 1-a decision from Story 1 planning —
- * use a particle-pack texture as the projectile rather than downloading a
- * dedicated laser-sprite pack. trace_03 is a streak/trace texture that
- * stretches cleanly along its long axis.
+ * Visuals (sprint 0.7 Story 5): a `light_01` radial-blob texture from
+ * the Kenney Particle Pack, stretched to a tall capsule shape and
+ * tinted amber to read as a "glowing laser pellet." This is the
+ * option 1-a decision from Story 1 planning — use a particle-pack
+ * texture as the projectile rather than downloading a dedicated
+ * laser-sprite pack.
+ *
+ * Texture choice rationale: `trace_03` was tried first but its source
+ * texture is a narrow streak with only ~2-3 pixels of visible content
+ * in the 64×64 PNG — stretching it to projectile dimensions produced
+ * a near-invisible 1-pixel line in-game. `light_01` is a full-area
+ * radial glow (the entire 64×64 area is visible as a soft blob), so
+ * stretching to 22×60 gives a clearly-visible capsule with natural
+ * additive glow.
  *
  * Lifecycle: created at the hero's position when InputSystem emits 'fire',
  * advanced each frame in GameScene.update, destroyed on collision (HitSystem)
@@ -27,15 +35,16 @@ export class Projectile extends Phaser.GameObjects.Container {
    * Projectile display dimensions. Also drives the AABB hit area.
    *
    * Tuning history (sprint 0.7 Story 5 playtest):
-   *   - First pass: 8×24. Felt "too small by far" — disappeared against
-   *     the busy gameplay scene with hero, alien rider sprites, and
-   *     particle bursts in motion.
-   *   - Current: 14×40 (~75% larger in each dimension). Reads cleanly
-   *     as a "laser beam," gives a slightly more forgiving hit area
-   *     against the alien chassis (which is 80×60).
+   *   - First pass: 8×24 with `trace_03` texture. Felt "too small by far."
+   *   - Second pass: 14×40 still with `trace_03`. STILL invisible —
+   *     trace_03's actual visible streak is only 2-3 pixels wide in the
+   *     source, so stretching produced a near-1-pixel line.
+   *   - Current: 22×60 with `light_01` texture. light_01 is a full-area
+   *     radial glow whose entire 64×64 area is visible, so stretching
+   *     to capsule proportions gives a clearly-visible glowing pellet.
    */
-  static readonly WIDTH = 14;
-  static readonly HEIGHT = 40;
+  static readonly WIDTH = 22;
+  static readonly HEIGHT = 60;
 
   private readonly sprite: Phaser.GameObjects.Image;
   private destroyed = false;
@@ -44,10 +53,10 @@ export class Projectile extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
 
-    // Stretched trace texture as the laser body. ADD blend so it reads as
-    // glow against the dark canvas. Amber tint matches the hero's color
-    // identity (hero engine glow + UI accents are also amber).
-    this.sprite = scene.add.image(0, 0, ParticleSpriteKeys.Trace03);
+    // Stretched light_01 radial blob as a glowing capsule. ADD blend so
+    // it reads as glow against the dark canvas. Amber tint matches the
+    // hero engine glow + UI accent palette.
+    this.sprite = scene.add.image(0, 0, ParticleSpriteKeys.Light01);
     this.sprite.setDisplaySize(Projectile.WIDTH, Projectile.HEIGHT);
     this.sprite.setTint(0xfacc15);
     this.sprite.setBlendMode(Phaser.BlendModes.ADD);
