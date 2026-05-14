@@ -160,10 +160,28 @@ export class Alien extends Phaser.GameObjects.Container {
       // Alien.WIDTH (e.g. alien1's wide-tentacle octopus) will have their
       // edges extend past the plate and show some nebula bleed-through
       // beyond the plate's width — acceptable tradeoff per playtest call.
+      // === Vertical alpha gradient feather (Path 1) ===
+      // Top corners alpha = 0 (transparent), bottom corners alpha = 1
+      // (opaque). The plate fades smoothly from invisible at its top
+      // edge to solid `#0b1020` at the chassis-meeting bottom. Side
+      // edges interpolate diagonally — middle-of-side ≈ alpha 0.5.
+      // This softens the prior hard rectangular border so the plate
+      // doesn't read as a stark mat behind the alien.
+      //
+      // EASY BACKOUT to hard-edged plate: replace the
+      // `fillGradientStyle(...)` call below with
+      // `riderBackdrop.fillStyle(0x0b1020, 1);` — single line revert.
+      // Path 2 (stacked rects) or Path 3 (PNG asset) escalations live
+      // in the conversation log around this commit.
       const plateHeight = Alien.SPRITE_SIZE + Alien.SPRITE_CHASSIS_GAP;
       const plateTopY = -Alien.HEIGHT / 2 - plateHeight;
       const riderBackdrop = opts.scene.add.graphics();
-      riderBackdrop.fillStyle(0x0b1020, 1);
+      riderBackdrop.fillGradientStyle(
+        0x0b1020, 0x0b1020, // top-left, top-right colors
+        0x0b1020, 0x0b1020, // bottom-left, bottom-right colors
+        0, 0, // top alphas (transparent)
+        1, 1, // bottom alphas (opaque)
+      );
       riderBackdrop.fillRoundedRect(
         -Alien.WIDTH / 2,
         plateTopY,
