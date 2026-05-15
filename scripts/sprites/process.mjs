@@ -61,12 +61,19 @@ import { mkdir } from 'node:fs/promises';
 
 const PROFILES = {
   alien: {
-    maxDim: 96,
+    // Bumped 96 → 192 in sprint 0.7 Story 13 to align with ADR-0010's
+    // 128/192 video-extract tier strategy. The single-PNG `process.mjs`
+    // pipeline is the path for hand-painted / individually-curated
+    // alien sprites (rare — most aliens come through the video-extract
+    // pipeline at 128/192 tiers). 192 max here matches the larger of
+    // the two tiers so a single-PNG hand-painted alien renders crisp
+    // on desktop.
+    maxDim: 192,
     palette: true,
     compressionLevel: 9,
     quality: 90,
     folder: 'public/assets/sprites/aliens',
-    description: 'enemy sprites — 96×96 max bounding box',
+    description: 'enemy sprites — 192×192 max bounding box',
   },
   hero: {
     // Bumped 128 → 192 in sprint 0.7 Story 1. Hero is a single static

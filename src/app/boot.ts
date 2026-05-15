@@ -142,8 +142,36 @@ export function bootGame(): void {
     requestAnimationFrame(() => game.scale.refresh());
   };
   window.addEventListener('orientationchange', onOrientationChange);
+
+  // Sprint 0.7 Story 13 (D3 from sprint 0.6.3 wrap-up review) —
+  // viewport-tier-class telemetry. ADR-0010 D4 says "no mid-session
+  // re-tier" because the loaded textures are baked into the GPU atlas
+  // at boot. This listener validates that decision empirically: if the
+  // viewport × DPR crosses the 1920 threshold (e.g. user resizes
+  // browser window from 1366 → 2400 wide), we emit a Warning so we
+  // can see in App Insights how often this happens. If "never," the
+  // decision was right. If "often," consider re-implementing tier
+  // re-pick with texture reload.
+  //
+  // No actual re-tier is performed here — just the telemetry signal.
+  const initialViewportEffectivePx = window.innerWidth * window.devicePixelRatio;
+  let lastTierClass: '128' | '192' = initialViewportEffectivePx >= 1920 ? '192' : '128';
+  const onResize = (): void => {
+    const effective = window.innerWidth * window.devicePixelRatio;
+    const newTierClass: '128' | '192' = effective >= 1920 ? '192' : '128';
+    if (newTierClass !== lastTierClass) {
+      _th.logToAi('ViewportTierClassCrossed', SeverityLevel.Warning, {
+        spriteTier: newTierClass,
+        reason: `${lastTierClass}→${newTierClass} (effective px: ${Math.round(effective)})`,
+      });
+      lastTierClass = newTierClass;
+    }
+  };
+  window.addEventListener('resize', onResize);
+
   game.events.once(Phaser.Core.Events.DESTROY, () => {
     window.removeEventListener('orientationchange', onOrientationChange);
+    window.removeEventListener('resize', onResize);
   });
 
   _th.logToAi('AppBoot Completed', SeverityLevel.Information);

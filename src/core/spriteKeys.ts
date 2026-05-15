@@ -127,12 +127,16 @@ export function pickSpriteTier(viewportWidth: number, dpr: number): SpriteTier {
 
 /**
  * Pick a random alien sprite key from `ALIEN_SPRITE_KEYS`. Uniform random
- * — no weighting, no per-batch quotas. Sprint 0.6.3 uses `Math.random` for
- * simplicity; sprint 0.7 Story 13 (or later) introduces optional RNG
- * injection for tournament/replay-mode determinism.
+ * — no weighting, no per-batch quotas.
+ *
+ * Sprint 0.7 Story 13: accepts an optional `rng` parameter (defaults to
+ * `Math.random`). Mirrors the math-generator RNG-injection pattern so a
+ * future tournament/replay mode can pass a seeded PRNG for deterministic
+ * sprite picks. Game-side callers continue to call without args and get
+ * the production `Math.random` behavior.
  */
-export function pickRandomAlienSpriteKey(): string {
-  const i = Math.floor(Math.random() * ALIEN_SPRITE_KEYS.length);
+export function pickRandomAlienSpriteKey(rng: () => number = Math.random): string {
+  const i = Math.floor(rng() * ALIEN_SPRITE_KEYS.length);
   return ALIEN_SPRITE_KEYS[i];
 }
 

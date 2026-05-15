@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { attribution } from '@/core/attribution';
+import { attribution, isUsingPlaceholderSourceUrl } from '@/core/attribution';
 import { FONT_FAMILY, TEXT_PRIMARY, TEXT_BLUE } from '@/game/ui/typography';
 
 /**
@@ -39,6 +39,18 @@ export class AttributionScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('AttributionScene Started', SeverityLevel.Information);
+
+    // Sprint 0.7 Story 13 (D9) — guardrail. If `VITE_SOURCE_URL` was
+    // unset at build time, the §7(b) "Source: ..." link defaults to a
+    // placeholder pointing at example.invalid (intentionally broken so
+    // the misconfiguration surfaces visibly). Emit a Warning telemetry
+    // event so the misconfiguration ALSO surfaces in App Insights — not
+    // every operator will eyeball the rendered footer on a fresh deploy.
+    if (isUsingPlaceholderSourceUrl) {
+      _th.logToAi('AttributionScene PlaceholderSourceUrl', SeverityLevel.Warning, {
+        reason: 'VITE_SOURCE_URL env var is unset; shipping with the placeholder example.invalid URL',
+      });
+    }
 
     const { width, height } = this.scale;
     // Footer height from config (load-bearing for §7(b) compliance + the

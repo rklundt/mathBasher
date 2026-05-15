@@ -43,12 +43,19 @@ export const SfxKeys = {
 const HIT_CORRECT_KEYS = ['hit-correct-1', 'hit-correct-2', 'hit-correct-3'] as const;
 const HIT_WRONG_KEYS = ['hit-wrong-1', 'hit-wrong-2', 'hit-wrong-3'] as const;
 
-export function pickRandomHitCorrectSfx(): (typeof HIT_CORRECT_KEYS)[number] {
-  return HIT_CORRECT_KEYS[Math.floor(Math.random() * HIT_CORRECT_KEYS.length)];
+// Sprint 0.7 Story 13 — RNG injection (optional) for tournament/replay
+// determinism. Defaults to Math.random; production callers don't need
+// to pass anything.
+export function pickRandomHitCorrectSfx(
+  rng: () => number = Math.random,
+): (typeof HIT_CORRECT_KEYS)[number] {
+  return HIT_CORRECT_KEYS[Math.floor(rng() * HIT_CORRECT_KEYS.length)];
 }
 
-export function pickRandomHitWrongSfx(): (typeof HIT_WRONG_KEYS)[number] {
-  return HIT_WRONG_KEYS[Math.floor(Math.random() * HIT_WRONG_KEYS.length)];
+export function pickRandomHitWrongSfx(
+  rng: () => number = Math.random,
+): (typeof HIT_WRONG_KEYS)[number] {
+  return HIT_WRONG_KEYS[Math.floor(rng() * HIT_WRONG_KEYS.length)];
 }
 
 /** Atmospheric loop keys (midground kind — see encoder profile). */
