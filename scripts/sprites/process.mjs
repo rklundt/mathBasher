@@ -55,8 +55,8 @@ import { mkdir } from 'node:fs/promises';
 
 // ------------------------------------------------------------------
 // Per-kind profiles. Tweaked over time — these are the SAME values
-// referenced from `.claude/skills/sprite-pipeline/SKILL.md`. If you
-// change one of these numbers, update the skill doc to match.
+// referenced from the sprite-pipeline workflow doc. If you change
+// one of these numbers, update the workflow doc to match.
 // ------------------------------------------------------------------
 
 const PROFILES = {

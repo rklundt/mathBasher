@@ -90,11 +90,18 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
     // Custom hit-area: a circle slightly larger than the visual bg, so a
     // sloppy thumb tap still registers. Using Phaser.Geom.Circle keeps the
     // hit zone properly circular (not the rectangular bounds of the bg).
-    this.bg.setInteractive(
-      new Phaser.Geom.Circle(0, 0, RADIUS + HIT_PAD),
-      Phaser.Geom.Circle.Contains,
-      { useHandCursor: true },
-    );
+    //
+    // Sprint 0.7 wrap fix: the prior call used the 3-positional form
+    // `(hitArea, callback, { useHandCursor })`, but Phaser's TS types
+    // require `dropZone?: boolean` for the third positional arg — the
+    // config-object form is the way to pass `useHandCursor`. Switched
+    // to the single InputConfiguration form which carries hitArea,
+    // hitAreaCallback, AND useHandCursor cleanly.
+    this.bg.setInteractive({
+      hitArea: new Phaser.Geom.Circle(0, 0, RADIUS + HIT_PAD),
+      hitAreaCallback: Phaser.Geom.Circle.Contains,
+      useHandCursor: true,
+    });
 
     this.bg.on(
       'pointerdown',

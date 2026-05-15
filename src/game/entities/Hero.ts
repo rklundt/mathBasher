@@ -72,9 +72,13 @@ export class Hero extends Phaser.GameObjects.Container {
     // during Story 3 polish.)
     const heroKey = pickNextHeroSpriteKey();
     this.sprite = scene.add.sprite(0, 0, heroKey);
-    // Scale from native 192-wide to display 96-wide (factor 0.5). Preserves
-    // 16:9 aspect (height auto-scales to 54).
-    this.sprite.setScale(Hero.WIDTH / 192);
+    // Scale to fit Hero.WIDTH × Hero.HEIGHT. Read the native sprite width
+    // from the loaded texture rather than hardcoding 192 (matches the
+    // pattern used by Alien.ts:144 — if a future Speeder is ever
+    // re-rendered at a different native size, this auto-adapts). 16:9
+    // aspect is preserved by Phaser's setScale (height auto-scales).
+    const heroNativeWidth = this.sprite.width;
+    this.sprite.setScale(Hero.WIDTH / heroNativeWidth);
     this.add(this.sprite);
 
     // Engine glow: small amber circles emitting from just below the hero,

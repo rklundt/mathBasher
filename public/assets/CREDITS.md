@@ -47,6 +47,15 @@ When in doubt about whether an asset belongs here, add it. Over-attribution cost
 - **Modifications:** Each PNG resized to fit within 64×64 bounding box (`particle` PROFILE in `scripts/sprites/process.mjs`), palette-quantized, metadata stripped (no EXIF / XMP), re-encoded as PNG at compression level 9. Files renamed only insofar as the source `PNG (Transparent)/` folder prefix was dropped; basenames preserved (e.g. `circle_03.png` traces back to Kenney's `PNG (Transparent)/circle_03.png`).
 - **Notes:** Sources for particle emitters (hero engine glow, muzzle flash, correct/wrong-hit explosions, smoke trails) and parallax background stars (Story 6 in sprint 0.7).
 
+### Google Fonts — Baloo 2
+
+- **Author:** Ek Type (https://www.ektype.in/) — designer of the Baloo 2 typeface family
+- **License:** `OFL-1.1` (SIL Open Font License 1.1) — permits embedding + use in commercial work; no attribution legally required for use as bitmaps in a game (typical OFL §1 exception). We credit anyway per the project's "over-attribution costs nothing" policy.
+- **Source:** https://fonts.google.com/specimen/Baloo+2
+- **Files used:** none bundled — loaded at runtime via the Google Fonts CDN (`<link>` in `index.html`). Used in every text element in the game via `FONT_FAMILY` in `src/game/ui/typography.ts`.
+- **Modifications:** none (font served as-is by Google Fonts; no subsetting, no manipulation).
+- **Notes:** Two weights loaded (400 + 700). `display=swap` directive ensures fallback (system-ui) renders immediately and Baloo 2 swaps in once loaded — no FOIT. If self-hosting becomes desirable (privacy, latency, offline play), Google Fonts allows downloading the woff2 + serving from `public/assets/fonts/`; the OFL-1.1 license still applies.
+
 ### Kenney — UI Pack (Space Expansion)
 
 - **Author:** Kenney Vleugels (https://kenney.nl)
