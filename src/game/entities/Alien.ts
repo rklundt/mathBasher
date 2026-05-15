@@ -192,11 +192,15 @@ export class Alien extends Phaser.GameObjects.Container {
       const chassisTopY = -Alien.HEIGHT / 2;
       const riderBackdrop = opts.scene.add.graphics();
       const plateLayers = [
-        { w: 80, h: 130, alpha: 0.15 }, // L1: outermost, extends 32px above alien's head
-        { w: 76, h: 120, alpha: 0.2 },
-        { w: 72, h: 110, alpha: 0.25 },
-        { w: 68, h: 102, alpha: 0.35 },
-        { w: 64, h: 98, alpha: 1.0 }, // L5: opaque core, covers FULL rider sprite (98 tall)
+        // Widths bumped ~5% from chassis-matched (80) to 84 per playtest —
+        // gives the plate a subtle "cap" overhang above the chassis edge,
+        // reads as intentional plate-on-pedestal silhouette rather than
+        // a flush continuation. Inner layers proportionally shifted.
+        { w: 84, h: 130, alpha: 0.15 }, // L1: outermost, extends 32px above alien's head
+        { w: 80, h: 120, alpha: 0.2 },
+        { w: 76, h: 110, alpha: 0.25 },
+        { w: 72, h: 102, alpha: 0.35 },
+        { w: 68, h: 98, alpha: 1.0 }, // L5: opaque core, covers FULL rider sprite (98 tall)
       ];
       for (const layer of plateLayers) {
         riderBackdrop.fillStyle(0x0b1020, layer.alpha);
