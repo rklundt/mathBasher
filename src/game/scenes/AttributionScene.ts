@@ -74,6 +74,37 @@ export class AttributionScene extends Phaser.Scene {
 
     // Make the source URL clickable and open in a new tab.
     sourceLabel.setInteractive({ useHandCursor: true });
+
+    // Sprint 0.7 Story 10 — hover state on the source link. Desktop
+    // mouse-over (and touch tap-and-hold) lighten the text color from
+    // `TEXT_BLUE` to a brighter shade + reveal an underline via a
+    // hairline Rectangle anchored under the label. On pointerout the
+    // hover state clears.
+    //
+    // §7(b) compliance unchanged: the text remains at full opacity at
+    // ALL times (no hover dim, no fade-out), the source URL stays
+    // visible and activatable.
+    const labelBounds = sourceLabel.getBounds();
+    const HOVER_COLOR = '#93c5fd'; // lighter than TEXT_BLUE for clear hover signal
+    const underline = this.add
+      .rectangle(
+        sourceLabel.x,
+        sourceLabel.y + labelBounds.height / 2 - 1,
+        labelBounds.width,
+        1,
+        0x93c5fd,
+      )
+      .setOrigin(1, 0)
+      .setVisible(false);
+    sourceLabel.on('pointerover', () => {
+      sourceLabel.setColor(HOVER_COLOR);
+      underline.setVisible(true);
+    });
+    sourceLabel.on('pointerout', () => {
+      sourceLabel.setColor(TEXT_BLUE);
+      underline.setVisible(false);
+    });
+
     sourceLabel.on('pointerup', () => {
       window.open(attribution.sourceUrl, '_blank', 'noopener,noreferrer');
     });
