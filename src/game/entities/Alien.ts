@@ -160,35 +160,46 @@ export class Alien extends Phaser.GameObjects.Container {
       // Alien.WIDTH (e.g. alien1's wide-tentacle octopus) will have their
       // edges extend past the plate and show some nebula bleed-through
       // beyond the plate's width — acceptable tradeoff per playtest call.
-      // === Vertical alpha gradient feather (Path 1) ===
-      // Top corners alpha = 0 (transparent), bottom corners alpha = 1
-      // (opaque). The plate fades smoothly from invisible at its top
-      // edge to solid `#0b1020` at the chassis-meeting bottom. Side
-      // edges interpolate diagonally — middle-of-side ≈ alpha 0.5.
-      // This softens the prior hard rectangular border so the plate
-      // doesn't read as a stark mat behind the alien.
+      // === Stacked concentric rounded rects (Path 2) ===
+      // Five layered rounded-rectangles, each smaller than the last
+      // (shrinking inward from top + sides; bottom stays bottom-aligned
+      // with the chassis top so the chassis-meeting edge is solid).
+      // Each layer has increasing alpha; src-over compositing makes the
+      // outer ring soft (~0.15) and the center fully opaque (the
+      // innermost layer is alpha 1.0).
       //
-      // EASY BACKOUT to hard-edged plate: replace the
-      // `fillGradientStyle(...)` call below with
-      // `riderBackdrop.fillStyle(0x0b1020, 1);` — single line revert.
-      // Path 2 (stacked rects) or Path 3 (PNG asset) escalations live
-      // in the conversation log around this commit.
-      const plateHeight = Alien.SPRITE_SIZE + Alien.SPRITE_CHASSIS_GAP;
-      const plateTopY = -Alien.HEIGHT / 2 - plateHeight;
+      // Result: radial-ish feather on top + sides, sharp flat bottom.
+      // Better than the Path 1 gradient (which produced visible
+      // diagonal-corner artifacts because fillGradientStyle interpolates
+      // alpha per-vertex across rounded corners).
+      //
+      // EASY BACKOUT to hard-edged plate: replace the entire `layers`
+      // array + loop with a single
+      //   riderBackdrop.fillStyle(0x0b1020, 1);
+      //   riderBackdrop.fillRoundedRect(-Alien.WIDTH/2, plateTopY,
+      //     Alien.WIDTH, plateHeight, { tl: 10, tr: 10, bl: 0, br: 0 });
+      // Path 3 (pre-baked PNG asset) escalation lives in the
+      // conversation log around this commit if Path 2 also needs a
+      // step up to continuous smooth gradient.
+      const chassisTopY = -Alien.HEIGHT / 2;
       const riderBackdrop = opts.scene.add.graphics();
-      riderBackdrop.fillGradientStyle(
-        0x0b1020, 0x0b1020, // top-left, top-right colors
-        0x0b1020, 0x0b1020, // bottom-left, bottom-right colors
-        0, 0, // top alphas (transparent)
-        1, 1, // bottom alphas (opaque)
-      );
-      riderBackdrop.fillRoundedRect(
-        -Alien.WIDTH / 2,
-        plateTopY,
-        Alien.WIDTH,
-        plateHeight,
-        { tl: 10, tr: 10, bl: 0, br: 0 },
-      );
+      const plateLayers = [
+        { w: 80, h: 98, alpha: 0.15 },
+        { w: 76, h: 88, alpha: 0.2 },
+        { w: 72, h: 78, alpha: 0.25 },
+        { w: 68, h: 68, alpha: 0.35 },
+        { w: 64, h: 58, alpha: 1.0 },
+      ];
+      for (const layer of plateLayers) {
+        riderBackdrop.fillStyle(0x0b1020, layer.alpha);
+        riderBackdrop.fillRoundedRect(
+          -layer.w / 2,
+          chassisTopY - layer.h,
+          layer.w,
+          layer.h,
+          { tl: 8, tr: 8, bl: 0, br: 0 },
+        );
+      }
       // Z-order: chassis (back) → riderBackdrop → riderSprite → answerText (front).
       // answerText must stay on top so the number is always readable even
       // if a sprite happens to extend down into the chassis area.
