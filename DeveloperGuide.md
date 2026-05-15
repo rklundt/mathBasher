@@ -221,7 +221,8 @@ mathBasher/
 │   ├── app/             top-of-graph orchestration (composes core + services + game/scenes)
 │   │   └── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
 │   ├── game/            rendering layer (the only folder that imports phaser)
-│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay, Settings, Attribution
+│   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay,
+│   │   │                Settings, Attribution, Background (parallax stars + nebula behind everything)
 │   │   │                (sceneSetup.ts — shared lifecycle helper for owning scenes)
 │   │   ├── entities/    Hero, Alien, Projectile (sprites with animation state)
 │   │   ├── systems/     WaveSystem, InputSystem, HitSystem, waveKinematics (own state, no rendering)
@@ -251,19 +252,31 @@ mathBasher/
 │       ├── attribution.ts       AGPL §7(b) UI text — single source of truth
 │       ├── sceneKeys.ts         scene identifier constants
 │       ├── audioKeys.ts         audio asset keys + sfxPath() URL helper + AUDIO_MANIFEST
+│       ├── spriteKeys.ts        sprite asset keys per-kind (alien batches, hero ships,
+│       │                        UI 9-slice, particles, bg) + SPRITE_MANIFEST + tier picker
 │       └── SCALE.md             canvas scaling strategy doc (FIT + 1280×720 + landscape lock)
 │
 ├── public/              static assets served as-is by Vite
-│   └── assets/          (CREDITS.md attribution ledger; sprites added later)
-│       └── audio/       shipped MP3s (sfx/, music/) — MP3 only, see scripts/audio/
+│   └── assets/          CREDITS.md attribution ledger
+│       ├── audio/       shipped MP3s (sfx/, music/, midground/) — see scripts/audio/
+│       └── sprites/     shipped PNGs/WebPs by kind (aliens/{128,192}/, hero/, ui/, particles/, bg/)
+│                        — see scripts/sprites/
 │
 ├── scripts/             developer tooling (NOT shipped, NOT bundled)
-│   └── audio/                   audio processing (encode, probe)
-│       ├── encode.mjs           one-pass trim + loudnorm + MP3 encode
-│       └── probe.mjs            inspect a file (duration, channels, peak/mean dB)
+│   ├── audio/                   audio processing (encode, probe)
+│   │   ├── encode.mjs           one-pass trim + loudnorm + MP3 encode
+│   │   └── probe.mjs            inspect a file (duration, channels, peak/mean dB)
+│   └── sprites/                 sprite processing (single-PNG + video-extract pipelines)
+│       ├── process.mjs          one-pass resize + palette + strip metadata + PNG re-encode
+│       ├── probe.mjs            inspect a sprite file (dimensions, alpha, format, metadata)
+│       └── extract-from-video.mjs  video → per-cell WebP spritesheets (R×C grid extraction)
 │
 ├── .audio-source/       gitignored — raw audio (WAV/FLAC) + working cuts
 │   └── README.md        the only tracked file in here
+│
+├── .sprite-source/      gitignored — raw sprite inputs (Kenney packs, Midjourney outputs)
+│   ├── README.md        the only tracked file in here
+│   └── working/         (gitignored too) — preview HTMLs + verify-grid intermediates
 │
 ├── server/              EXPRESS SERVER for production
 │   ├── src/
@@ -485,6 +498,13 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | How does the portrait-rotate prompt work on phones? | Pure DOM, no Phaser. `index.html` declares `<div id="rotate-overlay">` with the rotate prompt + a CSS-only animated phone glyph. A media query (`@media (orientation: portrait) and (max-width: 900px)`) toggles `display: flex`. The 900px max-width gates it to phone-sized viewports — a desktop user resizing into a portrait window pose isn't pestered. When the kid rotates back to landscape the media query stops matching, the overlay disappears, and `boot.ts` registers an `orientationchange` listener that calls `game.scale.refresh()` belt-and-braces in case a quirky mobile browser (older iOS Safari) doesn't fire a paired resize event. |
 | Where does the on-screen FIRE button live? | `src/game/ui/TouchFireButton.ts` — a circular amber button anchored bottom-right, sized for one-handed thumb use in landscape (80px diameter visual + ~108px hit area). Constructed in `GameScene.create`. Visibility gated by touch detection: hidden when `navigator.maxTouchPoints === 0` AND no `touchstart` has ever fired on the page; shown if either flips (so a Surface / Chromebook with both keyboard and touch always gets the button after the first touch). Pointer-down stops event propagation so the canvas-wide tap-to-fire listener in `InputSystem` doesn't double-count, then calls `InputSystem.fire()` (the cooldown still applies — same code path as Space / mouse-click). Positioned ABOVE the AttributionScene footer with 8px clearance — the §7(b) attribution must always remain visible per the AGPL contract. |
 | Where does touch input enter the game? | `src/game/systems/InputSystem.ts` is the single funnel. Three input pathways converge: (1) keyboard Space, (2) canvas-wide pointerdown (mouse or touch), (3) `TouchFireButton.onFire` calling `InputSystem.fire()` programmatically. All three pass through the same cooldown gate (`config.hero.fireCooldownMs`). InputSystem is instantiated in `GameScene.create` and destroyed on scene shutdown — it doesn't listen during menus, so a Tab/Enter on a menu button never fires a shot. |
+| Where do I add a new sprite asset? | `src/core/spriteKeys.ts` — for **non-alien** kinds (hero/ui/particle/bg/projectile), add the basename to the relevant `*SpriteKeys` const object (e.g. `HeroSpriteKeys.Speeder4 = 'speeder-4'`). `SPRITE_MANIFEST` derives + BootScene auto-preloads. For **alien** batches (multi-frame video extracts), add a row to `ALIEN_SPRITE_BATCHES` (`{ prefix: 'alienN', rows, cols }`) and `ALIEN_SPRITE_KEYS` derives. The shipping pipeline lives in `scripts/sprites/process.mjs` (single PNG) or `scripts/sprites/extract-from-video.mjs` (video grid). Drop raw inputs in `.sprite-source/raw/`. |
+| How do I prepare a new sprite file? | `pnpm sprite:process --kind <kind> --name <basename> .sprite-source/raw/<file.png>` for a single PNG (resizes per-kind, palette-quantizes, strips metadata, writes to `public/assets/sprites/<kind-folder>/<basename>.png`). For a video grid: `pnpm sprite:extract --rows R --cols C --margin auto --name-prefix <prefix> .sprite-source/raw/<file.mp4>` (see `.claude/skills/sprite-pipeline/SKILL.md` for the V1-V9 interactive flow with verify-grid pause-points). Per-kind size caps + paletting decisions documented in `process.mjs` PROFILES. Supply-chain reasoning for the `sharp` dependency in [ADR-0009](docs/adrs/ADR-0009-sharp-as-dev-dependency.md). |
+| Why are alien sprites two-tier? | [ADR-0010](docs/adrs/ADR-0010-sprite-tier-strategy.md) — 128px (phone/tablet) + 192px (desktop/retina). `pickSpriteTier(viewportWidth, devicePixelRatio)` in `src/core/spriteKeys.ts` picks ONE tier at boot from viewport × DPR. Aliens-only; other kinds (hero, ui, etc.) ship single-resolution per their `process.mjs` PROFILE because there's only one of them on screen at a time and the byte savings of tiering aren't worth the loader complexity. |
+| Where does the parallax background live? | `src/game/scenes/BackgroundScene.ts` — peer scene launched from BootScene, persists for the page lifetime like AttributionScene. Renders a static `BgSpriteKeys.Nebula` base layer + 3 layers of parallax stars (small/medium/large from particle pack `star_03/05/07`) scrolling downward at different speeds + a bottom-gradient darkening for hero contrast. All scenes (Menu, Game, GameOver, etc.) overlay on top of this one. |
+| Why do alien rider sprites have a dark plate behind them? | The alien sprites were extracted against a `#0b1020` matched background (option-C decision from sprint 0.6.3) — their edge pixels and inherent translucency are tinted toward `#0b1020`. Without a matched-color plate behind them, the parallax nebula bleeds through the alien bodies, making them look ghostly. The plate (in `Alien.ts` constructor, between chassis and rider sprite in z-order) is 5 stacked rounded rectangles with feathered alpha — opaque core where the alien body sits, soft feathered top where there's no alien content. Restores the matched-bg compositing context. |
+| How does hit feedback work in-game? | Three layered effects on each correct/wrong hit, all in `GameScene.handleHit`: (1) particle burst — `light_01` green-tinted for correct, `spark_05` red-tinted for wrong, additive blend, ~12-15 particles, ~350-400ms lifespan; (2) screen flash (correct only — `cameras.main.flash(120, 34, 197, 94)`); (3) screen shake (wrong only — `cameras.main.shake(150, 0.005)`); (4) one of 3 random SFX variants per outcome via `pickRandomHitCorrectSfx` / `pickRandomHitWrongSfx` from `audioKeys.ts`. Score popup ("+125") spawns at the hit alien's position via the `correctHit` event listened by HudScene. |
+| What font does the game use? | Baloo 2 (Google Fonts), loaded via `<link>` in `index.html` with `display=swap` to avoid FOIT. Set as the front of the `FONT_FAMILY` chain in `src/game/ui/typography.ts` with `system-ui, -apple-system, sans-serif` as fallbacks. Every Phaser text element references `FONT_FAMILY` via the `text(...)` helper or inline style — one constant change propagates the font everywhere. |
 | What's coming next? | `VERSIONS.md` `[Unreleased]` section |
 
 ---
