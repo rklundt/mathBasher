@@ -48,6 +48,14 @@ import { TouchFireButton } from '@/game/ui/TouchFireButton';
  * Telemetry events emitted (matched by HudScene):
  *   - 'questionStarted' { question, index, total }
  *   - 'questionEnded'   { wasCorrect, score, correctCount }
+ *   - 'correctHit'      { x, y, scoreDelta }
+ *     Fires from `handleHit` IMMEDIATELY when the correct alien is hit
+ *     (before the explode anim plays). HudScene uses this to spawn the
+ *     "+N" score popup at the alien's position rather than at the HUD
+ *     bar's corner (sprint 0.7 Story 8). Separate event from
+ *     `questionEnded` because `questionEnded` fires AFTER the wave's
+ *     other aliens have faded out, by which point the hit alien is
+ *     gone and its position is lost.
  */
 export class GameScene extends Phaser.Scene {
   static readonly key = SceneKeys.Game;
@@ -243,7 +251,19 @@ export class GameScene extends Phaser.Scene {
     if (correct) {
       this.transitioning = true;
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
+      const scoreBefore = this.scoreCalculator.score;
       this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
+      const scoreDelta = this.scoreCalculator.score - scoreBefore;
+      // Emit `correctHit` so HudScene can spawn the "+N" score popup at
+      // the alien's position (sprint 0.7 Story 8). Done HERE, before the
+      // explode/fade chain — `questionEnded` (which fires later from
+      // afterQuestion()) doesn't carry alien coords because by that
+      // point the wave is fully gone.
+      this.events.emit('correctHit', {
+        x: alien.x,
+        y: alien.y,
+        scoreDelta,
+      });
       this.hero.playHitAnim();
       // SFX BEFORE particle/visual feedback so the audio is sample-aligned
       // with the burst — Phaser caches decoded SFX at preload so play()
