@@ -181,14 +181,22 @@ export class Alien extends Phaser.GameObjects.Container {
       // Path 3 (pre-baked PNG asset) escalation lives in the
       // conversation log around this commit if Path 2 also needs a
       // step up to continuous smooth gradient.
+      // Layer heights tuned so the OPAQUE CORE (L5, alpha 1.0) spans
+      // the full vertical extent of the rider sprite (SPRITE_SIZE = 96
+      // + 2 for the GAP). The feather happens ENTIRELY ABOVE the
+      // alien's head (in the +32px of additional plate height up top)
+      // rather than across the alien itself. This was the playtest fix
+      // for "plate needs to start higher so the alien's head is more
+      // opaque" — before this, L5 was only 58 tall and the alien's
+      // top half sat in the feathered region.
       const chassisTopY = -Alien.HEIGHT / 2;
       const riderBackdrop = opts.scene.add.graphics();
       const plateLayers = [
-        { w: 80, h: 98, alpha: 0.15 },
-        { w: 76, h: 88, alpha: 0.2 },
-        { w: 72, h: 78, alpha: 0.25 },
-        { w: 68, h: 68, alpha: 0.35 },
-        { w: 64, h: 58, alpha: 1.0 },
+        { w: 80, h: 130, alpha: 0.15 }, // L1: outermost, extends 32px above alien's head
+        { w: 76, h: 120, alpha: 0.2 },
+        { w: 72, h: 110, alpha: 0.25 },
+        { w: 68, h: 102, alpha: 0.35 },
+        { w: 64, h: 98, alpha: 1.0 }, // L5: opaque core, covers FULL rider sprite (98 tall)
       ];
       for (const layer of plateLayers) {
         riderBackdrop.fillStyle(0x0b1020, layer.alpha);
