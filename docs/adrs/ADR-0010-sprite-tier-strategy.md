@@ -108,7 +108,7 @@ Estimating ~5 source-video batches × ~50 keepers (curated from ~100+ raw extrac
 - [ ] `scripts/sprites/extract-from-video.mjs`: change defaults to `--cell-size 128 --fps 12`. Add `--tiers 128,192` flag (or document the two-pass invocation).
 - [ ] `scripts/sprites/extract-from-video.mjs`: write to `public/assets/sprites/<kind>/<size>/` instead of `public/assets/sprites/<kind>/`.
 - [ ] `scripts/sprites/process.mjs`: bump `alien.maxDim` from 96 to 192 (or split per-tier).
-- [ ] `.claude/skills/sprite-pipeline/SKILL.md`: V4 (confirm batch settings) reflects 12 fps + two-tier defaults; V7 (curate) curates from the 192 tier and trusts 128 as a derived downscale.
+- [ ] Sprite-pipeline workflow doc: V4 (confirm batch settings) reflects 12 fps + two-tier defaults; V7 (curate) curates from the 192 tier and trusts 128 as a derived downscale.
 - [ ] `src/core/`: add `pickSpriteTier(viewportWidth, devicePixelRatio): '128' | '192'` (boot-time helper).
 - [ ] `BootScene.preload`: load alien sprites from the picked-tier subfolder.
 - [ ] Discard the 114 existing 64×64 / 8 fps test extracts in `public/assets/sprites/aliens/`. Re-run the pipeline against `.sprite-source/raw/processed/alien-video-{1..5}.mp4` at the new defaults.

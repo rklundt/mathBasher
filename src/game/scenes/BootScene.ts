@@ -9,6 +9,7 @@ import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
   SPRITE_FPS,
+  SPRITE_MANIFEST,
   alienAnimKey,
   alienSpritePath,
   pickSpriteTier,
@@ -71,10 +72,11 @@ export class BootScene extends Phaser.Scene {
       this.load.audio(entry.key, entry.url);
     }
 
-    // Sprite preload — pick tier from viewport × DPR, then load every
-    // alien spritesheet at that tier. Spritesheet frame width = tier
-    // (each WebP is a horizontal row of frames, each tier×tier px square).
-    // Frame COUNT per spritesheet varies per batch (see Story 6 below);
+    // === Alien sprites (tiered, animated spritesheets) ===
+    // Pick tier from viewport × DPR, then load every alien spritesheet
+    // at that tier. Spritesheet frame width = tier (each WebP is a
+    // horizontal row of frames, each tier×tier px square). Frame COUNT
+    // per spritesheet varies per batch (see comment in create() below);
     // we don't pass it to load.spritesheet — Phaser derives count at
     // animation-build time from the loaded texture's actual width.
     this.spriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
@@ -85,13 +87,53 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
+    // === Non-alien sprites (single-frame images OR spritesheets) ===
+    // SPRITE_MANIFEST is derived from per-kind const objects in
+    // `src/core/spriteKeys.ts` (Hero/Projectile/Ui/Particle/Bg).
+    // Adding a new asset is a 1-line edit in spriteKeys.ts — this loop
+    // automatically picks it up. Each entry's `url` is already kind-aware
+    // (e.g. `/assets/sprites/hero/speeder-1.png`, no tier subfolder for
+    // non-alien kinds per ADR-0010's "aliens-only tier strategy" decision).
+    //
+    // Branches on the optional `frameWidth` field: entries WITH it are
+    // animated spritesheets (use `load.spritesheet`); entries WITHOUT it
+    // are static single-frame images (use `load.image`). All current
+    // Story 1 entries are static — none of them have `frameWidth` set —
+    // so today this loop only ever takes the `load.image` path. The
+    // future-proofing exists so adding the first animated non-alien
+    // sprite is a data change in spriteKeys.ts (just set frameWidth on
+    // that entry), not a code change here.
+    for (const entry of SPRITE_MANIFEST) {
+      if (entry.frameWidth !== undefined) {
+        this.load.spritesheet(entry.key, entry.url, {
+          frameWidth: entry.frameWidth,
+          frameHeight: entry.frameHeight ?? entry.frameWidth,
+        });
+      } else {
+        this.load.image(entry.key, entry.url);
+      }
+    }
+
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
         reason: String(AUDIO_MANIFEST.length),
       });
+      // Per-kind sprite count breakdown, packed as a space-delimited
+      // `key=value` string in the `reason` field. Eyeballable in logs;
+      // queryable in App Insights via `where reason contains 'hero='`.
+      // Zero-count kinds (e.g. projectile, since Story 1 uses runtime
+      // rendering for projectiles) are omitted naturally — the loop
+      // below only sees kinds that have at least one manifest entry.
+      const perKindCount: Record<string, number> = { alien: ALIEN_SPRITE_KEYS.length };
+      for (const entry of SPRITE_MANIFEST) {
+        perKindCount[entry.kind] = (perKindCount[entry.kind] ?? 0) + 1;
+      }
+      const perKindReason = Object.entries(perKindCount)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ');
       _th.logToAi('BootScene PreloadedSprites', SeverityLevel.Information, {
         spriteTier: String(this.spriteTier),
-        reason: String(ALIEN_SPRITE_KEYS.length),
+        reason: perKindReason,
       });
     });
   }
@@ -168,13 +210,22 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // Hand off to the menu. The 250ms `delayedCall` calm-the-flicker beat
-    // that lived here in 0.5/0.6 was a workaround for "empty canvas flash"
-    // when preload was trivial (~0.5 MB audio in <100ms). Sprint 0.6.3's
-    // 45-spritesheet preload (10-20 MB) takes long enough that a loading
-    // bar in `preload()` is the visible content; the delay is no longer
-    // needed and removing it makes the boot feel snappier on fast loads.
+    // Hand off to the menu. Two parallel scenes get launched alongside:
+    //   - BackgroundScene first → renders BELOW everything else (nebula
+    //     + parallax stars; sprint 0.7 Story 6). Scene-registration order
+    //     in `boot.ts` puts Background early in the array so it draws
+    //     under Menu/Game/etc.
+    //   - AttributionScene last → renders ABOVE everything else (AGPL
+    //     §7(b) footer). Registration order puts it last in the array.
+    //
+    // The 250ms `delayedCall` calm-the-flicker beat that lived here in
+    // 0.5/0.6 was a workaround for "empty canvas flash" when preload was
+    // trivial (~0.5 MB audio in <100ms). Sprint 0.6.3's 45-spritesheet
+    // preload (10-20 MB) takes long enough that the loading bar in
+    // `preload()` is the visible content; the delay is no longer needed
+    // and removing it makes the boot feel snappier on fast loads.
     // (See `buildLoadingBar()` in `preload()` above.)
+    this.scene.launch(SceneKeys.Background);
     this.scene.launch(SceneKeys.Attribution);
     this.scene.start(SceneKeys.Menu);
 

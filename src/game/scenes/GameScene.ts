@@ -18,7 +18,14 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SfxKeys, MidgroundKeys, MusicKeys } from '@/core/audioKeys';
+import {
+  SfxKeys,
+  MidgroundKeys,
+  MusicKeys,
+  pickRandomHitCorrectSfx,
+  pickRandomHitWrongSfx,
+} from '@/core/audioKeys';
+import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 
@@ -41,6 +48,14 @@ import { TouchFireButton } from '@/game/ui/TouchFireButton';
  * Telemetry events emitted (matched by HudScene):
  *   - 'questionStarted' { question, index, total }
  *   - 'questionEnded'   { wasCorrect, score, correctCount }
+ *   - 'correctHit'      { x, y, scoreDelta }
+ *     Fires from `handleHit` IMMEDIATELY when the correct alien is hit
+ *     (before the explode anim plays). HudScene uses this to spawn the
+ *     "+N" score popup at the alien's position rather than at the HUD
+ *     bar's corner (sprint 0.7 Story 8). Separate event from
+ *     `questionEnded` because `questionEnded` fires AFTER the wave's
+ *     other aliens have faded out, by which point the hit alien is
+ *     gone and its position is lost.
  */
 export class GameScene extends Phaser.Scene {
   static readonly key = SceneKeys.Game;
@@ -203,6 +218,32 @@ export class GameScene extends Phaser.Scene {
     // default — makes the playback category obvious at the call site.
     getAudioManager().play(SfxKeys.Fire1, 'sfx');
     this.projectile = new Projectile(this, this.hero.x, this.hero.y - 40);
+    this.playMuzzleFlash(this.hero.x, this.hero.y - 30);
+  }
+
+  /**
+   * Sprint 0.7 Story 5 — brief muzzle flash at the hero's top edge on fire.
+   *
+   * A short-lived (~150ms) particle burst using `muzzle_03` tinted amber
+   * to match the projectile + hero engine palette. Emits 4 small particles
+   * with low spread so it reads as a single flash rather than a spray. The
+   * emitter self-destructs after 200ms. Called per fire event from
+   * `handleFire` — fire rate is bounded by the cooldown, so we never have
+   * more than ~5 flashes per second.
+   */
+  private playMuzzleFlash(x: number, y: number): void {
+    const flash = this.add.particles(x, y, ParticleSpriteKeys.Muzzle03, {
+      speed: { min: 10, max: 40 },
+      angle: { min: 260, max: 280 }, // mostly upward (270° = straight up)
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 150,
+      tint: 0xfacc15,
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    flash.explode(4);
+    this.time.delayedCall(200, () => flash.destroy());
   }
 
   private handleHit(alien: Alien): void {
@@ -210,8 +251,26 @@ export class GameScene extends Phaser.Scene {
     if (correct) {
       this.transitioning = true;
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
+      const scoreBefore = this.scoreCalculator.score;
       this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
+      const scoreDelta = this.scoreCalculator.score - scoreBefore;
+      // Emit `correctHit` so HudScene can spawn the "+N" score popup at
+      // the alien's position (sprint 0.7 Story 8). Done HERE, before the
+      // explode/fade chain — `questionEnded` (which fires later from
+      // afterQuestion()) doesn't carry alien coords because by that
+      // point the wave is fully gone.
+      this.events.emit('correctHit', {
+        x: alien.x,
+        y: alien.y,
+        scoreDelta,
+      });
       this.hero.playHitAnim();
+      // SFX BEFORE particle/visual feedback so the audio is sample-aligned
+      // with the burst — Phaser caches decoded SFX at preload so play()
+      // is effectively zero-latency. Random pick across 3 variants per
+      // hit so the same chime doesn't loop 20× through a round.
+      getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx');
+      this.playCorrectHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(true, () => {
         // Fade the rest of the wave smoothly so it doesn't snap-disappear.
         const survivors = this.waveSystem.liveAliens();
@@ -230,6 +289,10 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Wrong shot: explode the wrong alien, accelerate the rest, wave continues.
       this.waveSystem.applyWrongShotPenalty();
+      // SFX BEFORE the visual burst (see comment in the correct-hit branch).
+      // Random pick across 3 wrong-hit variants.
+      getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
+      this.playWrongHitFeedback(alien.x, alien.y);
       alien.playExplodeAnim(false, () => {
         // No state change beyond the alien being gone + speed boost applied.
       });
@@ -239,6 +302,68 @@ export class GameScene extends Phaser.Scene {
         speed: this.speed,
       });
     }
+  }
+
+  /**
+   * Sprint 0.7 Story 4 — visual feedback for a correct hit.
+   *
+   * Two layers of effect:
+   *   1. A green particle burst at the alien's position — `light_01` and
+   *      `flare_01` mixed (additive blend) gives a "burst of light" look.
+   *      ~12 particles, 400ms lifespan, fans outward.
+   *   2. A brief screen flash (camera.flash) — green tint, 120ms — sells
+   *      the "you got it right!" moment at a body-level (peripheral vision
+   *      catches the flash even if eyes were on a different alien).
+   *
+   * The emitter is created on the fly and self-destructs after its
+   * lifespan + buffer. No long-lived emitter pool — the rate of correct
+   * hits is low (one per question max) and the JS GC handles the
+   * short-lived particles fine.
+   */
+  private playCorrectHitFeedback(x: number, y: number): void {
+    const burst = this.add.particles(x, y, ParticleSpriteKeys.Light01, {
+      speed: { min: 60, max: 200 },
+      scale: { start: 0.4, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 400,
+      tint: 0x22c55e, // green
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    burst.explode(12);
+    this.time.delayedCall(500, () => burst.destroy());
+    this.cameras.main.flash(120, 34, 197, 94, false); // green RGB
+  }
+
+  /**
+   * Sprint 0.7 Story 4 — visual feedback for a wrong hit.
+   *
+   * Two layers of effect:
+   *   1. A red particle burst at the alien's position — `spark_05` (faster,
+   *      sharper than the correct-hit `light_01`) tinted red. ~15 particles
+   *      with a slightly shorter lifespan than the correct burst (350ms vs
+   *      400ms) so wrong-hits feel snappier / less rewarding.
+   *   2. A camera shake — intensity 0.005, duration 150ms. Subtle but
+   *      kinaesthetically noticeable; pairs with the red flash to sell
+   *      "you got it wrong" without being punishing.
+   *
+   * No screen flash on wrong (the green flash on correct should remain
+   * the more visually rewarding signal — red flash would compete and
+   * confuse).
+   */
+  private playWrongHitFeedback(x: number, y: number): void {
+    const burst = this.add.particles(x, y, ParticleSpriteKeys.Spark05, {
+      speed: { min: 80, max: 250 },
+      scale: { start: 0.35, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 350,
+      tint: 0xef4444, // red
+      blendMode: 'ADD',
+      emitting: false,
+    });
+    burst.explode(15);
+    this.time.delayedCall(450, () => burst.destroy());
+    this.cameras.main.shake(150, 0.005);
   }
 
   private handleTimeout(): void {

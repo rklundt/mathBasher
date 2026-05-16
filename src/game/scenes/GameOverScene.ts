@@ -12,7 +12,7 @@ import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { stackButtons } from '@/game/ui/MenuLayout';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
-import { text, FONT_FAMILY, TEXT_AMBER_WARM } from '@/game/ui/typography';
+import { text, FONT_FAMILY, TEXT_AMBER_WARM, TEXT_AMBER } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 
 export interface GameOverData {
@@ -78,29 +78,72 @@ export class GameOverScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
+    // Sprint 0.7 Story 9 — entrance tween for the headline. Scale 0.7 +
+    // alpha 0 → final, Back.Out ease for a small overshoot "pop." Reads
+    // as a satisfying round-end celebration rather than the prior
+    // instant-paint feel.
     const headline = this.roundData.passed ? 'Round Complete!' : 'Round Done — Try Again?';
-    text(this, cx, height * 0.18, headline, this.roundData.passed ? 'success' : 'warning')
-      .setOrigin(0.5);
+    const headlineText = text(
+      this,
+      cx,
+      height * 0.18,
+      headline,
+      this.roundData.passed ? 'success' : 'warning',
+    ).setOrigin(0.5);
+    headlineText.setScale(0.7);
+    headlineText.setAlpha(0);
+    this.tweens.add({
+      targets: headlineText,
+      scale: 1,
+      alpha: 1,
+      duration: 350,
+      ease: 'Back.Out',
+    });
 
+    // Sprint 0.7 Story 9 — count-up score animation.
+    // Renders the multi-line "Score: N / Correct: M / total" text but the
+    // score number animates from 0 to the final value over 600ms via a
+    // Phaser tween on a counter object. The Correct line and totals stay
+    // at their final values throughout (only the score number animates).
     // 24px primary text on a multi-line score-summary line — close to body
     // sizing but two-up. Inline (with FONT_FAMILY) so the literal stays
     // in typography.ts only; not promoting to a TextKind because no other
     // scene needs this exact size.
-    this.add
-      .text(
-        cx,
-        height * 0.32,
-        `Score: ${this.roundData.score}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`,
-        {
-          fontFamily: FONT_FAMILY,
-          fontSize: '24px',
-          color: '#eaeaf2',
-          align: 'center',
-        },
-      )
+    const scoreSummary = this.add
+      .text(cx, height * 0.32, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '24px',
+        color: '#eaeaf2',
+        align: 'center',
+      })
       .setOrigin(0.5);
+    const renderScoreLine = (displayedScore: number): string =>
+      `Score: ${displayedScore}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`;
+    scoreSummary.setText(renderScoreLine(0));
+    const scoreCounter = { value: 0 };
+    this.tweens.add({
+      targets: scoreCounter,
+      value: this.roundData.score,
+      duration: 600,
+      delay: 200, // start AFTER the headline has begun popping in
+      ease: 'Quad.Out',
+      onUpdate: () => {
+        scoreSummary.setText(renderScoreLine(Math.floor(scoreCounter.value)));
+      },
+      onComplete: () => {
+        // Defensive: ensure the final value matches the score exactly
+        // (Math.floor of the tweened value may drop the last 1 on rounding).
+        scoreSummary.setText(renderScoreLine(this.roundData.score));
+      },
+    });
 
-    text(this, cx, height * 0.46, this.renderStars(), 'stars').setOrigin(0.5);
+    // Sprint 0.7 Story 9 — three separate star Text objects laid out in a
+    // row, each popping in with a staggered Back.Out scale tween. Was a
+    // single concatenated string ("★★★☆☆☆") via the typography helper —
+    // refactored to 3 distinct game objects so each can animate
+    // independently. Stagger 200ms between stars; first star starts
+    // 500ms after scene mount so the headline pop reads first.
+    this.buildStarRow(cx, height * 0.46);
 
     const buttons = stackButtons(this, {
       centerY: height * 0.72,
@@ -137,10 +180,44 @@ export class GameOverScene extends Phaser.Scene {
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
   }
 
-  private renderStars(): string {
-    const filled = '★'.repeat(this.roundData.stars);
-    const empty = '☆'.repeat(3 - this.roundData.stars);
-    return filled + empty;
+  /**
+   * Sprint 0.7 Story 9 — build the 3-star row with staggered pop-in
+   * animations. Each star is a separate Text object so it can tween
+   * independently.
+   *
+   * Layout: three 48px glyphs in a row, gap 16px, centered at `centerX`.
+   * Earned stars use the warm-amber color (`TEXT_AMBER`); unearned
+   * stars use dim grey (`#4b5563`) so the player can clearly see
+   * "I got 2 of 3" rather than a sea of identical glyphs.
+   *
+   * Animation: each star starts at `scale: 0`, tweens to `scale: 1.0`
+   * over 250ms with `Back.Out` ease (slight overshoot for the "pop"
+   * feel). Stagger 200ms between stars; first star starts 500ms after
+   * scene mount so the headline + score animations begin first.
+   */
+  private buildStarRow(centerX: number, y: number): void {
+    const STAR_SIZE = 48; // matches the prior 'stars' TextKind sizing intent
+    const STAR_GAP = 16;
+    const totalWidth = 3 * STAR_SIZE + 2 * STAR_GAP;
+    const startX = centerX - totalWidth / 2 + STAR_SIZE / 2;
+    for (let i = 0; i < 3; i++) {
+      const earned = i < this.roundData.stars;
+      const star = this.add
+        .text(startX + i * (STAR_SIZE + STAR_GAP), y, earned ? '★' : '☆', {
+          fontFamily: FONT_FAMILY,
+          fontSize: `${STAR_SIZE}px`,
+          color: earned ? TEXT_AMBER : '#4b5563',
+        })
+        .setOrigin(0.5);
+      star.setScale(0);
+      this.tweens.add({
+        targets: star,
+        scale: 1,
+        duration: 250,
+        delay: 500 + i * 200,
+        ease: 'Back.Out',
+      });
+    }
   }
 
   /**

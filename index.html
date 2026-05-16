@@ -8,9 +8,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="description" content="A browser-based math game for kids." />
     <title>mathBasher</title>
+
+    <!--
+      Google Fonts — Baloo 2 (sprint 0.7 Story 7). Used by every text
+      element in the game via `FONT_FAMILY` in `src/game/ui/typography.ts`.
+      `display=swap` shows fallback (system-ui) immediately and swaps to
+      Baloo 2 once the font is loaded (no FOIT — eliminates the "blank
+      text for 100ms" flash). Two weights: 400 (body), 700 (titles,
+      buttons, alien block numbers).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: #0b1020; overflow: hidden; }
-      body { font-family: system-ui, -apple-system, sans-serif; color: #eaeaf2; }
+      body { font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2; }
       #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the

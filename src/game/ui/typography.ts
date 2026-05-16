@@ -31,7 +31,21 @@ import type Phaser from 'phaser';
  * `kind` here instead.
  */
 
-export const FONT_FAMILY = 'system-ui, -apple-system, sans-serif';
+// Sprint 0.7 Story 7 — swap default font from system-ui to Baloo 2.
+// Baloo 2 is a rounded, friendly, bold sans-serif that fits the
+// "kid-friendly arcade math game" aesthetic. Loaded via Google Fonts
+// `<link>` in `index.html` with `display=swap` (no FOIT — falls back
+// to system-ui until Baloo 2 is ready, then re-renders).
+//
+// Keeping the fallback chain `system-ui, -apple-system, sans-serif` so
+// any failed font load (network blocked, font deleted from Google,
+// etc.) degrades gracefully to platform defaults instead of generic
+// serif.
+//
+// ROLLBACK: replace 'Baloo 2' with the old chain at the front. One-line
+// revert; no other code change needed. The Google Fonts <link> in
+// index.html can stay (unused) or be removed.
+export const FONT_FAMILY = "'Baloo 2', system-ui, -apple-system, sans-serif";
 
 // --- Text colors ------------------------------------------------------------
 // Distinct from `uiPalette.ts` (which holds Phaser hex numbers for shapes —

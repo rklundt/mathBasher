@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { attribution } from '@/core/attribution';
+import { attribution, isUsingPlaceholderSourceUrl } from '@/core/attribution';
 import { FONT_FAMILY, TEXT_PRIMARY, TEXT_BLUE } from '@/game/ui/typography';
 
 /**
@@ -39,6 +39,18 @@ export class AttributionScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('AttributionScene Started', SeverityLevel.Information);
+
+    // Sprint 0.7 Story 13 (D9) — guardrail. If `VITE_SOURCE_URL` was
+    // unset at build time, the §7(b) "Source: ..." link defaults to a
+    // placeholder pointing at example.invalid (intentionally broken so
+    // the misconfiguration surfaces visibly). Emit a Warning telemetry
+    // event so the misconfiguration ALSO surfaces in App Insights — not
+    // every operator will eyeball the rendered footer on a fresh deploy.
+    if (isUsingPlaceholderSourceUrl) {
+      _th.logToAi('AttributionScene PlaceholderSourceUrl', SeverityLevel.Warning, {
+        reason: 'VITE_SOURCE_URL env var is unset; shipping with the placeholder example.invalid URL',
+      });
+    }
 
     const { width, height } = this.scale;
     // Footer height from config (load-bearing for §7(b) compliance + the
@@ -74,6 +86,37 @@ export class AttributionScene extends Phaser.Scene {
 
     // Make the source URL clickable and open in a new tab.
     sourceLabel.setInteractive({ useHandCursor: true });
+
+    // Sprint 0.7 Story 10 — hover state on the source link. Desktop
+    // mouse-over (and touch tap-and-hold) lighten the text color from
+    // `TEXT_BLUE` to a brighter shade + reveal an underline via a
+    // hairline Rectangle anchored under the label. On pointerout the
+    // hover state clears.
+    //
+    // §7(b) compliance unchanged: the text remains at full opacity at
+    // ALL times (no hover dim, no fade-out), the source URL stays
+    // visible and activatable.
+    const labelBounds = sourceLabel.getBounds();
+    const HOVER_COLOR = '#93c5fd'; // lighter than TEXT_BLUE for clear hover signal
+    const underline = this.add
+      .rectangle(
+        sourceLabel.x,
+        sourceLabel.y + labelBounds.height / 2 - 1,
+        labelBounds.width,
+        1,
+        0x93c5fd,
+      )
+      .setOrigin(1, 0)
+      .setVisible(false);
+    sourceLabel.on('pointerover', () => {
+      sourceLabel.setColor(HOVER_COLOR);
+      underline.setVisible(true);
+    });
+    sourceLabel.on('pointerout', () => {
+      sourceLabel.setColor(TEXT_BLUE);
+      underline.setVisible(false);
+    });
+
     sourceLabel.on('pointerup', () => {
       window.open(attribution.sourceUrl, '_blank', 'noopener,noreferrer');
     });

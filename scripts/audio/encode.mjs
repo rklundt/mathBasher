@@ -60,6 +60,11 @@ let kind = 'sfx';
 // `trim` is tri-state to support kind-aware defaults: undefined means "use
 // the kind's default", true/false are explicit overrides from the CLI.
 let trim;
+// Optional override for the loudness target in LUFS (more negative = quieter,
+// less negative = louder). When undefined, the kind's profile default is used.
+// Useful for one-off "this specific SFX is hard to hear vs the rest" fixes
+// (sprint 0.7 Story 14 surfaced this for hit-wrong-2).
+let loudnormOverride;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -69,6 +74,13 @@ for (let i = 0; i < argv.length; i++) {
     trim = false;
   } else if (a === '--trim') {
     trim = true;
+  } else if (a === '--loudnorm-target') {
+    const v = parseFloat(argv[++i]);
+    if (Number.isNaN(v) || v > 0) {
+      console.error(`--loudnorm-target must be a negative LUFS number (got "${argv[i]}")`);
+      process.exit(2);
+    }
+    loudnormOverride = v;
   } else if (a === '-h' || a === '--help') {
     printHelp();
     process.exit(0);
@@ -150,7 +162,13 @@ const profiles = {
     trimDefault: true,
   },
 };
-const profile = profiles[kind];
+const profile = { ...profiles[kind] };
+// Apply --loudnorm-target override if the CLI provided one. Keeps the
+// per-kind defaults intact for everyone else; surgical fix for "this
+// one SFX is quieter than the others" cases.
+if (loudnormOverride !== undefined) {
+  profile.loudnormI = loudnormOverride;
+}
 
 // Apply the kind's default trim policy if the CLI didn't specify one.
 // Explicit --trim or --no-trim wins; otherwise sfx/music default to

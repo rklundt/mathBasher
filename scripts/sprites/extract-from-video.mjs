@@ -778,9 +778,13 @@ function decontaminateInPlace(buf, width, height, keyColor) {
     // (255 - α) / 255 → fraction of bg in the composited pixel.
     const bgFrac = (255 - alpha) / 255;
     const invAlphaScale = 255 / alpha;
-    const r = (buf[p * 4]     - bgR * bgFrac) * invAlphaScale / 255 * 255;
-    const g = (buf[p * 4 + 1] - bgG * bgFrac) * invAlphaScale / 255 * 255;
-    const b = (buf[p * 4 + 2] - bgB * bgFrac) * invAlphaScale / 255 * 255;
+    // Sprint 0.7 Story 13 (D6 from sprint 0.6.3 wrap-up review): the
+    // prior `* invAlphaScale / 255 * 255` had a redundant /255*255
+    // cancellation that made the math harder to read without affecting
+    // output (x/255*255 === x for floats). Simplified.
+    const r = (buf[p * 4]     - bgR * bgFrac) * invAlphaScale;
+    const g = (buf[p * 4 + 1] - bgG * bgFrac) * invAlphaScale;
+    const b = (buf[p * 4 + 2] - bgB * bgFrac) * invAlphaScale;
     buf[p * 4]     = Math.max(0, Math.min(255, Math.round(r)));
     buf[p * 4 + 1] = Math.max(0, Math.min(255, Math.round(g)));
     buf[p * 4 + 2] = Math.max(0, Math.min(255, Math.round(b)));
