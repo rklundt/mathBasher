@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { advanceY } from '@/game/systems/waveKinematics';
-import { FONT_FAMILY, TEXT_WHITE } from '@/game/ui/typography';
+import { textStyle } from '@/game/ui/typography';
 import { alienAnimKey } from '@/core/spriteKeys';
 import { config } from '@/core/config';
 
@@ -109,12 +109,13 @@ export class Alien extends Phaser.GameObjects.Container {
     this.chassis = opts.scene.add.rectangle(0, 0, Alien.WIDTH, Alien.HEIGHT, 0x4338ca);
     this.chassis.setStrokeStyle(2, 0x6366f1);
 
-    this.answerText = opts.scene.add.text(0, 0, String(opts.answer), {
-      fontFamily: FONT_FAMILY,
-      fontSize: '38px', // Sprint 0.7.5 Story 1 — was 32 (alien answer text)
-      color: TEXT_WHITE,
-      fontStyle: 'bold',
-    });
+    // TextKind 'alienAnswer' — 38px white bold (Sprint 0.7.5 Story 3).
+    // SEMI-LOAD-BEARING: the rider plate's `plateLayers` sizing in this
+    // file (see Story 6 / 0.7 follow-up below) is tuned for ~38px text.
+    // If you change `alienAnswer.fontSize` in typography.ts, re-tune the
+    // plateLayers widths/heights to keep the opaque core covering the
+    // full text glyph height.
+    this.answerText = opts.scene.add.text(0, 0, String(opts.answer), textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
 
     // Build the rider-sprite if a key was passed. Positioned ABOVE the

@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { stackButtons } from '@/game/ui/MenuLayout';
-import { FONT_FAMILY, TEXT_PRIMARY } from '@/game/ui/typography';
+import { text } from '@/game/ui/typography';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 
 /**
@@ -61,15 +61,9 @@ export class PauseOverlay extends Phaser.Scene {
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.6);
     backdrop.setOrigin(0, 0);
 
-    // 56px primary "Paused" headline — between TextKind 'h2' (48px) and
-    // 'title' (64px). One-off; inline via FONT_FAMILY + TEXT_PRIMARY.
-    this.add
-      .text(width / 2, height * 0.32, 'Paused', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '67px', // Sprint 0.7.5 Story 1 — was 56 (PAUSED headline)
-        color: TEXT_PRIMARY,
-      })
-      .setOrigin(0.5);
+    // TextKind 'headline' — 67px primary, sized between 'h2' (58px) and
+    // 'title' (76px). Promoted to its own kind in Sprint 0.7.5 Story 3.
+    text(this, width / 2, height * 0.32, 'Paused', 'headline').setOrigin(0.5);
 
     const buttons = stackButtons(this, {
       centerY: height * 0.58,

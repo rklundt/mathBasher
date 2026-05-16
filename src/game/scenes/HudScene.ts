@@ -13,7 +13,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
 import { MUTE_ICON_BG, MUTE_ICON_HOVER } from '@/game/ui/uiPalette';
-import { FONT_FAMILY, TEXT_PRIMARY, TEXT_AMBER, TEXT_GREEN } from '@/game/ui/typography';
+import { text, textStyle } from '@/game/ui/typography';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -79,26 +79,13 @@ export class HudScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, barHeight, 0x000000, 0.45);
     bg.setOrigin(0, 0);
 
-    // HUD text styles are tight (18-20px) to fit the 48px bar; build
-    // inline via FONT_FAMILY + named color constants. Not promoted to
-    // `text(... 'kind')` because each HUD label needs unique origin
-    // anchoring (left, center, right) — keeping the call chain explicit.
-    this.scoreText = this.add
-      .text(16, barHeight / 2, 'Score: 0', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (HUD score)
-        color: TEXT_PRIMARY,
-      })
-      .setOrigin(0, 0.5);
+    // HUD labels use the canonical TextKinds: 'body' for the score and
+    // Q counter (22px primary), 'prompt' for the math equation (24px
+    // amber bold). Origin anchoring (left/center/right) is set per call
+    // since the HUD bar uses three different anchors.
+    this.scoreText = text(this, 16, barHeight / 2, 'Score: 0', 'body').setOrigin(0, 0.5);
 
-    this.promptText = this.add
-      .text(width / 2, barHeight / 2, '— + — = ?', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '24px', // Sprint 0.7.5 Story 1 — was 20 (math prompt)
-        color: TEXT_AMBER,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
 
     // Pause icon (top-right) and Mute icon (just left of it). Both are
     // 44×44 (Apple HIG min hit area), but visually distinct so a kid mid-
@@ -130,13 +117,13 @@ export class HudScene extends Phaser.Scene {
     // Space remain a clean fire input on GameScene.
     new KeyboardNavigator(this, [muteBtn, pauseBtn], { activateOnSpace: false });
 
-    this.counterText = this.add
-      .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (Q counter)
-        color: TEXT_PRIMARY,
-      })
-      .setOrigin(1, 0.5);
+    this.counterText = text(
+      this,
+      width - 16 - buttonsRoom,
+      barHeight / 2,
+      `Q: 0/${config.round.questionsPerRound}`,
+      'body',
+    ).setOrigin(1, 0.5);
 
     // Sprint 0.7 Story 8 — progress dots row UNDER the HUD bar. One dot
     // per question; filled green/red after `questionEnded`, hollow grey
@@ -227,12 +214,10 @@ export class HudScene extends Phaser.Scene {
       baseFill: MUTE_ICON_BG,
       hoverFill: MUTE_ICON_HOVER,
       render: (container) => {
-        const speakerGlyph = this.add
-          .text(0, 1, '🔊', {
-            fontFamily: FONT_FAMILY,
-            fontSize: '26px', // Sprint 0.7.5 Story 1 — was 22 (mute speaker emoji)
-          })
-          .setOrigin(0.5);
+        // Container-anchored — use textStyle() so the spread style applies
+        // through the IconButton's internal Container transform. TextKind
+        // 'iconGlyph' is shared with MenuScene's mute icon.
+        const speakerGlyph = this.add.text(0, 1, '🔊', textStyle('iconGlyph')).setOrigin(0.5);
         container.add(speakerGlyph);
 
         // Refresh closure — re-evaluates glyph + alpha against current
@@ -422,14 +407,8 @@ export class HudScene extends Phaser.Scene {
    * reward without re-scanning to a different corner of the screen.
    */
   private popupScoreDelta(delta: number, x: number, y: number): void {
-    const popup = this.add
-      .text(x, y, `+${delta}`, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '29px', // Sprint 0.7.5 Story 1 — was 24 (score popup at alien)
-        color: TEXT_GREEN,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    // TextKind 'scorePopup' — 29px green bold (Sprint 0.7.5 Story 3).
+    const popup = text(this, x, y, `+${delta}`, 'scorePopup').setOrigin(0.5);
     this.tweens.add({
       targets: popup,
       y: y - 50,

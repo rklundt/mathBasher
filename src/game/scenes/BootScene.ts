@@ -15,7 +15,7 @@ import {
   pickSpriteTier,
   type SpriteTier,
 } from '@/core/spriteKeys';
-import { FONT_FAMILY } from '@/game/ui/typography';
+import { text } from '@/game/ui/typography';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -158,13 +158,7 @@ export class BootScene extends Phaser.Scene {
     const FILL_MAX = BAR_W - BAR_PAD * 2;
 
     // Label above the bar.
-    this.add
-      .text(W / 2, H / 2 - 32, 'Loading…', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '24px', // Sprint 0.7.5 Story 1 — was 20 (loading bar label)
-        color: '#f1f5f9',
-      })
-      .setOrigin(0.5);
+    text(this, W / 2, H / 2 - 32, 'Loading…', 'bodyLarge').setOrigin(0.5);
 
     // Bar background — slate plate with subtle outline.
     this.add

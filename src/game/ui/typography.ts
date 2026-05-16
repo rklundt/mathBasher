@@ -73,18 +73,35 @@ export const TEXT_WHITE = '#ffffff';
 // --- Kind vocabulary --------------------------------------------------------
 
 export type TextKind =
-  | 'title' // 64px, primary — main scene titles (mathBasher, Pick a Game)
-  | 'h2' // 40-48px, primary — section headers (Settings, Round Complete!)
-  | 'h3' // 36px, primary — sub-section headers (Pick Difficulty)
-  | 'subtitle' // 20px, muted — under-title taglines
-  | 'body' // 18px, primary — HUD score, in-line labels
-  | 'bodyMuted' // 18px, muted — secondary in-line text
-  | 'prompt' // 20px bold, amber — the active math question
-  | 'accent' // 22-28px, amber — emphasized values like settings percent
-  | 'success' // 24-40px, green — round-complete, +score popups
-  | 'warning' // 24-40px, warm amber — try-again, fallback messages
-  | 'stars' // 40px, amber — star row on Game Over
-  | 'sectionLabel'; // 20px, muted — "Math Type" / "Speed" labels above tile groups
+  // --- Existing scene-absolute kinds (used via `text(scene, x, y, str, kind)`) ---
+  | 'title' // primary — main scene titles (mathBasher, Pick a Game)
+  | 'h2' // primary — section headers (Settings, Round Complete!)
+  | 'h3' // primary — sub-section headers (Pick Difficulty)
+  | 'subtitle' // muted — under-title taglines
+  | 'body' // primary — HUD score, Q counter, generic in-line labels
+  | 'bodyMuted' // muted — secondary in-line text
+  | 'bodyLarge' // primary — slightly larger body (BootScene "Loading…")
+  | 'bodyAccent' // amber — same size as body, accent color (MenuScene placeholder)
+  | 'prompt' // amber bold — the active math question (HudScene)
+  | 'accent' // amber bold — emphasized values like settings percent
+  | 'success' // green — round-complete success copy
+  | 'warning' // warm amber — try-again, fallback messages
+  | 'stars' // amber — star row on Game Over
+  | 'sectionLabel' // muted — "Math Type" / "Speed" labels above tile groups
+  // --- Sprint 0.7.5 Story 3 additions ---
+  | 'headline' // primary — extra-large overlay headline (PauseOverlay "Paused")
+  | 'summary' // primary — multi-line score summary (GameOverScene)
+  | 'scorePopup' // green bold — the floating "+100" popup at alien hit position
+  | 'badge' // warm-amber bold — "★ New High Score! ★" badge
+  | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
+  | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)
+  | 'footer' // primary — AGPL §7(b) footer text (left side)
+  | 'footerLink' // blue — AGPL §7(b) footer source URL (right side)
+  // --- Container-anchored kinds (used via `textStyle(kind)` spread, see below) ---
+  | 'alienAnswer' // white bold — number on the falling block (geometrically linked to plateLayers in Alien.ts)
+  | 'buttonLabel' // primary — main label inside PlaceholderButton
+  | 'buttonSubtitle' // button-subtitle grey — secondary line inside PlaceholderButton
+  | 'fireLabel'; // dark bold — FIRE label inside the warm-amber TouchFireButton
 
 interface TextStyle {
   fontSize: string;
@@ -92,41 +109,72 @@ interface TextStyle {
   fontStyle?: 'bold';
 }
 
-// Sprint 0.7.5 Story 1 — universal +20% font size bump for mobile
-// readability. Baloo 2 (introduced in 0.7) reads cleanly on desktop
-// but text was uncomfortably small on phone-sized viewports after
-// FIT-scaling halves the design-px sizes. Rollback: divide every
-// fontSize value here by 1.2 (or grep for the prior values).
+// Sprint 0.7.5 typography sizing.
 //
-// Tuning history per kind (newest first):
-//   v0.7.5: +20% bump from the v0.7 Baloo-2 swap baselines below.
-//   v0.7:   sizes inherited from earlier sprints, font swapped to Baloo 2.
+// Tuning history (newest first):
+//   v0.7.5 Story 3: every inline `fontSize:` literal across the 11 scene/
+//     entity/UI files was collapsed into this STYLES table. New kinds added
+//     for the previously-inline sites: headline, summary, scorePopup, badge,
+//     rowLabel, iconGlyph, footer, footerLink, alienAnswer, buttonLabel,
+//     buttonSubtitle, fireLabel, bodyLarge, bodyAccent. Any future "make
+//     all text 10% bigger" pass is a 1-file edit here, not 18 hand-bumps
+//     across 11 files.
+//   v0.7.5 Story 1: universal +20% bump from the v0.7 Baloo-2 baselines
+//     for mobile readability (Baloo 2 reads cleanly on desktop but text was
+//     uncomfortably small on phone-sized viewports after FIT-scaling halved
+//     the design-px sizes). Pre-Story 3, this bump touched 18 inline sites
+//     in addition to this table — the duplicate-bump pain is what motivated
+//     Story 3.
+//   v0.7: sizes inherited from earlier sprints, font swapped to Baloo 2.
+//
+// To globally rescale (e.g. "shrink all text 10%"), divide every fontSize
+// number here by 1.1 — this is the only place to edit.
 const STYLES: Readonly<Record<TextKind, TextStyle>> = {
-  title: { fontSize: '76px', color: TEXT_PRIMARY }, // was 64
-  h2: { fontSize: '58px', color: TEXT_PRIMARY }, // was 48
-  h3: { fontSize: '44px', color: TEXT_PRIMARY }, // was 36
-  subtitle: { fontSize: '24px', color: TEXT_MUTED }, // was 20
-  body: { fontSize: '22px', color: TEXT_PRIMARY }, // was 18
-  bodyMuted: { fontSize: '22px', color: TEXT_MUTED }, // was 18
-  prompt: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' }, // was 20
-  accent: { fontSize: '34px', color: TEXT_AMBER, fontStyle: 'bold' }, // was 28
-  success: { fontSize: '48px', color: TEXT_GREEN }, // was 40
-  warning: { fontSize: '48px', color: TEXT_AMBER_WARM }, // was 40
-  stars: { fontSize: '48px', color: TEXT_AMBER }, // was 40
-  sectionLabel: { fontSize: '24px', color: TEXT_MUTED }, // was 20
+  // Headings + body
+  title: { fontSize: '76px', color: TEXT_PRIMARY },
+  h2: { fontSize: '58px', color: TEXT_PRIMARY },
+  h3: { fontSize: '44px', color: TEXT_PRIMARY },
+  subtitle: { fontSize: '24px', color: TEXT_MUTED },
+  body: { fontSize: '22px', color: TEXT_PRIMARY },
+  bodyMuted: { fontSize: '22px', color: TEXT_MUTED },
+  bodyLarge: { fontSize: '24px', color: TEXT_PRIMARY },
+  bodyAccent: { fontSize: '22px', color: TEXT_AMBER },
+  prompt: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' },
+  accent: { fontSize: '34px', color: TEXT_AMBER, fontStyle: 'bold' },
+  success: { fontSize: '48px', color: TEXT_GREEN },
+  warning: { fontSize: '48px', color: TEXT_AMBER_WARM },
+  stars: { fontSize: '48px', color: TEXT_AMBER },
+  sectionLabel: { fontSize: '24px', color: TEXT_MUTED },
+  // Story 3 additions — scene-absolute
+  headline: { fontSize: '67px', color: TEXT_PRIMARY },
+  summary: { fontSize: '29px', color: TEXT_PRIMARY },
+  scorePopup: { fontSize: '29px', color: TEXT_GREEN, fontStyle: 'bold' },
+  badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
+  rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },
+  iconGlyph: { fontSize: '26px', color: TEXT_PRIMARY }, // color is irrelevant for emoji glyphs but required by TextStyle
+  footer: { fontSize: '14px', color: TEXT_PRIMARY },
+  footerLink: { fontSize: '14px', color: TEXT_BLUE },
+  // Story 3 additions — container-anchored (consumed via `textStyle(kind)`)
+  alienAnswer: { fontSize: '38px', color: TEXT_WHITE, fontStyle: 'bold' },
+  buttonLabel: { fontSize: '24px', color: TEXT_PRIMARY },
+  buttonSubtitle: { fontSize: '17px', color: TEXT_BUTTON_SUBTITLE },
+  // FIRE label uses dark canvas color on warm-amber bg → ~10:1 contrast
+  // (intentional; do NOT fold into a generic primary-color buttonLabel).
+  fireLabel: { fontSize: '22px', color: '#0b1020', fontStyle: 'bold' },
 };
 
 /**
  * Add configured text to a scene at the given position with the given kind.
  * Convenience wrapper for `scene.add.text(x, y, str, { fontFamily, ... })`
- * that applies the canonical style for the `kind`.
+ * that applies the canonical style for the `kind`. Use this for SCENE-
+ * ABSOLUTE coordinates.
  *
  * The returned object is a stock `Phaser.GameObjects.Text`; chain
  * `.setOrigin(0.5)`, `.setText(...)`, etc. as usual.
  *
- * Override knobs are intentionally NOT exposed — if a scene needs custom
- * sizing, either add a new `TextKind` here or use `this.add.text` directly
- * (the latter should be rare; consider whether the case is really one-off).
+ * For text inside a Container (local 0,0 coords), use `textStyle(kind)`
+ * below to get the style object and pass it to `this.add.text(...)`
+ * directly so the Container's own transform applies.
  */
 export function text(
   scene: Phaser.Scene,
@@ -135,11 +183,28 @@ export function text(
   str: string,
   kind: TextKind,
 ): Phaser.GameObjects.Text {
+  return scene.add.text(x, y, str, textStyle(kind));
+}
+
+/**
+ * Returns the canonical Phaser text-style object for a kind, ready to spread
+ * into `scene.add.text(x, y, str, style)`. Use this when:
+ *  - the text is anchored inside a Container (the `text()` helper above
+ *    assumes scene-absolute coords; callers like PlaceholderButton,
+ *    TouchFireButton, and Alien need to add via Container-local coords)
+ *  - the call site needs to add extra options (e.g. `align: 'center'`)
+ *    on top of the canonical style: `{ ...textStyle('summary'), align: 'center' }`
+ *
+ * This is the ONLY supported way to use a TextKind outside the `text()`
+ * helper. Inline `fontSize:` literals in scene/entity/UI code violate the
+ * Story 3 rule that typography.ts is the single source of truth for sizes.
+ */
+export function textStyle(kind: TextKind): Phaser.Types.GameObjects.Text.TextStyle {
   const style = STYLES[kind];
-  return scene.add.text(x, y, str, {
+  return {
     fontFamily: FONT_FAMILY,
     fontSize: style.fontSize,
     color: style.color,
     ...(style.fontStyle !== undefined && { fontStyle: style.fontStyle }),
-  });
+  };
 }

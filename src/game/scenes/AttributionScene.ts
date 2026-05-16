@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { attribution, isUsingPlaceholderSourceUrl } from '@/core/attribution';
-import { FONT_FAMILY, TEXT_PRIMARY, TEXT_BLUE } from '@/game/ui/typography';
+import { text, TEXT_BLUE } from '@/game/ui/typography';
 
 /**
  * Persistent parallel scene that renders the AGPL §7(b) UI attribution footer
@@ -68,21 +68,15 @@ export class AttributionScene extends Phaser.Scene {
     // link on the right. Compact form so the footer doesn't eat too much
     // vertical space; sprint 0.7 will tune typography.
     const leftText = `${attribution.productName}  •  ${attribution.copyrightLine}  •  ${attribution.licenseLine}`;
-    this.add
-      .text(16, height - footerHeight / 2, leftText, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px', // Sprint 0.7.5 Story 1 — was 12 (footer attribution)
-        color: TEXT_PRIMARY,
-      })
-      .setOrigin(0, 0.5);
+    text(this, 16, height - footerHeight / 2, leftText, 'footer').setOrigin(0, 0.5);
 
-    const sourceLabel = this.add
-      .text(width - 16, height - footerHeight / 2, `Source: ${attribution.sourceUrl}`, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px', // Sprint 0.7.5 Story 1 — was 12 (footer attribution)
-        color: TEXT_BLUE,
-      })
-      .setOrigin(1, 0.5);
+    const sourceLabel = text(
+      this,
+      width - 16,
+      height - footerHeight / 2,
+      `Source: ${attribution.sourceUrl}`,
+      'footerLink',
+    ).setOrigin(1, 0.5);
 
     // Make the source URL clickable and open in a new tab.
     sourceLabel.setInteractive({ useHandCursor: true });
