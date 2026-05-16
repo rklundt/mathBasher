@@ -72,6 +72,19 @@ export const config = {
       'sub-to-20': 2.0,
       'mult-to-100': 2.5,
       'mult-to-144': 3.0,
+      // Sprint 1.5: division extends the ladder with the same operation-step
+      // + range-step pattern (+0.5 each). Division is meaningfully harder
+      // than multiplication at the same range because the kid has to
+      // recover the FACTOR from the product, which exercises the multiplication
+      // table in reverse.
+      'div-to-100': 3.5,
+      'div-to-144': 4.0,
+      // Sprint 1.5: Mixed mode picks one of the 8 above generators randomly
+      // at draw time. Multiplier chosen as a representative average — the
+      // actual question difficulty varies per-question but the score has to
+      // be deterministic per math-type-tile, so a fixed average works. 2.5 is
+      // approximately the midpoint between add-to-10 (1.0) and div-to-144 (4.0).
+      mixed: 2.5,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {

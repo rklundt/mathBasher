@@ -10,6 +10,9 @@ import subTo10 from '@/math/generators/subTo10';
 import subTo20 from '@/math/generators/subTo20';
 import multTo100 from '@/math/generators/multTo100';
 import multTo144 from '@/math/generators/multTo144';
+import divTo100 from '@/math/generators/divTo100';
+import divTo144 from '@/math/generators/divTo144';
+import mixed from '@/math/generators/mixed';
 import { generators, getGenerator, getImplementedIds } from '@/math/registry';
 
 /**
@@ -37,6 +40,9 @@ describe('registry', () => {
       ['sub-to-20', subTo20],
       ['mult-to-100', multTo100],
       ['mult-to-144', multTo144],
+      ['div-to-100', divTo100],
+      ['div-to-144', divTo144],
+      ['mixed', mixed],
     ] as const)('%s', (id, expected) => {
       expect(getGenerator(id)).toBe(expected);
     });
@@ -54,13 +60,16 @@ describe('registry', () => {
   });
 
   describe('getImplementedIds', () => {
-    it('returns ALL six Phase 1 ids (no stubs remain after sprint 1.1)', () => {
+    it('returns ALL nine Phase 1 ids (no stubs remain after sprint 1.5)', () => {
       const implemented = getImplementedIds().sort();
       expect(implemented).toEqual(
         (
           [
             'add-to-10',
             'add-to-20',
+            'div-to-100',
+            'div-to-144',
+            'mixed',
             'mult-to-100',
             'mult-to-144',
             'sub-to-10',

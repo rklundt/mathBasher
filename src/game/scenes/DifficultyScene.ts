@@ -70,30 +70,35 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    // Vertical anchors. Sprint 1.1 Story 8 — with 6 implemented math
-    // types (after Phase 1 generators landed), the math grid wraps to
-    // 2 rows of 4-per-row at 220px tile width. Each math row spans
-    // (tile-height + row-gap) = 116 + 16 = 132 design pixels (tile
-    // height bumped 100 → 116 in sprint 1.1 wrap-up to fit the larger
-    // mobile subtitle). The grid origin (FIRST row's center Y) stays
-    // at 0.34 from sprint 0.7.5; subsequent rows stack downward.
-    // Speed row drops 0.66 → 0.78 to clear the second math row;
-    // Start/Back drop 0.85 → 0.92 to keep proportional spacing. With
-    // AGPL footer at 0.955 (32px out of 720), Start/Back at 0.92 =
-    // y=662, button height 56 → bottom at y=690; footer top at y=688.
-    // 2px of overlap with the footer's translucent bg, but the footer
-    // text + click zone are clear (footer text at center y=704,
-    // fontSize 14 → top y≈697, well below button bottom). Verified safe.
+    // Vertical anchors. Sprint 1.5 — with 9 implemented math types
+    // (after Phase 1 division + Mixed landed), the math grid wraps to
+    // 3 rows of 4-per-row at 220px tile width (row 3 has 1 tile centered).
+    // To fit 3 math rows + Speed + Start/Back + AGPL footer in the
+    // 720-tall design canvas, math tiles were SHRUNK 116 → 64 tall AND
+    // their subtitles DROPPED — the labels alone ("Add to 10", "Multiply
+    // 10×10", "Mixed") are self-descriptive enough at this point in
+    // the player's journey, and the subtitle text was redundant for
+    // returning players. New shorter tiles match the Speed-button
+    // height visually, which incidentally makes the whole screen read
+    // as a more uniform grid.
     //
-    // Math row 2 bottom after the 1.1 wrap-up tile-height bump:
-    // 245 + 132 + 58 = 435; gap to Speed at y=562 = 127px. Plenty.
+    // Layout math (3 math rows × 64 tall, 12-px row gap):
+    //   Math row 1 at y=0.30=216 (label at y=126, tile-top=184, bot=248)
+    //   Math row 2 at y=216 + (64+12) = 292 (top 260, bot 324)
+    //   Math row 3 at y=216 + 2*(64+12) = 368 (top 336, bot 400)
+    //   Speed label at y=460 (=Speed-row-y - 60 = 0.72*720-60); Speed
+    //     row at y=520, tile-top 488, bot 552
+    //   Start/Back at y=0.85*720=612, button-top 584, bot 640
+    //   AGPL footer top y=688 → 48-px clearance from Start/Back bottom.
+    //   Plenty of margin.
     //
-    // When Phase 1.5 (division) + 1.6 (mixed) land → 8 tiles, 2 full
-    // rows of 4 fits the same anchor positions, no further reflow.
-    this.renderMathTypes(cx, height * 0.34);
-    this.renderSpeeds(cx, height * 0.78);
-    this.renderStartButton(cx, height * 0.92);
-    this.renderBackButton(cx - 250, height * 0.92);
+    // Subtitle drop is applied via `subtitle: undefined` in
+    // renderMathTypes (the PlaceholderButton's existing no-subtitle
+    // path auto-centers the label).
+    this.renderMathTypes(cx, height * 0.3);
+    this.renderSpeeds(cx, height * 0.72);
+    this.renderStartButton(cx, height * 0.85);
+    this.renderBackButton(cx - 250, height * 0.85);
 
     // Default selections so the user lands on a "ready to play" state.
     // Without this, a first-time user sees the keyboard-focus blue ring on
@@ -148,41 +153,35 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, firstRowY: number): void {
-    // Section label sits 90px above the FIRST row's center. Math tiles
-    // are 100px tall (so tile-top = y - 50); the 32px bold sectionLabel
+    // Section label sits 60px above the FIRST row's center. Math tiles
+    // are 64px tall (so tile-top = y - 32); the 32px bold sectionLabel
     // kind occupies ~42px vertical (centered on its y-coord = ±21).
-    // 90 - 50 - 21 = 19px of visible gap between label-bottom and
-    // first-row tile-top — reads as "label THEN row" cleanly.
-    text(this, cx, firstRowY - 90, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    // 60 - 32 - 21 = 7px of visible gap between label-bottom and
+    // first-row tile-top — tight but clean. Smaller offset than the
+    // 3-rows-need-headroom calc in sprint 1.1 (90px above 116-tall
+    // tiles) because the 64-tall tiles need less leading.
+    text(this, cx, firstRowY - 60, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
 
-    // Sprint 1.1 Story 8 — grid layout. Tiles wrap to MAX_PER_ROW per
-    // row; rows stack downward from `firstRowY`. EACH row is centered
-    // independently relative to the canvas — so a partial last row
-    // (e.g. 2 mult tiles after 4 add/sub tiles) sits centered beneath
-    // the row above it, NOT left-aligned with column 0. Reads as
-    // visually balanced for a kid scanning down the grid. When Phase
-    // 1.5+1.6 land at 8 tiles, both rows become full and the
-    // already-centered layout still looks pristine.
+    // Sprint 1.5 — grid layout now wraps to 3 rows for 9 tiles. Tiles
+    // are 64px tall (was 116 — see Sprint 1.5 vertical-anchors comment
+    // in create() for why we shrank). 220px wide kept from sprint
+    // 0.7.5 — still fits "Subtract within 20" label with margin.
+    // Subtitle DROPPED for math tiles — descriptions like "Two numbers,
+    // sum at most 10." were useful for first-timers but redundant once
+    // a player knows the math types. The PlaceholderButton's
+    // no-subtitle path auto-centers the label on y=0 (vs y=-28 when a
+    // subtitle is present).
     //
-    // Tile dimensions:
-    //   - width 220 (sprint 0.7.5 Story 5) — fits "Subtract within 20"
-    //     label with margin
-    //   - height 116 (sprint 1.1 wrap-up) — bumped from 100 to give the
-    //     larger wrapped subtitle (typography.ts buttonSubtitle 17 → 21)
-    //     vertical room without colliding with the label or the bottom
-    //     border. 21px subtitle × 2 lines × ~1.3 line-height ≈ 54px;
-    //     label-Y stays at -28 (24px text spans -40 to -16); subtitle-Y
-    //     stays at +22 (2-line block spans -5 to +49); 116-tall tile
-    //     spans -58 to +58 → top padding 18, bottom padding 9. Fits.
-    //
-    // Row-gap 16 unchanged — visual rhythm carries.
+    // Per-row centering preserved from sprint 1.1 Story 8 — partial
+    // last row (row 3 with 1 tile when there are 9 tiles total) sits
+    // centered relative to the canvas, not left-aligned.
     const tileWidth = 220;
-    const tileHeight = 116;
+    const tileHeight = 64;
     const colGap = 20;
-    const rowGap = 16;
+    const rowGap = 12;
     const MAX_PER_ROW = 4;
 
     // Pre-compute how many tiles land on each row so we can center
@@ -216,7 +215,10 @@ export class DifficultyScene extends Phaser.Scene {
         width: tileWidth,
         height: tileHeight,
         label: gen.label,
-        subtitle: gen.description,
+        // Subtitle DROPPED in Sprint 1.5 — see renderMathTypes header
+        // comment for the rationale. `gen.description` is still
+        // available on the generator object for future use (tooltips,
+        // help screen, etc.) — it just doesn't render on the tile.
         disabled: !isImplemented,
         onClick: isImplemented
           ? () => {
