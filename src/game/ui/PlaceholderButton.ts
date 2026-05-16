@@ -109,9 +109,25 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // muted (Sprint 0.7.5 Story 3). Container-anchored, so use textStyle()
     // to spread into this.add.text rather than the scene-absolute text()
     // helper.
+    //
+    // Vertical positioning (Sprint 0.7.5 Story 5 — second pass).
+    // When a subtitle exists, label and subtitle need enough vertical
+    // separation that the label-bottom doesn't kiss the subtitle-top
+    // (especially when the subtitle wraps to 2 lines, where Phaser
+    // centers the WHOLE block — pushing the first line significantly
+    // ABOVE the y-coordinate). The chosen offsets give:
+    //   - Label centered at y=-28: spans roughly y=-43 to y=-13 (24px text)
+    //   - Subtitle (2 lines wrapped) centered at y=22: spans roughly
+    //     y=0 to y=44 (17px text × 2 lines × ~22px line-height)
+    //   - Visible gap between label-bottom (-13) and subtitle-top (0) ≈ 13px
+    // For SINGLE-LINE subtitles ("Coming soon."), the gap reads as
+    // "relaxed" rather than tight; for NO-subtitle buttons the label
+    // stays centered at y=0 (unchanged). For TALLER tiles (GameSelect
+    // 200px), the centered text block leaves more padding top/bottom,
+    // which still reads cleanly.
     const label = opts.scene.add.text(
       0,
-      opts.subtitle ? -10 : 0,
+      opts.subtitle ? -28 : 0,
       opts.label,
       textStyle('buttonLabel'),
     );
@@ -120,14 +136,13 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.textChildren.push(label);
 
     if (opts.subtitle) {
-      // Sprint 0.7.5 Story 5 — subtitle uses Phaser wordWrap so long
-      // descriptions (e.g. "Two numbers, sum at most 10." on the Add to
-      // 10 tile) wrap to a second line instead of bleeding past the
-      // tile's right edge after the Story 1 font bump. 16px of total
-      // horizontal padding (8 each side) keeps text away from the
-      // border. Centered alignment keeps wrapped lines visually
-      // balanced under the label above them.
-      const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
+      // Phaser wordWrap so long descriptions (e.g. "Two numbers, sum at
+      // most 10." on the Add to 10 tile) wrap to a second line instead
+      // of bleeding past the tile's right edge after the Story 1 font
+      // bump. 16px of total horizontal padding (8 each side) keeps text
+      // away from the border. Centered alignment keeps wrapped lines
+      // visually balanced under the label above them.
+      const subtitle = opts.scene.add.text(0, 22, opts.subtitle, {
         ...textStyle('buttonSubtitle'),
         wordWrap: { width: opts.width - 16 },
         align: 'center',

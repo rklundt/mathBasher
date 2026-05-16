@@ -70,11 +70,12 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    // Vertical anchors. Sprint 0.7.5 Story 5 — math row moved up
-    // (0.32 → 0.30) and speed row moved down (0.62 → 0.66) for more
-    // breathing room between the two sections; the prior spacing felt
-    // tight after Story 1's font bump enlarged every label.
-    this.renderMathTypes(cx, height * 0.3);
+    // Vertical anchors. Sprint 0.7.5 Story 5 (second pass after
+    // playtest) — math row dropped from 0.30 → 0.34 so the now-taller
+    // 32px-bold sectionLabel ("Math Type") clears the tile tops cleanly
+    // instead of overlapping into them. Speed row stays at 0.66; that
+    // section still has comfortable breathing room.
+    this.renderMathTypes(cx, height * 0.34);
     this.renderSpeeds(cx, height * 0.66);
     this.renderStartButton(cx, height * 0.85);
     this.renderBackButton(cx - 250, height * 0.85);
@@ -132,7 +133,14 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, y: number): void {
-    text(this, cx, y - 60, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    // Section label sits 90px above the row center. Math tiles are
+    // 100px tall (so tile-top = y - 50); the 32px bold sectionLabel kind
+    // occupies ~42px vertical (centered on its y-coord = ±21). With
+    // 90 - 50 - 21 = 19px of visible gap between label-bottom and
+    // tile-top, the section reads as "label THEN row" instead of
+    // "label overlapping row." Speed uses a smaller offset because its
+    // tiles are shorter (64px).
+    text(this, cx, y - 90, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
@@ -173,10 +181,13 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderSpeeds(cx: number, y: number): void {
-    // Section label sits 60px above the row (was 50 pre-Story 5) to
-    // give the now-larger sectionLabel kind (32px bold) a bit more
-    // breathing room from the tiles below.
-    text(this, cx, y - 60, 'Speed', 'sectionLabel').setOrigin(0.5);
+    // Section label sits 75px above the row center. Speed tiles are
+    // 64px tall (tile-top = y - 32); 32px bold sectionLabel half-height
+    // ≈ 21. Visible gap between label-bottom and tile-top = 75 - 32 -
+    // 21 = 22px. Smaller offset than Math Type because the tiles
+    // themselves are shorter — keeps the proportional spacing
+    // consistent across both sections.
+    text(this, cx, y - 75, 'Speed', 'sectionLabel').setOrigin(0.5);
 
     const speeds: { key: SpeedKey; label: string }[] = [
       { key: 'slow', label: 'Slow' },
