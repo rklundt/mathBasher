@@ -91,9 +91,15 @@ export const config = {
      * Hero (yellow shooter block) horizontal movement speed.
      *
      * Tuning history (newest first):
-     *   v0.7.5 playtest — even after the v0.6.3 +15% bump, the shooter
+     *   v0.7.5 Story 7 — Story 2's +25% bump helped, but at fast
+     *     difficulty the shooter still felt a touch slow against the
+     *     falling blocks. Another +10% on top: 316 → 348 px/s
+     *     (316 × 1.10 = 347.6, rounded to 348). Cumulative 1.58× the
+     *     v0.5 baseline (220 → 348).
+     *   v0.7.5 Story 2 — even after the v0.6.3 +15% bump, the shooter
      *     still felt too slow against the (also-fast) falling blocks.
-     *     +25% from 253 → 316 px/s. Cumulative 1.44× the v0.5 baseline.
+     *     +25% from 253 → 316 px/s. Cumulative 1.44× the v0.5 baseline
+     *     at the time.
      *   v0.6.3 playtest — paired with sprint 0.6's −15% block descent,
      *     the shooter still couldn't physically traverse to the right
      *     answer in time once the player committed. +15% restores the
@@ -104,7 +110,7 @@ export const config = {
      * Block descent rate (config.scoring.speed.{slow,medium,fast}) is
      * NOT touched by these changes — only shooter speed moves.
      */
-    runSpeedPxPerSec: 316,
+    runSpeedPxPerSec: 348,
     fireCooldownMs: 200,
     projectileSpeedPxPerSec: 800,
   },
