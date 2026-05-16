@@ -73,16 +73,20 @@ export class DifficultyScene extends Phaser.Scene {
     // Vertical anchors. Sprint 1.1 Story 8 — with 6 implemented math
     // types (after Phase 1 generators landed), the math grid wraps to
     // 2 rows of 4-per-row at 220px tile width. Each math row spans
-    // (tile-height + row-gap) = 100 + 16 = 116 design pixels. The
-    // grid origin (FIRST row's center Y) stays at 0.34 from sprint
-    // 0.7.5; subsequent rows stack downward. Speed row drops 0.66 →
-    // 0.78 to clear the second math row; Start/Back drop 0.85 → 0.92
-    // to keep proportional spacing. With AGPL footer at 0.955 (32px
-    // out of 720), Start/Back at 0.92 = y=662, button height 56 →
-    // bottom at y=690; footer top at y=688. 2px of overlap with the
-    // footer's translucent bg, but the footer text + click zone are
-    // clear (footer text at center y=704, fontSize 14 → top y≈697,
-    // well below button bottom). Verified safe.
+    // (tile-height + row-gap) = 116 + 16 = 132 design pixels (tile
+    // height bumped 100 → 116 in sprint 1.1 wrap-up to fit the larger
+    // mobile subtitle). The grid origin (FIRST row's center Y) stays
+    // at 0.34 from sprint 0.7.5; subsequent rows stack downward.
+    // Speed row drops 0.66 → 0.78 to clear the second math row;
+    // Start/Back drop 0.85 → 0.92 to keep proportional spacing. With
+    // AGPL footer at 0.955 (32px out of 720), Start/Back at 0.92 =
+    // y=662, button height 56 → bottom at y=690; footer top at y=688.
+    // 2px of overlap with the footer's translucent bg, but the footer
+    // text + click zone are clear (footer text at center y=704,
+    // fontSize 14 → top y≈697, well below button bottom). Verified safe.
+    //
+    // Math row 2 bottom after the 1.1 wrap-up tile-height bump:
+    // 245 + 132 + 58 = 435; gap to Speed at y=562 = 127px. Plenty.
     //
     // When Phase 1.5 (division) + 1.6 (mixed) land → 8 tiles, 2 full
     // rows of 4 fits the same anchor positions, no further reflow.
@@ -163,11 +167,20 @@ export class DifficultyScene extends Phaser.Scene {
     // 1.5+1.6 land at 8 tiles, both rows become full and the
     // already-centered layout still looks pristine.
     //
-    // Tile dimensions inherited from sprint 0.7.5 Story 5:
-    //   220×100 — fits "Subtract within 20" label + 2-line wrapped
-    //   subtitle without collisions.
+    // Tile dimensions:
+    //   - width 220 (sprint 0.7.5 Story 5) — fits "Subtract within 20"
+    //     label with margin
+    //   - height 116 (sprint 1.1 wrap-up) — bumped from 100 to give the
+    //     larger wrapped subtitle (typography.ts buttonSubtitle 17 → 21)
+    //     vertical room without colliding with the label or the bottom
+    //     border. 21px subtitle × 2 lines × ~1.3 line-height ≈ 54px;
+    //     label-Y stays at -28 (24px text spans -40 to -16); subtitle-Y
+    //     stays at +22 (2-line block spans -5 to +49); 116-tall tile
+    //     spans -58 to +58 → top padding 18, bottom padding 9. Fits.
+    //
+    // Row-gap 16 unchanged — visual rhythm carries.
     const tileWidth = 220;
-    const tileHeight = 100;
+    const tileHeight = 116;
     const colGap = 20;
     const rowGap = 16;
     const MAX_PER_ROW = 4;

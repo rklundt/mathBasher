@@ -3,7 +3,8 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { config } from '@/core/config';
-import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { shuffleAnswers } from '@/math/distractors';
+import { pickMultiplicationDistractors } from '@/math/multDistractors';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -21,6 +22,11 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * 12×12 is a clear next-step level for a kid who's mastered 10×10.
  * Splitting them gives a kid an explicit "I conquered the 10s, now I'm
  * ready for 12s" progression marker rather than mixing all 4..144 together.
+ *
+ * **Distractors via `pickMultiplicationDistractors`** — same near-miss
+ * neighborhood strategy as `mult-to-100`. See `multDistractors.ts` for the
+ * algorithm rationale (boundary verification covers BOTH the [2,10] and
+ * [2,12] factor ranges).
  *
  * TODO (deferred — sprint 1.x): same `factorSubset?: number[]` plumbing
  * call-out as in `multTo100.ts`.
@@ -41,10 +47,14 @@ const multTo144: QuestionGenerator = {
     const correctAnswer = a * b;
 
     const distractorCount = config.layout.targetLanes - 1;
-    const distractors = pickDistractors(correctAnswer, {
+    const distractors = pickMultiplicationDistractors({
+      a,
+      b,
+      factorMin: FACTOR_MIN,
+      factorMax: FACTOR_MAX,
+      productMin: PRODUCT_MIN,
+      productMax: PRODUCT_MAX,
       count: distractorCount,
-      min: PRODUCT_MIN,
-      max: PRODUCT_MAX,
       rng,
     });
 

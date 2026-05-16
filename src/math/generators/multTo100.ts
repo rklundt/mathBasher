@@ -3,7 +3,8 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { config } from '@/core/config';
-import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { shuffleAnswers } from '@/math/distractors';
+import { pickMultiplicationDistractors } from '@/math/multDistractors';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -25,11 +26,13 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * **Operator glyph: `×` (Unicode U+00D7), NOT ASCII `x`.** ASCII `x` reads as
  * a variable in math; the proper times sign disambiguates.
  *
- * **Distractors: 3 distinct integers from [4, 100] not equal to the product.**
- * The pool is large (96 candidates after excluding the correct), so naive
- * `pickDistractors` works fine. A future improvement could bias distractors
- * toward "near-miss" products (e.g. for 7×8=56, prefer 48/54/63 over random
- * ints) — that's a separate story; out of scope here.
+ * **Distractors: near-miss products from a ±3 factor neighborhood.** Sprint
+ * 1.1 wrap-up improvement (Support reviewer feedback): the generic random-int
+ * `pickDistractors` produced choice sets like `7 × 8 = ?` → `[56, 12, 91, 33]`
+ * — three nonsense distractors a kid could eliminate without knowing the
+ * fact. Switched to `pickMultiplicationDistractors` which prefers products
+ * of nearby factor pairs (`6×8=48`, `7×9=63`, `8×8=64`, etc.) so every
+ * choice is a plausible product and the kid actually has to know the fact.
  *
  * TODO (deferred — sprint 1.x): expose an optional `factorSubset?: number[]`
  * option to restrict the practice set (e.g. "I only want the 7s, 8s, 9s
@@ -53,10 +56,14 @@ const multTo100: QuestionGenerator = {
     const correctAnswer = a * b;
 
     const distractorCount = config.layout.targetLanes - 1;
-    const distractors = pickDistractors(correctAnswer, {
+    const distractors = pickMultiplicationDistractors({
+      a,
+      b,
+      factorMin: FACTOR_MIN,
+      factorMax: FACTOR_MAX,
+      productMin: PRODUCT_MIN,
+      productMax: PRODUCT_MAX,
       count: distractorCount,
-      min: PRODUCT_MIN,
-      max: PRODUCT_MAX,
       rng,
     });
 

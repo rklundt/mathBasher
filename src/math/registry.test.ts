@@ -10,16 +10,17 @@ import subTo10 from '@/math/generators/subTo10';
 import subTo20 from '@/math/generators/subTo20';
 import multTo100 from '@/math/generators/multTo100';
 import multTo144 from '@/math/generators/multTo144';
-import { generators, getGenerator, getImplementedIds, makeStub } from '@/math/registry';
+import { generators, getGenerator, getImplementedIds } from '@/math/registry';
 
 /**
  * Registry contract tests.
  *
- * Sprint 1.1 update: every Phase 1 generator now has a real implementation
- * (no live stubs in the registry). The stub-error-message contract is
- * still tested below — directly via `makeStub`, which is exported so
- * future sprints that pre-add a key to `config.scoring.mathDifficulty`
- * before writing the generator have a known-good helper to reach for.
+ * Sprint 1.1 update: every Phase 1 generator now has a real implementation;
+ * no live stubs remain in the registry. The previous `makeStub` helper was
+ * deleted (no production consumer; YAGNI). Future sprints that pre-add a
+ * key to `config.scoring.mathDifficulty` before writing the generator can
+ * restore the helper from git history — the registry header comment points
+ * at the canonical pattern.
  */
 describe('registry', () => {
   it('has a generator for every MathId in config.scoring.mathDifficulty (keyspace sync)', () => {
@@ -76,29 +77,4 @@ describe('registry', () => {
     });
   });
 
-  describe('makeStub helper (kept for future pre-registration use)', () => {
-    /**
-     * makeStub is no longer USED in the registry as of sprint 1.1, but it's
-     * still exported so a future sprint can pre-register a key before its
-     * generator lands. Lock the contract so it stays usable when needed.
-     *
-     * Use any existing MathId for the test (the helper doesn't actually
-     * register itself anywhere — these instances are built and discarded
-     * in the test).
-     */
-    it('returns a generator marked isStub: true', () => {
-      const stub = makeStub('add-to-10', 'Add to 10');
-      expect(stub.isStub).toBe(true);
-      expect(stub.id).toBe('add-to-10');
-      expect(stub.label).toBe('Add to 10');
-      expect(stub.description).toBe('Coming soon.');
-    });
-
-    it('throws an actionable error from .generate() naming the missing path', () => {
-      const stub = makeStub('add-to-10', 'Add to 10');
-      expect(() => stub.generate()).toThrow(/'add-to-10' is a stub/);
-      expect(() => stub.generate()).toThrow(/getImplementedIds/);
-      expect(() => stub.generate()).toThrow(/src\/math\/generators\/add-to-10\.ts/);
-    });
-  });
 });

@@ -12,37 +12,6 @@ import multTo144 from '@/math/generators/multTo144';
 import type { QuestionGenerator } from '@/math/types';
 
 /**
- * Stub generator for math types whose real implementations haven't landed yet.
- *
- * Keeping these in the registry keeps the keyspace in sync with
- * `config.scoring.mathDifficulty` so the difficulty-select UI can render every
- * tile (with the stubbed ones disabled). Calling `.generate()` on a stub throws
- * a clear error, surfacing accidental use.
- *
- * As of sprint 1.1 every Phase 1 generator is implemented, so `makeStub` has
- * no current consumers. Kept (and exported) so future sprints can register a
- * stub when they pre-add a new key to `config.scoring.mathDifficulty` ahead
- * of writing the generator.
- */
-export function makeStub(id: MathId, label: string): QuestionGenerator {
-  return {
-    id,
-    label,
-    description: 'Coming soon.',
-    isStub: true,
-    generate(): never {
-      throw new Error(
-        `Generator '${id}' is a stub — the real implementation has not landed yet. ` +
-          `Stubs stay in the registry so the difficulty-select UI can render every tile ` +
-          `(with stubbed ones disabled). Either filter via getImplementedIds() before ` +
-          `calling generate(), or implement src/math/generators/${id}.ts and wire it ` +
-          `into src/math/registry.ts.`,
-      );
-    },
-  };
-}
-
-/**
  * Map every `MathId` (== every key of `config.scoring.mathDifficulty`) to its
  * generator. Adding a new math type means: (1) adding a key to
  * `config.scoring.mathDifficulty`, (2) writing a generator file, (3) wiring it
@@ -51,7 +20,12 @@ export function makeStub(id: MathId, label: string): QuestionGenerator {
  * Keys must stay in sync with config; the test suite verifies this.
  *
  * Sprint 1.1: all Phase 1 generators (add-to-10/20, sub-to-10/20, mult-to-100/144)
- * are now real implementations. No stubs remain in the registry.
+ * are now real implementations. No stubs remain. If a future sprint pre-adds a
+ * key to `config.scoring.mathDifficulty` ahead of writing its generator,
+ * recreate the `makeStub(id, label)` helper from git history (sprints 0.2 → 1.1
+ * for the canonical pattern: returns a `QuestionGenerator` with `isStub: true`
+ * whose `.generate()` throws an actionable error pointing at the missing
+ * generator file).
  */
 export const generators: Record<MathId, QuestionGenerator> = {
   'add-to-10': addTo10,
