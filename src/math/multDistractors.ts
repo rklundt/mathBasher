@@ -13,8 +13,8 @@ import { defaultRng } from '@/math/rng';
  * generators) picks random integers from `[productMin, productMax]`. For
  * multiplication, that produces choice sets like `7 × 8 = ?` → `[56, 12, 91, 33]`
  * — three obvious-nonsense distractors that a kid can eliminate without
- * actually knowing the multiplication fact. The Support reviewer flagged this
- * in the sprint 1.1 wrap-up audit as weakening the practice loop.
+ * actually knowing the multiplication fact. Sprint 1.1 wrap-up playtest
+ * flagged this as weakening the practice loop.
  *
  * **Algorithm — "neighborhood of factor pairs":** start with a radius-1 cloud
  * around `(a, b)` (so factor offsets `da, db ∈ {-1, 0, 1}` minus the origin),

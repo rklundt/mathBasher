@@ -8,7 +8,8 @@ import { mulberry32 } from '@/test-utils/mulberry32';
 
 /**
  * Tests for the near-miss multiplication distractor picker introduced in
- * sprint 1.1 wrap-up (Support reviewer feedback). Locks in:
+ * sprint 1.1 wrap-up after playtest showed the random-int fallback
+ * weakened the practice loop. Locks in:
  *   1. Returned count == requested count
  *   2. Distractors are distinct + don't equal the correct answer
  *   3. Distractors fall within the documented product range

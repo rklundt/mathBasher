@@ -31,9 +31,9 @@ export interface QuestionGenerator {
   id: MathId;
   /** Short human-readable name used on the difficulty-select tile. */
   label: string;
-  // NOTE (sprint 1.5 wrap-up): the previous `description` field was deleted
-  // per Architect + Sr Dev should-fix items — it became dead code once
-  // DifficultyScene Story 5 dropped the subtitle rendering. If a future
+  // NOTE (sprint 1.5 wrap-up): the previous `description` field was
+  // deleted as dead code — it became unread once DifficultyScene
+  // Story 5 dropped the subtitle rendering. If a future
   // sprint adds tooltips, hover popups, or a help screen that needs
   // per-generator description text, restore the field from git history
   // (e.g. `git show HEAD~10:src/math/types.ts`); the prior commit had

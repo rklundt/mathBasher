@@ -283,8 +283,8 @@ export const config = {
     /**
      * DifficultyScene math-tile + Speed-tile grid dimensions.
      *
-     * Lifted to config in sprint 1.5 wrap-up (Architect should-fix
-     * mirroring the sprint 1.1 chassis-dims lift). The math-tile
+     * Lifted to config in sprint 1.5 wrap-up (mirroring the sprint 1.1
+     * chassis-dims lift). The math-tile
      * dimensions have been re-tuned in TWO consecutive sprints (1.1
      * went 100→116, 1.5 went 116→64 to fit 3 rows of 9 tiles), so
      * keeping them in config means the next layout iteration is a
@@ -335,8 +335,8 @@ export const config = {
      *  - `footerClearancePx` — vertical gap between the BOTTOM of the
      *    button's hit area and the TOP of the AttributionScene footer.
      *    Bumped to 16 (was 8) to prevent the hit-circle from bleeding
-     *    into the footer's Source-URL click zone (Senior Dev finding,
-     *    sprint 0.6 wrap-up review).
+     *    into the footer's Source-URL click zone (sprint 0.6 wrap-up
+     *    review finding).
      */
     touchFire: {
       radiusPx: 40,
