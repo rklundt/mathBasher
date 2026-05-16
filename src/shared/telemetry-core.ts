@@ -53,7 +53,15 @@ export type TelemetryPropName =
   | 'message'
   | 'nodeVersion'
   | 'error'
-  | 'from';
+  | 'from'
+  // Sprint 0.7.5 Story 4 — ButtonClicked event props.
+  // `label` — the button text (e.g. "Resume", "Settings", "FIRE", "Back", "−", "+")
+  // `sceneKey` — `scene.scene.key` of the active scene; distinguishes a "Back"
+  //   in Settings from a "Back" in DifficultyScene
+  // `source` — "pointer" | "keyboard"; tap/mouse vs. Tab+Enter activation
+  | 'label'
+  | 'sceneKey'
+  | 'source';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so

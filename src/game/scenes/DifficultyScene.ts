@@ -70,8 +70,15 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    this.renderMathTypes(cx, height * 0.32);
-    this.renderSpeeds(cx, height * 0.62);
+    // Vertical anchors. Sprint 0.7.5 Story 5 spec landed math at 0.30
+    // and Speed at 0.66; the second-pass playtest revealed the
+    // now-taller 32px-bold sectionLabel ("Math Type") was overlapping
+    // the tile tops at 0.30, so the math row was moved DOWN to 0.34
+    // (sectionLabel offset also bumped from 60 → 90 — see
+    // renderMathTypes). Speed row stays at 0.66; that section had
+    // comfortable breathing room and didn't need adjustment.
+    this.renderMathTypes(cx, height * 0.34);
+    this.renderSpeeds(cx, height * 0.66);
     this.renderStartButton(cx, height * 0.85);
     this.renderBackButton(cx - 250, height * 0.85);
 
@@ -128,11 +135,26 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, y: number): void {
-    text(this, cx, y - 50, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    // Section label sits 90px above the row center. Math tiles are
+    // 100px tall (so tile-top = y - 50); the 32px bold sectionLabel kind
+    // occupies ~42px vertical (centered on its y-coord = ±21). With
+    // 90 - 50 - 21 = 19px of visible gap between label-bottom and
+    // tile-top, the section reads as "label THEN row" instead of
+    // "label overlapping row." Speed uses a smaller offset because its
+    // tiles are shorter (64px).
+    text(this, cx, y - 90, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
-    const tileWidth = 200;
+    // Sprint 0.7.5 Story 5 — tile dimensions bumped 200×80 → 220×100.
+    // The wider tile fits "Subtract within 20" with margin and the
+    // taller tile gives the wrapped subtitle (PlaceholderButton's
+    // wordWrap, also new in Story 5) room to flow to a second line for
+    // longer descriptions like "Two numbers, sum at most 10." without
+    // colliding with the label or the bottom border. 4 tiles × 220 +
+    // 3 × 20px gap = 940px total — well within the 1280px design canvas.
+    const tileWidth = 220;
+    const tileHeight = 100;
     const gap = 20;
     const totalWidth = ids.length * tileWidth + (ids.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
@@ -145,7 +167,7 @@ export class DifficultyScene extends Phaser.Scene {
         x: startX + i * (tileWidth + gap),
         y,
         width: tileWidth,
-        height: 80,
+        height: tileHeight,
         label: gen.label,
         subtitle: gen.description,
         disabled: !isImplemented,
@@ -161,7 +183,13 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderSpeeds(cx: number, y: number): void {
-    text(this, cx, y - 50, 'Speed', 'sectionLabel').setOrigin(0.5);
+    // Section label sits 75px above the row center. Speed tiles are
+    // 64px tall (tile-top = y - 32); 32px bold sectionLabel half-height
+    // ≈ 21. Visible gap between label-bottom and tile-top = 75 - 32 -
+    // 21 = 22px. Smaller offset than Math Type because the tiles
+    // themselves are shorter — keeps the proportional spacing
+    // consistent across both sections.
+    text(this, cx, y - 75, 'Speed', 'sectionLabel').setOrigin(0.5);
 
     const speeds: { key: SpeedKey; label: string }[] = [
       { key: 'slow', label: 'Slow' },

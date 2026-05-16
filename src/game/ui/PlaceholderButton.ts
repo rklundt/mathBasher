@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
+import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelemetry';
 import {
   SLATE_BG,
   SLATE_HOVER,
@@ -14,11 +15,7 @@ import {
   FOCUS_BLUE,
   SELECTED_AMBER,
 } from '@/game/ui/uiPalette';
-import {
-  FONT_FAMILY,
-  TEXT_PRIMARY,
-  TEXT_BUTTON_SUBTITLE,
-} from '@/game/ui/typography';
+import { textStyle } from '@/game/ui/typography';
 
 export interface PlaceholderButtonOpts {
   scene: Phaser.Scene;
@@ -72,6 +69,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly border: Phaser.GameObjects.Rectangle;
   private readonly textChildren: Phaser.GameObjects.Text[] = [];
+  private readonly label: string;
   private _disabled: boolean;
   private _selected: boolean;
   private _focused = false;
@@ -81,6 +79,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     super(opts.scene, opts.x, opts.y);
     opts.scene.add.existing(this);
 
+    this.label = opts.label;
     this._disabled = opts.disabled ?? false;
     this._selected = opts.selected ?? false;
     this.onClick = opts.onClick;
@@ -106,20 +105,47 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.border.setFillStyle();
     this.add([this.bg, this.border]);
 
-    const label = opts.scene.add.text(0, opts.subtitle ? -10 : 0, opts.label, {
-      fontFamily: FONT_FAMILY,
-      fontSize: '20px',
-      color: TEXT_PRIMARY,
-    });
+    // TextKind 'buttonLabel' — 24px primary; 'buttonSubtitle' — 17px
+    // muted (Sprint 0.7.5 Story 3). Container-anchored, so use textStyle()
+    // to spread into this.add.text rather than the scene-absolute text()
+    // helper.
+    //
+    // Vertical positioning (Sprint 0.7.5 Story 5 — second pass).
+    // When a subtitle exists, label and subtitle need enough vertical
+    // separation that the label-bottom doesn't kiss the subtitle-top
+    // (especially when the subtitle wraps to 2 lines, where Phaser
+    // centers the WHOLE block — pushing the first line significantly
+    // ABOVE the y-coordinate). The chosen offsets give:
+    //   - Label centered at y=-28: spans roughly y=-43 to y=-13 (24px text)
+    //   - Subtitle (2 lines wrapped) centered at y=22: spans roughly
+    //     y=0 to y=44 (17px text × 2 lines × ~22px line-height)
+    //   - Visible gap between label-bottom (-13) and subtitle-top (0) ≈ 13px
+    // For SINGLE-LINE subtitles ("Coming soon."), the gap reads as
+    // "relaxed" rather than tight; for NO-subtitle buttons the label
+    // stays centered at y=0 (unchanged). For TALLER tiles (GameSelect
+    // 200px), the centered text block leaves more padding top/bottom,
+    // which still reads cleanly.
+    const label = opts.scene.add.text(
+      0,
+      opts.subtitle ? -28 : 0,
+      opts.label,
+      textStyle('buttonLabel'),
+    );
     label.setOrigin(0.5);
     this.add(label);
     this.textChildren.push(label);
 
     if (opts.subtitle) {
-      const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px',
-        color: TEXT_BUTTON_SUBTITLE,
+      // Phaser wordWrap so long descriptions (e.g. "Two numbers, sum at
+      // most 10." on the Add to 10 tile) wrap to a second line instead
+      // of bleeding past the tile's right edge after the Story 1 font
+      // bump. 16px of total horizontal padding (8 each side) keeps text
+      // away from the border. Centered alignment keeps wrapped lines
+      // visually balanced under the label above them.
+      const subtitle = opts.scene.add.text(0, 22, opts.subtitle, {
+        ...textStyle('buttonSubtitle'),
+        wordWrap: { width: opts.width - 16 },
+        align: 'center',
       });
       subtitle.setOrigin(0.5);
       this.add(subtitle);
@@ -153,12 +179,36 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // pointerdown works the same for mouse, touch, and pen via Phaser's
     // unified pointer abstraction.
     this.bg.on('pointerdown', () => {
-      if (this._disabled) return;
-      this.playClickSfx();
-      this.onClick?.();
+      this.handleActivation('pointer');
     });
 
     this.refreshAppearance();
+  }
+
+  /**
+   * Single chokepoint for "the button was activated." Both the pointerdown
+   * handler (mouse/touch) and the public `activate()` method (keyboard
+   * Enter/Space via KeyboardNavigator) funnel through here. Doing it once:
+   *  - Telemetry emission stays consistent across activation paths
+   *  - Disabled-state guard is in one place (no risk of one path missing it)
+   *  - Future "click animation" hooks attach in one place
+   *
+   * Order matters:
+   *  1. Disabled-state guard (no SFX, no telemetry, no onClick)
+   *  2. Telemetry FIRST — emit before SFX/onClick so the event still fires
+   *     even if onClick throws (the handler running matters more than the
+   *     order of audible feedback for analytics fidelity)
+   *  3. SFX
+   *  4. onClick callback
+   */
+  private handleActivation(source: ButtonClickSource): void {
+    if (this._disabled) return;
+    // Sprint 0.7.5 Story 4 — telemetry FIRST, before SFX/onClick, so the
+    // event still fires even if onClick throws. See buttonTelemetry.ts
+    // for the event-shape contract.
+    emitButtonClicked(this.label, this.scene.scene.key, source);
+    this.playClickSfx();
+    this.onClick?.();
   }
 
   /**
@@ -202,11 +252,11 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
    * Programmatically activate the button (used by KeyboardNavigator on
    * Enter/Space). No-op when disabled. Plays the same click SFX as a
    * mouse/touch activation so keyboard users get audible confirmation.
+   * Routes through `handleActivation('keyboard')` so the same telemetry +
+   * SFX + onClick chain runs regardless of activation source.
    */
   activate(): void {
-    if (this._disabled) return;
-    this.playClickSfx();
-    this.onClick?.();
+    this.handleActivation('keyboard');
   }
 
   private refreshAppearance(): void {
