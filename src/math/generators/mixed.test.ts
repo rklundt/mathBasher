@@ -34,8 +34,7 @@ import '@/math/registry';
 describe('mixed generator', () => {
   it('has the expected identity', () => {
     expect(mixed.id).toBe('mixed');
-    expect(mixed.label).toBe('Mixed');
-    expect(mixed.description).toMatch(/random/i);
+    expect(mixed.label).toBe('Mixed Math');
     expect(mixed.isStub).toBeFalsy();
   });
 

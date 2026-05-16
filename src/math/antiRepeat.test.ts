@@ -163,7 +163,6 @@ describe('Anti-repeat sliding window (sprint 1.1 wrap-up)', () => {
     const fakeGen = {
       id: 'add-to-10' as const, // satisfy type; not used
       label: 'fake',
-      description: 'fake',
       generate: () => {
         drawCount += 1;
         return { prompt: '1 + 1 = ?', correctAnswer: 2, choices: [2, 3, 4, 5] };

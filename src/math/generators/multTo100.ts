@@ -47,7 +47,6 @@ const PRODUCT_MAX = FACTOR_MAX * FACTOR_MAX; // 100
 const multTo100: QuestionGenerator = {
   id: 'mult-to-100',
   label: 'Multiply 10×10',
-  description: 'Tables up to 10×10.',
   generate(rng = defaultRng): Question {
     // Factor-uniform: a, b independently uniform in [2, 10].
     const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 9

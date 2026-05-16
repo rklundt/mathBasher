@@ -11,7 +11,6 @@ describe('divTo144 generator', () => {
   it('has the expected identity', () => {
     expect(divTo144.id).toBe('div-to-144');
     expect(divTo144.label).toBe('Divide 12×12');
-    expect(divTo144.description).toMatch(/up to 12×12/i);
     expect(divTo144.isStub).toBeFalsy();
   });
 

@@ -153,36 +153,28 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, firstRowY: number): void {
-    // Section label sits 60px above the FIRST row's center. Math tiles
-    // are 64px tall (so tile-top = y - 32); the 32px bold sectionLabel
-    // kind occupies ~42px vertical (centered on its y-coord = ±21).
-    // 60 - 32 - 21 = 7px of visible gap between label-bottom and
-    // first-row tile-top — tight but clean. Smaller offset than the
-    // 3-rows-need-headroom calc in sprint 1.1 (90px above 116-tall
-    // tiles) because the 64-tall tiles need less leading.
-    text(this, cx, firstRowY - 60, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    // Sprint 1.5 wrap-up — all geometry sourced from
+    // config.layout.difficultyTile. See the tuning-history comment
+    // on that config block for the back-and-forth that landed us here.
+    const dt = config.layout.difficultyTile;
+    text(this, cx, firstRowY - dt.mathSectionLabelOffsetY, 'Math Type', 'sectionLabel').setOrigin(
+      0.5,
+    );
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
 
-    // Sprint 1.5 — grid layout now wraps to 3 rows for 9 tiles. Tiles
-    // are 64px tall (was 116 — see Sprint 1.5 vertical-anchors comment
-    // in create() for why we shrank). 220px wide kept from sprint
-    // 0.7.5 — still fits "Subtract within 20" label with margin.
-    // Subtitle DROPPED for math tiles — descriptions like "Two numbers,
-    // sum at most 10." were useful for first-timers but redundant once
-    // a player knows the math types. The PlaceholderButton's
-    // no-subtitle path auto-centers the label on y=0 (vs y=-28 when a
-    // subtitle is present).
-    //
     // Per-row centering preserved from sprint 1.1 Story 8 — partial
     // last row (row 3 with 1 tile when there are 9 tiles total) sits
-    // centered relative to the canvas, not left-aligned.
-    const tileWidth = 220;
-    const tileHeight = 64;
-    const colGap = 20;
-    const rowGap = 12;
-    const MAX_PER_ROW = 4;
+    // centered relative to the canvas, not left-aligned. Subtitle is
+    // dropped for math tiles per sprint 1.5 Story 5 — the labels alone
+    // are self-descriptive. (Mixed renamed "Mixed Math" in sprint 1.5
+    // wrap-up so its label is self-descriptive without a subtitle.)
+    const tileWidth = dt.mathWidthPx;
+    const tileHeight = dt.mathHeightPx;
+    const colGap = dt.mathColGapPx;
+    const rowGap = dt.mathRowGapPx;
+    const MAX_PER_ROW = dt.mathMaxPerRow;
 
     // Pre-compute how many tiles land on each row so we can center
     // each row's start-x against ITS tile count (not against
@@ -216,9 +208,12 @@ export class DifficultyScene extends Phaser.Scene {
         height: tileHeight,
         label: gen.label,
         // Subtitle DROPPED in Sprint 1.5 — see renderMathTypes header
-        // comment for the rationale. `gen.description` is still
-        // available on the generator object for future use (tooltips,
-        // help screen, etc.) — it just doesn't render on the tile.
+        // comment for the rationale. Sprint 1.5 wrap-up also DELETED
+        // the now-dead `gen.description` field from the
+        // QuestionGenerator type (was unread after Story 5). If a
+        // future sprint adds tooltips or a help screen, restore the
+        // field from git history — types.ts has a comment pointing at
+        // the prior commit.
         disabled: !isImplemented,
         onClick: isImplemented
           ? () => {
@@ -232,21 +227,18 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderSpeeds(cx: number, y: number): void {
-    // Section label sits 75px above the row center. Speed tiles are
-    // 64px tall (tile-top = y - 32); 32px bold sectionLabel half-height
-    // ≈ 21. Visible gap between label-bottom and tile-top = 75 - 32 -
-    // 21 = 22px. Smaller offset than Math Type because the tiles
-    // themselves are shorter — keeps the proportional spacing
-    // consistent across both sections.
-    text(this, cx, y - 75, 'Speed', 'sectionLabel').setOrigin(0.5);
+    // All geometry from config.layout.difficultyTile (sprint 1.5
+    // wrap-up lift). See that config block for tuning history.
+    const dt = config.layout.difficultyTile;
+    text(this, cx, y - dt.speedSectionLabelOffsetY, 'Speed', 'sectionLabel').setOrigin(0.5);
 
     const speeds: { key: SpeedKey; label: string }[] = [
       { key: 'slow', label: 'Slow' },
       { key: 'medium', label: 'Medium' },
       { key: 'fast', label: 'Fast' },
     ];
-    const tileWidth = 160;
-    const gap = 20;
+    const tileWidth = dt.speedWidthPx;
+    const gap = dt.speedGapPx;
     const totalWidth = speeds.length * tileWidth + (speeds.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
 
@@ -256,7 +248,7 @@ export class DifficultyScene extends Phaser.Scene {
         x: startX + i * (tileWidth + gap),
         y,
         width: tileWidth,
-        height: 64,
+        height: dt.speedHeightPx,
         label: s.label,
         onClick: () => {
           Settings.setSpeed(s.key);

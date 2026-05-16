@@ -11,7 +11,6 @@ describe('divTo100 generator', () => {
   it('has the expected identity', () => {
     expect(divTo100.id).toBe('div-to-100');
     expect(divTo100.label).toBe('Divide 10×10');
-    expect(divTo100.description).toMatch(/up to 10×10/i);
     expect(divTo100.isStub).toBeFalsy();
   });
 

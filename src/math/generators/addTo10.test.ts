@@ -11,7 +11,6 @@ describe('addTo10 generator', () => {
   it('has the expected identity', () => {
     expect(addTo10.id).toBe('add-to-10');
     expect(addTo10.label).toBe('Add to 10');
-    expect(addTo10.description).toMatch(/sum at most 10/i);
   });
 
   describe('1000 sampled questions (seeded)', () => {

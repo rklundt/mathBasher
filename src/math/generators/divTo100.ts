@@ -43,7 +43,6 @@ const FACTOR_MAX = 10;
 const divTo100: QuestionGenerator = {
   id: 'div-to-100',
   label: 'Divide 10×10',
-  description: 'Inverse of tables up to 10×10.',
   generate(rng = defaultRng): Question {
     const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 9
     const divisor = FACTOR_MIN + Math.floor(rng() * factorRange);

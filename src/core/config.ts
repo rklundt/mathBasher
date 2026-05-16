@@ -281,6 +281,49 @@ export const config = {
       tileH: 200,
     },
     /**
+     * DifficultyScene math-tile + Speed-tile grid dimensions.
+     *
+     * Lifted to config in sprint 1.5 wrap-up (Architect should-fix
+     * mirroring the sprint 1.1 chassis-dims lift). The math-tile
+     * dimensions have been re-tuned in TWO consecutive sprints (1.1
+     * went 100→116, 1.5 went 116→64 to fit 3 rows of 9 tiles), so
+     * keeping them in config means the next layout iteration is a
+     * 1-line edit — not a code change to DifficultyScene + the
+     * tuning-history comment block.
+     *
+     * Tuning history:
+     *   v1.5 (current): mathTile 220×64, Speed 160×64. 3-row math
+     *     grid (4+4+1) fits 9 implemented generators. Tiles match
+     *     Speed-button height for visual rhythm. Subtitle dropped
+     *     on math tiles (Story 5) so a 64-tall tile is sufficient.
+     *   v1.1 wrap-up: 220×116 (subtitle wrapping needed the height).
+     *   v0.7.5: 200×80 baseline.
+     */
+    difficultyTile: {
+      mathWidthPx: 220,
+      mathHeightPx: 64,
+      mathColGapPx: 20,
+      mathRowGapPx: 12,
+      mathMaxPerRow: 4,
+      speedWidthPx: 160,
+      speedHeightPx: 64,
+      speedGapPx: 20,
+      /**
+       * Vertical offset (in design pixels) of the section label ABOVE
+       * the FIRST math row's center. The 32px-bold sectionLabel kind
+       * occupies ~42px (centered on its y-coord = ±21). 60 - 32 - 21 =
+       * 7px of visible gap between label-bottom and first-row tile-top.
+       */
+      mathSectionLabelOffsetY: 60,
+      /**
+       * Same idea for Speed. Speed tile is 64 tall, so offset 75
+       * gives 22px of gap between label-bottom and tile-top — slightly
+       * more breathing room than Math row (which has 3 rows of tiles
+       * to budget for vertically).
+       */
+      speedSectionLabelOffsetY: 75,
+    },
+    /**
      * On-screen FIRE button (`TouchFireButton`) sizing + positioning.
      * Tunable from config so a playtest tweak (button bigger / smaller /
      * higher / left-handed) is a 1-line change instead of an edit to

@@ -48,14 +48,16 @@ describe('registry', () => {
     });
   });
 
-  it('every registered generator has a non-empty label and description', () => {
+  it('every registered generator has a non-empty label', () => {
+    // Sprint 1.5 wrap-up — `description` field was deleted as dead code
+    // (DifficultyScene Story 5 dropped subtitle rendering). If a future
+    // sprint restores description for tooltips, add the
+    // `expect(gen.description...)` assertion back here.
     const ids = Object.keys(generators) as MathId[];
     for (const id of ids) {
       const gen = generators[id];
       expect(typeof gen.label, `'${id}' label`).toBe('string');
       expect(gen.label.length, `'${id}' label is empty`).toBeGreaterThan(0);
-      expect(typeof gen.description, `'${id}' description`).toBe('string');
-      expect(gen.description.length, `'${id}' description is empty`).toBeGreaterThan(0);
     }
   });
 

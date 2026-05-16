@@ -24,7 +24,6 @@ const MINUEND_MAX = 20;
 const subTo20: QuestionGenerator = {
   id: 'sub-to-20',
   label: 'Subtract within 20',
-  description: 'Take away, results 0 to 20.',
   generate(rng = defaultRng): Question {
     const resultRange = RESULT_MAX - RESULT_MIN + 1; // 21
     const correctAnswer = RESULT_MIN + Math.floor(rng() * resultRange);

@@ -45,18 +45,46 @@ export type MixedDelegatePicker = (rng: () => number) => Question;
 let _picker: MixedDelegatePicker | null = null;
 
 /**
- * Inject the delegate-picker function. Called by registry.ts ONCE, right
- * after its `generators` map is defined. Subsequent calls overwrite the
- * picker — useful for test isolation but not used in production.
+ * Inject the delegate-picker function. Called by registry.ts EXACTLY
+ * ONCE, right after its `generators` map is defined. Sprint 1.5 wrap-up
+ * (InfoSec + Sr Dev should-fix): throws on second call to enforce the
+ * write-once contract — a second call would indicate a programming
+ * error (e.g. a runtime bundle override or a missed test cleanup) and
+ * silently overwriting would mask the bug. If a future test genuinely
+ * needs to swap the picker, use `__resetMixedDelegateForTests()` below
+ * (test-only escape hatch).
  */
 export function setMixedDelegate(picker: MixedDelegatePicker): void {
+  if (_picker !== null) {
+    throw new Error(
+      'setMixedDelegate called twice — write-once contract violated. ' +
+        'This usually means registry.ts was loaded twice (test isolation bug) ' +
+        'or a foreign module attempted to override the production picker. ' +
+        'For legitimate test re-injection, call __resetMixedDelegateForTests() first.',
+    );
+  }
   _picker = picker;
+}
+
+/**
+ * Test-only escape hatch — resets `_picker` so a subsequent
+ * `setMixedDelegate` call won't throw. Production code MUST NOT call
+ * this. Named with `__` prefix to flag the unusual nature; production
+ * code that wants to swap pickers should be flagged in review.
+ */
+export function __resetMixedDelegateForTests(): void {
+  _picker = null;
 }
 
 const mixed: QuestionGenerator = {
   id: 'mixed',
-  label: 'Mixed',
-  description: 'Random from all math types.',
+  // Sprint 1.5 wrap-up — renamed "Mixed" → "Mixed Math" per Support
+  // reviewer feedback. Original "Mixed" was opaque to first-time
+  // players (mixed what? colors? difficulties?); "Mixed Math" is
+  // self-descriptive without needing the subtitle that all other math
+  // tiles dropped in sprint 1.5 Story 5. Label fits the existing 220px
+  // tile width with margin.
+  label: 'Mixed Math',
   generate(rng = defaultRng): Question {
     if (_picker === null) {
       // Registry didn't wire us up — surface as a clear bug rather than
