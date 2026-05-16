@@ -2,7 +2,6 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickDistractors } from '@/math/distractors';
 import { defaultRng } from '@/math/rng';
 
 /**
@@ -163,15 +162,3 @@ export function pickMultiplicationDistractors(opts: PickMultDistractorsOpts): nu
   // implicitly): caller can hand the result straight to shuffleAnswers.
   return picked;
 }
-
-/**
- * Convenience adapter so the multiplication generators can reach for a
- * pickMultiplicationDistractors call with the same surface ergonomics as
- * pickDistractors. Currently unused (the generators call
- * `pickMultiplicationDistractors` directly), but exported in case a future
- * generator wants to mix strategies via a polymorphic function pointer.
- *
- * Re-exported alongside its imports for grouping. Marked
- * `pickDistractors` as imported so future maintainers see the relationship.
- */
-export { pickDistractors };
