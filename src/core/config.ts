@@ -126,6 +126,60 @@ export const config = {
     fireCooldownMs: 200,
     projectileSpeedPxPerSec: 800,
   },
+  alien: {
+    /**
+     * Chassis (number-block) dimensions in design pixels. The collision
+     * hitbox and the rider plate widths BOTH derive from these values:
+     *   - `HitSystem.findHit` reads `Alien.WIDTH`/`Alien.HEIGHT` directly
+     *     (those statics are initialized from this config), so widening
+     *     the chassis here automatically widens the aim target — no
+     *     other code change needed
+     *   - `plateLayers` widths below are expressed as multipliers on
+     *     `chassisWidthPx`, so a wider chassis gets a proportionally
+     *     wider plate underneath the rider
+     *
+     * Tuning history:
+     *   v1.1 wrap-up playtest — "hard to aim" → bumped chassisWidthPx
+     *     80 → 100 (+25%) for easier hit targeting. Height kept at 60
+     *     (only the horizontal aim was the issue). To revert: set
+     *     chassisWidthPx back to 80 — plateLayers auto-rescale via the
+     *     widthScale multipliers, no other change needed.
+     *   v0.7 baseline: 80×60 chassis.
+     */
+    chassisWidthPx: 100,
+    chassisHeightPx: 60,
+    /**
+     * Five-layer rider plate ("alien background gradient") that sits
+     * BEHIND the rider sprite, ABOVE the chassis. Each layer is a
+     * rounded rectangle with rounded TOP corners + flat BOTTOM corners
+     * (the plate visually flows into the chassis below). Stacked back-
+     * to-front with increasing alpha for a feathered radial-ish look
+     * (outer ring soft, inner core solid).
+     *
+     * `widthScale` is a multiplier on `chassisWidthPx` so the plate
+     * scales together with the chassis — tune the chassis width above
+     * and the plate auto-follows. Tuned ratios:
+     *   L1 1.00× — chassis-matched outer edge (sprint 1.1 wrap-up
+     *     playtest changed this from 1.05× → 1.00× per "needs to be
+     *     even with the width of the box with the answer numbers" —
+     *     the prior 5% overhang made the plate visibly wider than the
+     *     number block, which read as misaligned)
+     *   L2 0.95×, L3 0.90×, L4 0.85×, L5 0.80× — progressively narrower
+     *     for the feather effect; L5 (alpha 1.0) is the opaque core
+     *     that covers the FULL rider sprite vertically
+     *
+     * `heightPx` is ABSOLUTE (not chassis-derived) because the plate
+     * needs to reach from chassis-top up past the rider sprite's top,
+     * and the rider sprite has its own size independent of the chassis.
+     */
+    plateLayers: [
+      { widthScale: 1.0, heightPx: 130, alpha: 0.15 },
+      { widthScale: 0.95, heightPx: 120, alpha: 0.2 },
+      { widthScale: 0.9, heightPx: 110, alpha: 0.25 },
+      { widthScale: 0.85, heightPx: 102, alpha: 0.35 },
+      { widthScale: 0.8, heightPx: 98, alpha: 1.0 },
+    ],
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
