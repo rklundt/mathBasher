@@ -161,7 +161,14 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   // Story 3 additions — container-anchored (consumed via `textStyle(kind)`)
   alienAnswer: { fontSize: '38px', color: TEXT_WHITE, fontStyle: 'bold' },
   buttonLabel: { fontSize: '24px', color: TEXT_PRIMARY },
-  buttonSubtitle: { fontSize: '17px', color: TEXT_BUTTON_SUBTITLE },
+  // Sprint 1.1 wrap-up — bumped 17 → 21 (+24%) for mobile readability. At
+  // a 390-CSS-px-wide phone viewport, the FIT-scaled 17px design font
+  // becomes ~5px CSS-px, borderline unreadable for the wrapped subtitle
+  // on the math-difficulty tiles. 21px scales to ~6.4px which is more
+  // legible while still fitting the wrapped 2-line layout in the
+  // sprint-1.1-bumped 116-tall math tile (see DifficultyScene
+  // renderMathTypes for the matching tile-height bump).
+  buttonSubtitle: { fontSize: '21px', color: TEXT_BUTTON_SUBTITLE },
   // FIRE label uses dark canvas color on warm-amber bg → ~10:1 contrast
   // (intentional; do NOT fold into a generic primary-color buttonLabel).
   fireLabel: { fontSize: '22px', color: '#0b1020', fontStyle: 'bold' },

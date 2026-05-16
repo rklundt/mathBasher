@@ -16,16 +16,62 @@ export const config = {
     passingCorrect: 14,
     /** stars awarded at: ★ at 14 correct, ★★ at 17, ★★★ at 19 */
     starThresholds: [14, 17, 19] as const,
+    /**
+     * Anti-repeat sliding window — GameScene tracks the last N prompt
+     * strings of the current round and re-rolls the generator (up to
+     * `recentPromptMaxRerolls` attempts) if the next draw would
+     * duplicate one of them. Reduces the "I just saw that exact
+     * question" feeling without breaking the answer-uniformity
+     * guarantee of the math generators.
+     *
+     * Why this exists: sprint 1.1 wrap-up repetition audit measured
+     * 3.7 duplicate prompts per 20-question round on add-to-10 /
+     * sub-to-10 (some answers — like 0 in add-to-10 — have only ONE
+     * possible prompt that produces them, so when those answer values
+     * are sampled, the same prompt always shows). Anti-repeat
+     * eliminates the worst back-to-back-to-back cases without
+     * meaningfully biasing the long-run distribution.
+     *
+     * Tuning:
+     *   - 0 = disable anti-repeat entirely (every draw shipped as-is)
+     *   - 4 = current default — same prompt can't appear within 5
+     *     questions of itself, balances "feels varied" against
+     *     "doesn't bias the distribution noticeably"
+     *   - higher = more aggressive de-repetition, but biases the
+     *     answer distribution if the generator's prompt pool is small
+     *     (e.g. add-to-10 has only ~11 distinct prompts for some
+     *     answer values; setting this to 10+ would force most draws
+     *     to re-roll)
+     *
+     * The `MaxRerolls` cap defends against an infinite loop if a
+     * hypothetical future generator has a tiny prompt pool — after
+     * that many attempts, GameScene accepts whatever the last draw
+     * was even if it duplicates history. 8 is comfortably above the
+     * expected re-roll rate at the default history limit of 4 for
+     * any of the implemented generators.
+     */
+    recentPromptHistoryLimit: 4,
+    recentPromptMaxRerolls: 8,
   },
   scoring: {
     basePerCorrect: 100,
     /** points multiplier when the player got it right after a wrong shot */
     afterWrongShotMultiplier: 0.5,
     mathDifficulty: {
+      // Multiplier ladder pattern:
+      //   - addition baseline = 1.0
+      //   - subtraction at same range = +0.5 (operation step)
+      //   - "to 20" version of any op = +0.5 over the "to 10" version (range step)
+      //   - mult-to-100 = +0.5 over sub-to-20 (operation step at next range)
+      //   - mult-to-144 = +0.5 over mult-to-100 (range step)
+      // Sprint 1.1 added the two mult tiers; the additive/subtractive entries
+      // were pre-registered as stubs in sprint 0.2 with these same multipliers.
       'add-to-10': 1.0,
       'add-to-20': 1.5,
       'sub-to-10': 1.5,
       'sub-to-20': 2.0,
+      'mult-to-100': 2.5,
+      'mult-to-144': 3.0,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {
@@ -115,6 +161,60 @@ export const config = {
     runSpeedPxPerSec: 348,
     fireCooldownMs: 200,
     projectileSpeedPxPerSec: 800,
+  },
+  alien: {
+    /**
+     * Chassis (number-block) dimensions in design pixels. The collision
+     * hitbox and the rider plate widths BOTH derive from these values:
+     *   - `HitSystem.findHit` reads `Alien.WIDTH`/`Alien.HEIGHT` directly
+     *     (those statics are initialized from this config), so widening
+     *     the chassis here automatically widens the aim target — no
+     *     other code change needed
+     *   - `plateLayers` widths below are expressed as multipliers on
+     *     `chassisWidthPx`, so a wider chassis gets a proportionally
+     *     wider plate underneath the rider
+     *
+     * Tuning history:
+     *   v1.1 wrap-up playtest — "hard to aim" → bumped chassisWidthPx
+     *     80 → 100 (+25%) for easier hit targeting. Height kept at 60
+     *     (only the horizontal aim was the issue). To revert: set
+     *     chassisWidthPx back to 80 — plateLayers auto-rescale via the
+     *     widthScale multipliers, no other change needed.
+     *   v0.7 baseline: 80×60 chassis.
+     */
+    chassisWidthPx: 100,
+    chassisHeightPx: 60,
+    /**
+     * Five-layer rider plate ("alien background gradient") that sits
+     * BEHIND the rider sprite, ABOVE the chassis. Each layer is a
+     * rounded rectangle with rounded TOP corners + flat BOTTOM corners
+     * (the plate visually flows into the chassis below). Stacked back-
+     * to-front with increasing alpha for a feathered radial-ish look
+     * (outer ring soft, inner core solid).
+     *
+     * `widthScale` is a multiplier on `chassisWidthPx` so the plate
+     * scales together with the chassis — tune the chassis width above
+     * and the plate auto-follows. Tuned ratios:
+     *   L1 1.00× — chassis-matched outer edge (sprint 1.1 wrap-up
+     *     playtest changed this from 1.05× → 1.00× per "needs to be
+     *     even with the width of the box with the answer numbers" —
+     *     the prior 5% overhang made the plate visibly wider than the
+     *     number block, which read as misaligned)
+     *   L2 0.95×, L3 0.90×, L4 0.85×, L5 0.80× — progressively narrower
+     *     for the feather effect; L5 (alpha 1.0) is the opaque core
+     *     that covers the FULL rider sprite vertically
+     *
+     * `heightPx` is ABSOLUTE (not chassis-derived) because the plate
+     * needs to reach from chassis-top up past the rider sprite's top,
+     * and the rider sprite has its own size independent of the chassis.
+     */
+    plateLayers: [
+      { widthScale: 1.0, heightPx: 130, alpha: 0.15 },
+      { widthScale: 0.95, heightPx: 120, alpha: 0.2 },
+      { widthScale: 0.9, heightPx: 110, alpha: 0.25 },
+      { widthScale: 0.85, heightPx: 102, alpha: 0.35 },
+      { widthScale: 0.8, heightPx: 98, alpha: 1.0 },
+    ],
   },
   layout: {
     /** number of answer lanes across the screen */

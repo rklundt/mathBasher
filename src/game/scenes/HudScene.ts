@@ -73,6 +73,27 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     _th.logToAi('HudScene Started', SeverityLevel.Information);
 
+    // Reset stateful class fields. Phaser reuses the same scene instance
+    // across rounds — the class-field initializers (`progressDots = []`,
+    // `currentQuestionIndex = 0`) only run ONCE when Phaser first
+    // instantiates the scene class. On the SECOND round, `progressDots`
+    // would still contain the 20 destroyed Phaser Arcs from round 1;
+    // `buildProgressDots` would then push 20 NEW dots, leaving the array
+    // at length 40, and `markProgressDot(index)` (which uses indices
+    // 0-19) would target the OLD destroyed objects → setFillStyle is a
+    // silent no-op on destroyed game objects, so no dot ever turns
+    // green/red on the second-or-later round. Sprint 1.1 wrap-up bug:
+    // surfaced in playtest as "12×12 isn't showing green/red right/wrongs"
+    // (the user had played a round on a different tile first; mult-to-144
+    // wasn't special — every second-round-onward had the same silent
+    // failure regardless of math type).
+    //
+    // The same class-instance reuse means `currentQuestionIndex` would
+    // carry over from the prior round's last question; reset it too so
+    // the first questionEnded of the new round marks dot 0 not dot 19.
+    this.progressDots = [];
+    this.currentQuestionIndex = 0;
+
     const { width } = this.scale;
     const barHeight = 48;
 

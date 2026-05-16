@@ -16,10 +16,24 @@ import { pickNextHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
  * twin-stick steering.
  *
  * Visuals (sprint 0.7 Story 3): one of three Midjourney-generated speeder
- * sprites, picked randomly per Hero instance via `pickRandomHeroSpriteKey()`.
+ * sprites, picked round-robin per Hero instance via `pickNextHeroSpriteKey()`.
  * Each new round (i.e. each new GameScene → new Hero) can feature a
- * different ship. Sprite faces RIGHT by default; flipped horizontally via
- * `setFlipX` when moving left so the ship visually faces direction of travel.
+ * different ship.
+ *
+ * **Source-art orientation:** all three speeder source PNGs face LEFT (the
+ * Midjourney generations landed that way; sprint 1.1 wrap-up settled on
+ * keeping all three sources consistently left-facing rather than chasing
+ * per-sprite flips). The Hero compensates with `setFlipX(true)` when
+ * moving RIGHT, which mirrors the left-facing source to render
+ * right-facing. When moving LEFT, the source is rendered as-authored
+ * (no flip). Net effect: sprite always faces the direction of travel.
+ *
+ * Initial direction is RIGHT (`direction = 1` below), so the constructor
+ * applies the initial `setFlipX(true)` so the first-frame render already
+ * matches motion direction (without that, the first few hundred ms would
+ * show the ship "moonwalking" right-while-pointing-left until it hit the
+ * right bound and the existing flip-on-bound-hit code kicked in).
+ *
  * A subtle amber engine-glow particle emitter follows the hero in world
  * space (NOT a container child — particles need to stay where emitted as
  * the hero moves, leaving a brief glow trail).
@@ -79,6 +93,9 @@ export class Hero extends Phaser.GameObjects.Container {
     // aspect is preserved by Phaser's setScale (height auto-scales).
     const heroNativeWidth = this.sprite.width;
     this.sprite.setScale(Hero.WIDTH / heroNativeWidth);
+    // Initial direction is RIGHT (direction=1 below), and source art
+    // faces LEFT, so flip to start. See class JSDoc for rationale.
+    this.sprite.setFlipX(true);
     this.add(this.sprite);
 
     // Engine glow: small amber circles emitting from just below the hero,
@@ -113,11 +130,13 @@ export class Hero extends Phaser.GameObjects.Container {
     if (this.x > this.rightBound) {
       this.x = this.rightBound;
       this.direction = -1;
-      this.sprite.setFlipX(true); // mirror to face left
+      // Now moving LEFT. Source art faces left → render as-authored (no flip).
+      this.sprite.setFlipX(false);
     } else if (this.x < this.leftBound) {
       this.x = this.leftBound;
       this.direction = 1;
-      this.sprite.setFlipX(false); // back to facing right
+      // Now moving RIGHT. Source art faces left → mirror to face right.
+      this.sprite.setFlipX(true);
     }
   }
 
