@@ -73,6 +73,14 @@ export class GameScene extends Phaser.Scene {
   private questionIndex = 0;
   private transitioning = false;
   private paused = false;
+  /**
+   * Sliding-window of recent prompts for the anti-repeat re-roll loop in
+   * `startNextQuestion`. Size capped at `config.round.recentPromptHistoryLimit`.
+   * Initialized in `create()` to defend against Phaser's scene-instance
+   * reuse across rounds (same gotcha that bit HudScene.progressDots in
+   * sprint 1.1 wrap-up).
+   */
+  private recentPrompts: string[] = [];
 
   /**
    * Snapshot of the in-flight question, exposed so HudScene can sync up after
@@ -140,6 +148,12 @@ export class GameScene extends Phaser.Scene {
     this.questionIndex = 0;
     this.transitioning = false;
     this.paused = false;
+    // Reset anti-repeat history each round. Class-field initializer runs
+    // only on FIRST instantiation; Phaser reuses the same scene instance
+    // across rounds (same gotcha as HudScene.progressDots in sprint 1.1
+    // wrap-up). Without this, prompts from the prior round would
+    // continue blocking re-rolls in the new round.
+    this.recentPrompts = [];
 
     this.inputSystem = new InputSystem(this);
     this.inputSystem.onFire(() => this.handleFire());
@@ -414,7 +428,41 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const generator = getGenerator(this.mathId);
-    this.currentQuestion = generator.generate();
+
+    // Sprint 1.1 wrap-up — anti-repeat sliding window. The generators are
+    // answer-uniform; some answer values (e.g. 0 in add-to-10) have only
+    // ONE valid prompt, so back-to-back-to-back duplicates happen
+    // naturally without intervention. Re-roll up to `maxRerolls` times
+    // if the next draw would duplicate any of the last `historyLimit`
+    // prompts in this round. Falls through to the last attempt's draw if
+    // we hit the cap (defense against a hypothetical future generator
+    // with a tiny prompt pool — never loop forever).
+    //
+    // History resets per round (see `create()`). Setting historyLimit = 0
+    // in config disables anti-repeat entirely (every draw shipped as-is).
+    const historyLimit = config.round.recentPromptHistoryLimit;
+    const maxRerolls = config.round.recentPromptMaxRerolls;
+    let question: Question = generator.generate();
+    if (historyLimit > 0) {
+      let attempts = 1;
+      while (attempts < maxRerolls && this.recentPrompts.includes(question.prompt)) {
+        question = generator.generate();
+        attempts += 1;
+      }
+    }
+    this.currentQuestion = question;
+
+    // Push the accepted prompt into history; trim to keep window size at
+    // most `historyLimit`. Done AFTER assignment so the in-flight question
+    // is itself in-window for the NEXT call (i.e. the immediately-next
+    // question can't match this one).
+    if (historyLimit > 0) {
+      this.recentPrompts.push(question.prompt);
+      while (this.recentPrompts.length > historyLimit) {
+        this.recentPrompts.shift();
+      }
+    }
+
     this.waveSystem.spawnWave(this.currentQuestion);
 
     _th.logToAi('QuestionStarted', SeverityLevel.Information, {

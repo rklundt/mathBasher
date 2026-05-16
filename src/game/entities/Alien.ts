@@ -38,16 +38,25 @@ export interface AlienOpts {
  * as large centered text. Real Kenney sprites land in the art-polish milestone.
  */
 export class Alien extends Phaser.GameObjects.Container {
-  static readonly WIDTH = 80;
-  static readonly HEIGHT = 60;
+  // Chassis dimensions are sourced from `config.alien` so a future tuner
+  // can tweak aim difficulty (chassisWidthPx) without touching this file.
+  // `HitSystem.findHit` reads these statics, so the collision hitbox
+  // automatically follows config edits — no other code change needed.
+  static readonly WIDTH = config.alien.chassisWidthPx;
+  static readonly HEIGHT = config.alien.chassisHeightPx;
 
   /**
    * Display size of the optional rider-sprite in design pixels (square).
-   * Larger than the chassis WIDTH (80) so the creature visibly extends
-   * past the block on each side and reads as the dominant visual, with
-   * the number block as the "vehicle" below. The sprite scales DOWN
-   * from its native source (128 or 192 per tier) — both tiers downscale
-   * cleanly to this size on every viewport.
+   * Intentionally LARGER than the chassis (creature visually extends
+   * past the block edges and reads as dominant focal point; the number
+   * block reads as the "vehicle" below). The sprite scales DOWN from
+   * its native source (128 or 192 per ADR-0010 tier) — both tiers
+   * downscale cleanly to this size on every viewport.
+   *
+   * NOT lifted to config (unlike chassis dims) — sprint 1.1 wrap-up
+   * playtest concluded "aliens don't change size" while widening the
+   * chassis for easier aim. If a future sprint wants to tune this, it
+   * can lift to config.alien.spriteSizePx with the same pattern.
    *
    * Tuning history:
    *   v0.6.3 playtest: 64 → 96. 64 looked too small / disconnected
@@ -190,26 +199,23 @@ export class Alien extends Phaser.GameObjects.Container {
       // for "plate needs to start higher so the alien's head is more
       // opaque" — before this, L5 was only 58 tall and the alien's
       // top half sat in the feathered region.
+      // Plate layers sourced from config.alien.plateLayers — see config.ts
+      // for the per-layer rationale (widthScale ratios, alpha stacking
+      // for the feather effect, height-tuning for opaque-core coverage).
+      // `widthScale × chassisWidthPx` yields the actual pixel width; rounded
+      // to avoid sub-pixel rendering. Sprint 1.1 wrap-up moved this out of
+      // the entity so a tuner can adjust aim-target width (chassisWidthPx)
+      // OR plate feather ratios from config without touching this file.
       const chassisTopY = -Alien.HEIGHT / 2;
       const riderBackdrop = opts.scene.add.graphics();
-      const plateLayers = [
-        // Widths bumped ~5% from chassis-matched (80) to 84 per playtest —
-        // gives the plate a subtle "cap" overhang above the chassis edge,
-        // reads as intentional plate-on-pedestal silhouette rather than
-        // a flush continuation. Inner layers proportionally shifted.
-        { w: 84, h: 130, alpha: 0.15 }, // L1: outermost, extends 32px above alien's head
-        { w: 80, h: 120, alpha: 0.2 },
-        { w: 76, h: 110, alpha: 0.25 },
-        { w: 72, h: 102, alpha: 0.35 },
-        { w: 68, h: 98, alpha: 1.0 }, // L5: opaque core, covers FULL rider sprite (98 tall)
-      ];
-      for (const layer of plateLayers) {
+      for (const layer of config.alien.plateLayers) {
+        const w = Math.round(Alien.WIDTH * layer.widthScale);
         riderBackdrop.fillStyle(0x0b1020, layer.alpha);
         riderBackdrop.fillRoundedRect(
-          -layer.w / 2,
-          chassisTopY - layer.h,
-          layer.w,
-          layer.h,
+          -w / 2,
+          chassisTopY - layer.heightPx,
+          w,
+          layer.heightPx,
           { tl: 8, tr: 8, bl: 0, br: 0 },
         );
       }
