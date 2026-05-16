@@ -10,6 +10,9 @@ import subTo10 from '@/math/generators/subTo10';
 import subTo20 from '@/math/generators/subTo20';
 import multTo100 from '@/math/generators/multTo100';
 import multTo144 from '@/math/generators/multTo144';
+import divTo100 from '@/math/generators/divTo100';
+import divTo144 from '@/math/generators/divTo144';
+import mixed from '@/math/generators/mixed';
 import { generators, getGenerator, getImplementedIds } from '@/math/registry';
 
 /**
@@ -37,30 +40,38 @@ describe('registry', () => {
       ['sub-to-20', subTo20],
       ['mult-to-100', multTo100],
       ['mult-to-144', multTo144],
+      ['div-to-100', divTo100],
+      ['div-to-144', divTo144],
+      ['mixed', mixed],
     ] as const)('%s', (id, expected) => {
       expect(getGenerator(id)).toBe(expected);
     });
   });
 
-  it('every registered generator has a non-empty label and description', () => {
+  it('every registered generator has a non-empty label', () => {
+    // Sprint 1.5 wrap-up — `description` field was deleted as dead code
+    // (DifficultyScene Story 5 dropped subtitle rendering). If a future
+    // sprint restores description for tooltips, add the
+    // `expect(gen.description...)` assertion back here.
     const ids = Object.keys(generators) as MathId[];
     for (const id of ids) {
       const gen = generators[id];
       expect(typeof gen.label, `'${id}' label`).toBe('string');
       expect(gen.label.length, `'${id}' label is empty`).toBeGreaterThan(0);
-      expect(typeof gen.description, `'${id}' description`).toBe('string');
-      expect(gen.description.length, `'${id}' description is empty`).toBeGreaterThan(0);
     }
   });
 
   describe('getImplementedIds', () => {
-    it('returns ALL six Phase 1 ids (no stubs remain after sprint 1.1)', () => {
+    it('returns ALL nine Phase 1 ids (no stubs remain after sprint 1.5)', () => {
       const implemented = getImplementedIds().sort();
       expect(implemented).toEqual(
         (
           [
             'add-to-10',
             'add-to-20',
+            'div-to-100',
+            'div-to-144',
+            'mixed',
             'mult-to-100',
             'mult-to-144',
             'sub-to-10',

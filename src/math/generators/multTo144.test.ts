@@ -11,7 +11,6 @@ describe('multTo144 generator', () => {
   it('has the expected identity', () => {
     expect(multTo144.id).toBe('mult-to-144');
     expect(multTo144.label).toBe('Multiply 12×12');
-    expect(multTo144.description).toMatch(/up to 12×12/i);
     expect(multTo144.isStub).toBeFalsy();
   });
 

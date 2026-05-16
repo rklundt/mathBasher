@@ -39,7 +39,6 @@ const PRODUCT_MAX = FACTOR_MAX * FACTOR_MAX; // 144
 const multTo144: QuestionGenerator = {
   id: 'mult-to-144',
   label: 'Multiply 12×12',
-  description: 'Tables up to 12×12.',
   generate(rng = defaultRng): Question {
     const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 11
     const a = FACTOR_MIN + Math.floor(rng() * factorRange);
