@@ -16,6 +16,42 @@ export const config = {
     passingCorrect: 14,
     /** stars awarded at: ★ at 14 correct, ★★ at 17, ★★★ at 19 */
     starThresholds: [14, 17, 19] as const,
+    /**
+     * Anti-repeat sliding window — GameScene tracks the last N prompt
+     * strings of the current round and re-rolls the generator (up to
+     * `recentPromptMaxRerolls` attempts) if the next draw would
+     * duplicate one of them. Reduces the "I just saw that exact
+     * question" feeling without breaking the answer-uniformity
+     * guarantee of the math generators.
+     *
+     * Why this exists: sprint 1.1 wrap-up repetition audit measured
+     * 3.7 duplicate prompts per 20-question round on add-to-10 /
+     * sub-to-10 (some answers — like 0 in add-to-10 — have only ONE
+     * possible prompt that produces them, so when those answer values
+     * are sampled, the same prompt always shows). Anti-repeat
+     * eliminates the worst back-to-back-to-back cases without
+     * meaningfully biasing the long-run distribution.
+     *
+     * Tuning:
+     *   - 0 = disable anti-repeat entirely (every draw shipped as-is)
+     *   - 4 = current default — same prompt can't appear within 5
+     *     questions of itself, balances "feels varied" against
+     *     "doesn't bias the distribution noticeably"
+     *   - higher = more aggressive de-repetition, but biases the
+     *     answer distribution if the generator's prompt pool is small
+     *     (e.g. add-to-10 has only ~11 distinct prompts for some
+     *     answer values; setting this to 10+ would force most draws
+     *     to re-roll)
+     *
+     * The `MaxRerolls` cap defends against an infinite loop if a
+     * hypothetical future generator has a tiny prompt pool — after
+     * that many attempts, GameScene accepts whatever the last draw
+     * was even if it duplicates history. 8 is comfortably above the
+     * expected re-roll rate at the default history limit of 4 for
+     * any of the implemented generators.
+     */
+    recentPromptHistoryLimit: 4,
+    recentPromptMaxRerolls: 8,
   },
   scoring: {
     basePerCorrect: 100,
