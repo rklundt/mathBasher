@@ -70,8 +70,12 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    this.renderMathTypes(cx, height * 0.32);
-    this.renderSpeeds(cx, height * 0.62);
+    // Vertical anchors. Sprint 0.7.5 Story 5 — math row moved up
+    // (0.32 → 0.30) and speed row moved down (0.62 → 0.66) for more
+    // breathing room between the two sections; the prior spacing felt
+    // tight after Story 1's font bump enlarged every label.
+    this.renderMathTypes(cx, height * 0.3);
+    this.renderSpeeds(cx, height * 0.66);
     this.renderStartButton(cx, height * 0.85);
     this.renderBackButton(cx - 250, height * 0.85);
 
@@ -128,11 +132,19 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderMathTypes(cx: number, y: number): void {
-    text(this, cx, y - 50, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    text(this, cx, y - 60, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
-    const tileWidth = 200;
+    // Sprint 0.7.5 Story 5 — tile dimensions bumped 200×80 → 220×100.
+    // The wider tile fits "Subtract within 20" with margin and the
+    // taller tile gives the wrapped subtitle (PlaceholderButton's
+    // wordWrap, also new in Story 5) room to flow to a second line for
+    // longer descriptions like "Two numbers, sum at most 10." without
+    // colliding with the label or the bottom border. 4 tiles × 220 +
+    // 3 × 20px gap = 940px total — well within the 1280px design canvas.
+    const tileWidth = 220;
+    const tileHeight = 100;
     const gap = 20;
     const totalWidth = ids.length * tileWidth + (ids.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
@@ -145,7 +157,7 @@ export class DifficultyScene extends Phaser.Scene {
         x: startX + i * (tileWidth + gap),
         y,
         width: tileWidth,
-        height: 80,
+        height: tileHeight,
         label: gen.label,
         subtitle: gen.description,
         disabled: !isImplemented,
@@ -161,7 +173,10 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private renderSpeeds(cx: number, y: number): void {
-    text(this, cx, y - 50, 'Speed', 'sectionLabel').setOrigin(0.5);
+    // Section label sits 60px above the row (was 50 pre-Story 5) to
+    // give the now-larger sectionLabel kind (32px bold) a bit more
+    // breathing room from the tiles below.
+    text(this, cx, y - 60, 'Speed', 'sectionLabel').setOrigin(0.5);
 
     const speeds: { key: SpeedKey; label: string }[] = [
       { key: 'slow', label: 'Slow' },

@@ -120,7 +120,18 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.textChildren.push(label);
 
     if (opts.subtitle) {
-      const subtitle = opts.scene.add.text(0, 14, opts.subtitle, textStyle('buttonSubtitle'));
+      // Sprint 0.7.5 Story 5 — subtitle uses Phaser wordWrap so long
+      // descriptions (e.g. "Two numbers, sum at most 10." on the Add to
+      // 10 tile) wrap to a second line instead of bleeding past the
+      // tile's right edge after the Story 1 font bump. 16px of total
+      // horizontal padding (8 each side) keeps text away from the
+      // border. Centered alignment keeps wrapped lines visually
+      // balanced under the label above them.
+      const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
+        ...textStyle('buttonSubtitle'),
+        wordWrap: { width: opts.width - 16 },
+        align: 'center',
+      });
       subtitle.setOrigin(0.5);
       this.add(subtitle);
       this.textChildren.push(subtitle);

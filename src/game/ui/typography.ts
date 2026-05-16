@@ -87,7 +87,7 @@ export type TextKind =
   | 'success' // green — round-complete success copy
   | 'warning' // warm amber — try-again, fallback messages
   | 'stars' // amber — star row on Game Over
-  | 'sectionLabel' // muted — "Math Type" / "Speed" labels above tile groups
+  | 'sectionLabel' // primary bold — pronounced section dividers ("Math Type", "Speed", "Volume")
   // --- Sprint 0.7.5 Story 3 additions ---
   | 'headline' // primary — extra-large overlay headline (PauseOverlay "Paused")
   | 'summary' // primary — multi-line score summary (GameOverScene)
@@ -144,7 +144,11 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   success: { fontSize: '48px', color: TEXT_GREEN },
   warning: { fontSize: '48px', color: TEXT_AMBER_WARM },
   stars: { fontSize: '48px', color: TEXT_AMBER },
-  sectionLabel: { fontSize: '24px', color: TEXT_MUTED },
+  // Sprint 0.7.5 Story 5 — bumped from 24px muted → 32px primary bold so
+  // section headings ("Math Type", "Speed", "Volume") read as clear
+  // dividers instead of fading into the background. Used by
+  // DifficultyScene + SettingsScene; both screens benefit.
+  sectionLabel: { fontSize: '32px', color: TEXT_PRIMARY, fontStyle: 'bold' },
   // Story 3 additions — scene-absolute
   headline: { fontSize: '67px', color: TEXT_PRIMARY },
   summary: { fontSize: '29px', color: TEXT_PRIMARY },
