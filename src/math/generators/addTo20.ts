@@ -40,7 +40,6 @@ const ADDEND_MAX = 10;
 const addTo20: QuestionGenerator = {
   id: 'add-to-20',
   label: 'Add to 20',
-  description: 'Two numbers, sum at most 20.',
   generate(rng = defaultRng): Question {
     // Uniform-over-sum: correctAnswer ∈ [2, 20]
     const sumRange = SUM_MAX - SUM_MIN + 1; // 19

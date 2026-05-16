@@ -31,7 +31,6 @@ const MINUEND_MAX = 10;
 const subTo10: QuestionGenerator = {
   id: 'sub-to-10',
   label: 'Subtract within 10',
-  description: 'Take away, results 0 to 10.',
   generate(rng = defaultRng): Question {
     // Uniform-over-results: correctAnswer ∈ [0, 10]
     const resultRange = RESULT_MAX - RESULT_MIN + 1; // 11

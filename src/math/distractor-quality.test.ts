@@ -50,6 +50,19 @@ const RANGES: Readonly<Record<MathId, RangeSpec>> = {
   'sub-to-20': { min: 0, max: 20 },
   'mult-to-100': { min: 4, max: 100 },
   'mult-to-144': { min: 4, max: 144 },
+  // Sprint 1.5 — division answers ARE the quotient, so the choice range
+  // matches the quotient range (NOT the dividend range). Distractor pool
+  // for divTo100 is [2, 10]; for divTo144 it's [2, 12].
+  'div-to-100': { min: 2, max: 10 },
+  'div-to-144': { min: 2, max: 12 },
+  // Sprint 1.5 — Mixed inherits whichever delegate it picks at runtime.
+  // The min/max here is the UNION of all 8 non-Mixed delegate ranges
+  // (smallest min = 0 from add-to-10, largest max = 144 from
+  // mult-to-144/div-to-144). The cross-cutting test only enforces "in
+  // SOME implemented generator's range" for Mixed — for stricter
+  // per-question validation, mixed.test.ts has its own family-detection
+  // test via the prompt regex.
+  mixed: { min: 0, max: 144 },
 };
 
 const SAMPLES_PER_GENERATOR = 200;

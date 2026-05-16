@@ -11,7 +11,6 @@ describe('subTo20 generator', () => {
   it('has the expected identity', () => {
     expect(subTo20.id).toBe('sub-to-20');
     expect(subTo20.label).toBe('Subtract within 20');
-    expect(subTo20.description).toMatch(/results 0 to 20/i);
     expect(subTo20.isStub).toBeFalsy();
   });
 

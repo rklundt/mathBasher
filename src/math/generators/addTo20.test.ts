@@ -11,7 +11,6 @@ describe('addTo20 generator', () => {
   it('has the expected identity', () => {
     expect(addTo20.id).toBe('add-to-20');
     expect(addTo20.label).toBe('Add to 20');
-    expect(addTo20.description).toMatch(/sum at most 20/i);
     expect(addTo20.isStub).toBeFalsy();
   });
 

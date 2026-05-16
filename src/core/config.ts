@@ -72,6 +72,19 @@ export const config = {
       'sub-to-20': 2.0,
       'mult-to-100': 2.5,
       'mult-to-144': 3.0,
+      // Sprint 1.5: division extends the ladder with the same operation-step
+      // + range-step pattern (+0.5 each). Division is meaningfully harder
+      // than multiplication at the same range because the kid has to
+      // recover the FACTOR from the product, which exercises the multiplication
+      // table in reverse.
+      'div-to-100': 3.5,
+      'div-to-144': 4.0,
+      // Sprint 1.5: Mixed mode picks one of the 8 above generators randomly
+      // at draw time. Multiplier chosen as a representative average — the
+      // actual question difficulty varies per-question but the score has to
+      // be deterministic per math-type-tile, so a fixed average works. 2.5 is
+      // approximately the midpoint between add-to-10 (1.0) and div-to-144 (4.0).
+      mixed: 2.5,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {
@@ -268,6 +281,49 @@ export const config = {
       tileH: 200,
     },
     /**
+     * DifficultyScene math-tile + Speed-tile grid dimensions.
+     *
+     * Lifted to config in sprint 1.5 wrap-up (mirroring the sprint 1.1
+     * chassis-dims lift). The math-tile
+     * dimensions have been re-tuned in TWO consecutive sprints (1.1
+     * went 100→116, 1.5 went 116→64 to fit 3 rows of 9 tiles), so
+     * keeping them in config means the next layout iteration is a
+     * 1-line edit — not a code change to DifficultyScene + the
+     * tuning-history comment block.
+     *
+     * Tuning history:
+     *   v1.5 (current): mathTile 220×64, Speed 160×64. 3-row math
+     *     grid (4+4+1) fits 9 implemented generators. Tiles match
+     *     Speed-button height for visual rhythm. Subtitle dropped
+     *     on math tiles (Story 5) so a 64-tall tile is sufficient.
+     *   v1.1 wrap-up: 220×116 (subtitle wrapping needed the height).
+     *   v0.7.5: 200×80 baseline.
+     */
+    difficultyTile: {
+      mathWidthPx: 220,
+      mathHeightPx: 64,
+      mathColGapPx: 20,
+      mathRowGapPx: 12,
+      mathMaxPerRow: 4,
+      speedWidthPx: 160,
+      speedHeightPx: 64,
+      speedGapPx: 20,
+      /**
+       * Vertical offset (in design pixels) of the section label ABOVE
+       * the FIRST math row's center. The 32px-bold sectionLabel kind
+       * occupies ~42px (centered on its y-coord = ±21). 60 - 32 - 21 =
+       * 7px of visible gap between label-bottom and first-row tile-top.
+       */
+      mathSectionLabelOffsetY: 60,
+      /**
+       * Same idea for Speed. Speed tile is 64 tall, so offset 75
+       * gives 22px of gap between label-bottom and tile-top — slightly
+       * more breathing room than Math row (which has 3 rows of tiles
+       * to budget for vertically).
+       */
+      speedSectionLabelOffsetY: 75,
+    },
+    /**
      * On-screen FIRE button (`TouchFireButton`) sizing + positioning.
      * Tunable from config so a playtest tweak (button bigger / smaller /
      * higher / left-handed) is a 1-line change instead of an edit to
@@ -279,8 +335,8 @@ export const config = {
      *  - `footerClearancePx` — vertical gap between the BOTTOM of the
      *    button's hit area and the TOP of the AttributionScene footer.
      *    Bumped to 16 (was 8) to prevent the hit-circle from bleeding
-     *    into the footer's Source-URL click zone (Senior Dev finding,
-     *    sprint 0.6 wrap-up review).
+     *    into the footer's Source-URL click zone (sprint 0.6 wrap-up
+     *    review finding).
      */
     touchFire: {
       radiusPx: 40,

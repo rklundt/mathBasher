@@ -31,8 +31,13 @@ export interface QuestionGenerator {
   id: MathId;
   /** Short human-readable name used on the difficulty-select tile. */
   label: string;
-  /** One-line description used as a hover/subtitle on the difficulty-select tile. */
-  description: string;
+  // NOTE (sprint 1.5 wrap-up): the previous `description` field was
+  // deleted as dead code — it became unread once DifficultyScene
+  // Story 5 dropped the subtitle rendering. If a future
+  // sprint adds tooltips, hover popups, or a help screen that needs
+  // per-generator description text, restore the field from git history
+  // (e.g. `git show HEAD~10:src/math/types.ts`); the prior commit had
+  // each generator already providing a kid-friendly description string.
   /**
    * If true, this generator is a placeholder for a math type whose real
    * implementation hasn't landed yet. The difficulty-select UI uses this to

@@ -42,7 +42,6 @@ const ADDEND_MAX = 10;
 const addTo10: QuestionGenerator = {
   id: 'add-to-10',
   label: 'Add to 10',
-  description: 'Two numbers, sum at most 10.',
   generate(rng = defaultRng): Question {
     const correctAnswer = Math.floor(rng() * (MAX_SUM + 1)); // [0, 10] uniform
     const a = Math.floor(rng() * (correctAnswer + 1));        // [0, correctAnswer]
