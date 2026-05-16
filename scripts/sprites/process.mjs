@@ -131,7 +131,7 @@ const PROFILES = {
 // ------------------------------------------------------------------
 
 function parseArgs(args) {
-  const opts = { kind: 'alien', resize: true, name: null, brightness: 1.0 };
+  const opts = { kind: 'alien', resize: true, name: null, brightness: 1.0, flop: false };
   const positional = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -143,6 +143,15 @@ function parseArgs(args) {
       opts.resize = false;
     } else if (a === '--resize') {
       opts.resize = true;
+    } else if (a === '--flop') {
+      // Horizontal flip via sharp's .flop() — useful when source art faces
+      // the wrong direction (e.g. a hero ship pointing left when the
+      // gameplay convention is right-facing). Sprint 0.7 first hit this
+      // for speeder-2; sprint 1.1 wrap-up promoted the one-off `sharp.flop()`
+      // shim into a reusable CLI flag because speeders 1 and 2 both
+      // turned out to need it after playtest. ('flop' is sharp's term for
+      // horizontal mirror; 'flip' would be vertical.)
+      opts.flop = true;
     } else if (a === '--brightness') {
       const v = parseFloat(args[++i]);
       if (Number.isNaN(v) || v <= 0 || v > 2) {
@@ -209,7 +218,11 @@ Defaults to --kind alien if --kind is omitted.
 --no-resize skips the resize pass (use when input is already at target size).
 --brightness N multiplies output brightness via sharp's .modulate() (default 1.0
   = unchanged). Useful for taming visually-busy bg assets so they don't compete
-  with foreground sprites — e.g. --brightness 0.6 = 40% darker.`);
+  with foreground sprites — e.g. --brightness 0.6 = 40% darker.
+--flop horizontally mirrors the output (sharp's .flop()). Use when source art
+  faces the wrong direction — e.g. a hero ship pointing left when the gameplay
+  convention is right-facing. ('flip' would be vertical; sharp uses 'flop' for
+  horizontal.)`);
 }
 
 // ------------------------------------------------------------------
@@ -275,6 +288,14 @@ async function main() {
       fit: 'inside',
       withoutEnlargement: true,
     });
+  }
+
+  // Horizontal flip via sharp's .flop(). Applied AFTER resize (cheaper
+  // to mirror a smaller image) and BEFORE brightness/quantization
+  // (mirroring is purely a coordinate transform; doesn't interact with
+  // pixel values).
+  if (opts.flop) {
+    pipeline = pipeline.flop();
   }
 
   // Brightness adjustment via sharp's modulate. brightness=1.0 is no-op;
