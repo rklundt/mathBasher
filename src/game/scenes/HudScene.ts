@@ -28,6 +28,19 @@ interface QuestionEndedPayload {
 }
 
 /**
+ * Sprint 0.7 Story 8 — payload for the new `correctHit` event emitted
+ * by GameScene immediately when the correct-answer alien is hit. Used
+ * to spawn the score popup AT the alien's position rather than at the
+ * HUD bar corner (more readable feedback than the prior fixed-position
+ * popup, which the player's eyes weren't on).
+ */
+interface CorrectHitPayload {
+  x: number;
+  y: number;
+  scoreDelta: number;
+}
+
+/**
  * Heads-up display, runs in PARALLEL with GameScene. Listens for events
  * GameScene emits and updates the top bar:
  *
@@ -42,6 +55,15 @@ export class HudScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private promptText!: Phaser.GameObjects.Text;
   private counterText!: Phaser.GameObjects.Text;
+  /**
+   * Sprint 0.7 Story 8 — per-question progress dots. One per question
+   * (config.round.questionsPerRound = 20). Filled green for correct,
+   * red for wrong (timeout), hollow grey for not-yet-answered. Index
+   * tracked via `currentQuestionIndex` so we can color the right dot
+   * when `questionEnded` fires.
+   */
+  private progressDots: Phaser.GameObjects.Arc[] = [];
+  private currentQuestionIndex = 0;
   private gameSceneListenersBound = false;
 
   constructor() {
@@ -115,6 +137,12 @@ export class HudScene extends Phaser.Scene {
         color: TEXT_PRIMARY,
       })
       .setOrigin(1, 0.5);
+
+    // Sprint 0.7 Story 8 — progress dots row UNDER the HUD bar. One dot
+    // per question; filled green/red after `questionEnded`, hollow grey
+    // initially. Centered horizontally; dot size + gap tuned so the full
+    // row at 20 questions stays under ~220px wide (~30% of canvas width).
+    this.buildProgressDots(width, barHeight);
 
     // Bind to GameScene events. The GameScene event emitter is per-scene
     // and lives as long as the scene; we listen via scene.get(...).events.
@@ -271,12 +299,62 @@ export class HudScene extends Phaser.Scene {
     gameScene?.quitToMenu();
   }
 
+  /**
+   * Sprint 0.7 Story 8 — build the progress dots row.
+   *
+   * One `Phaser.GameObjects.Arc` (circle) per question. Hollow (dim grey)
+   * by default; recolored to green (correct) or red (wrong) when
+   * `questionEnded` fires for that question. Sits in the empty space
+   * below the HUD bar, centered horizontally. With 20 questions and
+   * 6px dots + 4px gaps, total width = 20*6 + 19*4 = 196px — well under
+   * the canvas width.
+   */
+  private buildProgressDots(width: number, barHeight: number): void {
+    const total = config.round.questionsPerRound;
+    const dotSize = 6;
+    const dotGap = 4;
+    const totalDotWidth = total * dotSize + (total - 1) * dotGap;
+    const startX = width / 2 - totalDotWidth / 2 + dotSize / 2;
+    const dotY = barHeight + 10; // 10px below HUD bar bottom edge
+    for (let i = 0; i < total; i++) {
+      const dot = this.add.circle(
+        startX + i * (dotSize + dotGap),
+        dotY,
+        dotSize / 2,
+        0x4b5563, // dim grey for "not yet answered"
+      );
+      // Subtle outline so dots stay visible against any backdrop.
+      dot.setStrokeStyle(1, 0x6b7280);
+      this.progressDots.push(dot);
+    }
+  }
+
+  /**
+   * Sprint 0.7 Story 8 — update a single progress dot's fill color
+   * based on outcome. Called from `onQuestionEnded` with the index of
+   * the just-completed question.
+   */
+  private markProgressDot(index: number, wasCorrect: boolean): void {
+    const dot = this.progressDots[index];
+    if (!dot) return;
+    dot.setFillStyle(wasCorrect ? 0x22c55e : 0xef4444);
+    // Brighter stroke for filled dots so they pop against the dim
+    // hollow ones for "not yet answered."
+    dot.setStrokeStyle(1, wasCorrect ? 0x16a34a : 0xb91c1c);
+  }
+
   private bindGameSceneEvents(): void {
     if (this.gameSceneListenersBound) return;
     const gameScene = this.getGameScene();
     if (!gameScene) return;
     gameScene.events.on('questionStarted', this.onQuestionStarted, this);
     gameScene.events.on('questionEnded', this.onQuestionEnded, this);
+    // Sprint 0.7 Story 8 — `correctHit` fires immediately when the
+    // correct alien is destroyed, with the alien's position + score
+    // delta. Used to spawn the score popup AT the alien, not at the
+    // HUD bar corner. Separate from `questionEnded` (which fires
+    // later, after fade-out of survivors).
+    gameScene.events.on('correctHit', this.onCorrectHit, this);
     this.gameSceneListenersBound = true;
 
     // Phaser launches parallel scenes asynchronously: GameScene.create() can
@@ -301,6 +379,7 @@ export class HudScene extends Phaser.Scene {
     if (gameScene) {
       gameScene.events.off('questionStarted', this.onQuestionStarted, this);
       gameScene.events.off('questionEnded', this.onQuestionEnded, this);
+      gameScene.events.off('correctHit', this.onCorrectHit, this);
     }
     this.gameSceneListenersBound = false;
   }
@@ -308,38 +387,52 @@ export class HudScene extends Phaser.Scene {
   private onQuestionStarted(payload: QuestionStartedPayload): void {
     this.promptText.setText(payload.question.prompt);
     this.counterText.setText(`Q: ${payload.index + 1}/${payload.total}`);
+    // Sprint 0.7 Story 8 — remember the index of the in-flight question
+    // so `onQuestionEnded` can mark the right progress dot.
+    this.currentQuestionIndex = payload.index;
   }
 
   private onQuestionEnded(payload: QuestionEndedPayload): void {
-    const oldScore = this.parseScore(this.scoreText.text);
-    const delta = payload.score - oldScore;
     this.scoreText.setText(`Score: ${payload.score}`);
-    if (payload.wasCorrect && delta > 0) {
-      this.popupScoreDelta(delta);
-    }
-  }
-
-  private parseScore(s: string): number {
-    const m = /Score: (\d+)/.exec(s);
-    return m ? Number(m[1]) : 0;
+    // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score
+    // popup is NO LONGER triggered here; it's now driven by the
+    // `correctHit` event (which fires earlier with alien coords).
+    this.markProgressDot(this.currentQuestionIndex, payload.wasCorrect);
   }
 
   /**
-   * Brief floating "+N" text above the score counter for positive feedback.
-   * Auto-destroys after the tween completes.
+   * Sprint 0.7 Story 8 — spawn the score popup at the alien's position
+   * when the correct alien is hit. Replaces the prior fixed-position
+   * popup at the HUD score corner.
    */
-  private popupScoreDelta(delta: number): void {
+  private onCorrectHit(payload: CorrectHitPayload): void {
+    if (payload.scoreDelta > 0) {
+      this.popupScoreDelta(payload.scoreDelta, payload.x, payload.y);
+    }
+  }
+
+  /**
+   * Brief floating "+N" text rising from the hit alien's position for
+   * positive feedback. Rises 50px upward over 700ms with fade-out;
+   * auto-destroys after the tween completes.
+   *
+   * Sprint 0.7 Story 8 update: was at fixed `(80, 60)` (top-left near
+   * the score counter). Now spawns at the alien's hit position so the
+   * player's eyes — already on the alien they just shot — see the
+   * reward without re-scanning to a different corner of the screen.
+   */
+  private popupScoreDelta(delta: number, x: number, y: number): void {
     const popup = this.add
-      .text(80, 60, `+${delta}`, {
+      .text(x, y, `+${delta}`, {
         fontFamily: FONT_FAMILY,
-        fontSize: '20px',
+        fontSize: '24px',
         color: TEXT_GREEN,
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
     this.tweens.add({
       targets: popup,
-      y: 30,
+      y: y - 50,
       alpha: 0,
       duration: 700,
       ease: 'Quad.Out',

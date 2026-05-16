@@ -65,4 +65,4 @@ The audio-side equivalent (ElevenLabs) is already recorded in `public/assets/CRE
 
 Whoever needs to regenerate a sprite from scratch should be able to drop a fresh raw export here, run `pnpm sprite:process --kind <kind> <raw-path> public/assets/sprites/<kind>/<name>.png`, and produce a byte-identical-ish PNG to the one currently shipped. The recipe is the source of truth, not the raw input.
 
-The encoder script lives at `scripts/sprites/process.mjs`; per-kind profiles (size caps, palette settings, compression) are documented in the script itself + in `.claude/skills/sprite-pipeline/SKILL.md`.
+The encoder script lives at `scripts/sprites/process.mjs`; per-kind profiles (size caps, palette settings, compression) are documented in the script itself + in the sprite-pipeline workflow doc.

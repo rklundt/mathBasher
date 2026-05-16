@@ -7,11 +7,16 @@
  * everywhere — never hand-write the string `'menu'` in a `scene.start(...)`
  * call, because a typo silently sends you nowhere.
  *
- * `Attribution` runs in parallel with every other non-Boot scene; the rest
- * are mutually exclusive (one active at a time).
+ * Two scenes run in PARALLEL with every other non-Boot scene:
+ *  - `Background` (sprint 0.7 Story 6) — renders the nebula + parallax stars
+ *    BEHIND everything else, providing the visual atmosphere
+ *  - `Attribution` — renders the AGPL §7(b) footer ON TOP of everything
+ *
+ * The rest are mutually exclusive (one active at a time).
  */
 export const SceneKeys = {
   Boot: 'boot',
+  Background: 'background',
   Menu: 'menu',
   GameSelect: 'game-select',
   Difficulty: 'difficulty',

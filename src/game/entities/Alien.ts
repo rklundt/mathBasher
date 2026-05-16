@@ -121,6 +121,23 @@ export class Alien extends Phaser.GameObjects.Container {
     // chassis so the number stays unobstructed; scaled to SPRITE_SIZE
     // (downscale from the 128 or 192 native source — both look crisp at
     // this display size on every viewport per ADR-0010 D3).
+    //
+    // Sprint 0.7 Story 6 follow-up: the alien sprites were extracted
+    // against a #0b1020 dark background (option C from sprint 0.6.3),
+    // so their edge pixels + any inherent translucency in the source
+    // AI art are tinted toward #0b1020. As long as the canvas BEHIND
+    // them was solid #0b1020, that translucency blended invisibly.
+    // Once Story 6 added the colorful nebula, the nebula started
+    // bleeding through the alien bodies — they read as ghostly /
+    // translucent instead of solid creatures.
+    //
+    // Fix: insert a #0b1020 backdrop Rectangle BETWEEN the chassis and
+    // the rider sprite. The backdrop re-creates the matched-bg
+    // compositing context the sprites were extracted against; the
+    // alien's translucent pixels now blend with the dark plate instead
+    // of with the nebula, restoring solid-looking aliens. Costs one
+    // extra rectangle per alien (4 aliens per wave = 4 extra rects;
+    // trivial).
     if (opts.spriteKey) {
       const sprite = opts.scene.add.sprite(0, 0, opts.spriteKey);
       // `frameWidth` from the loader is the native tier (128 or 192).
@@ -130,10 +147,75 @@ export class Alien extends Phaser.GameObjects.Container {
       sprite.y = -Alien.HEIGHT / 2 - Alien.SPRITE_CHASSIS_GAP;
       sprite.play(alienAnimKey(opts.spriteKey));
       this.riderSprite = sprite;
-      // Z-order: chassis (back) → riderSprite (middle) → answerText (front).
+      // Backdrop: Graphics object drawing a rounded rectangle from the
+      // rider's TOP all the way down to the chassis's top edge (closing
+      // the SPRITE_CHASSIS_GAP so no nebula peeks through between plate
+      // and chassis). Width matches the chassis (Alien.WIDTH) — narrower
+      // than SPRITE_SIZE so the plate "sits on top of" the number block
+      // rather than hovering as a wide floating pad.
+      //
+      // Per-corner radii: TOP corners rounded (radius 10) for a polished
+      // softer look; BOTTOM corners flat so the plate visually flows into
+      // the (sharp-cornered) chassis below as one unit. Aliens wider than
+      // Alien.WIDTH (e.g. alien1's wide-tentacle octopus) will have their
+      // edges extend past the plate and show some nebula bleed-through
+      // beyond the plate's width — acceptable tradeoff per playtest call.
+      // === Stacked concentric rounded rects (Path 2) ===
+      // Five layered rounded-rectangles, each smaller than the last
+      // (shrinking inward from top + sides; bottom stays bottom-aligned
+      // with the chassis top so the chassis-meeting edge is solid).
+      // Each layer has increasing alpha; src-over compositing makes the
+      // outer ring soft (~0.15) and the center fully opaque (the
+      // innermost layer is alpha 1.0).
+      //
+      // Result: radial-ish feather on top + sides, sharp flat bottom.
+      // Better than the Path 1 gradient (which produced visible
+      // diagonal-corner artifacts because fillGradientStyle interpolates
+      // alpha per-vertex across rounded corners).
+      //
+      // EASY BACKOUT to hard-edged plate: replace the entire `layers`
+      // array + loop with a single
+      //   riderBackdrop.fillStyle(0x0b1020, 1);
+      //   riderBackdrop.fillRoundedRect(-Alien.WIDTH/2, plateTopY,
+      //     Alien.WIDTH, plateHeight, { tl: 10, tr: 10, bl: 0, br: 0 });
+      // Path 3 (pre-baked PNG asset) escalation lives in the
+      // conversation log around this commit if Path 2 also needs a
+      // step up to continuous smooth gradient.
+      // Layer heights tuned so the OPAQUE CORE (L5, alpha 1.0) spans
+      // the full vertical extent of the rider sprite (SPRITE_SIZE = 96
+      // + 2 for the GAP). The feather happens ENTIRELY ABOVE the
+      // alien's head (in the +32px of additional plate height up top)
+      // rather than across the alien itself. This was the playtest fix
+      // for "plate needs to start higher so the alien's head is more
+      // opaque" — before this, L5 was only 58 tall and the alien's
+      // top half sat in the feathered region.
+      const chassisTopY = -Alien.HEIGHT / 2;
+      const riderBackdrop = opts.scene.add.graphics();
+      const plateLayers = [
+        // Widths bumped ~5% from chassis-matched (80) to 84 per playtest —
+        // gives the plate a subtle "cap" overhang above the chassis edge,
+        // reads as intentional plate-on-pedestal silhouette rather than
+        // a flush continuation. Inner layers proportionally shifted.
+        { w: 84, h: 130, alpha: 0.15 }, // L1: outermost, extends 32px above alien's head
+        { w: 80, h: 120, alpha: 0.2 },
+        { w: 76, h: 110, alpha: 0.25 },
+        { w: 72, h: 102, alpha: 0.35 },
+        { w: 68, h: 98, alpha: 1.0 }, // L5: opaque core, covers FULL rider sprite (98 tall)
+      ];
+      for (const layer of plateLayers) {
+        riderBackdrop.fillStyle(0x0b1020, layer.alpha);
+        riderBackdrop.fillRoundedRect(
+          -layer.w / 2,
+          chassisTopY - layer.h,
+          layer.w,
+          layer.h,
+          { tl: 8, tr: 8, bl: 0, br: 0 },
+        );
+      }
+      // Z-order: chassis (back) → riderBackdrop → riderSprite → answerText (front).
       // answerText must stay on top so the number is always readable even
       // if a sprite happens to extend down into the chassis area.
-      this.add([this.chassis, sprite, this.answerText]);
+      this.add([this.chassis, riderBackdrop, sprite, this.answerText]);
     } else {
       this.riderSprite = null;
       this.add([this.chassis, this.answerText]);

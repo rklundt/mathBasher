@@ -19,9 +19,18 @@
  * surfaces the misconfiguration immediately.
  */
 
-const PLACEHOLDER_SOURCE_URL = 'https://example.invalid/mathbasher';
+export const PLACEHOLDER_SOURCE_URL = 'https://example.invalid/mathbasher';
 
 const sourceUrl = import.meta.env.VITE_SOURCE_URL ?? PLACEHOLDER_SOURCE_URL;
+
+/**
+ * Sprint 0.7 Story 13 (D9 from sprint 0.6.3 wrap-up review) — true if
+ * the runtime sourceUrl is the placeholder fallback (i.e. VITE_SOURCE_URL
+ * was unset at build time). AttributionScene reads this and emits a
+ * Warning telemetry event on boot if true, so a misconfigured deploy
+ * shows up in App Insights instead of just looking weird in the footer.
+ */
+export const isUsingPlaceholderSourceUrl = sourceUrl === PLACEHOLDER_SOURCE_URL;
 
 export const attribution = {
   productName: 'mathBasher',

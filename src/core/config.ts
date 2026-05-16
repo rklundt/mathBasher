@@ -118,8 +118,18 @@ export const config = {
      * overlaps the footer's clickable Source URL). Centralized here so a
      * future footer redesign automatically repositions every dependent
      * widget. Mirrors the literal in `AttributionScene.create`.
+     *
+     * Tuning history:
+     *   - First pass (sprint 0.5/0.6): 56px. Generous padding around the
+     *     12px footer text.
+     *   - Sprint 0.7 Story 5 playtest: reduced to 28px (half). With the
+     *     hero ship now rendered as a real sprite + engine-glow particles
+     *     emitting downward from the ship's underside, the prior 56px
+     *     footer occluded the engine glow. 28px still contains the 12px
+     *     text with ~8px padding above/below — clearly visible, no §7(b)
+     *     compliance impact.
      */
-    attributionFooterHeightPx: 56,
+    attributionFooterHeightPx: 28,
     /**
      * Canonical button dimensions across all menu scenes. Tuned for
      * mouse + touch + keyboard accessibility:
