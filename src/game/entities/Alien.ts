@@ -111,7 +111,7 @@ export class Alien extends Phaser.GameObjects.Container {
 
     this.answerText = opts.scene.add.text(0, 0, String(opts.answer), {
       fontFamily: FONT_FAMILY,
-      fontSize: '32px',
+      fontSize: '38px', // Sprint 0.7.5 Story 1 — was 32 (alien answer text)
       color: TEXT_WHITE,
       fontStyle: 'bold',
     });

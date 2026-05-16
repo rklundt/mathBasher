@@ -161,7 +161,7 @@ export class BootScene extends Phaser.Scene {
     this.add
       .text(W / 2, H / 2 - 32, 'Loading…', {
         fontFamily: FONT_FAMILY,
-        fontSize: '20px',
+        fontSize: '24px', // Sprint 0.7.5 Story 1 — was 20 (loading bar label)
         color: '#f1f5f9',
       })
       .setOrigin(0.5);

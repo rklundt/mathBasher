@@ -108,7 +108,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
     const label = opts.scene.add.text(0, opts.subtitle ? -10 : 0, opts.label, {
       fontFamily: FONT_FAMILY,
-      fontSize: '20px',
+      fontSize: '24px', // Sprint 0.7.5 Story 1 — was 20 (button label)
       color: TEXT_PRIMARY,
     });
     label.setOrigin(0.5);
@@ -118,7 +118,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     if (opts.subtitle) {
       const subtitle = opts.scene.add.text(0, 14, opts.subtitle, {
         fontFamily: FONT_FAMILY,
-        fontSize: '14px',
+        fontSize: '17px', // Sprint 0.7.5 Story 1 — was 14 (button subtitle)
         color: TEXT_BUTTON_SUBTITLE,
       });
       subtitle.setOrigin(0.5);

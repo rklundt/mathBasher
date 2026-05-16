@@ -66,7 +66,7 @@ export class PauseOverlay extends Phaser.Scene {
     this.add
       .text(width / 2, height * 0.32, 'Paused', {
         fontFamily: FONT_FAMILY,
-        fontSize: '56px',
+        fontSize: '67px', // Sprint 0.7.5 Story 1 — was 56 (PAUSED headline)
         color: TEXT_PRIMARY,
       })
       .setOrigin(0.5);

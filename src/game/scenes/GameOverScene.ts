@@ -112,7 +112,7 @@ export class GameOverScene extends Phaser.Scene {
     const scoreSummary = this.add
       .text(cx, height * 0.32, '', {
         fontFamily: FONT_FAMILY,
-        fontSize: '24px',
+        fontSize: '29px', // Sprint 0.7.5 Story 1 — was 24 (multi-line score summary)
         color: '#eaeaf2',
         align: 'center',
       })
@@ -196,7 +196,7 @@ export class GameOverScene extends Phaser.Scene {
    * scene mount so the headline + score animations begin first.
    */
   private buildStarRow(centerX: number, y: number): void {
-    const STAR_SIZE = 48; // matches the prior 'stars' TextKind sizing intent
+    const STAR_SIZE = 58; // Sprint 0.7.5 Story 1 — was 48 (mobile readability bump)
     const STAR_GAP = 16;
     const totalWidth = 3 * STAR_SIZE + 2 * STAR_GAP;
     const startX = centerX - totalWidth / 2 + STAR_SIZE / 2;
@@ -262,7 +262,7 @@ export class GameOverScene extends Phaser.Scene {
       const badge = this.add
         .text(width / 2, height * 0.54, '★ New High Score! ★', {
           fontFamily: FONT_FAMILY,
-          fontSize: '22px',
+          fontSize: '26px', // Sprint 0.7.5 Story 1 — was 22 (high score badge)
           color: TEXT_AMBER_WARM,
           fontStyle: 'bold',
         })

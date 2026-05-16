@@ -146,7 +146,7 @@ export class SettingsScene extends Phaser.Scene {
     this.add
       .text(cx - 240, y, KIND_LABELS[kind], {
         fontFamily: FONT_FAMILY,
-        fontSize: '22px',
+        fontSize: '26px', // Sprint 0.7.5 Story 1 — was 22 (settings volume label)
         color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);

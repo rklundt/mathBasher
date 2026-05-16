@@ -71,7 +71,7 @@ export class AttributionScene extends Phaser.Scene {
     this.add
       .text(16, height - footerHeight / 2, leftText, {
         fontFamily: FONT_FAMILY,
-        fontSize: '12px',
+        fontSize: '14px', // Sprint 0.7.5 Story 1 — was 12 (footer attribution)
         color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);
@@ -79,7 +79,7 @@ export class AttributionScene extends Phaser.Scene {
     const sourceLabel = this.add
       .text(width - 16, height - footerHeight / 2, `Source: ${attribution.sourceUrl}`, {
         fontFamily: FONT_FAMILY,
-        fontSize: '12px',
+        fontSize: '14px', // Sprint 0.7.5 Story 1 — was 12 (footer attribution)
         color: TEXT_BLUE,
       })
       .setOrigin(1, 0.5);

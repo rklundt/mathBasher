@@ -112,7 +112,7 @@ export class MenuScene extends Phaser.Scene {
         const speakerGlyph = this.add
           .text(0, 1, '🔊', {
             fontFamily: FONT_FAMILY,
-            fontSize: '22px',
+            fontSize: '26px', // Sprint 0.7.5 Story 1 — was 22 (mute speaker emoji)
           })
           .setOrigin(0.5);
         container.add(speakerGlyph);
@@ -139,7 +139,7 @@ export class MenuScene extends Phaser.Scene {
     this.highScoresOverlay = this.add
       .text(width / 2, height * 0.78, 'No scores yet — play a round!', {
         fontFamily: FONT_FAMILY,
-        fontSize: '18px',
+        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (high scores placeholder)
         color: TEXT_AMBER,
       })
       .setOrigin(0.5);

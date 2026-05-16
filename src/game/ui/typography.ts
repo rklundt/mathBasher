@@ -92,19 +92,28 @@ interface TextStyle {
   fontStyle?: 'bold';
 }
 
+// Sprint 0.7.5 Story 1 — universal +20% font size bump for mobile
+// readability. Baloo 2 (introduced in 0.7) reads cleanly on desktop
+// but text was uncomfortably small on phone-sized viewports after
+// FIT-scaling halves the design-px sizes. Rollback: divide every
+// fontSize value here by 1.2 (or grep for the prior values).
+//
+// Tuning history per kind (newest first):
+//   v0.7.5: +20% bump from the v0.7 Baloo-2 swap baselines below.
+//   v0.7:   sizes inherited from earlier sprints, font swapped to Baloo 2.
 const STYLES: Readonly<Record<TextKind, TextStyle>> = {
-  title: { fontSize: '64px', color: TEXT_PRIMARY },
-  h2: { fontSize: '48px', color: TEXT_PRIMARY },
-  h3: { fontSize: '36px', color: TEXT_PRIMARY },
-  subtitle: { fontSize: '20px', color: TEXT_MUTED },
-  body: { fontSize: '18px', color: TEXT_PRIMARY },
-  bodyMuted: { fontSize: '18px', color: TEXT_MUTED },
-  prompt: { fontSize: '20px', color: TEXT_AMBER, fontStyle: 'bold' },
-  accent: { fontSize: '28px', color: TEXT_AMBER, fontStyle: 'bold' },
-  success: { fontSize: '40px', color: TEXT_GREEN },
-  warning: { fontSize: '40px', color: TEXT_AMBER_WARM },
-  stars: { fontSize: '40px', color: TEXT_AMBER },
-  sectionLabel: { fontSize: '20px', color: TEXT_MUTED },
+  title: { fontSize: '76px', color: TEXT_PRIMARY }, // was 64
+  h2: { fontSize: '58px', color: TEXT_PRIMARY }, // was 48
+  h3: { fontSize: '44px', color: TEXT_PRIMARY }, // was 36
+  subtitle: { fontSize: '24px', color: TEXT_MUTED }, // was 20
+  body: { fontSize: '22px', color: TEXT_PRIMARY }, // was 18
+  bodyMuted: { fontSize: '22px', color: TEXT_MUTED }, // was 18
+  prompt: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' }, // was 20
+  accent: { fontSize: '34px', color: TEXT_AMBER, fontStyle: 'bold' }, // was 28
+  success: { fontSize: '48px', color: TEXT_GREEN }, // was 40
+  warning: { fontSize: '48px', color: TEXT_AMBER_WARM }, // was 40
+  stars: { fontSize: '48px', color: TEXT_AMBER }, // was 40
+  sectionLabel: { fontSize: '24px', color: TEXT_MUTED }, // was 20
 };
 
 /**

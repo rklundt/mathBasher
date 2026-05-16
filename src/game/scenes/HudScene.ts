@@ -86,7 +86,7 @@ export class HudScene extends Phaser.Scene {
     this.scoreText = this.add
       .text(16, barHeight / 2, 'Score: 0', {
         fontFamily: FONT_FAMILY,
-        fontSize: '18px',
+        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (HUD score)
         color: TEXT_PRIMARY,
       })
       .setOrigin(0, 0.5);
@@ -94,7 +94,7 @@ export class HudScene extends Phaser.Scene {
     this.promptText = this.add
       .text(width / 2, barHeight / 2, '— + — = ?', {
         fontFamily: FONT_FAMILY,
-        fontSize: '20px',
+        fontSize: '24px', // Sprint 0.7.5 Story 1 — was 20 (math prompt)
         color: TEXT_AMBER,
         fontStyle: 'bold',
       })
@@ -133,7 +133,7 @@ export class HudScene extends Phaser.Scene {
     this.counterText = this.add
       .text(width - 16 - buttonsRoom, barHeight / 2, `Q: 0/${config.round.questionsPerRound}`, {
         fontFamily: FONT_FAMILY,
-        fontSize: '18px',
+        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (Q counter)
         color: TEXT_PRIMARY,
       })
       .setOrigin(1, 0.5);
@@ -230,7 +230,7 @@ export class HudScene extends Phaser.Scene {
         const speakerGlyph = this.add
           .text(0, 1, '🔊', {
             fontFamily: FONT_FAMILY,
-            fontSize: '22px',
+            fontSize: '26px', // Sprint 0.7.5 Story 1 — was 22 (mute speaker emoji)
           })
           .setOrigin(0.5);
         container.add(speakerGlyph);
@@ -425,7 +425,7 @@ export class HudScene extends Phaser.Scene {
     const popup = this.add
       .text(x, y, `+${delta}`, {
         fontFamily: FONT_FAMILY,
-        fontSize: '24px',
+        fontSize: '29px', // Sprint 0.7.5 Story 1 — was 24 (score popup at alien)
         color: TEXT_GREEN,
         fontStyle: 'bold',
       })

@@ -77,7 +77,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
     this.label = scene.add
       .text(0, 0, 'FIRE', {
         fontFamily: FONT_FAMILY,
-        fontSize: '18px',
+        fontSize: '22px', // Sprint 0.7.5 Story 1 — was 18 (FIRE label)
         // Dark canvas-color text on warm amber gives ~10:1 contrast — well
         // above WCAG AAA (7:1) for large bold text.
         color: '#0b1020',
