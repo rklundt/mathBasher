@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { stackButtons } from '@/game/ui/MenuLayout';
-import { text, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
+import { text, textStyle } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
@@ -109,12 +109,8 @@ export class MenuScene extends Phaser.Scene {
       baseFill: MUTE_ICON_BG,
       hoverFill: MUTE_ICON_HOVER,
       render: (container) => {
-        const speakerGlyph = this.add
-          .text(0, 1, '🔊', {
-            fontFamily: FONT_FAMILY,
-            fontSize: '22px',
-          })
-          .setOrigin(0.5);
+        // Container-anchored — TextKind 'iconGlyph' is shared with HudScene.
+        const speakerGlyph = this.add.text(0, 1, '🔊', textStyle('iconGlyph')).setOrigin(0.5);
         container.add(speakerGlyph);
         const refresh = (): void => {
           const muted = audio.isMuted();
@@ -133,16 +129,15 @@ export class MenuScene extends Phaser.Scene {
       this.highScoresOverlay.destroy();
     }
     const { width, height } = this.scale;
-    // One-off style (18px amber); not worth a dedicated TextKind. Build
-    // inline using FONT_FAMILY + TEXT_AMBER constants so the literal
-    // `'system-ui, ...'` stays out of scene code.
-    this.highScoresOverlay = this.add
-      .text(width / 2, height * 0.78, 'No scores yet — play a round!', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '18px',
-        color: TEXT_AMBER,
-      })
-      .setOrigin(0.5);
+    // TextKind 'bodyAccent' — 22px amber (same size as 'body' but accent
+    // color, used for transient overlay copy). Sprint 0.7.5 Story 3.
+    this.highScoresOverlay = text(
+      this,
+      width / 2,
+      height * 0.78,
+      'No scores yet — play a round!',
+      'bodyAccent',
+    ).setOrigin(0.5);
     this.time.delayedCall(2000, () => {
       this.highScoresOverlay?.destroy();
       this.highScoresOverlay = undefined;

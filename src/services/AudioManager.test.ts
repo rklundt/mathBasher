@@ -248,8 +248,59 @@ describe('AudioManager', () => {
       expect(am.getVolume('music')).toBe(80);
       am.setMuted(false);
       // Effective volume is restored to slider value.
+      // Sprint 0.7.5 Story 6 — music gets a 0.5× attenuation on top of
+      // the slider value, so slider 80 → effective 0.4 (was 0.8 pre-Story
+      // 6). SFX is unchanged at 1.0× attenuation.
       expect(am.probeEffectiveVolume('sfx')).toBeCloseTo(0.3, 3);
-      expect(am.probeEffectiveVolume('music')).toBeCloseTo(0.8, 3);
+      expect(am.probeEffectiveVolume('music')).toBeCloseTo(0.4, 3);
+    });
+  });
+
+  describe('music attenuation (Sprint 0.7.5 Story 6)', () => {
+    /**
+     * Music is globally halved on top of the slider value to fix a
+     * playtest balance problem (real music tracks landed louder than
+     * the encoder's LUFS pass implied). Locking the rule in tests so a
+     * future "let me simplify this" refactor doesn't silently restore
+     * the prior scale.
+     */
+    class ProbedAudioManager extends AudioManager {
+      probeEffectiveVolume(kind: AudioKind): number {
+        return this.effectiveVolume01(kind);
+      }
+    }
+
+    it('music slider 100 → effective 0.5 (halved)', () => {
+      const am = new ProbedAudioManager(storage);
+      am.setVolume('music', 100);
+      expect(am.probeEffectiveVolume('music')).toBeCloseTo(0.5, 3);
+    });
+
+    it('music slider 10 → effective 0.05 (halved from the prior 0.10)', () => {
+      const am = new ProbedAudioManager(storage);
+      am.setVolume('music', 10);
+      expect(am.probeEffectiveVolume('music')).toBeCloseTo(0.05, 3);
+    });
+
+    it('sfx slider 100 → effective 1.0 (unchanged — attenuation is music-only)', () => {
+      const am = new ProbedAudioManager(storage);
+      am.setVolume('sfx', 100);
+      expect(am.probeEffectiveVolume('sfx')).toBeCloseTo(1.0, 3);
+    });
+
+    it('midground slider 100 → effective 1.0 (unchanged — attenuation is music-only)', () => {
+      const am = new ProbedAudioManager(storage);
+      am.setVolume('midground', 100);
+      expect(am.probeEffectiveVolume('midground')).toBeCloseTo(1.0, 3);
+    });
+
+    it('the displayed/persisted slider value is NOT altered by the attenuation', () => {
+      // The user sets slider to 80%; SettingsScene reads back 80%, NOT 40%.
+      // Only the gain handed to Phaser is halved.
+      const am = new ProbedAudioManager(storage);
+      am.setVolume('music', 80);
+      expect(am.getVolume('music')).toBe(80);
+      expect(am.probeEffectiveVolume('music')).toBeCloseTo(0.4, 3);
     });
   });
 

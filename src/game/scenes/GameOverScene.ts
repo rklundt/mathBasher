@@ -12,7 +12,7 @@ import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { stackButtons } from '@/game/ui/MenuLayout';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
-import { text, FONT_FAMILY, TEXT_AMBER_WARM, TEXT_AMBER } from '@/game/ui/typography';
+import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 
 export interface GameOverData {
@@ -105,17 +105,12 @@ export class GameOverScene extends Phaser.Scene {
     // score number animates from 0 to the final value over 600ms via a
     // Phaser tween on a counter object. The Correct line and totals stay
     // at their final values throughout (only the score number animates).
-    // 24px primary text on a multi-line score-summary line — close to body
-    // sizing but two-up. Inline (with FONT_FAMILY) so the literal stays
-    // in typography.ts only; not promoting to a TextKind because no other
-    // scene needs this exact size.
+    // Uses TextKind 'summary' (29px primary) per Sprint 0.7.5 Story 3 —
+    // the size literal lives in typography.ts. We use textStyle() rather
+    // than text() so we can layer in `align: 'center'` for the two-line
+    // string.
     const scoreSummary = this.add
-      .text(cx, height * 0.32, '', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '24px',
-        color: '#eaeaf2',
-        align: 'center',
-      })
+      .text(cx, height * 0.32, '', { ...textStyle('summary'), align: 'center' })
       .setOrigin(0.5);
     const renderScoreLine = (displayedScore: number): string =>
       `Score: ${displayedScore}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`;
@@ -196,7 +191,12 @@ export class GameOverScene extends Phaser.Scene {
    * scene mount so the headline + score animations begin first.
    */
   private buildStarRow(centerX: number, y: number): void {
-    const STAR_SIZE = 48; // matches the prior 'stars' TextKind sizing intent
+    // STAR_SIZE drives BOTH the star glyph fontSize and the layout math
+    // (totalWidth + startX). It's a runtime template-literal fontSize
+    // (not a string literal) so it stays here rather than in the
+    // typography STYLES registry — see the typography.ts header comment
+    // about which kinds of sizing live in which file.
+    const STAR_SIZE = 58;
     const STAR_GAP = 16;
     const totalWidth = 3 * STAR_SIZE + 2 * STAR_GAP;
     const startX = centerX - totalWidth / 2 + STAR_SIZE / 2;
@@ -257,16 +257,10 @@ export class GameOverScene extends Phaser.Scene {
 
     if (isNewHighScore && this.scene.isActive()) {
       const { width, height } = this.scale;
-      // One-off badge style (22px bold warm-amber). Inline via FONT_FAMILY
-      // + TEXT_AMBER_WARM constants to keep the font literal centralized.
-      const badge = this.add
-        .text(width / 2, height * 0.54, '★ New High Score! ★', {
-          fontFamily: FONT_FAMILY,
-          fontSize: '22px',
-          color: TEXT_AMBER_WARM,
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
+      // TextKind 'badge' — 26px warm-amber bold (Sprint 0.7.5 Story 3).
+      const badge = text(this, width / 2, height * 0.54, '★ New High Score! ★', 'badge').setOrigin(
+        0.5,
+      );
       this.tweens.add({
         targets: badge,
         scale: { from: 0.5, to: 1 },

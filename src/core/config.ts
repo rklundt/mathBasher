@@ -91,6 +91,17 @@ export const config = {
      * Hero (yellow shooter block) horizontal movement speed.
      *
      * Tuning history (newest first):
+     *   v0.7.5 Story 7 — Story 2's +25% bump helped, but at fast
+     *     difficulty the shooter still felt a touch slow against the
+     *     falling blocks. Another +10% on top: 316 → 348 px/s
+     *     (316 × 1.10 = 347.6, rounded to 348). Cumulative 1.58× the
+     *     v0.5 baseline (220 → 348). In-sprint cumulative across
+     *     Stories 2 + 7: 1.25 × 1.10 = 1.375× from the pre-0.7.5
+     *     value of 253 px/s (253 × 1.375 = 348).
+     *   v0.7.5 Story 2 — even after the v0.6.3 +15% bump, the shooter
+     *     still felt too slow against the (also-fast) falling blocks.
+     *     +25% from 253 → 316 px/s. Cumulative 1.44× the v0.5 baseline
+     *     at the time.
      *   v0.6.3 playtest — paired with sprint 0.6's −15% block descent,
      *     the shooter still couldn't physically traverse to the right
      *     answer in time once the player committed. +15% restores the
@@ -99,9 +110,9 @@ export const config = {
      *   v0.5 baseline: 220 px/s.
      *
      * Block descent rate (config.scoring.speed.{slow,medium,fast}) is
-     * NOT touched by this change — only shooter speed moves.
+     * NOT touched by these changes — only shooter speed moves.
      */
-    runSpeedPxPerSec: 253,
+    runSpeedPxPerSec: 348,
     fireCooldownMs: 200,
     projectileSpeedPxPerSec: 800,
   },
@@ -125,11 +136,14 @@ export const config = {
      *   - Sprint 0.7 Story 5 playtest: reduced to 28px (half). With the
      *     hero ship now rendered as a real sprite + engine-glow particles
      *     emitting downward from the ship's underside, the prior 56px
-     *     footer occluded the engine glow. 28px still contains the 12px
-     *     text with ~8px padding above/below — clearly visible, no §7(b)
-     *     compliance impact.
+     *     footer occluded the engine glow. 28px contains the 12px text
+     *     with ~8px padding above/below.
+     *   - Sprint 0.7.5 Story 1: bumped to 32px alongside the universal
+     *     +20% font bump (footer text 12 → 14 for mobile readability).
+     *     14px text + 9px padding above/below = 32. Slightly more
+     *     headroom for Baloo 2 descenders too.
      */
-    attributionFooterHeightPx: 28,
+    attributionFooterHeightPx: 32,
     /**
      * Canonical button dimensions across all menu scenes. Tuned for
      * mouse + touch + keyboard accessibility:

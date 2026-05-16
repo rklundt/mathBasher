@@ -8,7 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
-import { text, FONT_FAMILY, TEXT_PRIMARY } from '@/game/ui/typography';
+import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
 
@@ -140,16 +140,10 @@ export class SettingsScene extends Phaser.Scene {
     cx: number,
     y: number,
   ): PlaceholderButton[] {
-    // Label to the left of the controls. 22px sits between TextKind
-    // 'subtitle' (20px) and 'accent' (28px); inline with FONT_FAMILY +
-    // TEXT_PRIMARY since this row layout is unique to SettingsScene.
-    this.add
-      .text(cx - 240, y, KIND_LABELS[kind], {
-        fontFamily: FONT_FAMILY,
-        fontSize: '22px',
-        color: TEXT_PRIMARY,
-      })
-      .setOrigin(0, 0.5);
+    // TextKind 'rowLabel' — 26px primary, the canonical settings-row
+    // label sizing (Sprint 0.7.5 Story 3). Origin (0, 0.5) for left
+    // alignment relative to the slider controls to its right.
+    text(this, cx - 240, y, KIND_LABELS[kind], 'rowLabel').setOrigin(0, 0.5);
 
     // Percent text — declared first so the closures below can update it.
     // Standard 'accent' kind matches the 28px bold amber treatment.

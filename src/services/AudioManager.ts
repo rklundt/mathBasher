@@ -62,6 +62,32 @@ export const DEFAULT_VOLUMES: Readonly<Record<AudioKind, number>> = {
   music: 50,
 };
 
+/**
+ * Per-kind ATTENUATION applied on top of the user's slider value, BEFORE
+ * the result is handed to Phaser's sound API. `1.0` means "use the
+ * slider value as-is"; lower values squash the audible scale.
+ *
+ * Sprint 0.7.5 Story 6 — music gets `0.5×`. After Story 0.7 placed real
+ * music tracks under `public/assets/audio/music/`, playtest revealed
+ * music sits louder than the encoder's LUFS pass implied (likely
+ * because the chosen tracks have heavy low-end energy that LUFS
+ * slightly under-counts perceptually). The fix is a global music
+ * gain halving — the SettingsScene slider, the displayed percent, and
+ * the persisted localStorage value all stay on the user-facing 0–100
+ * scale; only the gain handed to Phaser is halved. So slider 100% now
+ * sounds like the previous 50%, slider 10% sounds like the previous 5%.
+ *
+ * Reversible: set the music entry back to `1.0` and the prior scale
+ * returns. If a future kind needs the same treatment (e.g. midground
+ * gets too loud relative to a future SFX rebalance), add an entry
+ * here — no other code changes required.
+ */
+const KIND_ATTENUATION: Readonly<Record<AudioKind, number>> = {
+  sfx: 1.0,
+  midground: 1.0,
+  music: 0.5,
+};
+
 const VOLUME_STORAGE_KEY_PREFIX = 'mathbasher.audio.volume.';
 const volumeStorageKey = (kind: AudioKind): string => `${VOLUME_STORAGE_KEY_PREFIX}${kind}`;
 
@@ -190,10 +216,15 @@ export class AudioManager {
    * given kind right now: 0 if muted, otherwise the kind's slider value
    * normalized to a 0.0–1.0 multiplier suitable for Phaser's sound API.
    * Used by both `play` (one-shots) and the loop machinery.
+   *
+   * Sprint 0.7.5 Story 6 — applies `KIND_ATTENUATION` AFTER the
+   * slider→0..1 normalization. This is the single source of truth for
+   * "how loud should kind X actually be right now" so the music gain
+   * fudge doesn't have to be plumbed into every playback site.
    */
   protected effectiveVolume01(kind: AudioKind): number {
     if (this.muted) return 0;
-    return this.volumes[kind] / 100;
+    return (this.volumes[kind] / 100) * KIND_ATTENUATION[kind];
   }
 
   // ----- Playback (one-shots) --------------------------------------------

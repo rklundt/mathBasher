@@ -4,7 +4,16 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
-import { FONT_FAMILY } from '@/game/ui/typography';
+import { textStyle } from '@/game/ui/typography';
+import { emitButtonClicked } from '@/game/ui/buttonTelemetry';
+
+// Sprint 0.7.5 Story 4 — TouchFireButton emits its own `ButtonClicked`
+// event with `label: 'FIRE'`. The label is a constant rather than an
+// `opts` field because the button's only purpose is firing — there's
+// no scenario where a different label would make sense, and pinning
+// it here means a future "rename FIRE to BLAST" change is a 1-line
+// edit instead of touching every caller.
+const FIRE_LABEL = 'FIRE';
 
 export interface TouchFireButtonOpts {
   scene: Phaser.Scene;
@@ -74,16 +83,11 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
     this.bg = scene.add.circle(0, 0, RADIUS, 0xfacc15, 0.85);
     this.bg.setStrokeStyle(3, 0xeaeaf2);
 
-    this.label = scene.add
-      .text(0, 0, 'FIRE', {
-        fontFamily: FONT_FAMILY,
-        fontSize: '18px',
-        // Dark canvas-color text on warm amber gives ~10:1 contrast — well
-        // above WCAG AAA (7:1) for large bold text.
-        color: '#0b1020',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    // TextKind 'fireLabel' — 22px dark bold (Sprint 0.7.5 Story 3). The
+    // dark color (#0b1020) on warm-amber bg gives ~10:1 contrast, well
+    // above WCAG AAA (7:1) for large bold text. Distinct kind because no
+    // other button needs this dark-on-amber treatment.
+    this.label = scene.add.text(0, 0, 'FIRE', textStyle('fireLabel')).setOrigin(0.5);
 
     this.add([this.bg, this.label]);
 
@@ -111,11 +115,20 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        // Carve-out (Story 4): block the canvas-wide pointerdown handler
-        // in InputSystem from also receiving this event. We're going to
-        // call InputSystem.fire() ourselves via opts.onFire() — letting
-        // the canvas listener also fire would be a wasted cooldown attempt.
+        // Carve-out (sprint 0.6 Story 4): block the canvas-wide pointerdown
+        // handler in InputSystem from also receiving this event. We're
+        // going to call InputSystem.fire() ourselves via opts.onFire() —
+        // letting the canvas listener also fire would be a wasted cooldown
+        // attempt.
         event.stopPropagation();
+        // Sprint 0.7.5 Story 4 — emit BEFORE onFire() so the event still
+        // fires even if onFire() throws. `ButtonClicked` is the UI-intent
+        // event ("user pressed a UI control labeled FIRE"); InputSystem
+        // emits its own gameplay-level event ("a shot was fired"). They
+        // have different downstream consumers so the dual emission is
+        // intentional, not noise. Source is hard-coded "pointer" because
+        // this is a touch-only widget — keyboard never reaches it.
+        emitButtonClicked(FIRE_LABEL, scene.scene.key, 'pointer');
         this.applyPressedVisual();
         opts.onFire();
       },
