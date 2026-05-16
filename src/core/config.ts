@@ -95,7 +95,9 @@ export const config = {
      *     difficulty the shooter still felt a touch slow against the
      *     falling blocks. Another +10% on top: 316 → 348 px/s
      *     (316 × 1.10 = 347.6, rounded to 348). Cumulative 1.58× the
-     *     v0.5 baseline (220 → 348).
+     *     v0.5 baseline (220 → 348). In-sprint cumulative across
+     *     Stories 2 + 7: 1.25 × 1.10 = 1.375× from the pre-0.7.5
+     *     value of 253 px/s (253 × 1.375 = 348).
      *   v0.7.5 Story 2 — even after the v0.6.3 +15% bump, the shooter
      *     still felt too slow against the (also-fast) falling blocks.
      *     +25% from 253 → 316 px/s. Cumulative 1.44× the v0.5 baseline

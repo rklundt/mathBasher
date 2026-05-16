@@ -70,11 +70,13 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    // Vertical anchors. Sprint 0.7.5 Story 5 (second pass after
-    // playtest) — math row dropped from 0.30 → 0.34 so the now-taller
-    // 32px-bold sectionLabel ("Math Type") clears the tile tops cleanly
-    // instead of overlapping into them. Speed row stays at 0.66; that
-    // section still has comfortable breathing room.
+    // Vertical anchors. Sprint 0.7.5 Story 5 spec landed math at 0.30
+    // and Speed at 0.66; the second-pass playtest revealed the
+    // now-taller 32px-bold sectionLabel ("Math Type") was overlapping
+    // the tile tops at 0.30, so the math row was moved DOWN to 0.34
+    // (sectionLabel offset also bumped from 60 → 90 — see
+    // renderMathTypes). Speed row stays at 0.66; that section had
+    // comfortable breathing room and didn't need adjustment.
     this.renderMathTypes(cx, height * 0.34);
     this.renderSpeeds(cx, height * 0.66);
     this.renderStartButton(cx, height * 0.85);
