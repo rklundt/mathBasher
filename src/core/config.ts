@@ -22,10 +22,20 @@ export const config = {
     /** points multiplier when the player got it right after a wrong shot */
     afterWrongShotMultiplier: 0.5,
     mathDifficulty: {
+      // Multiplier ladder pattern:
+      //   - addition baseline = 1.0
+      //   - subtraction at same range = +0.5 (operation step)
+      //   - "to 20" version of any op = +0.5 over the "to 10" version (range step)
+      //   - mult-to-100 = +0.5 over sub-to-20 (operation step at next range)
+      //   - mult-to-144 = +0.5 over mult-to-100 (range step)
+      // Sprint 1.1 added the two mult tiers; the additive/subtractive entries
+      // were pre-registered as stubs in sprint 0.2 with these same multipliers.
       'add-to-10': 1.0,
       'add-to-20': 1.5,
       'sub-to-10': 1.5,
       'sub-to-20': 2.0,
+      'mult-to-100': 2.5,
+      'mult-to-144': 3.0,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {

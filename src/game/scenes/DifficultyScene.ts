@@ -70,17 +70,26 @@ export class DifficultyScene extends Phaser.Scene {
       return;
     }
 
-    // Vertical anchors. Sprint 0.7.5 Story 5 spec landed math at 0.30
-    // and Speed at 0.66; the second-pass playtest revealed the
-    // now-taller 32px-bold sectionLabel ("Math Type") was overlapping
-    // the tile tops at 0.30, so the math row was moved DOWN to 0.34
-    // (sectionLabel offset also bumped from 60 → 90 — see
-    // renderMathTypes). Speed row stays at 0.66; that section had
-    // comfortable breathing room and didn't need adjustment.
+    // Vertical anchors. Sprint 1.1 Story 8 — with 6 implemented math
+    // types (after Phase 1 generators landed), the math grid wraps to
+    // 2 rows of 4-per-row at 220px tile width. Each math row spans
+    // (tile-height + row-gap) = 100 + 16 = 116 design pixels. The
+    // grid origin (FIRST row's center Y) stays at 0.34 from sprint
+    // 0.7.5; subsequent rows stack downward. Speed row drops 0.66 →
+    // 0.78 to clear the second math row; Start/Back drop 0.85 → 0.92
+    // to keep proportional spacing. With AGPL footer at 0.955 (32px
+    // out of 720), Start/Back at 0.92 = y=662, button height 56 →
+    // bottom at y=690; footer top at y=688. 2px of overlap with the
+    // footer's translucent bg, but the footer text + click zone are
+    // clear (footer text at center y=704, fontSize 14 → top y≈697,
+    // well below button bottom). Verified safe.
+    //
+    // When Phase 1.5 (division) + 1.6 (mixed) land → 8 tiles, 2 full
+    // rows of 4 fits the same anchor positions, no further reflow.
     this.renderMathTypes(cx, height * 0.34);
-    this.renderSpeeds(cx, height * 0.66);
-    this.renderStartButton(cx, height * 0.85);
-    this.renderBackButton(cx - 250, height * 0.85);
+    this.renderSpeeds(cx, height * 0.78);
+    this.renderStartButton(cx, height * 0.92);
+    this.renderBackButton(cx - 250, height * 0.92);
 
     // Default selections so the user lands on a "ready to play" state.
     // Without this, a first-time user sees the keyboard-focus blue ring on
@@ -134,37 +143,62 @@ export class DifficultyScene extends Phaser.Scene {
     new KeyboardNavigator(this, [back]);
   }
 
-  private renderMathTypes(cx: number, y: number): void {
-    // Section label sits 90px above the row center. Math tiles are
-    // 100px tall (so tile-top = y - 50); the 32px bold sectionLabel kind
-    // occupies ~42px vertical (centered on its y-coord = ±21). With
+  private renderMathTypes(cx: number, firstRowY: number): void {
+    // Section label sits 90px above the FIRST row's center. Math tiles
+    // are 100px tall (so tile-top = y - 50); the 32px bold sectionLabel
+    // kind occupies ~42px vertical (centered on its y-coord = ±21).
     // 90 - 50 - 21 = 19px of visible gap between label-bottom and
-    // tile-top, the section reads as "label THEN row" instead of
-    // "label overlapping row." Speed uses a smaller offset because its
-    // tiles are shorter (64px).
-    text(this, cx, y - 90, 'Math Type', 'sectionLabel').setOrigin(0.5);
+    // first-row tile-top — reads as "label THEN row" cleanly.
+    text(this, cx, firstRowY - 90, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
-    // Sprint 0.7.5 Story 5 — tile dimensions bumped 200×80 → 220×100.
-    // The wider tile fits "Subtract within 20" with margin and the
-    // taller tile gives the wrapped subtitle (PlaceholderButton's
-    // wordWrap, also new in Story 5) room to flow to a second line for
-    // longer descriptions like "Two numbers, sum at most 10." without
-    // colliding with the label or the bottom border. 4 tiles × 220 +
-    // 3 × 20px gap = 940px total — well within the 1280px design canvas.
+
+    // Sprint 1.1 Story 8 — grid layout. Tiles wrap to MAX_PER_ROW per
+    // row; rows stack downward from `firstRowY`. EACH row is centered
+    // independently relative to the canvas — so a partial last row
+    // (e.g. 2 mult tiles after 4 add/sub tiles) sits centered beneath
+    // the row above it, NOT left-aligned with column 0. Reads as
+    // visually balanced for a kid scanning down the grid. When Phase
+    // 1.5+1.6 land at 8 tiles, both rows become full and the
+    // already-centered layout still looks pristine.
+    //
+    // Tile dimensions inherited from sprint 0.7.5 Story 5:
+    //   220×100 — fits "Subtract within 20" label + 2-line wrapped
+    //   subtitle without collisions.
     const tileWidth = 220;
     const tileHeight = 100;
-    const gap = 20;
-    const totalWidth = ids.length * tileWidth + (ids.length - 1) * gap;
-    const startX = cx - totalWidth / 2 + tileWidth / 2;
+    const colGap = 20;
+    const rowGap = 16;
+    const MAX_PER_ROW = 4;
+
+    // Pre-compute how many tiles land on each row so we can center
+    // each row's start-x against ITS tile count (not against
+    // MAX_PER_ROW). The last row may be partial; every other row is
+    // full.
+    const rowCount = Math.ceil(ids.length / MAX_PER_ROW);
+    const tilesInRow = (row: number): number => {
+      if (row < rowCount - 1) return MAX_PER_ROW;
+      // Last row: leftover after the full rows.
+      return ids.length - (rowCount - 1) * MAX_PER_ROW;
+    };
+    const rowStartX = (row: number): number => {
+      const n = tilesInRow(row);
+      const w = n * tileWidth + (n - 1) * colGap;
+      return cx - w / 2 + tileWidth / 2;
+    };
 
     ids.forEach((id, i) => {
+      const row = Math.floor(i / MAX_PER_ROW);
+      const col = i % MAX_PER_ROW;
+      const x = rowStartX(row) + col * (tileWidth + colGap);
+      const y = firstRowY + row * (tileHeight + rowGap);
+
       const gen = generators[id];
       const isImplemented = implemented.has(id);
       const button = new PlaceholderButton({
         scene: this,
-        x: startX + i * (tileWidth + gap),
+        x,
         y,
         width: tileWidth,
         height: tileHeight,

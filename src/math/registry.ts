@@ -4,6 +4,11 @@
 
 import { config, type MathId } from '@/core/config';
 import addTo10 from '@/math/generators/addTo10';
+import addTo20 from '@/math/generators/addTo20';
+import subTo10 from '@/math/generators/subTo10';
+import subTo20 from '@/math/generators/subTo20';
+import multTo100 from '@/math/generators/multTo100';
+import multTo144 from '@/math/generators/multTo144';
 import type { QuestionGenerator } from '@/math/types';
 
 /**
@@ -13,8 +18,13 @@ import type { QuestionGenerator } from '@/math/types';
  * `config.scoring.mathDifficulty` so the difficulty-select UI can render every
  * tile (with the stubbed ones disabled). Calling `.generate()` on a stub throws
  * a clear error, surfacing accidental use.
+ *
+ * As of sprint 1.1 every Phase 1 generator is implemented, so `makeStub` has
+ * no current consumers. Kept (and exported) so future sprints can register a
+ * stub when they pre-add a new key to `config.scoring.mathDifficulty` ahead
+ * of writing the generator.
  */
-function makeStub(id: MathId, label: string): QuestionGenerator {
+export function makeStub(id: MathId, label: string): QuestionGenerator {
   return {
     id,
     label,
@@ -39,12 +49,17 @@ function makeStub(id: MathId, label: string): QuestionGenerator {
  * here. No engine changes required.
  *
  * Keys must stay in sync with config; the test suite verifies this.
+ *
+ * Sprint 1.1: all Phase 1 generators (add-to-10/20, sub-to-10/20, mult-to-100/144)
+ * are now real implementations. No stubs remain in the registry.
  */
 export const generators: Record<MathId, QuestionGenerator> = {
   'add-to-10': addTo10,
-  'add-to-20': makeStub('add-to-20', 'Add to 20'),
-  'sub-to-10': makeStub('sub-to-10', 'Subtract within 10'),
-  'sub-to-20': makeStub('sub-to-20', 'Subtract within 20'),
+  'add-to-20': addTo20,
+  'sub-to-10': subTo10,
+  'sub-to-20': subTo20,
+  'mult-to-100': multTo100,
+  'mult-to-144': multTo144,
 };
 
 /**
