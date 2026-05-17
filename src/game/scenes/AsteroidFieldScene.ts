@@ -423,6 +423,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       stars: this.roundController.stars,
       mathId: this.mathId,
       speed: this.speed,
+      gameId: 'asteroid-field',
     });
   }
 

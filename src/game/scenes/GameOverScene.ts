@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { Settings } from '@/services/Settings';
+import { Settings, type GameId } from '@/services/Settings';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
@@ -22,6 +22,22 @@ export interface GameOverData {
   stars: 0 | 1 | 2 | 3;
   mathId: MathId | null;
   speed: SpeedKey | null;
+  /**
+   * Which game mode produced this round — passed explicitly by the
+   * source scene (GameScene = 'alien-shoot', AsteroidFieldScene =
+   * 'asteroid-field'). Drives:
+   *   1. Play Again routing back to the SAME game mode (was hardcoded
+   *      to SceneKeys.Game pre-sprint-2.1, which sent Asteroid Field
+   *      rounds back to Alien Shoot — playtest bug).
+   *   2. Telemetry `gameId` property (was hardcoded 'alien-shoot').
+   *   3. Score-store entry `gameId` (was hardcoded 'alien-shoot' —
+   *      meant Asteroid Field high scores were being saved under the
+   *      Alien Shoot bucket).
+   *
+   * Optional for back-compat with any legacy caller; falls back to
+   * Settings.round.gameId, then 'alien-shoot' as a last resort.
+   */
+  gameId?: GameId;
 }
 
 /**
@@ -52,8 +68,13 @@ export class GameOverScene extends Phaser.Scene {
 
 
   create(): void {
+    // Resolve the gameId for this round. Source scene SHOULD pass it
+    // in init data; fall back to Settings (current selection) for
+    // legacy callers, then 'alien-shoot' as a last-resort default.
+    const gameId: GameId = this.roundData.gameId ?? Settings.round.gameId ?? 'alien-shoot';
+
     const props: TelemetryProps = {
-      gameId: 'alien-shoot',
+      gameId,
       roundScore: String(this.roundData.score),
       roundCorrectCount: String(this.roundData.correctCount),
       passed: String(this.roundData.passed),
@@ -72,7 +93,7 @@ export class GameOverScene extends Phaser.Scene {
     // on the save — render the screen first, then asynchronously update with
     // the "New high score!" badge if appropriate.
     if (this.roundData.mathId && this.roundData.speed) {
-      void this.saveAndCheckHighScore(this.roundData.mathId, this.roundData.speed);
+      void this.saveAndCheckHighScore(gameId, this.roundData.mathId, this.roundData.speed);
     }
 
     const { width, height } = this.scale;
@@ -149,11 +170,17 @@ export class GameOverScene extends Phaser.Scene {
             // Defensive: re-set Settings to the round we just played, so
             // Play Again works even if a future code path resets Settings
             // (e.g. on round-end cleanup that hasn't been written yet).
-            // GameScene reads Settings on create, so this is enough to
-            // preserve the user's intent across the bounce.
+            // The destination scene reads Settings on create, so this
+            // preserves the user's intent across the bounce.
+            Settings.setGameId(gameId);
             if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
             if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
-            this.scene.start(SceneKeys.Game);
+            // Route to the game scene that matches the JUST-PLAYED
+            // gameId. Sprint 2.1 bug: hardcoded to SceneKeys.Game,
+            // which sent Asteroid Field players back to Alien Shoot.
+            const target =
+              gameId === 'asteroid-field' ? SceneKeys.AsteroidField : SceneKeys.Game;
+            this.scene.start(target);
           },
         },
         {
@@ -225,14 +252,18 @@ export class GameOverScene extends Phaser.Scene {
    * best for this combo BEFORE saving (otherwise we'd always tie our own
    * just-saved score), then save, then optionally show the badge.
    */
-  private async saveAndCheckHighScore(mathId: MathId, speed: SpeedKey): Promise<void> {
+  private async saveAndCheckHighScore(
+    gameId: GameId,
+    mathId: MathId,
+    speed: SpeedKey,
+  ): Promise<void> {
     const store = getScoreStore();
-    const filter: ScoreFilter = { gameId: 'alien-shoot', mathId, speed };
+    const filter: ScoreFilter = { gameId, mathId, speed };
 
     const previousBest = await store.bestForCombo(filter);
 
     const entry: ScoreEntry = {
-      gameId: 'alien-shoot',
+      gameId,
       mathId,
       speed,
       score: this.roundData.score,
@@ -244,7 +275,7 @@ export class GameOverScene extends Phaser.Scene {
     await store.save(entry);
 
     _th.logToAi('HighScoreSaved', SeverityLevel.Information, {
-      gameId: 'alien-shoot',
+      gameId,
       mathId,
       speed,
       roundScore: String(this.roundData.score),

@@ -464,6 +464,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
       stars: this.roundController.stars,
       mathId: this.mathId,
       speed: this.speed,
+      gameId: 'alien-shoot',
     });
   }
 
