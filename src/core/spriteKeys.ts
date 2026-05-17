@@ -244,6 +244,49 @@ export function pickNextAsteroidHeroSpriteKey(): string {
 }
 
 /**
+ * Asteroid Field — image-variant asteroid sprite keys (sprint 2.1
+ * playtest). Eight Midjourney-generated rock sprites that the Asteroid
+ * entity can use INSTEAD of its procedural polygon rendering, gated
+ * by the `Settings.imageAsteroidsEnabled` toggle. Default is OFF, so
+ * the existing procedural look ships unchanged; users opt into the
+ * image variant from the in-game Settings screen (only visible in
+ * the Asteroid Field game mode).
+ *
+ * Visual contract: source PNGs are 192×192 RGBA palette with the
+ * rock centered + transparent background. Picked uniformly at random
+ * per spawned asteroid (NOT round-robin — visual variety within a
+ * wave matters more than guaranteed coverage across waves, unlike
+ * heroes where one ship-per-round is the rhythm).
+ *
+ * Physical disk location: `public/assets/sprites/aliens/asteroid-N.png`.
+ * Shares the `aliens/` folder by virtue of being processed with
+ * `--kind alien` in the sprite pipeline (matches profile: 192×192
+ * paletted PNG with alpha). Doesn't share `alien` SEMANTICS though —
+ * these aren't enemies, they're targets in a different game mode.
+ */
+export const AsteroidSpriteKeys = {
+  Asteroid1: 'asteroid-1',
+  Asteroid2: 'asteroid-2',
+  Asteroid3: 'asteroid-3',
+  Asteroid4: 'asteroid-4',
+  Asteroid5: 'asteroid-5',
+  Asteroid6: 'asteroid-6',
+  Asteroid7: 'asteroid-7',
+  Asteroid8: 'asteroid-8',
+} as const;
+
+/**
+ * Pick a random asteroid image sprite key. Uniform random — each
+ * asteroid in a wave gets its own pick, so a 4-asteroid wave shows
+ * a mix of rock variants. RNG-injectable for future deterministic
+ * replay/test paths (mirrors `pickRandomAlienSpriteKey`).
+ */
+export function pickRandomAsteroidSpriteKey(rng: () => number = Math.random): string {
+  const keys = Object.values(AsteroidSpriteKeys);
+  return keys[Math.floor(rng() * keys.length)]!;
+}
+
+/**
  * Projectile (laser/bullet) sprite keys. Populated in Story 1.
  * Hero fire animation may use multiple variants for variety.
  */
@@ -503,6 +546,25 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     kind: 'bg',
     key,
     url: spritePath('bg', key),
+  })),
+  // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
+  // `public/assets/sprites/aliens/` (processed with `--kind alien` for
+  // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
+  // — they're target rocks in Asteroid Field, not enemy spritesheets.
+  // Tagged as `kind: 'particle'` in the manifest because (a) the
+  // SpriteManifestEntry type excludes `alien` (alien needs the
+  // tier + webp + spritesheet load path), and (b) particle is the
+  // closest match to "single-frame paletted PNG, no animation, no
+  // tier." The kind field is only used downstream for telemetry
+  // counts, so the semantic stretch doesn't affect loading. URL is
+  // hardcoded to the actual on-disk path. If the image-asteroid
+  // toggle survives playtest, future cleanup can promote this to a
+  // proper `asteroid` sprite kind (process.mjs profile + KIND_FOLDER
+  // entry + SpriteKind union expansion).
+  ...(Object.values(AsteroidSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'particle',
+    key,
+    url: `/assets/sprites/aliens/${key}.png`,
   })),
 ];
 

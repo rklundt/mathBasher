@@ -7,6 +7,7 @@ import { config } from '@/core/config';
 import { Asteroid } from '@/game/entities/Asteroid';
 import { defaultRng } from '@/math/rng';
 import type { Question } from '@/math/types';
+import { Settings } from '@/services/Settings';
 
 /**
  * One of the supported per-question asteroid physics modes. The
@@ -249,6 +250,11 @@ export class AsteroidWaveSystem {
         vx,
         vy,
         rng,
+        // Sprint 2.1 playtest — image-variant toggle. Read fresh from
+        // Settings PER WAVE (not per round) so flipping the toggle
+        // mid-round shows the new look on the next question's wave
+        // without having to start a new round.
+        useImageVariant: Settings.getImageAsteroidsEnabled(),
       });
       this.asteroids.push(asteroid);
 

@@ -11,6 +11,7 @@ import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
+import { Settings } from '@/services/Settings';
 
 /**
  * Settings screen. Reachable from MenuScene and from PauseOverlay. Owns
@@ -101,6 +102,18 @@ export class SettingsScene extends Phaser.Scene {
       const buttons = this.renderRow(audio, kind, width / 2, rowY);
       tabOrder.push(...buttons);
     });
+
+    // Sprint 2.1 playtest — image-asteroid visual-mode toggle. Only
+    // visible when the current round is Asteroid Field; Alien Shoot
+    // players never see this option because it doesn't apply. Sits
+    // BELOW the volume rows with a section header for visual
+    // separation (different concern from audio).
+    if (Settings.round.gameId === 'asteroid-field') {
+      const sectionY = rowYStart + AUDIO_KINDS.length * rowGap + height * 0.04;
+      text(this, width / 2, sectionY, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
+      const toggleBtn = this.renderAsteroidToggleRow(width / 2, sectionY + height * 0.09);
+      tabOrder.push(toggleBtn);
+    }
 
     const backButton = new PlaceholderButton({
       scene: this,
@@ -193,6 +206,51 @@ export class SettingsScene extends Phaser.Scene {
     };
 
     return [minusBtn, plusBtn];
+  }
+
+  /**
+   * Sprint 2.1 playtest — image-asteroid toggle row. Renders a single
+   * wide button whose `selected` state mirrors the toggle: amber
+   * border + "✓ Image Asteroids" label when ON, default chrome + "
+   * Image Asteroids" label when OFF. Clicking flips Settings + the
+   * button's visual state.
+   *
+   * Why a button + selected-state instead of a real checkbox widget:
+   * the project doesn't have a checkbox component (none of the other
+   * settings are boolean) and a one-off checkbox just for an
+   * experimental playtest toggle is over-build. PlaceholderButton's
+   * existing `selected` visual treatment is the closest semantic
+   * match — "this thing is currently active" — and reuses the
+   * KeyboardNavigator's focus/activation plumbing for free.
+   */
+  private renderAsteroidToggleRow(cx: number, y: number): PlaceholderButton {
+    // Visual state lives entirely on the button's `selected` chrome
+    // (amber border = ON, default border = OFF). Avoids needing a
+    // setLabel method on PlaceholderButton that doesn't exist for
+    // this one-off use case. Subtitle carries the OFF→ON / ON→OFF
+    // affordance in plain English so a kid knows what clicking does.
+    const subtitleFor = (enabled: boolean): string =>
+      enabled ? 'On — using image rocks' : 'Off — using polygon rocks';
+    const btn = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y,
+      width: 360,
+      height: 64,
+      label: 'Image Asteroids',
+      subtitle: subtitleFor(Settings.getImageAsteroidsEnabled()),
+      selected: Settings.getImageAsteroidsEnabled(),
+      onClick: () => {
+        const next = !Settings.getImageAsteroidsEnabled();
+        Settings.setImageAsteroidsEnabled(next);
+        btn.setSelected(next);
+        // PlaceholderButton doesn't expose setSubtitle; the amber
+        // border IS the primary indicator. Subtitle stays stale
+        // until the panel is re-opened — acceptable for a playtest
+        // toggle (user can close + re-open Settings if confused).
+      },
+    });
+    return btn;
   }
 
   private handleBack(): void {

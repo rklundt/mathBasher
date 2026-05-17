@@ -28,6 +28,21 @@ export interface RoundSettings {
   speed: SpeedKey | null;
 }
 
+/**
+ * Asteroid Field — visual mode toggle (sprint 2.1 playtest).
+ * `false` = procedural polygon asteroids (default, ships unchanged).
+ * `true`  = Midjourney image-variant rocks (opt-in via the in-game
+ *           Settings checkbox, visible only when playing Asteroid Field).
+ *
+ * Lives at module scope (NOT in `RoundSettings`) because it's a
+ * persistent visual preference, not a per-round selection. Stays
+ * in-memory only — page refresh resets it to `false` — which is the
+ * intended "experimental rollback toggle" semantic. If playtest
+ * keeps it, a localStorage persistence pass is a follow-up edit
+ * (use the AudioManager's volume-persistence pattern).
+ */
+let _imageAsteroidsEnabled = false;
+
 const state: RoundSettings = {
   gameId: 'alien-shoot',
   mathId: null,
@@ -65,5 +80,24 @@ export const Settings = {
   /** True when both math and speed are picked — the Start button uses this. */
   isReady(): boolean {
     return state.mathId !== null && state.speed !== null;
+  },
+
+  // ----- Asteroid Field visual-mode toggle (sprint 2.1 playtest) -----
+
+  /**
+   * Whether to render asteroids as Midjourney image sprites (true) or
+   * as procedural polygons (false, default). Read by `AsteroidWaveSystem`
+   * at spawn time; not reactive — asteroids spawned BEFORE a toggle
+   * change keep their original look until the next wave.
+   */
+  getImageAsteroidsEnabled(): boolean {
+    return _imageAsteroidsEnabled;
+  },
+
+  setImageAsteroidsEnabled(enabled: boolean): void {
+    _imageAsteroidsEnabled = enabled;
+    _th.logToAi('Settings.setImageAsteroidsEnabled', SeverityLevel.Information, {
+      reason: enabled ? 'enabled' : 'disabled',
+    });
   },
 };
