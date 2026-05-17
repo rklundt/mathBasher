@@ -55,6 +55,15 @@ const SALT_AMPLITUDE = 0.18; // ±18% radial noise per vertex
 const BORDER_WIDTH_PX = 4;
 /** Border-color brightness multiplier vs. the fill color (0..1, lower = darker). */
 const BORDER_DARKEN = 0.4;
+/**
+ * Image-variant visual-scale multiplier vs. procedural polygons.
+ * 1.5 = image rocks display 50% larger than polygons (sprint 2.1
+ * playtest call — the AI art has texture detail that benefits from
+ * extra screen real estate). Collision radius is NOT scaled by this;
+ * gameplay hit-target size stays identical across variants so the
+ * toggle is purely visual.
+ */
+const IMAGE_VISUAL_SCALE = 1.5;
 
 export interface AsteroidOpts {
   scene: Phaser.Scene;
@@ -125,18 +134,19 @@ export class Asteroid extends Phaser.GameObjects.Container {
 
     if (opts.useImageVariant === true) {
       // Image variant: random Midjourney rock sprite from the 8-key
-      // pool. Scaled so its diameter matches BASE_RADIUS * 2 (same
-      // visual footprint as the procedural polygon) so the gameplay
-      // feel — hit detection radius, collision area — is identical
-      // across modes. Per-instance random rotation gives visual
-      // variety since the source sprites have a "natural top".
+      // pool. Rendered 50% LARGER than the procedural polygon
+      // (BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE diameter) per sprint 2.1
+      // playtest call — the AI rocks have visual texture/detail that
+      // benefits from extra screen real estate, and they read better
+      // at the larger size. Collision radius stays at BASE_RADIUS so
+      // gameplay difficulty is unchanged (hit-target size matches the
+      // procedural variant). Per-instance random rotation gives
+      // visual variety since source sprites have a "natural top".
       const spriteKey = pickRandomAsteroidSpriteKey(rng);
       const sprite = opts.scene.add.sprite(0, 0, spriteKey);
       const nativeSize = sprite.width;
-      // 2× BASE_RADIUS = diameter we want; nativeSize is the source
-      // pixel width. Scale ratio makes the sprite render exactly
-      // at the target diameter pre-instance-scale.
-      sprite.setScale((Asteroid.BASE_RADIUS * 2) / nativeSize);
+      const targetDiameter = Asteroid.BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE;
+      sprite.setScale(targetDiameter / nativeSize);
       sprite.setRotation(rng() * Math.PI * 2);
       this.visual = sprite;
     } else {
