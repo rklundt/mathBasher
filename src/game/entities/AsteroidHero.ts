@@ -129,27 +129,31 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
    * the container's rotation handles re-orientation each frame so the
    * Graphics doesn't need to be re-drawn.
    *
-   * Position math: the source sprite faces NORTH, so the nose is at
-   * the TOP of the sprite (y = -halfH). With the +π/2 baseline
-   * rotation in `applyFacing`, "north of the sprite" becomes "east of
-   * the container" — which means the cockpit dot should sit at
-   * (+something, 0) in container-local coords for the rotation to
-   * carry it to the right visual position. Specifically: the dot
-   * sits ~25% forward from center on the east axis (= toward the
-   * sprite's painted nose after the baseline rotation).
+   * Position math: the source sprite faces NORTH in its own art, so
+   * the painted nose is at the TOP of the sprite (local y = -halfH).
+   * The cockpit dot must share the sprite's local frame so the +π/2
+   * baseline rotation in `applyFacing` carries them BOTH to the same
+   * world position — sprite nose AND cockpit dot end up at the aim
+   * direction. That means the cockpit dot also sits at NEGATIVE Y in
+   * container-local coords (= forward of center in the sprite's own
+   * frame), NOT positive X. (Sprint 2.1 retest fix: previously drawn
+   * at (+forwardOffset, 0) which placed the dot 90° clockwise of the
+   * nose — visible as "dot on the side of the ship" in the playtest
+   * screenshot.)
    */
   private drawCockpitDot(): void {
     const COCKPIT = 0xffffff;
     const COCKPIT_OUTLINE = 0x1a1a2e; // dark blue-grey for contrast on light + dark ships
     const radius = 5;
-    // 25% forward of center along the east axis. The container rotation
-    // (incl. the +π/2 baseline offset) carries this to the right
-    // visual position on the rotated sprite.
+    // 25% forward of center in the SPRITE'S local frame. Source art
+    // faces north, so forward = negative Y. The +π/2 baseline rotation
+    // in applyFacing rotates this to the world-aim direction in sync
+    // with the sprite nose.
     const forwardOffset = AsteroidHero.WIDTH * 0.25;
     this.cockpitGraphics.fillStyle(COCKPIT, 1);
-    this.cockpitGraphics.fillCircle(forwardOffset, 0, radius);
+    this.cockpitGraphics.fillCircle(0, -forwardOffset, radius);
     this.cockpitGraphics.lineStyle(1.5, COCKPIT_OUTLINE, 0.9);
-    this.cockpitGraphics.strokeCircle(forwardOffset, 0, radius);
+    this.cockpitGraphics.strokeCircle(0, -forwardOffset, radius);
   }
 
   /**
