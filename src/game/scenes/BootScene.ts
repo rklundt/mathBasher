@@ -8,14 +8,16 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
-  SPRITE_FPS,
+  ALIEN_SPRITE_SCOPE,
   SPRITE_MANIFEST,
-  alienAnimKey,
   alienSpritePath,
-  pickSpriteTier,
+  getCachedSpriteTier,
   type SpriteTier,
 } from '@/core/spriteKeys';
-import { text } from '@/game/ui/typography';
+import { createAlienAnims } from '@/game/services/alienAnims';
+import { shouldLoadAtBoot } from '@/game/services/assetLoader';
+import { isBootScope } from '@/core/assetScope';
+import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -62,29 +64,37 @@ export class BootScene extends Phaser.Scene {
     // the 45-spritesheet preload (10-20 MB depending on tier), a 1-3
     // second hang felt like the app froze. The bar fills the gap visually
     // and replaces the prior 250ms `delayedCall` mask in `create()`.
-    this.buildLoadingBar();
+    // The `attachLoadingOverlay` call is at the END of preload (after
+    // all `load.*` queue calls) — sprint 2.1.6 — so the helper's
+    // `totalToLoad === 0` short-circuit correctly distinguishes
+    // "nothing to load" (no overlay) from "queued and waiting" (show
+    // overlay).
 
     // AUDIO_MANIFEST in `src/core/audioKeys.ts` is the single source of
-    // truth for every preloadable audio asset. Adding a new sound is a
-    // 1-line edit there — this loop and the completion log both derive
-    // from the manifest, so the count never drifts.
+    // truth for every preloadable audio asset. Sprint 2.1.6 — only
+    // boot-scoped entries (eager/always) load here; per-game-scoped
+    // entries defer to the game scene's own preload() via
+    // `loadGameBundle`.
     for (const entry of AUDIO_MANIFEST) {
+      if (!shouldLoadAtBoot(entry)) continue;
       this.load.audio(entry.key, entry.url);
     }
 
     // === Alien sprites (tiered, animated spritesheets) ===
-    // Pick tier from viewport × DPR, then load every alien spritesheet
-    // at that tier. Spritesheet frame width = tier (each WebP is a
-    // horizontal row of frames, each tier×tier px square). Frame COUNT
-    // per spritesheet varies per batch (see comment in create() below);
-    // we don't pass it to load.spritesheet — Phaser derives count at
-    // animation-build time from the loaded texture's actual width.
-    this.spriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
-    for (const key of ALIEN_SPRITE_KEYS) {
-      this.load.spritesheet(key, alienSpritePath(key, this.spriteTier), {
-        frameWidth: this.spriteTier,
-        frameHeight: this.spriteTier,
-      });
+    // Pick tier from viewport × DPR (memoized via `getCachedSpriteTier` —
+    // same call from per-game preloads in stories 4 + 6 returns the
+    // same value), then load every alien spritesheet at that tier IF
+    // the whole pool is still boot-scoped. Sprint 2.1.6 story 7 will
+    // flip `ALIEN_SPRITE_SCOPE` to `'game:alien-shoot'` so this block
+    // becomes a no-op at boot.
+    this.spriteTier = getCachedSpriteTier();
+    if (isBootScope(ALIEN_SPRITE_SCOPE)) {
+      for (const key of ALIEN_SPRITE_KEYS) {
+        this.load.spritesheet(key, alienSpritePath(key, this.spriteTier), {
+          frameWidth: this.spriteTier,
+          frameHeight: this.spriteTier,
+        });
+      }
     }
 
     // === Non-alien sprites (single-frame images OR spritesheets) ===
@@ -104,6 +114,7 @@ export class BootScene extends Phaser.Scene {
     // sprite is a data change in spriteKeys.ts (just set frameWidth on
     // that entry), not a code change here.
     for (const entry of SPRITE_MANIFEST) {
+      if (!shouldLoadAtBoot(entry)) continue;
       if (entry.frameWidth !== undefined) {
         this.load.spritesheet(entry.key, entry.url, {
           frameWidth: entry.frameWidth,
@@ -113,6 +124,11 @@ export class BootScene extends Phaser.Scene {
         this.load.image(entry.key, entry.url);
       }
     }
+
+    // Loading overlay — attach AFTER all queue calls so `totalToLoad`
+    // reflects the real queue size when the helper decides whether
+    // to render.
+    attachLoadingOverlay({ scene: this });
 
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
@@ -138,71 +154,26 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Render a centered progress bar + "Loading…" label. Wires
-   * `load.on('progress', ...)` so the bar fills as assets arrive. All
-   * geometry is in design-canvas units (1280×720); FIT scaling handles
-   * device-pixel translation per `boot.ts`'s scale config.
-   *
-   * Visual: dark slate background plate (matches `#0b1020` canvas bg
-   * + the index.html splash palette so the splash → boot transition
-   * reads as continuous), thin amber fill that grows left-to-right,
-   * "Loading…" label above. No assets needed — pure shapes + text.
-   */
-  private buildLoadingBar(): void {
-    const W = this.scale.gameSize.width;
-    const H = this.scale.gameSize.height;
-    const BAR_W = 400;
-    const BAR_H = 24;
-    const BAR_PAD = 2; // inner gap between background and fill
-    const FILL_MAX = BAR_W - BAR_PAD * 2;
-
-    // Label above the bar.
-    text(this, W / 2, H / 2 - 32, 'Loading…', 'bodyLarge').setOrigin(0.5);
-
-    // Bar background — slate plate with subtle outline.
-    this.add
-      .rectangle(W / 2, H / 2, BAR_W, BAR_H, 0x1e293b)
-      .setStrokeStyle(2, 0x475569);
-
-    // Bar fill — amber (matches the FIRE button + UI accent palette).
-    // Origin (0, 0.5) so width can grow from the LEFT edge anchored at
-    // (W/2 - FILL_MAX/2). Updated each `progress` event.
-    const fill = this.add
-      .rectangle(W / 2 - FILL_MAX / 2, H / 2, 0, BAR_H - BAR_PAD * 2, 0xfbbf24)
-      .setOrigin(0, 0.5);
-
-    this.load.on('progress', (value: number) => {
-      fill.width = FILL_MAX * value;
-    });
-  }
+  // Sprint 2.1.6 — `buildLoadingBar()` extracted to
+  // `src/game/ui/LoadingOverlay.ts` so per-game `preload()` calls reuse
+  // the same visuals. Old impl was ~30 lines of Phaser-shape geometry
+  // duplicated across scenes; now any scene's preload can do
+  // `attachLoadingOverlay({ scene: this })` after queueing its assets.
 
   create(): void {
     _th.logToAi('BootScene Started', SeverityLevel.Information);
 
-    // Create one looping animation per alien sprite. Phaser's anims manager
-    // is global-to-the-game (not per-scene), so these are registered once
-    // here and any scene can `sprite.play(alienAnimKey(key))` later.
-    //
-    // We use the spritesheet's ACTUAL frame count (Phaser's default when
-    // `end` is omitted = "last frame in the spritesheet") rather than the
-    // canonical FRAMES_PER_SPRITE constant. Variable frame counts across
-    // batches are normal: ffmpeg's frame-rate filter can dedup repeated
-    // source frames, so a "5.21s × 12 fps" source might produce 47-63
-    // frames depending on encoding quirks. Hardcoding `end: 62` against
-    // a 47-frame WebP made Phaser fall back to frame 0 for the missing
-    // 15 frames, breaking the loop visibly. (Story 6 of sprint 0.6.3.)
-    for (const key of ALIEN_SPRITE_KEYS) {
-      const animKey = alienAnimKey(key);
-      if (this.anims.exists(animKey)) continue; // idempotent on hot-reload
-      this.anims.create({
-        key: animKey,
-        // Omit `end` → Phaser uses all frames present in the spritesheet.
-        frames: this.anims.generateFrameNumbers(key, { start: 0 }),
-        frameRate: SPRITE_FPS,
-        repeat: -1,
-      });
-    }
+    // Sprint 2.1.6 — alien-anim registration extracted to
+    // `createAlienAnims` (`src/game/services/alienAnims.ts`) so
+    // GameScene can call the same helper from its own create() once
+    // story 7 moves alien spritesheets to game:alien-shoot scope.
+    // The helper is doubly-idempotent: skips already-registered
+    // anims AND skips keys whose texture hasn't loaded yet. While
+    // alien sprites are still eager-loaded (pre-story-7), this call
+    // does the work; after story 7, the textures aren't yet loaded
+    // here so the helper short-circuits and GameScene's
+    // post-preload call does the registration instead.
+    createAlienAnims(this);
 
     // Hand off to the menu. Two parallel scenes get launched alongside:
     //   - BackgroundScene first → renders BELOW everything else (nebula
