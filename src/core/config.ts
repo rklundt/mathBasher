@@ -308,12 +308,72 @@ export const config = {
      * position), so this only affects keyboard players.
      */
     heroRotationRadPerSec: 4.0,
+    /**
+     * Sprint 2.1 wrap-up — visual tuning constants for the procedural
+     * polygon asteroid (`Asteroid.ts`) and the image-variant scale
+     * multiplier. Lifted from inline constants to satisfy the project's
+     * "every tunable number in config" convention (Architect-review
+     * finding). A future "make asteroids less spiky" or "shrink the
+     * image rocks" playtest call is a 1-line edit here, not a code
+     * change to the entity.
+     */
+    visual: {
+      /** Procedural polygon vertex count (12 = "bumpy circle" silhouette). */
+      vertexCount: 12,
+      /** Radial salt amplitude per vertex (±18% of base radius). */
+      saltAmplitude: 0.18,
+      /** Outline thickness on the procedural polygon. */
+      borderWidthPx: 4,
+      /** Border-color brightness multiplier vs. fill (0..1, lower = darker). */
+      borderDarken: 0.4,
+      /**
+       * Image-variant display-scale multiplier vs. procedural diameter.
+       * 1.5 = image rocks render 50% larger than polygons (sprint 2.1
+       * playtest call — the AI rock art has texture detail that benefits
+       * from extra screen real estate). Collision radius is NOT scaled
+       * by this; hit-target size matches the procedural variant so
+       * gameplay difficulty is identical across modes.
+       */
+      imageVisualScale: 1.5,
+    },
+    /**
+     * Hero ship sprite dimensions in design pixels. Lifted from inline
+     * constants on `AsteroidHero` to satisfy the project's "every
+     * tunable number in config" convention. 80×80 square (sprint 2.1
+     * playtest sizing — bigger than the original triangle predecessor
+     * so the AI-art ship detail reads at gameplay distance).
+     */
+    hero: {
+      widthPx: 80,
+      heightPx: 80,
+    },
+    /**
+     * Hero projectile visual dimensions. Capsule shape is rotated to
+     * face the travel direction. Collision radius derives from the
+     * long axis (LENGTH / 2) — see `AsteroidProjectile.getCollisionRadius`.
+     */
+    projectile: {
+      /** Long-axis length in design pixels (also drives collision radius). */
+      lengthPx: 60,
+      /** Short-axis thickness in design pixels. */
+      thicknessPx: 22,
+    },
   },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
     /** safe-area padding in design pixels (1280x720 design canvas) */
     safeAreaPaddingPx: 16,
+    /**
+     * HUD bar height in design pixels. The top-screen ribbon that
+     * carries score / prompt / pause / mute / progress dots. Lifted
+     * from an inline `barHeight = 48` literal in HudScene to satisfy
+     * the project's "no magic numbers" convention — `AsteroidFieldScene`
+     * also reads this to compute its playfield top bound so the
+     * playfield never overlaps the HUD ribbon. Single source of truth;
+     * a future resize is a 1-line edit here.
+     */
+    hudBarHeightPx: 48,
     /**
      * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
      * design pixels. Load-bearing for legal compliance — the footer must

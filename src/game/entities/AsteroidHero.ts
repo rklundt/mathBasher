@@ -43,14 +43,23 @@ import { ParticleSpriteKeys, pickNextAsteroidHeroSpriteKey } from '@/core/sprite
  */
 export class AsteroidHero extends Phaser.GameObjects.Container {
   /**
-   * Display dimensions in design pixels. AI-art ships render at
-   * 80×80 — bigger than the procedural triangle predecessor (64×52)
-   * because the detailed art deserves the focal-point real estate.
-   * Square aspect keeps the orientation-rotation math simple (no
-   * need to compensate for non-square scale-rotation interaction).
+   * Display dimensions in design pixels — read from
+   * `config.asteroidField.hero.{widthPx, heightPx}`. AI-art ships
+   * render at 80×80 today, bigger than the procedural triangle
+   * predecessor (64×52) because the detailed art deserves the
+   * focal-point real estate. Square aspect keeps the orientation-
+   * rotation math simple (no need to compensate for non-square
+   * scale-rotation interaction). Static getters proxy config so call
+   * sites that read `AsteroidHero.WIDTH` keep working — and a
+   * future "make the hero bigger" tuning pass is a 1-line config
+   * edit.
    */
-  static readonly WIDTH = 80;
-  static readonly HEIGHT = 80;
+  static get WIDTH(): number {
+    return config.asteroidField.hero.widthPx;
+  }
+  static get HEIGHT(): number {
+    return config.asteroidField.hero.heightPx;
+  }
 
   /**
    * AI-art ship sprite. Source faces NORTH; rendered with a +π/2

@@ -3,11 +3,13 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { Asteroid } from '@/game/entities/Asteroid';
 import { defaultRng } from '@/math/rng';
 import type { Question } from '@/math/types';
 import { Settings } from '@/services/Settings';
+import { computeOrbitParams } from '@/game/systems/orbitMath';
 
 /**
  * One of the supported per-question asteroid physics modes. The
@@ -148,29 +150,20 @@ export class AsteroidWaveSystem {
     const modes = config.asteroidField.enabledPhysicsModes;
     this.currentMode = modes[Math.floor(rng() * modes.length)] as AsteroidPhysicsMode;
 
-    // Sprint 2.1 wrap-up retest #3 — orbit center is now the playfield
-    // CENTER (was random-inset previously). With the elliptical orbit
-    // also new this iteration, putting the center at the playfield
-    // midpoint means the ellipse fills the rectangular playfield to
-    // the corners along both axes, maximizing on-screen presence.
-    // Semi-major (X radius) = halfPlayfieldWidth - asteroidRadius;
-    // semi-minor (Y radius) = halfPlayfieldHeight - asteroidRadius.
-    // Both insets prevent the asteroid from crossing the playfield
-    // boundary on its orbit.
+    // Sprint 2.1 wrap-up — geometry delegated to `computeOrbitParams`
+    // (pure, unit-tested helper in `orbitMath.ts`). Centralizes the
+    // "orbit center = playfield middle; semi-axes = half-playfield
+    // minus asteroid radius; angular speed = drift / semi-major"
+    // contract so the math has one source of truth + isolated tests.
+    const asteroidRadius = config.asteroidField.asteroidRadiusPx;
     const playfieldWidth = this.opts.rightBound - this.opts.leftBound;
     const playfieldHeight = this.opts.bottomBound - this.opts.topBound;
-    this.orbitCenterX = (this.opts.leftBound + this.opts.rightBound) / 2;
-    this.orbitCenterY = (this.opts.topBound + this.opts.bottomBound) / 2;
-    const asteroidRadius = config.asteroidField.asteroidRadiusPx;
-    this.orbitSemiMajor = playfieldWidth / 2 - asteroidRadius;
-    this.orbitSemiMinor = playfieldHeight / 2 - asteroidRadius;
-    // Peak linear speed on the ellipse = ω × semiMajor (reached at
-    // top/bottom where motion is along the wider axis). Set ω so this
-    // peak equals the current speed setting's drift, so an orbit
-    // asteroid never crosses the screen meaningfully faster than a
-    // straight/bounce one. Divide by 1000 to convert rad/s → rad/ms.
-    const safeSemiMajor = Math.max(1, this.orbitSemiMajor);
-    this.orbitAngularSpeed = this.opts.driftPxPerSec / safeSemiMajor / 1000;
+    const orbitParams = computeOrbitParams(this.opts, this.opts.driftPxPerSec, asteroidRadius);
+    this.orbitCenterX = orbitParams.centerX;
+    this.orbitCenterY = orbitParams.centerY;
+    this.orbitSemiMajor = orbitParams.semiMajor;
+    this.orbitSemiMinor = orbitParams.semiMinor;
+    this.orbitAngularSpeed = orbitParams.angularSpeedRadPerMs;
     this.orbitThetas.clear();
 
     // Spawn asteroids — orbit mode and straight/bounce modes use
@@ -188,7 +181,19 @@ export class AsteroidWaveSystem {
     const thetaBase = rng() * Math.PI * 2; // random starting rotation for the whole wave
 
     for (let i = 0; i < question.choices.length; i++) {
-      const answer = question.choices[i] ?? 0;
+      const candidateAnswer = question.choices[i];
+      if (candidateAnswer === undefined) {
+        // Generator contract guarantees `choices.length === asteroidsPerWave`,
+        // so this branch is defensive — but a silent default to 0 (a
+        // legal answer in add-to-10) would mask a real bug as a
+        // wrong-answer asteroid the player can never hit. Log a Warning
+        // and skip the slot instead.
+        _th.logToAi('AsteroidWaveSystem.missingChoice', SeverityLevel.Warning, {
+          reason: `choices[${String(i)}] undefined; expected length ${String(question.choices.length)}`,
+        });
+        continue;
+      }
+      const answer = candidateAnswer;
       let x = 0;
       let y = 0;
       // Compute the orbit theta ONCE per asteroid (used for both initial
@@ -203,7 +208,10 @@ export class AsteroidWaveSystem {
         // Spawn directly on the ellipse at the i'th evenly-spaced theta
         // + small random offset for visual variety. No rejection
         // sampling needed because the even spacing already guarantees
-        // they're spread apart.
+        // they're spread apart — skip the min-distance bookkeeping
+        // (pre-fix, the `spawnedPositions.push` ran for orbit too but
+        // was never read, since the `tries`/rejection loop only runs
+        // for straight/bounce).
         orbitTheta = thetaBase + i * thetaStep + (rng() * 2 - 1) * thetaJitter;
         x = this.orbitCenterX + this.orbitSemiMajor * Math.cos(orbitTheta);
         y = this.orbitCenterY + this.orbitSemiMinor * Math.sin(orbitTheta);
@@ -223,8 +231,8 @@ export class AsteroidWaveSystem {
           if (!tooClose) break;
           tries += 1;
         }
+        spawnedPositions.push({ x, y });
       }
-      spawnedPositions.push({ x, y });
 
       // Initial velocity: random direction at the configured drift
       // speed FOR STRAIGHT/BOUNCE MODES. For ORBIT MODE, velocity is

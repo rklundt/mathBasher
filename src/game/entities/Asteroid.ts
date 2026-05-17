@@ -50,20 +50,8 @@ const ASTEROID_PALETTE = [
   0x4a3828, // very dark brown
 ] as const;
 
-const VERTEX_COUNT = 12;
-const SALT_AMPLITUDE = 0.18; // ±18% radial noise per vertex
-const BORDER_WIDTH_PX = 4;
-/** Border-color brightness multiplier vs. the fill color (0..1, lower = darker). */
-const BORDER_DARKEN = 0.4;
-/**
- * Image-variant visual-scale multiplier vs. procedural polygons.
- * 1.5 = image rocks display 50% larger than polygons (sprint 2.1
- * playtest call — the AI art has texture detail that benefits from
- * extra screen real estate). Collision radius is NOT scaled by this;
- * gameplay hit-target size stays identical across variants so the
- * toggle is purely visual.
- */
-const IMAGE_VISUAL_SCALE = 1.5;
+// Tuning constants moved to `config.asteroidField.visual.*` in sprint 2.1
+// wrap-up (Architect review lift). Read inline below at each use site.
 
 export interface AsteroidOpts {
   scene: Phaser.Scene;
@@ -167,42 +155,41 @@ export class Asteroid extends Phaser.GameObjects.Container {
    * in the container's child list (under the answer text).
    */
   private buildVisual(useImage: boolean): Phaser.GameObjects.GameObject {
+    const visualCfg = config.asteroidField.visual;
     if (useImage) {
       // Image variant: random Midjourney rock sprite from the 8-key
-      // pool. Rendered 50% LARGER than the procedural polygon
-      // (BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE diameter) per sprint 2.1
-      // playtest call — the AI rocks have visual texture/detail that
-      // benefits from extra screen real estate. Collision radius stays
-      // at BASE_RADIUS so gameplay difficulty is unchanged (hit-target
-      // size matches the procedural variant). Per-instance random
-      // rotation gives visual variety since source sprites have a
-      // "natural top".
+      // pool. Rendered larger than the procedural polygon by
+      // `visualCfg.imageVisualScale` (1.5× today — the AI rocks have
+      // texture detail that benefits from extra screen real estate).
+      // Collision radius stays at BASE_RADIUS so gameplay difficulty
+      // is unchanged across variants. Per-instance random rotation
+      // gives visual variety since source sprites have a "natural top".
       const spriteKey = pickRandomAsteroidSpriteKey(this.rng);
       const sprite = this.scene.add.sprite(0, 0, spriteKey);
       const nativeSize = sprite.width;
-      const targetDiameter = Asteroid.BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE;
+      const targetDiameter = Asteroid.BASE_RADIUS * 2 * visualCfg.imageVisualScale;
       sprite.setScale(targetDiameter / nativeSize);
       sprite.setRotation(this.rng() * Math.PI * 2);
       return sprite;
     }
     // Procedural polygon variant (the original sprint 2.1 look).
     const fillColor = ASTEROID_PALETTE[Math.floor(this.rng() * ASTEROID_PALETTE.length)]!;
-    const borderColor = darkerVariant(fillColor, BORDER_DARKEN);
+    const borderColor = darkerVariant(fillColor, visualCfg.borderDarken);
     const visualRotation = this.rng() * Math.PI * 2;
 
-    // Build the irregular polygon: 12 vertices around a circle, each
-    // at BASE_RADIUS × (1 + rand[-SALT_AMPLITUDE, +SALT_AMPLITUDE]).
+    // Build the irregular polygon: vertexCount vertices around a circle,
+    // each at BASE_RADIUS × (1 + rand[-saltAmplitude, +saltAmplitude]).
     // The result is a "bumpy circle" — recognizable as an asteroid
     // silhouette without being chaotic.
     const vertices: Phaser.Math.Vector2[] = [];
-    for (let i = 0; i < VERTEX_COUNT; i++) {
-      const angle = (i / VERTEX_COUNT) * Math.PI * 2 + visualRotation;
-      const salt = 1 + (this.rng() * 2 - 1) * SALT_AMPLITUDE;
+    for (let i = 0; i < visualCfg.vertexCount; i++) {
+      const angle = (i / visualCfg.vertexCount) * Math.PI * 2 + visualRotation;
+      const salt = 1 + (this.rng() * 2 - 1) * visualCfg.saltAmplitude;
       const r = Asteroid.BASE_RADIUS * salt;
       vertices.push(new Phaser.Math.Vector2(Math.cos(angle) * r, Math.sin(angle) * r));
     }
     const graphics = this.scene.add.graphics();
-    graphics.lineStyle(BORDER_WIDTH_PX, borderColor, 1);
+    graphics.lineStyle(visualCfg.borderWidthPx, borderColor, 1);
     graphics.fillStyle(fillColor, 1);
     graphics.beginPath();
     graphics.moveTo(vertices[0]!.x, vertices[0]!.y);
@@ -301,7 +288,18 @@ export class Asteroid extends Phaser.GameObjects.Container {
     this.destroyed = true;
     // Draw a colored overlay at full alpha and let the container fade.
     // Simpler than rebuilding the polygon with a different fill.
-    const overlay = this.scene.add.circle(0, 0, Asteroid.BASE_RADIUS, correct ? 0x22c55e : 0xef4444, 0.6);
+    //
+    // Sprint 2.1 wrap-up — overlay diameter must match the visual
+    // diameter, which differs by variant: procedural polygons render
+    // at BASE_RADIUS; image rocks render at BASE_RADIUS × imageVisualScale.
+    // The pre-fix overlay was hard-coded to BASE_RADIUS, leaving image
+    // rocks tinted in a "bullseye" pattern (only the inner ~67%
+    // covered). Scaling by the same factor used in `buildVisual` keeps
+    // the overlay edge-aligned with the rendered asteroid.
+    const overlayRadius = this.usingImageVariant
+      ? Asteroid.BASE_RADIUS * config.asteroidField.visual.imageVisualScale
+      : Asteroid.BASE_RADIUS;
+    const overlay = this.scene.add.circle(0, 0, overlayRadius, correct ? 0x22c55e : 0xef4444, 0.6);
     this.add(overlay);
     this.scene.tweens.add({
       targets: this,

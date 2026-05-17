@@ -4,11 +4,20 @@
 
 import Phaser from 'phaser';
 import {
-  SLATE_BG,
   BORDER_GREY,
   FOCUS_BLUE,
   SELECTED_AMBER,
 } from '@/game/ui/uiPalette';
+
+/**
+ * OFF-state track fill. Brighter than the canonical `SLATE_BG` (#1f2740)
+ * because the toggle sits against the SettingsScene's 0.92-alpha black
+ * backdrop — at #1f2740 the OFF track was effectively invisible (~1.4:1
+ * contrast vs the backdrop, well under WCAG 1.4.11's 3:1 minimum for
+ * UI components). #3b475f reads cleanly against the backdrop while
+ * still being clearly subordinate to the ON-state amber.
+ */
+const TOGGLE_TRACK_OFF = 0x3b475f;
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelemetry';
@@ -108,9 +117,11 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     // Hit-target Rectangle FIRST so it sits behind the painter (it's
     // invisible — alpha 0 — but its render order doesn't matter; what
     // matters is that it's a concrete child carrying the interactive
-    // state Phaser actually wires up).
-    const hitWidth = TRACK_WIDTH + 16;
-    const hitHeight = TRACK_HEIGHT + 16;
+    // state Phaser actually wires up). Padding 28 (was 16) bumps the
+    // hit area to 96×64 — clears Apple HIG 44pt-with-padding and the
+    // project's 64×64 minimum-tap-target bar (Support-review lift).
+    const hitWidth = TRACK_WIDTH + 28;
+    const hitHeight = TRACK_HEIGHT + 28;
     this.hitTarget = opts.scene.add.rectangle(0, 0, hitWidth, hitHeight, 0xffffff, 0);
     this.add(this.hitTarget);
     this.hitTarget.setInteractive({ useHandCursor: true });
@@ -196,8 +207,12 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
       );
     }
 
-    // Track — amber when ON, slate when OFF, brighter on hover.
-    const baseColor = this.value ? SELECTED_AMBER : SLATE_BG;
+    // Track — amber when ON, bright-slate when OFF, brighter on hover.
+    // OFF color is the contrast-friendly `TOGGLE_TRACK_OFF` (see top of
+    // file) NOT the canonical `SLATE_BG`, because this widget sits
+    // against the Settings modal's near-black backdrop where SLATE_BG
+    // disappears.
+    const baseColor = this.value ? SELECTED_AMBER : TOGGLE_TRACK_OFF;
     const trackColor = this.hovered ? this.brighten(baseColor) : baseColor;
     g.fillStyle(trackColor, 1);
     g.fillRoundedRect(

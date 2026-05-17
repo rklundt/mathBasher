@@ -98,8 +98,14 @@ export class AsteroidInputSystem {
       scene.input.keyboard.on('keyup-RIGHT', this.handleRightUp);
     }
 
-    scene.events.once('shutdown', () => this.destroy());
-    scene.events.once('destroy', () => this.destroy());
+    // Teardown is owned by the SCENE (`AsteroidFieldScene.cleanup`
+    // calls `inputSystem.destroy()` on shutdown). Pre-fix this
+    // constructor ALSO registered `events.once('shutdown'/'destroy', ...)`
+    // listeners, producing three idempotent paths to the same destroy.
+    // Safe (the `if (this.destroyed) return;` guard caught it) but the
+    // ownership ambiguity was confusing — matching the
+    // AsteroidWaveSystem + AsteroidProjectile convention of
+    // "scene owns teardown" keeps the pattern uniform across systems.
   }
 
   /**

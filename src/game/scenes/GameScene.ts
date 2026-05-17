@@ -59,6 +59,13 @@ import { TouchFireButton } from '@/game/ui/TouchFireButton';
  */
 export class GameScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.Game;
+  /**
+   * Game-mode identifier used in every telemetry props object emitted
+   * by this scene + the defensive `Settings.setGameId` invariant. Same
+   * pattern as `AsteroidFieldScene.gameId` — a typo in one literal
+   * can't silently fork the App Insights stream.
+   */
+  private readonly gameId = 'alien-shoot' as const;
 
   // Configured at create()
   private mathId!: MathId;
@@ -111,7 +118,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // (HMR, Play Again from a different mode, future deep-link entry),
     // downstream code branching on it (SettingsScene's Game-tab
     // visibility) would miss-render. One-line invariant.
-    Settings.setGameId('alien-shoot');
+    Settings.setGameId(this.gameId);
 
     // Lifecycle telemetry + AudioManager binding. setupScene logs the
     // standard `GameScene Started` / `GameScene Completed` lifecycle
@@ -470,7 +477,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
       stars: this.roundController.stars,
       mathId: this.mathId,
       speed: this.speed,
-      gameId: 'alien-shoot',
+      gameId: this.gameId,
     });
   }
 

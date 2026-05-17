@@ -26,13 +26,10 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
  * tracks at most one live projectile at a time per the cooldown design.
  */
 export class AsteroidProjectile extends Phaser.GameObjects.Container {
-  /** Visible capsule dimensions (and the collision radius is the long axis / 2). */
-  static readonly LENGTH = 60;
-  static readonly THICKNESS = 22;
-
   private readonly sprite: Phaser.GameObjects.Image;
   private readonly vx: number;
   private readonly vy: number;
+  private readonly lengthPx: number;
   private destroyed = false;
 
   /**
@@ -45,8 +42,13 @@ export class AsteroidProjectile extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
 
+    // Capsule dimensions live in config (sprint 2.1 wrap-up — Architect
+    // review lift). Stored per-instance for the collision-radius getter.
+    this.lengthPx = config.asteroidField.projectile.lengthPx;
+    const thicknessPx = config.asteroidField.projectile.thicknessPx;
+
     this.sprite = scene.add.image(0, 0, ParticleSpriteKeys.Light01);
-    this.sprite.setDisplaySize(AsteroidProjectile.LENGTH, AsteroidProjectile.THICKNESS);
+    this.sprite.setDisplaySize(this.lengthPx, thicknessPx);
     this.sprite.setTint(0xfacc15);
     this.sprite.setBlendMode(Phaser.BlendModes.ADD);
     this.add(this.sprite);
@@ -62,7 +64,7 @@ export class AsteroidProjectile extends Phaser.GameObjects.Container {
     this.vx = Math.cos(angleRad) * speed;
     this.vy = Math.sin(angleRad) * speed;
 
-    this.setSize(AsteroidProjectile.LENGTH, AsteroidProjectile.THICKNESS);
+    this.setSize(this.lengthPx, thicknessPx);
   }
 
   /**
@@ -87,7 +89,7 @@ export class AsteroidProjectile extends Phaser.GameObjects.Container {
    * forgiving for kid aim, which is the right side to err on.
    */
   getCollisionRadius(): number {
-    return AsteroidProjectile.LENGTH / 2;
+    return this.lengthPx / 2;
   }
 
   isDestroyed(): boolean {

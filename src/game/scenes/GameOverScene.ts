@@ -69,9 +69,12 @@ export class GameOverScene extends Phaser.Scene {
 
   create(): void {
     // Resolve the gameId for this round. Source scene SHOULD pass it
-    // in init data; fall back to Settings (current selection) for
-    // legacy callers, then 'alien-shoot' as a last-resort default.
-    const gameId: GameId = this.roundData.gameId ?? Settings.round.gameId ?? 'alien-shoot';
+    // in init data; fall back to Settings (always populated — the
+    // GameId union has no nullable variant) for legacy callers. The
+    // prior triple-fallback (`?? 'alien-shoot'`) was unreachable
+    // because `Settings.round.gameId` is typed as non-nullable; dropped
+    // in sprint 2.1 wrap-up per Senior Dev review.
+    const gameId: GameId = this.roundData.gameId ?? Settings.round.gameId;
 
     const props: TelemetryProps = {
       gameId,

@@ -27,6 +27,7 @@ import {
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
+import { text } from '@/game/ui/typography';
 
 /**
  * Asteroid Field game scene — sprint 2.1's second game mode.
@@ -60,6 +61,13 @@ import { TouchFireButton } from '@/game/ui/TouchFireButton';
  */
 export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.AsteroidField;
+  /**
+   * Game-mode identifier used in every telemetry props object emitted
+   * by this scene. Extracted to a single readonly so a future mode-
+   * rename is a 1-line change (and a typo in one telemetry props
+   * literal can't silently fork the App Insights stream).
+   */
+  private readonly gameId = 'asteroid-field' as const;
 
   // Configured at create()
   private mathId!: MathId;
@@ -102,6 +110,17 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   // ----- Lifecycle ---------------------------------------------------------
 
   create(): void {
+    // Phaser reuses scene instances across mounts (class-field initializers
+    // run once at construction). Reset all stateful fields explicitly so a
+    // second-time-into-this-scene round starts cleanly — same pattern
+    // SettingsScene.init() uses for the tab state. The class-field default
+    // for `projectile` correctly sets the FIRST mount; the explicit nulls
+    // here cover every subsequent mount.
+    this.projectile = null;
+    this.currentQuestion = null;
+    this.transitioning = false;
+    this.paused = false;
+
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
@@ -112,10 +131,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     // and forgets to update Settings. Without this, downstream code
     // that branches on `Settings.round.gameId` (e.g. SettingsScene's
     // "Game" tab visibility) could miss-render based on stale state.
-    Settings.setGameId('asteroid-field');
+    Settings.setGameId(this.gameId);
 
     const props: TelemetryProps = {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       mathId: this.mathId,
       speed: this.speed,
     };
@@ -141,16 +160,26 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     });
     this.events.once('shutdown', unsubscribeImageToggle);
 
-    // Playfield bounds: full canvas minus safe-area padding minus a top
-    // margin for the HUD bar. The HUD bar is the same 48px height as in
-    // Alien Shoot (HudScene's barHeight).
+    // Playfield bounds — every dimension is derived from config so a
+    // future HUD/footer/FIRE-button resize automatically propagates.
+    //   - topBound: just below the HUD ribbon (hudBarHeightPx) with
+    //     a safe-area-pad gap.
+    //   - bottomBound: just above the TouchFireButton's hit-circle TOP
+    //     edge. TouchFireButton sits with its CENTER at
+    //     `h - footerHeight - footerClearance - radius`; the top of
+    //     its hit area is one diameter + hit-pad higher than its
+    //     center. Subtracting that whole stack leaves the playfield
+    //     stopping cleanly above the FIRE button.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
-    const hudBarHeight = 48;
+    const hudBarHeight = config.layout.hudBarHeightPx;
+    const footerHeight = config.layout.attributionFooterHeightPx;
+    const fire = config.layout.touchFire;
+    const fireStackHeight = footerHeight + fire.footerClearancePx + fire.radiusPx * 2 + fire.hitPadPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
     this.topBound = hudBarHeight + padding;
-    this.bottomBound = height - padding - 60; // 60 = clearance for the AGPL footer + FIRE button area
+    this.bottomBound = height - fireStackHeight;
 
     // Hero: centered in the playfield.
     const heroX = (this.leftBound + this.rightBound) / 2;
@@ -170,9 +199,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     });
 
     // Round controller: anti-repeat + question loop + score (same as GameScene).
+    // (`transitioning` and `paused` already reset at the top of create() so
+    // this scene's second-mount path starts cleanly even before constructing
+    // the round controller.)
     this.roundController = new RoundController(this.mathId, this.speed);
-    this.transitioning = false;
-    this.paused = false;
 
     // Input: aim (mouse / left-half touch drag / arrow keys) + fire
     // (click / right-half touch / Space / TouchFireButton).
@@ -191,9 +221,75 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     audio.playLoop(MusicKeys.Loop1, 'music');
     audio.playLoop(MidgroundKeys.Skittering1, 'midground');
 
+    // First-time Asteroid Field hint banner. Touch controls aren't
+    // obvious (drag on the left, tap on the right, FIRE button — a
+    // beginner would guess tap-anywhere-to-fire). Shows ONCE per
+    // session, fades after ~4s. Session-scoped flag (not localStorage)
+    // because the hint is meant to onboard new sessions, not "you've
+    // seen this once ever." Support-review must-fix.
+    this.maybeShowFirstRoundHint();
+
     this.startNextQuestion();
 
     this.events.once('shutdown', () => this.cleanup());
+  }
+
+  /**
+   * Show the first-round controls hint (once per session). Plain text
+   * at the top of the playfield with a translucent backdrop so it
+   * reads against any background; auto-fades after 4 seconds. The
+   * sessionStorage flag is wrapped in try/catch because some browsers
+   * (private mode on iOS pre-15) throw on storage access — the hint
+   * just shows every round instead of breaking the scene.
+   */
+  private maybeShowFirstRoundHint(): void {
+    const FLAG_KEY = 'asteroidField.hintSeen';
+    try {
+      if (sessionStorage.getItem(FLAG_KEY) === '1') return;
+      sessionStorage.setItem(FLAG_KEY, '1');
+    } catch {
+      // Storage unavailable — fall through and show the hint anyway.
+    }
+    const { width } = this.scale;
+    const hintY = this.topBound + 32;
+    const hintText = text(
+      this,
+      width / 2,
+      hintY,
+      'Drag to aim • Tap or press FIRE to shoot',
+      'rowLabel',
+    ).setOrigin(0.5);
+    // Translucent dark pill behind the text for readability against
+    // any backdrop. Sized from the text bounds with breathing room.
+    const padX = 18;
+    const padY = 8;
+    const bg = this.add.rectangle(
+      width / 2,
+      hintY,
+      hintText.width + padX * 2,
+      hintText.height + padY * 2,
+      0x000000,
+      0.65,
+    );
+    bg.setOrigin(0.5);
+    bg.setStrokeStyle(2, 0x60a5fa, 0.9);
+    // Re-add the text above the rectangle (Phaser scene-level Z is
+    // insertion order; bg was added second so it covers the text).
+    hintText.setDepth(1);
+    bg.setDepth(0);
+    // Fade out after 3 seconds visible + 1 second fade.
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({
+        targets: [hintText, bg],
+        alpha: 0,
+        duration: 1000,
+        ease: 'Quad.Out',
+        onComplete: () => {
+          hintText.destroy();
+          bg.destroy();
+        },
+      });
+    });
   }
 
   override update(_time: number, dt: number): void {
@@ -304,11 +400,12 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       this.waveSystem.applyWrongShotPenalty();
       getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
       this.playWrongHitFeedback(asteroid.x, asteroid.y);
+      this.spawnTimePenaltyFloater(asteroid.x, asteroid.y);
       asteroid.playExplodeAnim(false, () => {
         // No further state change beyond the wrong-shot flag.
       });
       _th.logToAi('WrongShot', SeverityLevel.Information, {
-        gameId: 'asteroid-field',
+        gameId: this.gameId,
         questionIndex: String(this.roundController.questionIndex),
         mathId: this.mathId,
         speed: this.speed,
@@ -329,6 +426,30 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     burst.explode(12);
     this.time.delayedCall(500, () => burst.destroy());
     this.cameras.main.flash(120, 34, 197, 94, false);
+  }
+
+  /**
+   * Spawn a "-Ns" floater above the hit wrong-asteroid so the kid sees
+   * the time penalty as a discrete event rather than a silent
+   * countdown jump. Reads the penalty value from config so a future
+   * playtest re-tuning is reflected automatically. Floats upward
+   * ~40px over 600ms then fades out. Support-review lift — without
+   * this, three wrong shots at Fast (zeroes the countdown) looked
+   * like a random timeout-fail with no causation visible.
+   */
+  private spawnTimePenaltyFloater(x: number, y: number): void {
+    const penalty = config.asteroidField.wrongShotCountdownPenaltySec;
+    if (penalty <= 0) return;
+    const floater = text(this, x, y - 40, `-${String(penalty)}s`, 'accent').setOrigin(0.5);
+    floater.setColor('#ef4444'); // matches the wrong-hit red flash
+    this.tweens.add({
+      targets: floater,
+      y: y - 80,
+      alpha: { from: 1, to: 0 },
+      duration: 600,
+      ease: 'Quad.Out',
+      onComplete: () => floater.destroy(),
+    });
   }
 
   private playWrongHitFeedback(x: number, y: number): void {
@@ -382,7 +503,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
 
   private afterQuestion(wasCorrect: boolean): void {
     const props: TelemetryProps = {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       questionIndex: String(this.roundController.questionIndex),
       wasCorrect: String(wasCorrect),
       usedWrongShot: String(this.waveSystem.hasUsedWrongShot()),
@@ -412,7 +533,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.waveSystem.spawnWave(this.currentQuestion);
 
     _th.logToAi('QuestionStarted', SeverityLevel.Information, {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       questionIndex: String(this.roundController.questionIndex),
       mathId: this.mathId,
       speed: this.speed,
@@ -426,7 +547,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
 
   private endRound(): void {
     const props: TelemetryProps = {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       mathId: this.mathId,
       speed: this.speed,
       roundScore: String(this.roundController.score),
@@ -443,7 +564,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       stars: this.roundController.stars,
       mathId: this.mathId,
       speed: this.speed,
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
     });
   }
 
@@ -471,7 +592,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     getAudioManager().pauseAllLoops();
     if (this.scene.isActive(SceneKeys.Hud)) this.scene.pause(SceneKeys.Hud);
     _th.logToAi('GamePaused', SeverityLevel.Information, {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       mathId: this.mathId,
       speed: this.speed,
       questionIndex: String(this.roundController.questionIndex),
@@ -487,7 +608,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.tweens.resumeAll();
     if (this.scene.isPaused(SceneKeys.Hud)) this.scene.resume(SceneKeys.Hud);
     _th.logToAi('GameResumed', SeverityLevel.Information, {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       mathId: this.mathId,
       speed: this.speed,
       questionIndex: String(this.roundController.questionIndex),
@@ -496,7 +617,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
 
   quitToMenu(): void {
     _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
-      gameId: 'asteroid-field',
+      gameId: this.gameId,
       mathId: this.mathId,
       speed: this.speed,
       questionsCompleted: String(this.roundController.questionIndex),

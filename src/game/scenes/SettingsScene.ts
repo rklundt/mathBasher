@@ -66,7 +66,11 @@ const KIND_LABELS: Readonly<Record<AudioKind, string>> = {
 type TabId = 'audio' | 'game';
 
 const TAB_LABELS: Readonly<Record<TabId, string>> = {
-  audio: 'Audio',
+  // "Sound" reads more naturally to a kid than the technical "Audio"
+  // (matches the existing in-scene audio-row labels — see KIND_LABELS
+  // above which says "Sound effects" not "SFX"). The TabId stays
+  // 'audio' internally so the rename is presentation-only.
+  audio: 'Sound',
   game: 'Game',
 };
 
