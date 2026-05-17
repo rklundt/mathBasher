@@ -17,6 +17,7 @@ import { AsteroidWaveSystem } from '@/game/systems/AsteroidWaveSystem';
 import { AsteroidHitSystem } from '@/game/systems/AsteroidHitSystem';
 import { AsteroidInputSystem } from '@/game/systems/AsteroidInputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
+import { SessionTotalScore } from '@/services/SessionTotalScore';
 import {
   SfxKeys,
   MidgroundKeys,
@@ -550,6 +551,12 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   }
 
   private endRound(): void {
+    // Sprint 2.1.5 — contribute this round's final score to the session
+    // total BEFORE the GameOver transition. Same pattern as GameScene;
+    // quit-to-menu mid-round explicitly does NOT contribute (handled
+    // by `quitToMenu` not routing through `endRound`).
+    SessionTotalScore.add(this.roundController.score);
+
     const props: TelemetryProps = {
       gameId: this.gameId,
       mathId: this.mathId,

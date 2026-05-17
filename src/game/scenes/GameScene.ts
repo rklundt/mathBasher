@@ -18,6 +18,7 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
+import { SessionTotalScore } from '@/services/SessionTotalScore';
 import {
   SfxKeys,
   MidgroundKeys,
@@ -464,6 +465,12 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
   }
 
   private endRound(): void {
+    // Sprint 2.1.5 — contribute this round's final score to the session
+    // total BEFORE the GameOver transition. Quit-to-menu mid-round
+    // explicitly does NOT contribute (the partial-round score isn't
+    // earned yet — handled by `quitToMenu` not calling this).
+    SessionTotalScore.add(this.roundController.score);
+
     const props: TelemetryProps = {
       mathId: this.mathId,
       speed: this.speed,
