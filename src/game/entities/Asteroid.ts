@@ -109,13 +109,22 @@ export class Asteroid extends Phaser.GameObjects.Container {
   /**
    * Rendered visual — either a `Graphics` (procedural polygon) or a
    * `Sprite` (image-variant). Held as the base type so animations
-   * (`playExplodeAnim`) can target it uniformly. The narrower
-   * `graphics`/`sprite` references aren't kept because both code paths
-   * use the container's overall alpha/scale for animations, not the
-   * inner object's properties directly.
+   * (`playExplodeAnim`) can target it uniformly. Mutable to support
+   * in-place visual swap via `setUseImageVariant` — when the user
+   * toggles the Settings → Game → Asteroid Images switch mid-round,
+   * AsteroidWaveSystem walks the live asteroids and swaps each one's
+   * visual without disturbing position / velocity / answer text.
    */
-  private readonly visual: Phaser.GameObjects.GameObject;
+  private visual: Phaser.GameObjects.GameObject;
   private readonly answerText: Phaser.GameObjects.Text;
+  /** Tracks current visual mode so swaps can no-op when already matching. */
+  private usingImageVariant: boolean;
+  /**
+   * RNG stored for re-use during in-place visual swap (`setUseImageVariant`
+   * needs to pick palette / rotation / sprite key for the NEW visual,
+   * mirroring the constructor's random decisions).
+   */
+  private readonly rng: () => number;
 
   constructor(opts: AsteroidOpts) {
     super(opts.scene, opts.x, opts.y);
@@ -124,65 +133,16 @@ export class Asteroid extends Phaser.GameObjects.Container {
     this.answer = opts.answer;
     this.vx = opts.vx;
     this.vy = opts.vy;
-    const rng = opts.rng ?? defaultRng;
+    this.rng = opts.rng ?? defaultRng;
 
     // Per-instance variation: scale (applied uniformly to whichever
     // visual variant renders).
     const cfg = config.asteroidField;
     this.instanceScale =
-      cfg.asteroidScaleMin + rng() * (cfg.asteroidScaleMax - cfg.asteroidScaleMin);
+      cfg.asteroidScaleMin + this.rng() * (cfg.asteroidScaleMax - cfg.asteroidScaleMin);
 
-    if (opts.useImageVariant === true) {
-      // Image variant: random Midjourney rock sprite from the 8-key
-      // pool. Rendered 50% LARGER than the procedural polygon
-      // (BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE diameter) per sprint 2.1
-      // playtest call — the AI rocks have visual texture/detail that
-      // benefits from extra screen real estate, and they read better
-      // at the larger size. Collision radius stays at BASE_RADIUS so
-      // gameplay difficulty is unchanged (hit-target size matches the
-      // procedural variant). Per-instance random rotation gives
-      // visual variety since source sprites have a "natural top".
-      const spriteKey = pickRandomAsteroidSpriteKey(rng);
-      const sprite = opts.scene.add.sprite(0, 0, spriteKey);
-      const nativeSize = sprite.width;
-      const targetDiameter = Asteroid.BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE;
-      sprite.setScale(targetDiameter / nativeSize);
-      sprite.setRotation(rng() * Math.PI * 2);
-      this.visual = sprite;
-    } else {
-      // Procedural polygon variant (default — original sprint 2.1 look).
-      const fillColor = ASTEROID_PALETTE[Math.floor(rng() * ASTEROID_PALETTE.length)]!;
-      const borderColor = darkerVariant(fillColor, BORDER_DARKEN);
-      const visualRotation = rng() * Math.PI * 2;
-
-      // Build the irregular polygon: 12 vertices around a circle, each
-      // at BASE_RADIUS × (1 + rand[-SALT_AMPLITUDE, +SALT_AMPLITUDE]).
-      // The result is a "bumpy circle" — recognizable as an asteroid
-      // silhouette without being chaotic.
-      const vertices: Phaser.Math.Vector2[] = [];
-      for (let i = 0; i < VERTEX_COUNT; i++) {
-        const angle = (i / VERTEX_COUNT) * Math.PI * 2 + visualRotation;
-        const salt = 1 + (rng() * 2 - 1) * SALT_AMPLITUDE;
-        const r = Asteroid.BASE_RADIUS * salt;
-        vertices.push(new Phaser.Math.Vector2(Math.cos(angle) * r, Math.sin(angle) * r));
-      }
-
-      // Render: Graphics with fillStyle + lineStyle, polygon traced
-      // through the salted vertices. Using Graphics (not Polygon) so
-      // we control the border width directly.
-      const graphics = opts.scene.add.graphics();
-      graphics.lineStyle(BORDER_WIDTH_PX, borderColor, 1);
-      graphics.fillStyle(fillColor, 1);
-      graphics.beginPath();
-      graphics.moveTo(vertices[0]!.x, vertices[0]!.y);
-      for (let i = 1; i < vertices.length; i++) {
-        graphics.lineTo(vertices[i]!.x, vertices[i]!.y);
-      }
-      graphics.closePath();
-      graphics.fillPath();
-      graphics.strokePath();
-      this.visual = graphics;
-    }
+    this.usingImageVariant = opts.useImageVariant === true;
+    this.visual = this.buildVisual(this.usingImageVariant);
 
     // Answer text — white, centered, on top of the asteroid. Uses the
     // existing alienAnswer TextKind for typographic consistency across
@@ -197,6 +157,91 @@ export class Asteroid extends Phaser.GameObjects.Container {
     // (KeyboardNavigator focus rings, future tween targets). Diameter at
     // BASE_RADIUS (pre-scale; the container's `scale` does the rest).
     this.setSize(Asteroid.BASE_RADIUS * 2, Asteroid.BASE_RADIUS * 2);
+  }
+
+  /**
+   * Build the visual GameObject (Graphics polygon OR Sprite) per the
+   * variant flag. Extracted from the constructor so `setUseImageVariant`
+   * can rebuild on toggle without duplicating the construction logic.
+   * Does NOT add to the container — caller is responsible for placement
+   * in the container's child list (under the answer text).
+   */
+  private buildVisual(useImage: boolean): Phaser.GameObjects.GameObject {
+    if (useImage) {
+      // Image variant: random Midjourney rock sprite from the 8-key
+      // pool. Rendered 50% LARGER than the procedural polygon
+      // (BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE diameter) per sprint 2.1
+      // playtest call — the AI rocks have visual texture/detail that
+      // benefits from extra screen real estate. Collision radius stays
+      // at BASE_RADIUS so gameplay difficulty is unchanged (hit-target
+      // size matches the procedural variant). Per-instance random
+      // rotation gives visual variety since source sprites have a
+      // "natural top".
+      const spriteKey = pickRandomAsteroidSpriteKey(this.rng);
+      const sprite = this.scene.add.sprite(0, 0, spriteKey);
+      const nativeSize = sprite.width;
+      const targetDiameter = Asteroid.BASE_RADIUS * 2 * IMAGE_VISUAL_SCALE;
+      sprite.setScale(targetDiameter / nativeSize);
+      sprite.setRotation(this.rng() * Math.PI * 2);
+      return sprite;
+    }
+    // Procedural polygon variant (the original sprint 2.1 look).
+    const fillColor = ASTEROID_PALETTE[Math.floor(this.rng() * ASTEROID_PALETTE.length)]!;
+    const borderColor = darkerVariant(fillColor, BORDER_DARKEN);
+    const visualRotation = this.rng() * Math.PI * 2;
+
+    // Build the irregular polygon: 12 vertices around a circle, each
+    // at BASE_RADIUS × (1 + rand[-SALT_AMPLITUDE, +SALT_AMPLITUDE]).
+    // The result is a "bumpy circle" — recognizable as an asteroid
+    // silhouette without being chaotic.
+    const vertices: Phaser.Math.Vector2[] = [];
+    for (let i = 0; i < VERTEX_COUNT; i++) {
+      const angle = (i / VERTEX_COUNT) * Math.PI * 2 + visualRotation;
+      const salt = 1 + (this.rng() * 2 - 1) * SALT_AMPLITUDE;
+      const r = Asteroid.BASE_RADIUS * salt;
+      vertices.push(new Phaser.Math.Vector2(Math.cos(angle) * r, Math.sin(angle) * r));
+    }
+    const graphics = this.scene.add.graphics();
+    graphics.lineStyle(BORDER_WIDTH_PX, borderColor, 1);
+    graphics.fillStyle(fillColor, 1);
+    graphics.beginPath();
+    graphics.moveTo(vertices[0]!.x, vertices[0]!.y);
+    for (let i = 1; i < vertices.length; i++) {
+      graphics.lineTo(vertices[i]!.x, vertices[i]!.y);
+    }
+    graphics.closePath();
+    graphics.fillPath();
+    graphics.strokePath();
+    return graphics;
+  }
+
+  /**
+   * Swap the visual representation in place. Called when the user
+   * toggles the Settings → Game → Asteroid Images switch mid-round —
+   * AsteroidWaveSystem fans the new value out to every live asteroid
+   * so the change is visible IMMEDIATELY rather than waiting for the
+   * next wave spawn. No-op if already in the requested mode (so a
+   * batch refresh from the wave system is idempotent).
+   *
+   * Preserves: position, velocity, answer, answer-text overlay,
+   * collision radius, instance scale, destroyed flag. Re-randomizes:
+   * the polygon shape / palette OR the picked sprite key + rotation
+   * (intentional — the new visual gets fresh look-randomization since
+   * the old visual's random seed bits are gone with it).
+   */
+  setUseImageVariant(useImage: boolean): void {
+    if (this.destroyed) return;
+    if (this.usingImageVariant === useImage) return;
+    this.usingImageVariant = useImage;
+    this.visual.destroy();
+    this.visual = this.buildVisual(useImage);
+    this.add(this.visual);
+    // Answer text must render ABOVE the new visual. `sendToBack` on
+    // the visual is equivalent to `bringToTop` on the text; pick one
+    // (sendToBack keeps the answer-text child list position stable
+    // across visual swaps, which is friendlier to future tween code
+    // that targets answerText by index).
+    this.sendToBack(this.visual);
   }
 
   // ----- Per-frame advance --------------------------------------------------

@@ -418,47 +418,60 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   /**
-   * Image-asteroid toggle row. A real iOS/Material toggle switch
-   * (sliding thumb in a pill track) sits to the right; a label that
-   * describes the CURRENT visual state sits to the left:
+   * Image-asteroid toggle row. Layout per playtest pass 2:
+   *  - Toggle switch on the LEFT (so the eye lands on the actionable
+   *    control first; a kid scanning for "where do I click?" sees the
+   *    pill switch before they read the label).
+   *  - Generous gap (~40px) between switch and label so they don't
+   *    crowd visually.
+   *  - Label on the RIGHT, LEFT-justified (origin 0, 0.5) so changing
+   *    text widths don't shift the layout left/right as the value
+   *    flips between "Asteroid Images" and "Rendered Asteroids".
+   *
+   * Label describes the CURRENT visual state:
    *  - ON  → "Asteroid Images"   (you're seeing image rocks now)
    *  - OFF → "Rendered Asteroids" (you're seeing polygon rocks now)
-   *
-   * Sprint 2.1 playtest pivot from the prior PlaceholderButton-as-
-   * checkbox approach: a boolean setting deserves a real toggle
-   * widget, and the label-shows-current-state convention is clearer
-   * than a static "Image Asteroids" label with a separate on/off
-   * indicator (per user direction).
    *
    * Both the label and the switch are tracked: the label as
    * tabContent (for tab-switch cleanup) and the switch additionally
    * as tabContentFocusables (for KeyboardNavigator). The label is
-   * re-set inside the switch's onChange callback so it updates
-   * live when the user toggles.
+   * re-set inside the switch's onChange callback so it updates live.
    */
   private renderAsteroidImageToggleRow(cx: number, y: number): void {
     const labelFor = (enabled: boolean): string =>
       enabled ? 'Asteroid Images' : 'Rendered Asteroids';
-    // Layout: label left-aligned at cx-120 (origin 0, 0.5), switch
-    // right-aligned at cx+140 (origin handled by ToggleSwitch's
-    // centered geometry). Total visual span ~280px centered on cx.
-    const label = text(this, cx - 120, y, labelFor(Settings.getImageAsteroidsEnabled()), 'rowLabel')
-      .setOrigin(0, 0.5);
-    this.tabContent.push(label);
+    // Positions: switch centered at (cx-80), label left-justified
+    // starting at (cx-10). Switch is ~80px wide so its right edge is
+    // around cx-40; label starts 30px right of that for breathing room.
+    const switchX = cx - 80;
+    const labelX = cx - 10;
 
     const toggle = new ToggleSwitch({
       scene: this,
-      x: cx + 140,
+      x: switchX,
       y,
       value: Settings.getImageAsteroidsEnabled(),
       telemetryLabel: 'ImageAsteroids',
       onChange: (next) => {
+        // Settings.setImageAsteroidsEnabled fires the change event that
+        // AsteroidFieldScene subscribes to — live asteroids get swapped
+        // in place, plus future spawns reflect the new value. The
+        // label.setText below updates the on-screen description.
         Settings.setImageAsteroidsEnabled(next);
         label.setText(labelFor(next));
       },
     });
     this.tabContent.push(toggle);
     this.tabContentFocusables.push(toggle);
+
+    const label = text(
+      this,
+      labelX,
+      y,
+      labelFor(Settings.getImageAsteroidsEnabled()),
+      'rowLabel',
+    ).setOrigin(0, 0.5);
+    this.tabContent.push(label);
   }
 
   private handleBack(): void {

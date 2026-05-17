@@ -45,6 +45,17 @@ export interface RoundSettings {
  */
 let _imageAsteroidsEnabled = true;
 
+/**
+ * Listeners for image-asteroids toggle changes. Set so a callback can
+ * subscribe + unsubscribe cleanly (subscribe returns an unsubscribe
+ * function — same shape as Phaser scene events / RxJS observables).
+ * AsteroidFieldScene wires one of these on create() so toggling the
+ * setting from the in-game Settings panel updates LIVE asteroids on
+ * the playfield, not just future spawns.
+ */
+type ImageAsteroidsListener = (enabled: boolean) => void;
+const _imageAsteroidsListeners = new Set<ImageAsteroidsListener>();
+
 const state: RoundSettings = {
   gameId: 'alien-shoot',
   mathId: null,
@@ -97,9 +108,33 @@ export const Settings = {
   },
 
   setImageAsteroidsEnabled(enabled: boolean): void {
+    if (_imageAsteroidsEnabled === enabled) return;
     _imageAsteroidsEnabled = enabled;
     _th.logToAi('Settings.setImageAsteroidsEnabled', SeverityLevel.Information, {
       reason: enabled ? 'enabled' : 'disabled',
     });
+    // Fan out to any listeners. Caught per-listener so one bad
+    // subscriber can't break the others — Settings is a global, and
+    // a listener throwing here would leave the in-flight callers
+    // (e.g. the SettingsScene toggle's onChange) in a partial state.
+    for (const listener of _imageAsteroidsListeners) {
+      try {
+        listener(enabled);
+      } catch (err) {
+        _th.logToAi('Settings.imageAsteroidsListener.error', SeverityLevel.Warning, {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  },
+
+  /**
+   * Subscribe to image-asteroids toggle changes. Returns an
+   * unsubscribe function — call it on scene shutdown so the listener
+   * doesn't outlive the scene that owns it.
+   */
+  onImageAsteroidsChange(listener: ImageAsteroidsListener): () => void {
+    _imageAsteroidsListeners.add(listener);
+    return () => _imageAsteroidsListeners.delete(listener);
   },
 };

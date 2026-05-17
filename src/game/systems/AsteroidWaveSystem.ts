@@ -352,6 +352,21 @@ export class AsteroidWaveSystem {
   }
 
   /**
+   * Push a new image-variant flag to every LIVE asteroid in the
+   * current wave. Called by AsteroidFieldScene when the user toggles
+   * the in-game Settings → Game → Asteroid Images switch, so the
+   * change is visible immediately rather than waiting for the next
+   * wave spawn. Idempotent — `Asteroid.setUseImageVariant` no-ops
+   * when already in the requested mode.
+   */
+  applyVisualMode(useImageVariant: boolean): void {
+    for (const a of this.asteroids) {
+      if (a.isDestroyed()) continue;
+      a.setUseImageVariant(useImageVariant);
+    }
+  }
+
+  /**
    * Wrong-shot bookkeeping. Called by the scene when the player hits an
    * incorrect asteroid. Two effects:
    *   1. Increments the wrong-shot count → triggers ScoreCalculator's

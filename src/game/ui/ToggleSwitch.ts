@@ -15,20 +15,20 @@ import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelem
 import type { Focusable } from '@/game/ui/KeyboardNavigator';
 
 /**
- * iOS/Material-style toggle switch — pill-shaped track with a sliding
- * circular thumb. ON state shows the thumb pushed right with an amber
- * track; OFF state shows the thumb pushed left with a slate track.
+ * iOS/Material-style toggle switch — pill-shaped track with a circular
+ * thumb that snaps left (OFF) or right (ON). ON state shows the thumb
+ * on the right with an amber track; OFF state shows it on the left
+ * with a slate track.
  *
- * Boolean settings deserve a real toggle. PlaceholderButton's
- * selected-amber-border approach was a reasonable stretch (the kind of
- * "this thing is currently active" semantic already used elsewhere),
- * but for a single canonical on/off control a kid recognizes instantly,
- * the platform-standard switch is the clearer affordance.
- *
- * The label sits to the LEFT of the switch by convention (call site
- * positions it via a separate Text — this class only owns the switch
- * itself, so callers can A/B the label position or change the label
- * text per state without touching switch internals).
+ * Implementation: ONE `Graphics` object draws both track and thumb
+ * together. The whole widget repaints on every state change. This is
+ * deliberately simpler than a separate Container-of-children approach
+ * (which had a "first toggle works, second toggle stuck" bug in the
+ * initial sprint 2.1 implementation — suspected Phaser quirk with
+ * cross-Container tweens of reparented Arc geometry; the single-paint
+ * approach sidesteps the issue entirely). A subtle scale-pulse on
+ * activation (1.0 → 1.08 → 1.0 over 140ms) provides the
+ * "something happened" feedback that the original tween was meant to.
  *
  * Implements `Focusable` so it slots directly into `KeyboardNavigator`
  * alongside `PlaceholderButton` instances — Tab to focus, Enter/Space
@@ -42,8 +42,8 @@ export interface ToggleSwitchOpts {
   value?: boolean;
   /**
    * Called after the user toggles. Receives the NEW value (post-flip).
-   * The switch already updates its own visual state before invoking;
-   * caller doesn't need to re-set anything on the switch.
+   * The switch updates its own visual state before invoking — caller
+   * doesn't need to re-set anything on the switch.
    */
   onChange?: (newValue: boolean) => void;
   /**
@@ -64,10 +64,13 @@ export interface ToggleSwitchOpts {
 const TRACK_WIDTH = 80;
 const TRACK_HEIGHT = 36;
 const TRACK_RADIUS = TRACK_HEIGHT / 2; // pill = radius = half-height
-const THUMB_RADIUS = (TRACK_HEIGHT - 6) / 2; // 3px inset on each side
-const THUMB_TRAVEL = TRACK_WIDTH - TRACK_HEIGHT; // distance thumb slides
-const FOCUS_RING_INSET = 4; // focus-ring padding beyond the track
-const TOGGLE_TWEEN_MS = 120;
+const THUMB_INSET = 3;
+const THUMB_RADIUS = (TRACK_HEIGHT - THUMB_INSET * 2) / 2;
+/** Distance from track center to thumb center, in either direction. */
+const THUMB_OFFSET = (TRACK_WIDTH - TRACK_HEIGHT) / 2;
+const FOCUS_RING_INSET = 4;
+const PULSE_SCALE = 1.08;
+const PULSE_DURATION_MS = 140;
 
 export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusable {
   private value: boolean;
@@ -77,9 +80,12 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
   private readonly telemetrySource: ButtonClickSource;
   private readonly telemetryLabel: string;
 
-  private readonly track: Phaser.GameObjects.Graphics;
-  private readonly thumb: Phaser.GameObjects.Arc;
-  private readonly focusRing: Phaser.GameObjects.Graphics;
+  /**
+   * Single Graphics that paints BOTH track and thumb. One object, one
+   * draw call per repaint, no child-reparenting quirks. Repainted on
+   * every state/hover/focus change.
+   */
+  private readonly painter: Phaser.GameObjects.Graphics;
 
   constructor(opts: ToggleSwitchOpts) {
     super(opts.scene, opts.x, opts.y);
@@ -89,27 +95,12 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     this.telemetrySource = opts.telemetrySource ?? 'pointer';
     this.telemetryLabel = opts.telemetryLabel ?? 'ToggleSwitch';
 
-    // Focus ring — drawn first so it sits BEHIND track + thumb. Hidden
-    // by default; painted in `setFocused(true)`.
-    this.focusRing = opts.scene.add.graphics();
-    this.add(this.focusRing);
+    this.painter = opts.scene.add.graphics();
+    this.add(this.painter);
+    this.paint();
 
-    // Track — pill shape via fillRoundedRect. Repainted on every
-    // state/hover change so the color reflects current state.
-    this.track = opts.scene.add.graphics();
-    this.add(this.track);
-
-    // Thumb — solid white circle. Position depends on value; animated
-    // when value changes (tween over THUMB_TRAVEL).
-    const thumbX = this.value ? THUMB_TRAVEL / 2 : -THUMB_TRAVEL / 2;
-    this.thumb = opts.scene.add.circle(thumbX, 0, THUMB_RADIUS, 0xffffff);
-    this.add(this.thumb);
-
-    this.paintTrack();
-
-    // Interactive hit area — full track + thumb bounding box for easy
-    // kid touch targets. Slightly larger than the visual to give some
-    // forgiveness on fat-finger taps.
+    // Interactive hit area — slightly larger than the visual for
+    // fat-finger tap forgiveness on touch devices.
     const hitWidth = TRACK_WIDTH + 16;
     const hitHeight = TRACK_HEIGHT + 16;
     this.setSize(hitWidth, hitHeight);
@@ -121,11 +112,11 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
 
     this.on(Phaser.Input.Events.POINTER_OVER, () => {
       this.hovered = true;
-      this.paintTrack();
+      this.paint();
     });
     this.on(Phaser.Input.Events.POINTER_OUT, () => {
       this.hovered = false;
-      this.paintTrack();
+      this.paint();
     });
     this.on(Phaser.Input.Events.POINTER_DOWN, () => this.activate());
   }
@@ -136,41 +127,30 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
   }
 
   /**
-   * Programmatically set the toggle value (silent — does NOT fire
-   * `onChange`). Use for syncing external state into the widget;
-   * for user-initiated toggling, call `activate()`.
+   * Programmatically set the value (silent — does NOT fire `onChange`).
+   * Use for external state sync; for user-initiated toggling, call
+   * `activate()` which flips + fires onChange + telemetry + SFX.
    */
-  setValue(value: boolean, animate = true): void {
+  setValue(value: boolean): void {
     if (this.value === value) return;
     this.value = value;
-    const targetX = value ? THUMB_TRAVEL / 2 : -THUMB_TRAVEL / 2;
-    if (animate) {
-      this.scene.tweens.add({
-        targets: this.thumb,
-        x: targetX,
-        duration: TOGGLE_TWEEN_MS,
-        ease: 'Quad.Out',
-      });
-    } else {
-      this.thumb.x = targetX;
-    }
-    this.paintTrack();
+    this.paint();
   }
 
   // ----- Focusable ----------------------------------------------------------
 
   setFocused(value: boolean): void {
     this.focused = value;
-    this.paintFocusRing();
+    this.paint();
   }
 
   activate(): void {
-    const next = !this.value;
-    this.setValue(next);
-    // Fire onChange + telemetry + click SFX. Mirrors PlaceholderButton's
-    // click-path side effects so the audio/telemetry pattern is uniform
-    // across activations.
-    this.onChange?.(next);
+    this.value = !this.value;
+    this.paint();
+    this.pulseScale();
+    // Side effects mirror PlaceholderButton's click path so audio +
+    // telemetry are uniform across activations.
+    this.onChange?.(this.value);
     void getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
     emitButtonClicked(this.telemetryLabel, this.scene.scene.key, this.telemetrySource);
   }
@@ -179,50 +159,74 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     return false; // No disabled state today; add when a use case appears.
   }
 
-  // ----- Painting -----------------------------------------------------------
+  // ----- Painting + animation -----------------------------------------------
 
   /**
-   * Paint the pill-shaped track. Color depends on state + hover:
-   *  - ON  : amber fill, slightly darker than focus blue
-   *  - OFF : slate fill (matches button bodies)
-   *  - hover bumps the fill slightly brighter
+   * Repaint the whole widget — focus ring (if focused), track pill,
+   * and thumb circle. Single Graphics, drawn in one pass. Idempotent;
+   * safe to call from any state-change path.
    */
-  private paintTrack(): void {
-    this.track.clear();
+  private paint(): void {
+    const g = this.painter;
+    g.clear();
+
+    // Focus ring (drawn first so it sits visually behind the track).
+    if (this.focused) {
+      g.lineStyle(3, FOCUS_BLUE, 1);
+      g.strokeRoundedRect(
+        -TRACK_WIDTH / 2 - FOCUS_RING_INSET,
+        -TRACK_HEIGHT / 2 - FOCUS_RING_INSET,
+        TRACK_WIDTH + FOCUS_RING_INSET * 2,
+        TRACK_HEIGHT + FOCUS_RING_INSET * 2,
+        TRACK_RADIUS + FOCUS_RING_INSET,
+      );
+    }
+
+    // Track — amber when ON, slate when OFF, brighter on hover.
     const baseColor = this.value ? SELECTED_AMBER : SLATE_BG;
-    const fillColor = this.hovered ? this.brighten(baseColor) : baseColor;
-    this.track.fillStyle(fillColor, 1);
-    this.track.fillRoundedRect(
+    const trackColor = this.hovered ? this.brighten(baseColor) : baseColor;
+    g.fillStyle(trackColor, 1);
+    g.fillRoundedRect(
       -TRACK_WIDTH / 2,
       -TRACK_HEIGHT / 2,
       TRACK_WIDTH,
       TRACK_HEIGHT,
       TRACK_RADIUS,
     );
-    // Subtle border so the off state has definition against the dark
-    // backdrop (slate-on-slate would be invisible otherwise).
-    this.track.lineStyle(2, BORDER_GREY, 0.8);
-    this.track.strokeRoundedRect(
+    g.lineStyle(2, BORDER_GREY, 0.8);
+    g.strokeRoundedRect(
       -TRACK_WIDTH / 2,
       -TRACK_HEIGHT / 2,
       TRACK_WIDTH,
       TRACK_HEIGHT,
       TRACK_RADIUS,
     );
+
+    // Thumb — white circle on the right (ON) or left (OFF).
+    const thumbX = this.value ? THUMB_OFFSET : -THUMB_OFFSET;
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(thumbX, 0, THUMB_RADIUS);
+    g.lineStyle(1.5, BORDER_GREY, 0.6);
+    g.strokeCircle(thumbX, 0, THUMB_RADIUS);
   }
 
-  /** Paint the focus ring (visible only when focused). */
-  private paintFocusRing(): void {
-    this.focusRing.clear();
-    if (!this.focused) return;
-    this.focusRing.lineStyle(3, FOCUS_BLUE, 1);
-    this.focusRing.strokeRoundedRect(
-      -TRACK_WIDTH / 2 - FOCUS_RING_INSET,
-      -TRACK_HEIGHT / 2 - FOCUS_RING_INSET,
-      TRACK_WIDTH + FOCUS_RING_INSET * 2,
-      TRACK_HEIGHT + FOCUS_RING_INSET * 2,
-      TRACK_RADIUS + FOCUS_RING_INSET,
-    );
+  /**
+   * Brief scale pulse on toggle for "something happened" feedback. The
+   * snap-to-position thumb has no inherent motion, so the pulse
+   * supplies the missing tactile cue. 140ms total, peaks at 1.08×.
+   */
+  private pulseScale(): void {
+    // Kill any in-flight pulse so rapid clicks don't compound scales.
+    this.scene.tweens.killTweensOf(this);
+    this.setScale(1);
+    this.scene.tweens.add({
+      targets: this,
+      scale: { from: 1, to: PULSE_SCALE },
+      duration: PULSE_DURATION_MS / 2,
+      yoyo: true,
+      ease: 'Quad.Out',
+      onComplete: () => this.setScale(1),
+    });
   }
 
   /** Brighten a hex color uniformly (used for hover state). */
@@ -233,4 +237,3 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     return (r << 16) | (g << 8) | b;
   }
 }
-

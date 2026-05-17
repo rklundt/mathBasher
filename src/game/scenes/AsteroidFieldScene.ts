@@ -129,6 +129,18 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       this.scene.launch(SceneKeys.Hud, hudInit);
     }
 
+    // Live-update LIVE asteroids when the user toggles the Settings →
+    // Game → Asteroid Images switch. Without this, a toggle would
+    // only affect the NEXT wave's spawn, which makes the setting feel
+    // unresponsive ("did it work? did I click the wrong thing?").
+    // The listener fans the new value to the wave system, which
+    // walks live asteroids and swaps each one's visual in place
+    // (position / velocity / answer text all preserved).
+    const unsubscribeImageToggle = Settings.onImageAsteroidsChange((enabled) => {
+      this.waveSystem?.applyVisualMode(enabled);
+    });
+    this.events.once('shutdown', unsubscribeImageToggle);
+
     // Playfield bounds: full canvas minus safe-area padding minus a top
     // margin for the HUD bar. The HUD bar is the same 48px height as in
     // Alien Shoot (HudScene's barHeight).
