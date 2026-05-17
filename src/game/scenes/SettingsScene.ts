@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
+import { ToggleSwitch } from '@/game/ui/ToggleSwitch';
+import { KeyboardNavigator, type Focusable } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
@@ -90,12 +91,14 @@ export class SettingsScene extends Phaser.Scene {
   private tabContent: Phaser.GameObjects.GameObject[] = [];
 
   /**
-   * Focusable buttons inside the active tab's content panel. Combined
-   * with `tabStripButtons` + the back button to rebuild the
+   * Focusable controls inside the active tab's content panel.
+   * Combined with `tabStripButtons` + the back button to rebuild the
    * KeyboardNavigator on every tab switch (so Tab/Shift+Tab/Enter
-   * route to the visible buttons only).
+   * route to the visible controls only). Type widened from
+   * PlaceholderButton[] to Focusable[] so the Game tab can mix in
+   * `ToggleSwitch` (or future Focusables) without an extra cast.
    */
-  private tabContentButtons: PlaceholderButton[] = [];
+  private tabContentFocusables: Focusable[] = [];
 
   /** Tab-strip buttons. Persist across tab switches (just re-styled). */
   private tabStripButtons: Array<{ tab: TabId; button: PlaceholderButton }> = [];
@@ -129,7 +132,7 @@ export class SettingsScene extends Phaser.Scene {
     // initializers don't re-run.
     this.currentTab = 'audio';
     this.tabContent = [];
-    this.tabContentButtons = [];
+    this.tabContentFocusables = [];
     this.tabStripButtons = [];
     this.backButton = null;
     this.navigator = null;
@@ -262,7 +265,7 @@ export class SettingsScene extends Phaser.Scene {
       obj.destroy();
     }
     this.tabContent = [];
-    this.tabContentButtons = [];
+    this.tabContentFocusables = [];
     if (this.navigator !== null) {
       this.navigator.destroy();
       this.navigator = null;
@@ -270,7 +273,7 @@ export class SettingsScene extends Phaser.Scene {
 
     // Build new tab's content. Each renderer pushes onto
     // `tabContent` (game objects to destroy on next switch) and
-    // `tabContentButtons` (focusables to add to the navigator).
+    // `tabContentFocusables` (focusables to add to the navigator).
     if (this.currentTab === 'audio') {
       this.renderAudioTab();
     } else if (this.currentTab === 'game') {
@@ -282,9 +285,9 @@ export class SettingsScene extends Phaser.Scene {
     // (top → bottom), then Back. Keyboard Tab cycles through this
     // entire set; clicking a tab swaps content but keeps tab-strip
     // focus position consistent.
-    const focusables: PlaceholderButton[] = [
+    const focusables: Focusable[] = [
       ...this.tabStripButtons.map((t) => t.button),
-      ...this.tabContentButtons,
+      ...this.tabContentFocusables,
     ];
     if (this.backButton !== null) focusables.push(this.backButton);
     this.navigator = new KeyboardNavigator(this, focusables);
@@ -311,7 +314,7 @@ export class SettingsScene extends Phaser.Scene {
     AUDIO_KINDS.forEach((kind, i) => {
       const rowY = rowYStart + i * rowGap;
       const buttons = this.renderVolumeRow(audio, kind, cx, rowY);
-      this.tabContentButtons.push(...buttons);
+      this.tabContentFocusables.push(...buttons);
     });
   }
 
@@ -376,7 +379,7 @@ export class SettingsScene extends Phaser.Scene {
       },
     });
 
-    // Buttons go on tabContent for destroy tracking AND tabContentButtons
+    // Buttons go on tabContent for destroy tracking AND tabContentFocusables
     // for keyboard navigation. PlaceholderButton implements its own
     // destroy hookup; tracking here means tab-switch cleanup catches
     // everything uniformly.
@@ -410,49 +413,52 @@ export class SettingsScene extends Phaser.Scene {
     if (Settings.round.gameId === 'asteroid-field') {
       const sectionLabel = text(this, cx, height * 0.22, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
-      const toggleBtn = this.renderAsteroidToggleRow(cx, height * 0.42);
-      this.tabContent.push(toggleBtn);
-      this.tabContentButtons.push(toggleBtn);
+      this.renderAsteroidImageToggleRow(cx, height * 0.42);
     }
   }
 
   /**
-   * Image-asteroid toggle row. Renders a single wide button whose
-   * `selected` state mirrors the toggle: amber border = ON, default
-   * chrome = OFF. Subtitle reads "On — using image rocks" / "Off —
-   * using polygon rocks" so the kid sees what the button currently is.
+   * Image-asteroid toggle row. A real iOS/Material toggle switch
+   * (sliding thumb in a pill track) sits to the right; a label that
+   * describes the CURRENT visual state sits to the left:
+   *  - ON  → "Asteroid Images"   (you're seeing image rocks now)
+   *  - OFF → "Rendered Asteroids" (you're seeing polygon rocks now)
    *
-   * Why a button + selected-state instead of a real checkbox widget:
-   * the project doesn't have a checkbox component (none of the other
-   * settings are boolean) and a one-off checkbox just for this option
-   * is over-build. PlaceholderButton's existing `selected` visual
-   * treatment is the closest semantic match — "this thing is currently
-   * active" — and reuses the KeyboardNavigator's focus/activation
-   * plumbing for free.
+   * Sprint 2.1 playtest pivot from the prior PlaceholderButton-as-
+   * checkbox approach: a boolean setting deserves a real toggle
+   * widget, and the label-shows-current-state convention is clearer
+   * than a static "Image Asteroids" label with a separate on/off
+   * indicator (per user direction).
+   *
+   * Both the label and the switch are tracked: the label as
+   * tabContent (for tab-switch cleanup) and the switch additionally
+   * as tabContentFocusables (for KeyboardNavigator). The label is
+   * re-set inside the switch's onChange callback so it updates
+   * live when the user toggles.
    */
-  private renderAsteroidToggleRow(cx: number, y: number): PlaceholderButton {
-    const subtitleFor = (enabled: boolean): string =>
-      enabled ? 'On — using image rocks' : 'Off — using polygon rocks';
-    const btn = new PlaceholderButton({
+  private renderAsteroidImageToggleRow(cx: number, y: number): void {
+    const labelFor = (enabled: boolean): string =>
+      enabled ? 'Asteroid Images' : 'Rendered Asteroids';
+    // Layout: label left-aligned at cx-120 (origin 0, 0.5), switch
+    // right-aligned at cx+140 (origin handled by ToggleSwitch's
+    // centered geometry). Total visual span ~280px centered on cx.
+    const label = text(this, cx - 120, y, labelFor(Settings.getImageAsteroidsEnabled()), 'rowLabel')
+      .setOrigin(0, 0.5);
+    this.tabContent.push(label);
+
+    const toggle = new ToggleSwitch({
       scene: this,
-      x: cx,
+      x: cx + 140,
       y,
-      width: 360,
-      height: 64,
-      label: 'Image Asteroids',
-      subtitle: subtitleFor(Settings.getImageAsteroidsEnabled()),
-      selected: Settings.getImageAsteroidsEnabled(),
-      onClick: () => {
-        const next = !Settings.getImageAsteroidsEnabled();
+      value: Settings.getImageAsteroidsEnabled(),
+      telemetryLabel: 'ImageAsteroids',
+      onChange: (next) => {
         Settings.setImageAsteroidsEnabled(next);
-        btn.setSelected(next);
-        // PlaceholderButton doesn't expose setSubtitle; the amber
-        // border IS the primary indicator. Subtitle stays stale
-        // until the panel is re-rendered (e.g. tab switch + back, or
-        // re-opening Settings). Acceptable for a playtest toggle.
+        label.setText(labelFor(next));
       },
     });
-    return btn;
+    this.tabContent.push(toggle);
+    this.tabContentFocusables.push(toggle);
   }
 
   private handleBack(): void {
