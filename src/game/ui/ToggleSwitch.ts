@@ -86,6 +86,16 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
    * every state/hover/focus change.
    */
   private readonly painter: Phaser.GameObjects.Graphics;
+  /**
+   * Invisible Rectangle child that owns the click hit-area. The
+   * Container ITSELF is intentionally NOT interactive — Phaser
+   * Containers with custom `hitArea` callbacks have a known input-
+   * routing flakiness (see `PlaceholderButton.ts` for the same
+   * pattern + reasoning). Putting `setInteractive` on a concrete
+   * child Rectangle makes hit detection reliable. Sized slightly
+   * larger than the track for fat-finger tap forgiveness on touch.
+   */
+  private readonly hitTarget: Phaser.GameObjects.Rectangle;
 
   constructor(opts: ToggleSwitchOpts) {
     super(opts.scene, opts.x, opts.y);
@@ -95,30 +105,34 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     this.telemetrySource = opts.telemetrySource ?? 'pointer';
     this.telemetryLabel = opts.telemetryLabel ?? 'ToggleSwitch';
 
+    // Hit-target Rectangle FIRST so it sits behind the painter (it's
+    // invisible — alpha 0 — but its render order doesn't matter; what
+    // matters is that it's a concrete child carrying the interactive
+    // state Phaser actually wires up).
+    const hitWidth = TRACK_WIDTH + 16;
+    const hitHeight = TRACK_HEIGHT + 16;
+    this.hitTarget = opts.scene.add.rectangle(0, 0, hitWidth, hitHeight, 0xffffff, 0);
+    this.add(this.hitTarget);
+    this.hitTarget.setInteractive({ useHandCursor: true });
+    this.hitTarget.on(Phaser.Input.Events.POINTER_OVER, () => {
+      this.hovered = true;
+      this.paint();
+    });
+    this.hitTarget.on(Phaser.Input.Events.POINTER_OUT, () => {
+      this.hovered = false;
+      this.paint();
+    });
+    // POINTERDOWN (not pointerup) for the same reason PlaceholderButton
+    // does it: after a scene transition with the cursor already over
+    // the target, the first pointerup is sometimes silently dropped.
+    // pointerdown also feels snappier for arcade menus.
+    this.hitTarget.on(Phaser.Input.Events.POINTER_DOWN, () => this.activate());
+
     this.painter = opts.scene.add.graphics();
     this.add(this.painter);
     this.paint();
 
-    // Interactive hit area — slightly larger than the visual for
-    // fat-finger tap forgiveness on touch devices.
-    const hitWidth = TRACK_WIDTH + 16;
-    const hitHeight = TRACK_HEIGHT + 16;
     this.setSize(hitWidth, hitHeight);
-    this.setInteractive({
-      hitArea: new Phaser.Geom.Rectangle(-hitWidth / 2, -hitHeight / 2, hitWidth, hitHeight),
-      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-      useHandCursor: true,
-    });
-
-    this.on(Phaser.Input.Events.POINTER_OVER, () => {
-      this.hovered = true;
-      this.paint();
-    });
-    this.on(Phaser.Input.Events.POINTER_OUT, () => {
-      this.hovered = false;
-      this.paint();
-    });
-    this.on(Phaser.Input.Events.POINTER_DOWN, () => this.activate());
   }
 
   /** Current toggle value. */
