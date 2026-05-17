@@ -31,11 +31,30 @@ import { _th, SeverityLevel } from '@/core/telemetry';
  */
 
 let _total = 0;
+/**
+ * Last value the HUD displayed for the session total. Tracked separately
+ * from `_total` so HudScene can animate the count-up from "what the
+ * player last saw" to "current" when a new round mounts. HUD reads this
+ * on `create`, animates if `_total > _lastDisplayed`, then calls
+ * `markDisplayedAs(_total)` to sync them. Module-scope so it survives
+ * the HUD's tear-down + re-mount between rounds.
+ */
+let _lastDisplayed = 0;
 
 export const SessionTotalScore = {
   /** Current session total (sum of all completed rounds this session). */
   get(): number {
     return _total;
+  },
+
+  /** Value the HUD most recently committed to displaying. Used by HudScene's count-up tween. */
+  getLastDisplayed(): number {
+    return _lastDisplayed;
+  },
+
+  /** Mark the HUD as caught up to value `n` (called at the end of the count-up tween). */
+  markDisplayedAs(n: number): void {
+    _lastDisplayed = n;
   },
 
   /**
@@ -60,5 +79,6 @@ export const SessionTotalScore = {
    */
   reset(): void {
     _total = 0;
+    _lastDisplayed = 0;
   },
 };

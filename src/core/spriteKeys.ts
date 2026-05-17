@@ -403,7 +403,7 @@ export const BgSpriteKeys = {
  * (TS error: "missing property 'number-climb'") rather than silently
  * defaulting at runtime.
  */
-export const GAME_BG_MAP: Readonly<Record<GameId, string>> = {
+export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'alien-shoot': BgSpriteKeys.Nebula,
   'asteroid-field': BgSpriteKeys.AsteroidBelt,
 };

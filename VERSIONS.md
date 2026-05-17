@@ -27,8 +27,38 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern established in 2.1 so the third game mode lands cleanly on top of the shared lifecycle.
+- **Sprint 2.1.6 next** — lazy per-game asset loading (boot transfer drops from ~5.5 MB to ~2 MB; first-time game pick triggers a brief loading bar, subsequent are instant). Addresses the asset-growth-with-game-count problem so 2.2's additions don't compound the boot load.
+- **Then 2.2** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern established in 2.1 + the per-game audio-visual identity pattern from 2.1.5.
 - **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
+
+## [2.1.5] - 2026-05-17 — Per-game backgrounds + per-game music + session-total score
+
+Each game mode now has its own audio-visual identity, and the HUD shows a cumulative session score in addition to the per-round score.
+
+### Per-game backgrounds (Story 1)
+- New asset: `public/assets/sprites/bg/asteroid-belt.png` (Midjourney, 1280×717 RGB, brightness 0.6 matching the nebula recipe so both backgrounds feel like a coherent visual family)
+- `BgSpriteKeys.AsteroidBelt` added
+- `GAME_BG_MAP: Record<GameId, BgSpriteKey>` in `src/core/spriteKeys.ts` — central per-game-mode mapping. TypeScript exhaustiveness check forces future game-mode additions to map a backdrop
+- `Settings.onGameIdChange(listener) => unsubscribe` observer added (mirrors `onImageAsteroidsChange` pattern). `setGameId` fires listeners on real changes (idempotence guard)
+- `BackgroundScene` holds the backdrop image as a field, picks the initial texture from `GAME_BG_MAP[gameId]`, subscribes to gameId changes to swap the texture live. Re-calls `setDisplaySize` after `setTexture` (Phaser quirk)
+
+### Per-game music (Story 2)
+- New asset: `public/assets/audio/music/loop-3.mp3` (ElevenLabs, 30s stereo loop, 160 kbps, encoded with `--no-trim` to preserve clean loop boundaries)
+- `MusicKeys.Loop3` added
+- `GAME_MUSIC_MAP: Record<GameId, MusicKey>` parallels `GAME_BG_MAP`. Each game scene reads its music key from the map at `create` time instead of hard-coding `MusicKeys.Loop1`. Unlike the bg map (consumed by the persistent `BackgroundScene` via observer), the music map is read directly by each game scene since they already know their own gameId
+- Mapping: `alien-shoot` → Loop1 (unchanged), `asteroid-field` → Loop3 (new)
+
+### Session-total score in HUD (Story 3)
+- New module `src/services/SessionTotalScore.ts` — in-memory `get()` / `add(delta)` / `reset()` accumulator + `getLastDisplayed()` / `markDisplayedAs(n)` for HUD count-up animation. Page reload resets (intentional; session-bounded by design)
+- HUD top-left now shows TWO labels side-by-side: "This round: N" + "This visit: M". The visit label's x-position re-flows after every round-score update so growing scores never cause overlap
+- HUD on mount: animates the visit total from "what the player last saw" up to the current value over 700ms (`Quad.Out` ease). No animation when nothing changed (first round, page reload, mid-round re-paint)
+- Each game scene's `endRound()` calls `SessionTotalScore.add(roundController.score)` BEFORE the GameOver transition. Quit-to-menu mid-round does NOT contribute (partial round score isn't earned yet)
+- High-score storage unchanged — still based on single-round score
+
+### Tests + validation
+- 286 tests passing across 27 files (was 267 across 25). 9 new SessionTotalScore tests
+- Six-reviewer audit passed across 2 wrap iterations (verdict: APPROVED with all should-fix items addressed before close)
+- No breaking changes — Alien Shoot behaves identically, no localStorage or score-store migration
 
 ## [2.1.0] - 2026-05-17 — Asteroid Field game mode + image-variant rocks + Settings tabs
 

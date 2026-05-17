@@ -44,12 +44,45 @@ describe('SessionTotalScore', () => {
     expect(SessionTotalScore.get()).toBe(0);
   });
 
-  it('handles negative deltas (no clamp — caller responsibility)', () => {
+  it('add(-N) subtracts (no clamp by design)', () => {
     // No current code path adds negative scores, but the contract
     // is documented as "delta is added as-is". If a future feature
-    // (e.g. penalty round) wants to subtract, it should work.
+    // (e.g. penalty round) wants to subtract, the behavior is
+    // explicit — clamping at zero would mask the intent silently.
     SessionTotalScore.add(300);
     SessionTotalScore.add(-50);
     expect(SessionTotalScore.get()).toBe(250);
+  });
+
+  // ----- Last-displayed tracker (HUD count-up animation) -----
+
+  it('getLastDisplayed() starts at 0', () => {
+    expect(SessionTotalScore.getLastDisplayed()).toBe(0);
+  });
+
+  it('markDisplayedAs(n) updates the last-displayed tracker', () => {
+    SessionTotalScore.add(1000);
+    expect(SessionTotalScore.getLastDisplayed()).toBe(0); // not auto-synced
+    SessionTotalScore.markDisplayedAs(1000);
+    expect(SessionTotalScore.getLastDisplayed()).toBe(1000);
+  });
+
+  it('add() does NOT auto-update last-displayed (caller must mark explicitly)', () => {
+    // This is the load-bearing contract for HudScene's count-up
+    // tween: add() updates `_total` immediately, but the HUD
+    // animates from `_lastDisplayed` to `_total` and only marks
+    // at the END of the tween. If add() auto-synced last-displayed,
+    // the HUD would have nothing to animate FROM.
+    SessionTotalScore.add(500);
+    expect(SessionTotalScore.get()).toBe(500);
+    expect(SessionTotalScore.getLastDisplayed()).toBe(0);
+  });
+
+  it('reset() clears both total and last-displayed', () => {
+    SessionTotalScore.add(700);
+    SessionTotalScore.markDisplayedAs(700);
+    SessionTotalScore.reset();
+    expect(SessionTotalScore.get()).toBe(0);
+    expect(SessionTotalScore.getLastDisplayed()).toBe(0);
   });
 });

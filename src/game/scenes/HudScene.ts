@@ -143,23 +143,29 @@ export class HudScene extends Phaser.Scene {
     // since the HUD bar uses three different anchors.
     //
     // Sprint 2.1.5 — score area shows TWO labels side-by-side:
-    //   "Round: N" (this round's running total — replaces the prior
-    //                single "Score" label)
-    //   "Total: M" (session total — accumulates across rounds)
+    //   "This round: N" (current round's running total)
+    //   "This visit: M" (session total across all completed rounds)
+    //
+    // Copy uses plain English ("This round" / "This visit") rather
+    // than the more technical "Round" / "Total" — kid-friendly and
+    // also honest about the session-bounded nature of the visit
+    // counter (it resets on page reload).
+    //
     // Round on the left because it's the primary "what am I earning
-    // right now" number; Total to the right with a gap so the eye
-    // groups them as a unit. Initial total is whatever the
-    // SessionTotalScore singleton already has (carries forward across
-    // scene mounts within a session).
-    this.roundScoreText = text(this, 16, barHeight / 2, 'Round: 0', 'body').setOrigin(0, 0.5);
-    const totalScoreX = 16 + this.roundScoreText.width + 24;
+    // right now" number; visit total to the right. The total label's
+    // x-position is recomputed after every round-score update (see
+    // `repositionTotalLabel`) so growing round scores don't crowd
+    // the total label.
+    this.roundScoreText = text(this, 16, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
     this.totalScoreText = text(
       this,
-      totalScoreX,
+      0, // placeholder; repositioned by repositionTotalLabel below
       barHeight / 2,
-      `Total: ${String(SessionTotalScore.get())}`,
+      `This visit: ${String(SessionTotalScore.get())}`,
       'body',
     ).setOrigin(0, 0.5);
+    this.repositionTotalLabel();
+    this.animateVisitCountUpIfNeeded();
 
     this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
 
@@ -487,19 +493,82 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onQuestionEnded(payload: QuestionEndedPayload): void {
-    this.roundScoreText.setText(`Round: ${payload.score}`);
-    // Sprint 2.1.5 — also refresh the session-total label. The total
-    // only changes at round end (when the game scene calls
-    // `SessionTotalScore.add(...)`), but reading it on every
+    this.roundScoreText.setText(`This round: ${payload.score}`);
+    // Total only changes at round end (the game scene's `endRound` is
+    // what calls `SessionTotalScore.add`), but reading it on every
     // questionEnded is cheap and keeps the HUD in sync without a
-    // dedicated total-changed event. Mid-round questionEnded reads
-    // see no change (idempotent re-paint); the last questionEnded
-    // before endRound sees the just-added round score.
-    this.totalScoreText.setText(`Total: ${String(SessionTotalScore.get())}`);
+    // dedicated total-changed event. Mid-round reads are idempotent
+    // re-paints. The repositionTotalLabel below handles the round
+    // label growing wider so the two labels never visually overlap
+    // (sprint 2.1.5 wrap-up — Architect + Senior Dev both flagged
+    // the create-time-only position as fragile to 5+ digit scores).
+    this.totalScoreText.setText(`This visit: ${String(SessionTotalScore.get())}`);
+    this.repositionTotalLabel();
     // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score
     // popup is NO LONGER triggered here; it's now driven by the
     // `correctHit` event (which fires earlier with alien coords).
     this.markProgressDot(this.currentQuestionIndex, payload.wasCorrect);
+  }
+
+  /**
+   * Reposition the "This visit" label flush to the right edge of the
+   * "This round" label with a fixed 24px gap. Called at create time
+   * + after every round-score update so growing round-score widths
+   * push the visit label rightward without overlap. The 24px gap
+   * sized for a balanced "two values, related, but distinct" read.
+   */
+  private repositionTotalLabel(): void {
+    const LABEL_GAP_PX = 24;
+    this.totalScoreText.x = this.roundScoreText.x + this.roundScoreText.width + LABEL_GAP_PX;
+  }
+
+  /**
+   * Animate the "This visit" total from its last-displayed value up
+   * to the current `SessionTotalScore.get()` when the HUD mounts.
+   * Each round-end adds to the total; the NEXT HudScene mount sees
+   * the prior-displayed value and the new current value differ, so
+   * it counts up over 700ms. Within a single round (HUD never
+   * unmounts), the total doesn't change, so the animation is a no-op
+   * on every questionEnded.
+   *
+   * Tween targets a plain counter object; `onUpdate` writes the
+   * floored integer to the label. `onComplete` snaps the label to
+   * the exact final value (Math.floor can drop the last 1 on
+   * rounding) and tells SessionTotalScore that the HUD is now caught
+   * up.
+   */
+  private animateVisitCountUpIfNeeded(): void {
+    const previous = SessionTotalScore.getLastDisplayed();
+    const current = SessionTotalScore.get();
+    if (current <= previous) {
+      // No change (first round, page reload, or back-to-back same-
+      // round). Snap to the current value and mark — no animation.
+      this.totalScoreText.setText(`This visit: ${String(current)}`);
+      SessionTotalScore.markDisplayedAs(current);
+      this.repositionTotalLabel();
+      return;
+    }
+    // Show the previous value first (so the tween starts where the
+    // kid last saw it), then animate up.
+    this.totalScoreText.setText(`This visit: ${String(previous)}`);
+    this.repositionTotalLabel();
+    const counter = { value: previous };
+    this.tweens.add({
+      targets: counter,
+      value: current,
+      duration: 700,
+      delay: 100, // brief beat before the climb starts
+      ease: 'Quad.Out',
+      onUpdate: () => {
+        this.totalScoreText.setText(`This visit: ${String(Math.floor(counter.value))}`);
+        this.repositionTotalLabel();
+      },
+      onComplete: () => {
+        this.totalScoreText.setText(`This visit: ${String(current)}`);
+        this.repositionTotalLabel();
+        SessionTotalScore.markDisplayedAs(current);
+      },
+    });
   }
 
   /**

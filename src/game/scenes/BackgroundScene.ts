@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
-import { BgSpriteKeys, GAME_BG_MAP, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { GAME_BG_MAP, ParticleSpriteKeys } from '@/core/spriteKeys';
 import { Settings } from '@/services/Settings';
 
 /**
@@ -92,11 +92,11 @@ export class BackgroundScene extends Phaser.Scene {
     // so the new backdrop is already showing by the time gameplay
     // starts). BackgroundScene runs for the lifetime of the page —
     // listener never needs to unsubscribe.
-    const initialBgKey = GAME_BG_MAP[Settings.round.gameId] ?? BgSpriteKeys.Nebula;
+    const initialBgKey = GAME_BG_MAP[Settings.round.gameId];
     this.backdrop = this.add.image(W / 2, H / 2, initialBgKey);
     this.backdrop.setDisplaySize(W, H);
     Settings.onGameIdChange((newGameId) => {
-      const newKey = GAME_BG_MAP[newGameId] ?? BgSpriteKeys.Nebula;
+      const newKey = GAME_BG_MAP[newGameId];
       this.backdrop?.setTexture(newKey);
       // setDisplaySize must be re-called after setTexture — Phaser
       // resets `displayWidth/Height` to the new texture's native size
