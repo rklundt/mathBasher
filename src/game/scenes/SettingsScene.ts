@@ -140,9 +140,13 @@ export class SettingsScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
 
-    // Translucent backdrop so the scene underneath (Menu OR Pause) reads
-    // as "behind" the settings panel rather than "removed."
-    const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
+    // Near-opaque backdrop so the scene underneath (Menu OR Pause)
+    // is visually muted but still hints at "this is a modal on top
+    // of that." 0.7 was too transparent — Pause Overlay's buttons
+    // (Resume / Settings / Quit) bled through and competed with the
+    // Settings panel content for the user's attention. 0.92 keeps a
+    // subtle hint of background atmosphere without the visual noise.
+    const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.92);
     backdrop.setOrigin(0, 0);
 
     // Title (persists across tab switches).

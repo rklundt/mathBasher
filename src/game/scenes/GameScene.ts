@@ -106,6 +106,12 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // selections (e.g. dev hotload), pick reasonable fallbacks.
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
+    // Defensive: assert the gameId matches the active scene. Same
+    // reasoning as AsteroidFieldScene — if Settings.round.gameId drifts
+    // (HMR, Play Again from a different mode, future deep-link entry),
+    // downstream code branching on it (SettingsScene's Game-tab
+    // visibility) would miss-render. One-line invariant.
+    Settings.setGameId('alien-shoot');
 
     // Lifecycle telemetry + AudioManager binding. setupScene logs the
     // standard `GameScene Started` / `GameScene Completed` lifecycle

@@ -105,6 +105,14 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
+    // Defensive: assert the gameId matches the active scene. Normally
+    // GameSelectScene's tile click already sets this; the redundant set
+    // here closes the gap if a future code path starts this scene
+    // through another route (Play Again, deep link, HMR-survived state)
+    // and forgets to update Settings. Without this, downstream code
+    // that branches on `Settings.round.gameId` (e.g. SettingsScene's
+    // "Game" tab visibility) could miss-render based on stale state.
+    Settings.setGameId('asteroid-field');
 
     const props: TelemetryProps = {
       gameId: 'asteroid-field',
