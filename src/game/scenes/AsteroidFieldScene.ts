@@ -332,6 +332,17 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       wasCorrect: false,
       usedWrongShot: this.waveSystem.hasUsedWrongShot(),
     });
+    // Sprint 2.1 playtest — audible failure cue. Without this, the
+    // countdown-zero moment was silent except for the asteroid fade-
+    // outs, which read as "everything just went quiet" rather than
+    // "you failed." Plays BEFORE the asteroid fades + a red screen
+    // flash and gentle shake so the timeout reads as a clear event.
+    // Alien Shoot doesn't need this (the alien-reaches-hero +
+    // hero-death-anim is already a strong failure cue).
+    getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
+    this.cameras.main.flash(180, 239, 68, 68, false); // red flash
+    this.cameras.main.shake(180, 0.006);
+
     // No hero-death anim in Asteroid Field — the hero is static so a
     // "drop down" doesn't read right. Just fade the surviving asteroids
     // and advance.
