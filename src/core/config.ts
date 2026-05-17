@@ -286,11 +286,32 @@ export const config = {
      */
     enabledPhysicsModes: ['straight', 'bounce', 'orbit'] as const,
     /**
+     * Orbit-mode max orbital radius as a fraction of the smaller
+     * playfield dimension. Sprint 2.1 wrap-up fix: without this clamp,
+     * asteroids could orbit at a radius equal to corner-to-center
+     * (~half the canvas diagonal), swinging far off-screen for long
+     * arcs and leaving the player staring at nothing. 0.30 keeps
+     * orbits within roughly the middle 60% of the smaller axis —
+     * always at least partially visible. Tune higher for wider arcs.
+     */
+    orbitMaxRadiusFraction: 0.3,
+    /**
      * Hero projectile speed (px/s) — faster than the answer asteroids so
      * a fired shot reaches the target before the asteroid drifts very
      * far. Tuned to feel snappy without being uncatchable visually.
      */
     projectileSpeedPxPerSec: 600,
+    /**
+     * Seconds removed from the per-question countdown when the player
+     * hits a wrong asteroid. Sprint 2.1 wrap-up addition (in addition
+     * to the existing half-points-on-eventual-correct flag that Alien
+     * Shoot also has). Set to 0 to disable the time penalty.
+     *
+     * 3 seconds is meaningful at every speed: 3/25 = 12% at Slow,
+     * 3/18 = 17% at Medium, 3/12 = 25% at Fast — penalty bites
+     * harder on faster rounds, which is the right shape.
+     */
+    wrongShotCountdownPenaltySec: 3,
     /**
      * Hero rotation speed in radians per second, used by the keyboard
      * arrow-key rotation path. Mouse/touch aim is absolute (point-to-

@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
-import { pickNextHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { ParticleSpriteKeys } from '@/core/spriteKeys';
 
 /**
  * Hero for the Asteroid Field game mode.
@@ -15,10 +15,17 @@ import { pickNextHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
  *  - Fires in the facing direction (caller spawns the projectile with
  *    the current facing angle)
  *
- * Reuses the same speeder sprites + round-robin picker as the Alien
- * Shoot hero (sprint 0.7 Story 3) for visual continuity across game
- * modes. Engine glow particle emitter behind the ship (relative to its
- * facing direction) gives a sense of "this ship has thrust."
+ * **Visual: procedural triangle ship** (classic Asteroids style).
+ * Sprint 2.1 originally reused Alien Shoot's speeder sprites; playtest
+ * showed the curved sleek speeder didn't fit the spinning-aim metaphor
+ * (a side-facing ship is unintuitive to rotate). Swapped to a hand-
+ * drawn isoceles triangle pointing right (= aim direction 0) with a
+ * cockpit dot, amber outline, and an "engine vent" notch at the back.
+ * Reads instantly as "this is the thing that rotates and shoots."
+ *
+ * No sprite-asset dependency — the ship is built with Phaser Graphics
+ * and lives entirely in code. If a future sprint wants AI-art ships,
+ * the procedural fallback stays as a clean visual baseline.
  *
  * Sprint 2.1 design call: hero is STATIC in Asteroid Field. The mode
  * is "you stand still and shoot floating things" — adding hero
@@ -28,14 +35,21 @@ import { pickNextHeroSpriteKey, ParticleSpriteKeys } from '@/core/spriteKeys';
  */
 export class AsteroidHero extends Phaser.GameObjects.Container {
   /**
-   * Display dimensions in design pixels. Slightly larger than the Alien
-   * Shoot Hero (115×65) because it's the focal point of a stationary
-   * scene rather than competing with descending aliens for attention.
+   * Display dimensions in design pixels. Triangle ship is wider-than-
+   * tall, pointing right. 64×52 reads as a clean focal-point ship
+   * without competing with the asteroid silhouettes for attention.
    */
-  static readonly WIDTH = 130;
-  static readonly HEIGHT = 73;
+  static readonly WIDTH = 64;
+  static readonly HEIGHT = 52;
 
-  private readonly sprite: Phaser.GameObjects.Sprite;
+  /**
+   * Procedural triangle ship body. Re-rendered into a Graphics object
+   * once at construction; rotated as a whole via `this.rotation` when
+   * the aim angle changes. Named `shipGraphics` (not `body`) to avoid
+   * collision with Phaser's `Container.body` field (the Arcade-physics
+   * body slot, which we don't use but the type declares).
+   */
+  private readonly shipGraphics: Phaser.GameObjects.Graphics;
   /**
    * Engine glow emitter. Follows the hero in world space (NOT a
    * container child) so particles stay where emitted as the hero
@@ -45,10 +59,9 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
   private readonly engineEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   /**
    * Current aim angle in radians. 0 = facing right (Phaser standard).
-   * Set externally via `setAimAngle`. The sprite's actual rendered
-   * rotation is `aimAngle` — the source art faces LEFT (per the Alien
-   * Shoot Hero contract), so we render flipped THEN rotate. See
-   * `applyFacing` for the details.
+   * Set externally via `setAimAngle`. The triangle ship is drawn
+   * pointing RIGHT at the (0, 0) baseline; `this.rotation = aimAngle`
+   * spins it to face the aim direction.
    */
   private aimAngle = 0;
 
@@ -56,23 +69,28 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
 
-    const heroKey = pickNextHeroSpriteKey();
-    this.sprite = scene.add.sprite(0, 0, heroKey);
-    const nativeWidth = this.sprite.width;
-    this.sprite.setScale(AsteroidHero.WIDTH / nativeWidth);
+    // Procedural triangle ship body. Drawn pointing RIGHT at the (0, 0)
+    // baseline. Container rotation (`this.rotation = aimAngle`) handles
+    // facing. Visual breakdown:
+    //   - Main triangle: amber fill + darker amber stroke. Nose at +halfW,
+    //     back corners at (-halfW, ±halfH). Classic vector look.
+    //   - Engine vent at the back: a small inset notch + slightly darker
+    //     stroke for the "thrust nozzle" detail.
+    //   - Cockpit dot near the nose: small circle in a brighter color
+    //     for visual interest + a clear "front of ship" cue.
+    this.shipGraphics = scene.add.graphics();
+    this.drawTriangleShip();
+    this.add(this.shipGraphics);
+    // Re-target the per-instance graphics so its draw calls land on the
+    // fresh object created above (was implicitly correct via `this.body`
+    // before the rename; explicit now for clarity).
 
-    // Source art faces LEFT (see Hero.ts for the same contract). Sprite
-    // is flipped to face RIGHT as the "0 rad" baseline, then rotated to
-    // the aimAngle. This mirrors how Alien Shoot's Hero handles flip but
-    // here the rotation is continuous instead of binary.
-    this.sprite.setFlipX(true);
-    this.add(this.sprite);
-
-    // Engine glow — emits OPPOSITE the facing direction (so it trails
-    // behind the ship). We update the emitter's angle in applyFacing.
+    // Engine glow — emits BEHIND the ship via the followOffset trick
+    // (see applyFacing for details). Same particle pool + tint as the
+    // Alien Shoot hero for visual continuity.
     this.engineEmitter = scene.add.particles(0, 0, ParticleSpriteKeys.Circle03, {
       speed: { min: 20, max: 50 },
-      angle: { min: 80, max: 100 }, // default: down (will be re-aimed)
+      angle: { min: 80, max: 100 },
       scale: { start: 0.3, end: 0 },
       alpha: { start: 0.75, end: 0 },
       lifespan: 400,
@@ -85,6 +103,44 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
 
     this.setSize(AsteroidHero.WIDTH, AsteroidHero.HEIGHT);
     this.applyFacing();
+  }
+
+  /**
+   * Draw the triangle ship body. Called once at construction; the
+   * container's rotation handles re-orientation each frame so the
+   * Graphics doesn't need to be re-drawn.
+   *
+   * Geometry (right-facing at baseline):
+   *   - Nose:           ( +W/2,    0    )
+   *   - Top-back:       ( -W/2, -H/2 )
+   *   - Bottom-back:    ( -W/2, +H/2 )
+   *   - Engine notch:   ( -W/2 + 6, 0 )  (inset for the thrust nozzle)
+   */
+  private drawTriangleShip(): void {
+    const halfW = AsteroidHero.WIDTH / 2;
+    const halfH = AsteroidHero.HEIGHT / 2;
+    const FILL = 0xfacc15; // amber, matches projectile + UI accent
+    const STROKE = 0xa16207; // darker amber for the outline
+    const COCKPIT = 0xffffff; // bright white for the cockpit dot
+
+    // Main triangle body (filled).
+    this.shipGraphics.fillStyle(FILL, 1);
+    this.shipGraphics.lineStyle(3, STROKE, 1);
+    this.shipGraphics.beginPath();
+    this.shipGraphics.moveTo(halfW, 0);
+    this.shipGraphics.lineTo(-halfW, -halfH);
+    this.shipGraphics.lineTo(-halfW + 6, 0); // engine-vent notch top
+    this.shipGraphics.lineTo(-halfW, +halfH);
+    this.shipGraphics.closePath();
+    this.shipGraphics.fillPath();
+    this.shipGraphics.strokePath();
+
+    // Cockpit dot — small white circle a third of the way back from the nose.
+    const cockpitX = halfW * 0.35;
+    this.shipGraphics.fillStyle(COCKPIT, 1);
+    this.shipGraphics.fillCircle(cockpitX, 0, 4);
+    this.shipGraphics.lineStyle(1, STROKE, 1);
+    this.shipGraphics.strokeCircle(cockpitX, 0, 4);
   }
 
   /**
@@ -130,7 +186,7 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
   /** Brief alpha flash when something interesting happens (hit confirmation). */
   playHitAnim(): void {
     this.scene.tweens.add({
-      targets: this.sprite,
+      targets: this.shipGraphics,
       alpha: { from: 0.4, to: 1 },
       duration: 120,
       ease: 'Quad.Out',
@@ -152,27 +208,29 @@ export class AsteroidHero extends Phaser.GameObjects.Container {
   // ----- Internal -----------------------------------------------------------
 
   /**
-   * Apply the current `aimAngle` to the sprite rotation + the engine-glow
-   * emitter follow-offset (so the trail spawns BEHIND the ship's current
-   * facing). Called whenever aimAngle changes.
+   * Apply the current `aimAngle` to the container rotation + the
+   * engine-glow emitter follow-offset (so the trail spawns BEHIND the
+   * ship's current facing). Called whenever aimAngle changes.
    *
-   * Geometry: aimAngle = 0 means "facing right." The source sprite is
-   * already flipped to baseline-right (setFlipX(true) in the constructor).
-   * Setting `this.sprite.rotation = aimAngle` rotates the (already-right-
-   * facing) sprite to point at the aim direction.
+   * Geometry: aimAngle = 0 means "facing right." The triangle ship body
+   * is drawn pointing RIGHT at the (0, 0) baseline (see
+   * `drawTriangleShip` above). Setting `this.rotation = aimAngle`
+   * rotates the whole container (body + future cosmetic children) to
+   * point at the aim direction.
    *
-   * Engine trail: rather than dynamically changing the emitter's particle
-   * angle (Phaser 3's runtime API for that is awkward — particleAngle is
-   * an EmitterOp, not a simple setter), we move the EMITTER POSITION to
-   * a point behind the ship via `followOffset`. The particles spawn at
-   * that offset position and drift in the emitter's configured direction
-   * (downward). The visual effect is "particles appear behind the ship
-   * and stream away" which reads as a trail.
+   * Engine trail: rather than dynamically changing the emitter's
+   * particle angle (Phaser 3's runtime API for that is awkward —
+   * particleAngle is an EmitterOp, not a simple setter), we move the
+   * EMITTER POSITION to a point behind the ship via `followOffset`.
+   * The particles spawn at that offset position and drift in the
+   * emitter's configured direction (downward). The visual effect is
+   * "particles appear behind the ship and stream away" which reads
+   * as a trail.
    *
    * Offset distance is a half-hero-length behind the facing direction.
    */
   private applyFacing(): void {
-    this.sprite.rotation = this.aimAngle;
+    this.rotation = this.aimAngle;
     const trailOffset = AsteroidHero.WIDTH * 0.4;
     const behindDx = -Math.cos(this.aimAngle) * trailOffset;
     const behindDy = -Math.sin(this.aimAngle) * trailOffset;

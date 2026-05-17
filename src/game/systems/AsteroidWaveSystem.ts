@@ -119,18 +119,29 @@ export class AsteroidWaveSystem {
     this.orbitCenterY = this.opts.topBound + playfieldHeight * (0.3 + rng() * 0.4);
 
     // Spawn asteroids one at a time with min-distance rejection sampling.
+    // ORBIT mode: clamp the spawn area to a small radius around the
+    // orbit center so asteroids stay near the visible playfield as
+    // they swing around. Sprint 2.1 wrap-up fix: without the clamp,
+    // an asteroid spawned at the corner of the playfield would orbit
+    // at a radius equal to corner-to-center, going FAR off-screen.
     const minDist = config.asteroidField.minSpawnDistancePx;
     const minDistSq = minDist * minDist;
     const inset = config.asteroidField.asteroidRadiusPx + 16; // keep fully on-screen
     const spawnedPositions: Array<{ x: number; y: number }> = [];
+    const orbitMaxRadius =
+      this.currentMode === 'orbit'
+        ? Math.min(playfieldWidth, playfieldHeight) *
+          config.asteroidField.orbitMaxRadiusFraction
+        : Infinity;
 
     for (let i = 0; i < question.choices.length; i++) {
       const answer = question.choices[i] ?? 0;
       let x = 0;
       let y = 0;
       // Reject-and-retry until we find a position min-dist from all
-      // previously-spawned asteroids. Cap retries to prevent infinite
-      // loop if minSpawnDistancePx is too generous for the playfield.
+      // previously-spawned asteroids AND within the orbit-mode radius
+      // (when applicable). Cap retries to prevent infinite loop if the
+      // constraints overlap impossibly.
       const MAX_TRIES = 40;
       let tries = 0;
       while (tries < MAX_TRIES) {
@@ -141,7 +152,13 @@ export class AsteroidWaveSystem {
           const dy = p.y - y;
           return dx * dx + dy * dy < minDistSq;
         });
-        if (!tooClose) break;
+        // Orbit-mode extra constraint: must be within orbitMaxRadius of
+        // the orbit center. For non-orbit modes this is always true
+        // (orbitMaxRadius = Infinity).
+        const dxOrbit = x - this.orbitCenterX;
+        const dyOrbit = y - this.orbitCenterY;
+        const tooFarFromOrbit = dxOrbit * dxOrbit + dyOrbit * dyOrbit > orbitMaxRadius * orbitMaxRadius;
+        if (!tooClose && !tooFarFromOrbit) break;
         tries += 1;
       }
       spawnedPositions.push({ x, y });
@@ -243,14 +260,21 @@ export class AsteroidWaveSystem {
 
   /**
    * Wrong-shot bookkeeping. Called by the scene when the player hits an
-   * incorrect asteroid. Currently just increments a counter — Asteroid
-   * Field doesn't accelerate the wave on wrong shots (unlike Alien
-   * Shoot's descent penalty) because the countdown is the existing time
-   * pressure. The flag IS used by ScoreCalculator's `usedWrongShot` to
-   * halve points awarded for the eventual correct answer.
+   * incorrect asteroid. Two effects:
+   *   1. Increments the wrong-shot count → triggers ScoreCalculator's
+   *      `usedWrongShot` flag (halves points awarded for the eventual
+   *      correct answer on this question).
+   *   2. Subtracts `wrongShotCountdownPenaltySec` from the remaining
+   *      countdown (sprint 2.1 wrap-up addition — pure score halving
+   *      wasn't enough of a wrong-shot consequence; time pressure
+   *      makes the mistake bite). If the penalty would push the
+   *      countdown below 0, it's clamped at 0 — the next `update(dt)`
+   *      will then return 'timeout' and the wave ends.
    */
   applyWrongShotPenalty(): void {
     this.wrongShotsThisWave += 1;
+    const penaltyMs = config.asteroidField.wrongShotCountdownPenaltySec * 1000;
+    this.countdownRemainingMs = Math.max(0, this.countdownRemainingMs - penaltyMs);
   }
 
   /** True if the player has fired at any wrong asteroid in this wave. */
