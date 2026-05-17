@@ -32,7 +32,7 @@ export class GameSelectScene extends Phaser.Scene {
 
     text(this, cx, height * 0.18, 'Pick a Game', 'h2').setOrigin(0.5);
 
-    // Active tile.
+    // Active tile: Alien Shoot — the original lane-drop gameplay.
     const alienShoot = new PlaceholderButton({
       scene: this,
       x: cx - 180,
@@ -47,16 +47,19 @@ export class GameSelectScene extends Phaser.Scene {
       },
     });
 
-    // Disabled "soon" tile so the layout obviously supports more game modes.
-    const comingSoon = new PlaceholderButton({
+    // Active tile: Asteroid Field — sprint 2.1's free-aim mode.
+    const asteroidField = new PlaceholderButton({
       scene: this,
       x: cx + 180,
       y: height * 0.5,
       width: 320,
       height: 200,
-      label: 'Coming soon',
-      subtitle: 'More game modes are on the way.',
-      disabled: true,
+      label: 'Asteroid Field',
+      subtitle: 'Aim at floating asteroids. Beat the timer.',
+      onClick: () => {
+        Settings.setGameId('asteroid-field');
+        this.scene.start(SceneKeys.Difficulty);
+      },
     });
 
     const back = new PlaceholderButton({
@@ -69,7 +72,7 @@ export class GameSelectScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    new KeyboardNavigator(this, [alienShoot, comingSoon, back]);
+    new KeyboardNavigator(this, [alienShoot, asteroidField, back]);
 
     // Esc returns to the previous step in the menu stack.
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));

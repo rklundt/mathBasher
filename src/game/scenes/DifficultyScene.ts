@@ -270,7 +270,14 @@ export class DifficultyScene extends Phaser.Scene {
       disabled: true,
       onClick: () => {
         if (Settings.isReady()) {
-          this.scene.start(SceneKeys.Game);
+          // Sprint 2.1 — route by gameId. Each game mode has its own
+          // scene key; this dispatch is the single point where the
+          // user's "Pick a Game" choice translates to a scene transition.
+          const target =
+            Settings.round.gameId === 'asteroid-field'
+              ? SceneKeys.AsteroidField
+              : SceneKeys.Game;
+          this.scene.start(target);
         }
       },
     });

@@ -6,20 +6,55 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import type { MathId, SpeedKey } from '@/core/config';
 
 /**
- * Cross-scene round selection state. The user picks `gameId` (currently always
- * `'alien-shoot'`), `mathId` (Add to 10, etc.), and `speed` across multiple
- * scenes; this module is the single place that holds the in-flight choice
- * until GameScene reads it on `create`.
+ * Cross-scene round selection state. The user picks `gameId` (which game
+ * mode), `mathId` (Add to 10, etc.), and `speed` across multiple scenes;
+ * this module is the single place that holds the in-flight choice
+ * until a game scene reads it on `create`.
+ *
+ * Sprint 2.1: `gameId` was a bare string with `'alien-shoot'` as the only
+ * value; widened to a `GameId` union when Asteroid Field landed. New game
+ * modes add a literal to this union + a tile in GameSelectScene + a route
+ * to the corresponding scene key.
  *
  * Deliberately a tiny module-level singleton — no event emitter, no
  * subscribers, no Zustand. Scenes read on `create`. If we ever need reactive
  * updates across scenes, we'll add that intentionally.
  */
+export type GameId = 'alien-shoot' | 'asteroid-field';
+
 export interface RoundSettings {
-  gameId: string;
+  gameId: GameId;
   mathId: MathId | null;
   speed: SpeedKey | null;
 }
+
+/**
+ * Asteroid Field — visual mode toggle (sprint 2.1 playtest).
+ * `true`  = Midjourney image-variant rocks (default after playtest
+ *           round 2 — looks better in motion than the procedural
+ *           polygons; toggle survived initial review).
+ * `false` = procedural polygon asteroids (rollback path; user can
+ *           flip via the in-game Settings → Game tab → Image Asteroids).
+ *
+ * Lives at module scope (NOT in `RoundSettings`) because it's a
+ * persistent visual preference, not a per-round selection. Stays
+ * in-memory only — page refresh resets to the default (true). If
+ * a future playtest pass keeps this past sprint 2.1 close, a
+ * localStorage persistence pass is the follow-up (use the
+ * AudioManager's volume-persistence pattern).
+ */
+let _imageAsteroidsEnabled = true;
+
+/**
+ * Listeners for image-asteroids toggle changes. Set so a callback can
+ * subscribe + unsubscribe cleanly (subscribe returns an unsubscribe
+ * function — same shape as Phaser scene events / RxJS observables).
+ * AsteroidFieldScene wires one of these on create() so toggling the
+ * setting from the in-game Settings panel updates LIVE asteroids on
+ * the playfield, not just future spawns.
+ */
+type ImageAsteroidsListener = (enabled: boolean) => void;
+const _imageAsteroidsListeners = new Set<ImageAsteroidsListener>();
 
 const state: RoundSettings = {
   gameId: 'alien-shoot',
@@ -33,7 +68,7 @@ export const Settings = {
     return state;
   },
 
-  setGameId(id: string): void {
+  setGameId(id: GameId): void {
     state.gameId = id;
     _th.logToAi('Settings.setGameId', SeverityLevel.Information, { gameId: id });
   },
@@ -58,5 +93,48 @@ export const Settings = {
   /** True when both math and speed are picked — the Start button uses this. */
   isReady(): boolean {
     return state.mathId !== null && state.speed !== null;
+  },
+
+  // ----- Asteroid Field visual-mode toggle (sprint 2.1 playtest) -----
+
+  /**
+   * Whether to render asteroids as Midjourney image sprites (true) or
+   * as procedural polygons (false, default). Read by `AsteroidWaveSystem`
+   * at spawn time; not reactive — asteroids spawned BEFORE a toggle
+   * change keep their original look until the next wave.
+   */
+  getImageAsteroidsEnabled(): boolean {
+    return _imageAsteroidsEnabled;
+  },
+
+  setImageAsteroidsEnabled(enabled: boolean): void {
+    if (_imageAsteroidsEnabled === enabled) return;
+    _imageAsteroidsEnabled = enabled;
+    _th.logToAi('Settings.setImageAsteroidsEnabled', SeverityLevel.Information, {
+      reason: enabled ? 'enabled' : 'disabled',
+    });
+    // Fan out to any listeners. Caught per-listener so one bad
+    // subscriber can't break the others — Settings is a global, and
+    // a listener throwing here would leave the in-flight callers
+    // (e.g. the SettingsScene toggle's onChange) in a partial state.
+    for (const listener of _imageAsteroidsListeners) {
+      try {
+        listener(enabled);
+      } catch (err) {
+        _th.logToAi('Settings.imageAsteroidsListener.error', SeverityLevel.Warning, {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  },
+
+  /**
+   * Subscribe to image-asteroids toggle changes. Returns an
+   * unsubscribe function — call it on scene shutdown so the listener
+   * doesn't outlive the scene that owns it.
+   */
+  onImageAsteroidsChange(listener: ImageAsteroidsListener): () => void {
+    _imageAsteroidsListeners.add(listener);
+    return () => _imageAsteroidsListeners.delete(listener);
   },
 };

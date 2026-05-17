@@ -229,11 +229,150 @@ export const config = {
       { widthScale: 0.8, heightPx: 98, alpha: 1.0 },
     ],
   },
+  /**
+   * Sprint 2.1 — Asteroid Field game mode tuning. Drift speed + countdown
+   * scale with the Speed selector (Slow/Medium/Fast) the same way Alien
+   * Shoot's `scoring.speed.*` block does, but tuned independently because
+   * the physics are different (free 2D drift + free-aim fire vs. lane drop
+   * + auto-traverse hero).
+   *
+   * Asteroid Field reuses `scoring.speed.{slow,medium,fast}.multiplier`
+   * for the score multiplier (so a "Medium-Asteroid-Field-Multiply-12×12"
+   * round scores the same per-correct as "Medium-Alien-Shoot-Multiply-12×12").
+   */
+  asteroidField: {
+    /**
+     * Asteroid drift speed (px/s) + per-question countdown (seconds) per
+     * Speed selector. The countdown is a HARD timeout — when it hits 0,
+     * the question is marked wrong and the wave advances.
+     *
+     * First-pass values; tune in playtest. Faster speed = more drift AND
+     * less time. Slower speed = more aim time + slower targets.
+     */
+    speed: {
+      slow: { driftPxPerSec: 30, countdownSec: 25 },
+      medium: { driftPxPerSec: 50, countdownSec: 18 },
+      fast: { driftPxPerSec: 75, countdownSec: 12 },
+    },
+    /**
+     * Number of asteroids per wave. Matches `layout.targetLanes` (4) so
+     * the asteroid count == answer choices count == lane count across
+     * both game modes. Could lift to its own knob later but the symmetry
+     * is intentional for now.
+     */
+    asteroidsPerWave: 4,
+    /**
+     * Minimum spawn distance between two asteroids (design pixels). When
+     * spawning, rejected positions force a re-roll until all asteroids
+     * are at least this far from each other. Prevents the wave from
+     * launching with asteroids visually overlapping.
+     */
+    minSpawnDistancePx: 200,
+    /**
+     * Asteroid radius (display + collision) in design pixels. Per-instance
+     * scale variation applies on top: each rendered asteroid is between
+     * `radiusPx × scaleMin` and `radiusPx × scaleMax`.
+     */
+    asteroidRadiusPx: 38,
+    asteroidScaleMin: 0.85,
+    asteroidScaleMax: 1.15,
+    /**
+     * Per-question physics mode is randomly picked from this enabled set.
+     * Each entry produces a different drift behavior:
+     *   - "straight" — asteroids drift in straight lines, wrap at edges
+     *   - "bounce" — asteroids bounce off the playfield edges
+     *   - "orbit" — asteroids orbit slowly around a random center
+     * Disable individual modes by removing them from this array.
+     */
+    enabledPhysicsModes: ['straight', 'bounce', 'orbit'] as const,
+    /**
+     * Hero projectile speed (px/s) — faster than the answer asteroids so
+     * a fired shot reaches the target before the asteroid drifts very
+     * far. Tuned to feel snappy without being uncatchable visually.
+     */
+    projectileSpeedPxPerSec: 600,
+    /**
+     * Seconds removed from the per-question countdown when the player
+     * hits a wrong asteroid. Sprint 2.1 wrap-up addition (in addition
+     * to the existing half-points-on-eventual-correct flag that Alien
+     * Shoot also has). Set to 0 to disable the time penalty.
+     *
+     * 3 seconds is meaningful at every speed: 3/25 = 12% at Slow,
+     * 3/18 = 17% at Medium, 3/12 = 25% at Fast — penalty bites
+     * harder on faster rounds, which is the right shape.
+     */
+    wrongShotCountdownPenaltySec: 3,
+    /**
+     * Hero rotation speed in radians per second, used by the keyboard
+     * arrow-key rotation path. Mouse/touch aim is absolute (point-to-
+     * position), so this only affects keyboard players.
+     */
+    heroRotationRadPerSec: 4.0,
+    /**
+     * Sprint 2.1 wrap-up — visual tuning constants for the procedural
+     * polygon asteroid (`Asteroid.ts`) and the image-variant scale
+     * multiplier. Lifted from inline constants to satisfy the project's
+     * "every tunable number in config" convention. A future "make
+     * asteroids less spiky" or "shrink the image rocks" playtest call
+     * is a 1-line edit here, not a code change to the entity.
+     */
+    visual: {
+      /** Procedural polygon vertex count (12 = "bumpy circle" silhouette). */
+      vertexCount: 12,
+      /** Radial salt amplitude per vertex (±18% of base radius). */
+      saltAmplitude: 0.18,
+      /** Outline thickness on the procedural polygon. */
+      borderWidthPx: 4,
+      /** Border-color brightness multiplier vs. fill (0..1, lower = darker). */
+      borderDarken: 0.4,
+      /**
+       * Image-variant display-scale multiplier vs. procedural diameter.
+       * 1.5 = image rocks render 50% larger than polygons (sprint 2.1
+       * playtest call — the AI rock art has texture detail that benefits
+       * from extra screen real estate). Collision radius is NOT scaled
+       * by this; hit-target size matches the procedural variant so
+       * gameplay difficulty is identical across modes.
+       */
+      imageVisualScale: 1.5,
+    },
+    /**
+     * Hero ship sprite dimensions in design pixels. Lifted from inline
+     * constants on `AsteroidHero` to satisfy the project's "every
+     * tunable number in config" convention. 80×80 square (sprint 2.1
+     * playtest sizing — bigger than the original triangle predecessor
+     * so the AI-art ship detail reads at gameplay distance).
+     */
+    hero: {
+      widthPx: 80,
+      heightPx: 80,
+    },
+    /**
+     * Hero projectile visual dimensions. Capsule shape is rotated to
+     * face the travel direction. Collision radius derives from the
+     * long axis (LENGTH / 2) — see `AsteroidProjectile.getCollisionRadius`.
+     */
+    projectile: {
+      /** Long-axis length in design pixels (also drives collision radius). */
+      lengthPx: 60,
+      /** Short-axis thickness in design pixels. */
+      thicknessPx: 22,
+    },
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
     /** safe-area padding in design pixels (1280x720 design canvas) */
     safeAreaPaddingPx: 16,
+    /**
+     * HUD bar height in design pixels. The top-screen ribbon that
+     * carries score / prompt / pause / mute / progress dots. Lifted
+     * from an inline `barHeight = 48` literal in HudScene to satisfy
+     * the project's "no magic numbers" convention — `AsteroidFieldScene`
+     * also reads this to compute its playfield top bound so the
+     * playfield never overlaps the HUD ribbon. Single source of truth;
+     * a future resize is a 1-line edit here.
+     */
+    hudBarHeightPx: 48,
     /**
      * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
      * design pixels. Load-bearing for legal compliance — the footer must
