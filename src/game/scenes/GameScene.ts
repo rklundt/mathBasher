@@ -21,7 +21,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 import {
   SfxKeys,
   MidgroundKeys,
-  MusicKeys,
+  GAME_MUSIC_MAP,
   pickRandomHitCorrectSfx,
   pickRandomHitWrongSfx,
 } from '@/core/audioKeys';
@@ -190,7 +190,11 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // (AudioManager was already bound to this scene by setupScene above,
     // so no re-init needed here; the loops attach via the live binding.)
     const audio = getAudioManager();
-    audio.playLoop(MusicKeys.Loop1, 'music');
+    // Per-game music: GAME_MUSIC_MAP looks up this scene's `gameId`.
+    // Alien Shoot maps to `Loop1` (unchanged behavior — same loop
+    // shipped in sprint 0.5.3); the indirection exists so adding
+    // a third game mode is a 1-line map edit, not a code change here.
+    audio.playLoop(GAME_MUSIC_MAP[this.gameId], 'music');
     audio.playLoop(MidgroundKeys.Skittering1, 'midground');
 
     this.startNextQuestion();
@@ -490,7 +494,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // on a loop that's already stopped (e.g. skittering after a death
     // anim that didn't restart before round end) is a safe no-op.
     const audio = getAudioManager();
-    audio.stopLoop(MusicKeys.Loop1);
+    audio.stopLoop(GAME_MUSIC_MAP[this.gameId]);
     audio.stopLoop(MidgroundKeys.Skittering1);
     if (this.scene.isActive(SceneKeys.Hud)) {
       this.scene.stop(SceneKeys.Hud);

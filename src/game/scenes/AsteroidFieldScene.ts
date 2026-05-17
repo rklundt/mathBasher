@@ -20,7 +20,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 import {
   SfxKeys,
   MidgroundKeys,
-  MusicKeys,
+  GAME_MUSIC_MAP,
   pickRandomHitCorrectSfx,
   pickRandomHitWrongSfx,
 } from '@/core/audioKeys';
@@ -218,7 +218,11 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     // Music + ambient loop (same as Alien Shoot — consistent audio bed
     // across modes so players don't feel jarred by mode-switch).
     const audio = getAudioManager();
-    audio.playLoop(MusicKeys.Loop1, 'music');
+    // Per-game music: GAME_MUSIC_MAP looks up this scene's `gameId`.
+    // Stored in a const so the corresponding `stopLoop` in cleanup
+    // references the same key (a typo splitting the two would leave
+    // the loop playing forever).
+    audio.playLoop(GAME_MUSIC_MAP[this.gameId], 'music');
     audio.playLoop(MidgroundKeys.Skittering1, 'midground');
 
     // First-time Asteroid Field hint banner. Touch controls aren't
@@ -574,7 +578,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.waveSystem?.clearWave(true);
     this.inputSystem?.destroy();
     const audio = getAudioManager();
-    audio.stopLoop(MusicKeys.Loop1);
+    audio.stopLoop(GAME_MUSIC_MAP[this.gameId]);
     audio.stopLoop(MidgroundKeys.Skittering1);
     if (this.scene.isActive(SceneKeys.Hud)) this.scene.stop(SceneKeys.Hud);
     if (this.scene.isActive(SceneKeys.PauseOverlay)) this.scene.stop(SceneKeys.PauseOverlay);
