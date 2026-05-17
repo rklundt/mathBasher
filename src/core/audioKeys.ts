@@ -2,6 +2,8 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
+import type { GameId } from '@/services/Settings';
+
 /**
  * Stable string keys for every preloadable audio asset. Mirrors the
  * `sceneKeys.ts` pattern: every reference to an audio asset goes through
@@ -72,13 +74,49 @@ export const MidgroundKeys = {
 
 /** Music loop keys. */
 export const MusicKeys = {
+  /**
+   * Alien Shoot gameplay loop + default menu/non-game music.
+   * Sprint 0.5.3 first wired this in `loop-1.mp3`.
+   */
   Loop1: 'loop-1',
+  /**
+   * Asteroid Field gameplay loop. Sprint 2.1.5 — first per-game-mode
+   * music track. 30-second loop encoded through `pnpm audio:encode
+   * --kind music --no-trim` (the `--no-trim` flag preserves clean
+   * loop boundaries that the default trim pass could clip into).
+   *
+   * `loop-2.mp3` exists on disk but is orphaned from earlier
+   * processing — not in this key registry, not loaded by BootScene.
+   * Future cleanup may either wire it as an alt-track or remove it.
+   */
+  Loop3: 'loop-3',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
 export type MidgroundKey = (typeof MidgroundKeys)[keyof typeof MidgroundKeys];
 export type MusicKey = (typeof MusicKeys)[keyof typeof MusicKeys];
 export type AudioKey = SfxKey | MidgroundKey | MusicKey;
+
+/**
+ * Per-game-mode music mapping. Parallels `GAME_BG_MAP` in
+ * `spriteKeys.ts`: each `GameId` resolves to a `MusicKey` so each
+ * game scene can play its own background loop without hard-coding
+ * the key at the call site. Sprint 2.1.5 — first per-game audio
+ * identity. Adding a new game mode = add a row here + a `MusicKeys`
+ * entry above. Declared as `Record<GameId, MusicKey>` so a future
+ * GameId addition without a music map gets flagged at compile time
+ * (TS error: "missing property 'number-climb'").
+ *
+ * Unlike `GAME_BG_MAP` (consumed by the persistent `BackgroundScene`
+ * via `Settings.onGameIdChange`), this map is consumed by individual
+ * game scenes at `create` time. Game scenes already know their own
+ * gameId, so no observer pattern is needed — they just read the map
+ * directly.
+ */
+export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
+  'alien-shoot': MusicKeys.Loop1,
+  'asteroid-field': MusicKeys.Loop3,
+};
 
 /**
  * Build the URL to a shipped audio file. Phaser's loader accepts URL strings
