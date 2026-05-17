@@ -27,8 +27,47 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 0.5.4 next** — click-to-start splash (defer Phaser construction to a user-gesture splash overlay; eliminates the AudioContext auto-start browser warning, properly brackets iOS Safari's first-gesture audio context creation, gives a natural title-screen moment) plus button-click SFX wired to every PlaceholderButton + HUD icon (`button-click-1.mp3` already shipped via the audio pipeline, awaiting this sprint to wire it).
-- **Then 0.6** — mobile + responsive (FIT scaling at 16:9, portrait-rotate overlay, on-screen TouchFireButton, layout review at six common landscape viewports). Then 0.7 art polish.
+- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern established in 2.1 so the third game mode lands cleanly on top of the shared lifecycle.
+- **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
+
+## [2.1.0] - 2026-05-17 — Asteroid Field game mode + image-variant rocks + Settings tabs
+
+Second game mode ships. "Pick a Game" tile now lights up; picking Asteroid Field + a math type + a speed launches a free-aim, free-position variant: 4 asteroids drift in 2D (straight / bounce / elliptical-orbit physics randomly per question), the hero sits centered and rotates to aim, the player fires in the facing direction, and a per-question countdown enforces time pressure (25s/18s/12s for Slow/Medium/Fast). All 9 Phase 1 math types work in the new mode unchanged.
+
+### Architecture
+- **`RoundController` (composition helper)** extracted from `GameScene` — owns question loop, anti-repeat sliding window, score, round-state transitions. Phaser-free + unit-tested (9 tests). Both `GameScene` (Alien Shoot) and the new `AsteroidFieldScene` consume it.
+- **`GameSceneContract` interface** keeps `HudScene` ignorant of which mode is running; HUD events route through the contract.
+- **`Settings.GameId` union** widened to `'alien-shoot' | 'asteroid-field'`. `GameOverScene` Play Again now routes back to the source game (was hardcoded to Alien Shoot — Play Again from an asteroid round would have bounced to the wrong mode).
+- **`orbitMath.ts` pure helpers** (`computeOrbitParams`, `pointOnEllipse`) — 10 isolated unit tests covering elliptical-orbit geometry that was re-tuned three times during playtest.
+
+### Gameplay
+- Aim controls: mouse position on desktop, drag-left + tap-right + on-screen FIRE button on touch, arrow-rotate + Space on keyboard.
+- Wrong-shot penalty: half points on that question + 3-second countdown deduction + visible "-3s" floater above the hit asteroid (so the time penalty reads as a discrete event rather than a silent countdown jump).
+- Timeout fail: per-question countdown reaching 0 plays new `timeout-fail-1.mp3` SFX + red flash + camera shake.
+- First-round hint banner ("Drag to aim • Tap or press FIRE to shoot") shows once per session at the top of the playfield, autofades after 4s.
+
+### Visuals
+- **3 Midjourney-generated hero ships** for Asteroid Field (`asteroid-hero-1/2/3.png`) — round-robin per round. Cockpit dot + engine vent trail overlays preserved on top of the sprite.
+- **8 Midjourney-generated asteroid rocks** (`asteroid-1.png` through `asteroid-8.png`) — uniform-random pick per asteroid spawned. Real-time in-place visual swap when toggling Settings → Game → Asteroid Images.
+- **Procedural polygon fallback** preserved as the rollback path (toggle defaults to ON; user can switch back live).
+- **Vertical tabbed Settings UI** (Sound / Game). Game tab only appears when the current game has at least one game-specific setting (Asteroid Field today).
+- **New `ToggleSwitch` UI component** — pill-shaped track with sliding thumb, WCAG-compliant contrast, implements `Focusable` so it slots into KeyboardNavigator.
+
+### Audio
+- `timeout-fail-1.mp3` SFX added (ElevenLabs-generated, processed through `pnpm audio:encode` at SFX profile).
+
+### Telemetry
+- All new events carry `gameId: 'asteroid-field'` alongside the existing `mathId` + `speed` props. App Insights can now break round-completion by game mode.
+
+### Configuration
+- New `config.asteroidField.{speed, asteroidsPerWave, minSpawnDistancePx, asteroidRadiusPx, asteroidScaleMin/Max, enabledPhysicsModes, projectileSpeedPxPerSec, wrongShotCountdownPenaltySec, heroRotationRadPerSec, visual, hero, projectile}` block.
+- New `config.layout.hudBarHeightPx` consumed by both HudScene + AsteroidFieldScene (single source of truth for the HUD ribbon height).
+
+### Tests
+- 277 tests passing across 26 files (was 267 across 25). 10 new tests in `orbitMath.test.ts`; 9 in `RoundController.test.ts`; 9 in `AsteroidHitSystem.test.ts`.
+
+### No breaking changes
+- Alien Shoot behaves identically to v0.7.5 (same score, same events, same timing). Existing localStorage settings + score store entries preserved. No migration needed.
 
 ## [0.5.3] - 2026-05-10 — Audio content batch + Settings screen + first loops wired
 
