@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
 import type { Question } from '@/math/types';
-import type { GameScene } from '@/game/scenes/GameScene';
+import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
@@ -65,9 +65,29 @@ export class HudScene extends Phaser.Scene {
   private progressDots: Phaser.GameObjects.Arc[] = [];
   private currentQuestionIndex = 0;
   private gameSceneListenersBound = false;
+  /**
+   * Per-question countdown text (sprint 2.1). Visible only when the
+   * active game scene exposes a countdown via
+   * `GameSceneContract.getCountdownSec()` — Asteroid Field does;
+   * Alien Shoot returns undefined and the text stays hidden. Updated
+   * each frame in the scene's `update(time, dt)` hook.
+   */
+  private countdownText?: Phaser.GameObjects.Text;
+  /**
+   * Scene key of the game-mode scene that launched this HUD. Defaults to
+   * SceneKeys.Game (Alien Shoot — back-compat for any legacy caller).
+   * Sprint 2.1: HudScene became game-mode-agnostic — each game scene
+   * launches with `{ gameSceneKey: this.scene.key }` in init data so
+   * the lookups below find the right scene.
+   */
+  private gameSceneKey: string = SceneKeys.Game;
 
   constructor() {
     super(HudScene.key);
+  }
+
+  init(data: HudSceneInit): void {
+    this.gameSceneKey = data.gameSceneKey ?? SceneKeys.Game;
   }
 
   create(): void {
@@ -95,7 +115,12 @@ export class HudScene extends Phaser.Scene {
     this.currentQuestionIndex = 0;
 
     const { width } = this.scale;
-    const barHeight = 48;
+    // Sprint 2.1 wrap-up — lifted from a `barHeight = 48` literal to
+    // `config.layout.hudBarHeightPx` so AsteroidFieldScene's playfield
+    // bound math derives from the same source of truth. Pre-lift had
+    // the literal duplicated across HudScene and AsteroidFieldScene;
+    // a future ribbon-resize would have silently misaligned the playfield.
+    const barHeight = config.layout.hudBarHeightPx;
 
     const bg = this.add.rectangle(0, 0, width, barHeight, 0x000000, 0.45);
     bg.setOrigin(0, 0);
@@ -107,6 +132,14 @@ export class HudScene extends Phaser.Scene {
     this.scoreText = text(this, 16, barHeight / 2, 'Score: 0', 'body').setOrigin(0, 0.5);
 
     this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
+
+    // Sprint 2.1 — countdown text just BELOW the prompt, only visible in
+    // game modes that expose getCountdownSec (Asteroid Field). The text
+    // updates each frame in update() with the remaining seconds, with
+    // color shifting green > yellow > red as time runs out. Built unconditionally
+    // here (one Phaser.Text per round is trivial); visibility is toggled in update().
+    this.countdownText = text(this, width / 2, barHeight + 8, '', 'body').setOrigin(0.5, 0);
+    this.countdownText.setVisible(false);
 
     // Pause icon (top-right) and Mute icon (just left of it). Both are
     // 44×44 (Apple HIG min hit area), but visually distinct so a kid mid-
@@ -172,6 +205,31 @@ export class HudScene extends Phaser.Scene {
       }
       _th.logToAi('HudScene Completed', SeverityLevel.Information);
     });
+  }
+
+  /**
+   * Sprint 2.1 — per-frame countdown poll. Asteroid Field exposes a
+   * `getCountdownSec()` on the GameSceneContract; Alien Shoot returns
+   * undefined. When the countdown is present, render the remaining
+   * seconds in the HUD with a color shift as time runs out (green > 5s,
+   * yellow > 2s, red ≤ 2s). When absent, hide the text.
+   */
+  override update(_time: number, _dt: number): void {
+    if (!this.countdownText) return;
+    const gameScene = this.getGameScene();
+    const sec = gameScene?.getCountdownSec?.();
+    if (sec === undefined) {
+      if (this.countdownText.visible) this.countdownText.setVisible(false);
+      return;
+    }
+    if (!this.countdownText.visible) this.countdownText.setVisible(true);
+    // Show 0-decimal precision for clarity; "⏱ 12" reads cleaner than
+    // "⏱ 12.0" or "⏱ 12.345".
+    this.countdownText.setText(`⏱ ${Math.ceil(sec)}`);
+    // Color thresholds — generous green band so the UI doesn't constantly
+    // flash yellow. Reds the last 2 seconds.
+    const color = sec > 5 ? '#22c55e' : sec > 2 ? '#facc15' : '#ef4444';
+    this.countdownText.setColor(color);
   }
 
   /**
@@ -265,8 +323,8 @@ export class HudScene extends Phaser.Scene {
    * GameScene class so the typed pause/resume/quit API is callable
    * without scattering `as GameScene` across every call site.
    */
-  private getGameScene(): GameScene | null {
-    return this.scene.get(SceneKeys.Game) as GameScene | null;
+  private getGameScene(): GameSceneContract | null {
+    return this.scene.get(this.gameSceneKey) as GameSceneContract | null;
   }
 
   /**
@@ -381,7 +439,7 @@ export class HudScene extends Phaser.Scene {
 
   private unbindGameSceneEvents(): void {
     if (!this.gameSceneListenersBound) return;
-    const gameScene = this.scene.get(SceneKeys.Game);
+    const gameScene = this.scene.get(this.gameSceneKey);
     if (gameScene) {
       gameScene.events.off('questionStarted', this.onQuestionStarted, this);
       gameScene.events.off('questionEnded', this.onQuestionEnded, this);
