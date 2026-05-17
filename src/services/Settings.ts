@@ -56,6 +56,17 @@ let _imageAsteroidsEnabled = true;
 type ImageAsteroidsListener = (enabled: boolean) => void;
 const _imageAsteroidsListeners = new Set<ImageAsteroidsListener>();
 
+/**
+ * Listeners for game-mode (`gameId`) changes. Sprint 2.1.1 added so
+ * `BackgroundScene` can swap the gameplay backdrop when the player
+ * enters a different game mode. Same shape as
+ * `_imageAsteroidsListeners` (Set + unsubscribe-returning subscribe);
+ * keeping the pattern uniform so future observable settings follow
+ * the established style.
+ */
+type GameIdListener = (gameId: GameId) => void;
+const _gameIdListeners = new Set<GameIdListener>();
+
 const state: RoundSettings = {
   gameId: 'alien-shoot',
   mathId: null,
@@ -69,8 +80,22 @@ export const Settings = {
   },
 
   setGameId(id: GameId): void {
+    if (state.gameId === id) return;
     state.gameId = id;
     _th.logToAi('Settings.setGameId', SeverityLevel.Information, { gameId: id });
+    // Fan out to listeners (BackgroundScene swaps the gameplay
+    // backdrop). Same per-listener try/catch as
+    // setImageAsteroidsEnabled — one bad subscriber shouldn't break
+    // the fan-out.
+    for (const listener of _gameIdListeners) {
+      try {
+        listener(id);
+      } catch (err) {
+        _th.logToAi('Settings.gameIdListener.error', SeverityLevel.Warning, {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   },
 
   setMathId(id: MathId): void {
@@ -136,5 +161,18 @@ export const Settings = {
   onImageAsteroidsChange(listener: ImageAsteroidsListener): () => void {
     _imageAsteroidsListeners.add(listener);
     return () => _imageAsteroidsListeners.delete(listener);
+  },
+
+  /**
+   * Subscribe to game-mode (`gameId`) changes. Returns an unsubscribe
+   * function. Sprint 2.1.1 — `BackgroundScene` uses this to swap
+   * gameplay backdrops when the player enters a different mode.
+   * Persistent (BackgroundScene-lifetime) subscribers don't need to
+   * unsubscribe; per-scene subscribers should call the returned
+   * function on shutdown.
+   */
+  onGameIdChange(listener: GameIdListener): () => void {
+    _gameIdListeners.add(listener);
+    return () => _gameIdListeners.delete(listener);
   },
 };
