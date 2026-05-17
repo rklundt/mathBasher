@@ -50,8 +50,9 @@ const ASTEROID_PALETTE = [
   0x4a3828, // very dark brown
 ] as const;
 
-// Tuning constants moved to `config.asteroidField.visual.*` in sprint 2.1
-// wrap-up (Architect review lift). Read inline below at each use site.
+// Tuning constants live in `config.asteroidField.visual.*` (moved out
+// of inline literals in sprint 2.1 wrap-up). Read inline below at
+// each use site.
 
 export interface AsteroidOpts {
   scene: Phaser.Scene;

@@ -73,7 +73,7 @@ export class GameOverScene extends Phaser.Scene {
     // GameId union has no nullable variant) for legacy callers. The
     // prior triple-fallback (`?? 'alien-shoot'`) was unreachable
     // because `Settings.round.gameId` is typed as non-nullable; dropped
-    // in sprint 2.1 wrap-up per Senior Dev review.
+    // in sprint 2.1 wrap-up.
     const gameId: GameId = this.roundData.gameId ?? Settings.round.gameId;
 
     const props: TelemetryProps = {

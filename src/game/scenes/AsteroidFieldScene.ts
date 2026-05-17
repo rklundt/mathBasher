@@ -226,7 +226,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     // beginner would guess tap-anywhere-to-fire). Shows ONCE per
     // session, fades after ~4s. Session-scoped flag (not localStorage)
     // because the hint is meant to onboard new sessions, not "you've
-    // seen this once ever." Support-review must-fix.
+    // seen this once ever."
     this.maybeShowFirstRoundHint();
 
     this.startNextQuestion();
@@ -433,9 +433,9 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
    * the time penalty as a discrete event rather than a silent
    * countdown jump. Reads the penalty value from config so a future
    * playtest re-tuning is reflected automatically. Floats upward
-   * ~40px over 600ms then fades out. Support-review lift — without
-   * this, three wrong shots at Fast (zeroes the countdown) looked
-   * like a random timeout-fail with no causation visible.
+   * ~40px over 600ms then fades out. Without this, three wrong shots
+   * at Fast (zeroes the countdown) looked like a random timeout-fail
+   * with no causation visible.
    */
   private spawnTimePenaltyFloater(x: number, y: number): void {
     const penalty = config.asteroidField.wrongShotCountdownPenaltySec;

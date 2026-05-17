@@ -312,10 +312,9 @@ export const config = {
      * Sprint 2.1 wrap-up — visual tuning constants for the procedural
      * polygon asteroid (`Asteroid.ts`) and the image-variant scale
      * multiplier. Lifted from inline constants to satisfy the project's
-     * "every tunable number in config" convention (Architect-review
-     * finding). A future "make asteroids less spiky" or "shrink the
-     * image rocks" playtest call is a 1-line edit here, not a code
-     * change to the entity.
+     * "every tunable number in config" convention. A future "make
+     * asteroids less spiky" or "shrink the image rocks" playtest call
+     * is a 1-line edit here, not a code change to the entity.
      */
     visual: {
       /** Procedural polygon vertex count (12 = "bumpy circle" silhouette). */

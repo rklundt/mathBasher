@@ -117,10 +117,9 @@ export class HudScene extends Phaser.Scene {
     const { width } = this.scale;
     // Sprint 2.1 wrap-up — lifted from a `barHeight = 48` literal to
     // `config.layout.hudBarHeightPx` so AsteroidFieldScene's playfield
-    // bound math derives from the same source of truth (Architect-review
-    // lift). Pre-fix had the literal duplicated across HudScene and
-    // AsteroidFieldScene; a future ribbon-resize would have silently
-    // misaligned the playfield.
+    // bound math derives from the same source of truth. Pre-lift had
+    // the literal duplicated across HudScene and AsteroidFieldScene;
+    // a future ribbon-resize would have silently misaligned the playfield.
     const barHeight = config.layout.hudBarHeightPx;
 
     const bg = this.add.rectangle(0, 0, width, barHeight, 0x000000, 0.45);

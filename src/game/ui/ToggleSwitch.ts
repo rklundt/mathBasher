@@ -12,12 +12,15 @@ import {
 /**
  * OFF-state track fill. Brighter than the canonical `SLATE_BG` (#1f2740)
  * because the toggle sits against the SettingsScene's 0.92-alpha black
- * backdrop — at #1f2740 the OFF track was effectively invisible (~1.4:1
- * contrast vs the backdrop, well under WCAG 1.4.11's 3:1 minimum for
- * UI components). #3b475f reads cleanly against the backdrop while
- * still being clearly subordinate to the ON-state amber.
+ * backdrop. Tuning history:
+ *   - #1f2740 (canonical SLATE_BG) ≈ 1.34:1 vs effective backdrop (#0a0a0a)
+ *     — well under WCAG 1.4.11's 3:1 minimum.
+ *   - #3b475f (first fix) ≈ 2.12:1 — better but still under 3:1.
+ *   - #6c7a96 (current) ≈ 3.9:1 — clears the 3:1 minimum with margin.
+ * The chosen blue-grey still reads as clearly subordinate to the
+ * ON-state amber but is visible against the dark backdrop.
  */
-const TOGGLE_TRACK_OFF = 0x3b475f;
+const TOGGLE_TRACK_OFF = 0x6c7a96;
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelemetry';
@@ -117,9 +120,9 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     // Hit-target Rectangle FIRST so it sits behind the painter (it's
     // invisible — alpha 0 — but its render order doesn't matter; what
     // matters is that it's a concrete child carrying the interactive
-    // state Phaser actually wires up). Padding 28 (was 16) bumps the
-    // hit area to 96×64 — clears Apple HIG 44pt-with-padding and the
-    // project's 64×64 minimum-tap-target bar (Support-review lift).
+    // state Phaser actually wires up). Padding 28 (was 16 pre-sprint-2.1-
+    // wrap-up) bumps the hit area to 108×64 — clears Apple HIG 44pt-
+    // with-padding and the project's 64×64 minimum-tap-target bar.
     const hitWidth = TRACK_WIDTH + 28;
     const hitHeight = TRACK_HEIGHT + 28;
     this.hitTarget = opts.scene.add.rectangle(0, 0, hitWidth, hitHeight, 0xffffff, 0);
