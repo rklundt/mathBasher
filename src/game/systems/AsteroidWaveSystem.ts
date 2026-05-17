@@ -75,6 +75,30 @@ export class AsteroidWaveSystem {
    * the Slow countdown (25s).
    */
   private readonly orbitAngularSpeed = 0.0014;
+  /**
+   * Sprint 2.1 wrap-up retest #3 — elliptical orbit support.
+   *
+   * `orbitSemiMajor` and `orbitSemiMinor` are the X and Y radii of the
+   * ellipse. Computed at spawn from the playfield bounds: each is the
+   * distance from orbit center to the nearest playfield edge along
+   * that axis, minus the asteroid's display radius (so the asteroid
+   * never crosses the playfield boundary on its orbit). With the
+   * orbit center at the playfield CENTER (sprint 2.1 retest #3
+   * default), these become halfPlayfieldWidth and halfPlayfieldHeight
+   * respectively, giving an ellipse that fills the playfield to the
+   * corners. Asteroids swing wide on the horizontal axis (more
+   * on-screen presence) and stay closer on the vertical axis
+   * (no top/bottom-edge clipping).
+   *
+   * `orbitThetas` tracks the current orbital angle per asteroid,
+   * keyed by asteroid reference. Each asteroid updates its position
+   * each frame via (centerX + a·cos(θ), centerY + b·sin(θ)). Random
+   * initial θ per asteroid gives visual variety; all asteroids share
+   * the same ellipse + angular speed so they stay evenly spread.
+   */
+  private orbitSemiMajor = 0;
+  private orbitSemiMinor = 0;
+  private orbitThetas: Map<Asteroid, number> = new Map();
 
   constructor(private readonly opts: AsteroidWaveOpts) {}
 
@@ -117,66 +141,82 @@ export class AsteroidWaveSystem {
     const modes = config.asteroidField.enabledPhysicsModes;
     this.currentMode = modes[Math.floor(rng() * modes.length)] as AsteroidPhysicsMode;
 
-    // Orbit-mode picks a random center somewhere in the inner playfield.
-    // 20% inset from each edge so asteroids don't immediately orbit out
-    // of the visible region.
+    // Sprint 2.1 wrap-up retest #3 — orbit center is now the playfield
+    // CENTER (was random-inset previously). With the elliptical orbit
+    // also new this iteration, putting the center at the playfield
+    // midpoint means the ellipse fills the rectangular playfield to
+    // the corners along both axes, maximizing on-screen presence.
+    // Semi-major (X radius) = halfPlayfieldWidth - asteroidRadius;
+    // semi-minor (Y radius) = halfPlayfieldHeight - asteroidRadius.
+    // Both insets prevent the asteroid from crossing the playfield
+    // boundary on its orbit.
     const playfieldWidth = this.opts.rightBound - this.opts.leftBound;
     const playfieldHeight = this.opts.bottomBound - this.opts.topBound;
-    this.orbitCenterX = this.opts.leftBound + playfieldWidth * (0.3 + rng() * 0.4);
-    this.orbitCenterY = this.opts.topBound + playfieldHeight * (0.3 + rng() * 0.4);
+    this.orbitCenterX = (this.opts.leftBound + this.opts.rightBound) / 2;
+    this.orbitCenterY = (this.opts.topBound + this.opts.bottomBound) / 2;
+    const asteroidRadius = config.asteroidField.asteroidRadiusPx;
+    this.orbitSemiMajor = playfieldWidth / 2 - asteroidRadius;
+    this.orbitSemiMinor = playfieldHeight / 2 - asteroidRadius;
+    this.orbitThetas.clear();
 
-    // Spawn asteroids one at a time with min-distance rejection sampling.
-    // ORBIT mode: clamp the spawn area to a small radius around the
-    // orbit center so asteroids stay near the visible playfield as
-    // they swing around. Sprint 2.1 wrap-up fix: without the clamp,
-    // an asteroid spawned at the corner of the playfield would orbit
-    // at a radius equal to corner-to-center, going FAR off-screen.
+    // Spawn asteroids — orbit mode and straight/bounce modes use
+    // different placement strategies.
     const minDist = config.asteroidField.minSpawnDistancePx;
     const minDistSq = minDist * minDist;
     const inset = config.asteroidField.asteroidRadiusPx + 16; // keep fully on-screen
     const spawnedPositions: Array<{ x: number; y: number }> = [];
-    const orbitMaxRadius =
-      this.currentMode === 'orbit'
-        ? Math.min(playfieldWidth, playfieldHeight) *
-          config.asteroidField.orbitMaxRadiusFraction
-        : Infinity;
+    // Orbit mode: place asteroids directly on the ellipse with evenly-
+    // spaced theta values + small random jitter. Guarantees they're on
+    // the orbit path from frame 0 (no transient "snap to orbit" motion)
+    // and visually spread around the playfield.
+    const thetaStep = (Math.PI * 2) / question.choices.length;
+    const thetaJitter = thetaStep * 0.3; // ±30% of even-spacing step
+    const thetaBase = rng() * Math.PI * 2; // random starting rotation for the whole wave
 
     for (let i = 0; i < question.choices.length; i++) {
       const answer = question.choices[i] ?? 0;
       let x = 0;
       let y = 0;
-      // Reject-and-retry until we find a position min-dist from all
-      // previously-spawned asteroids AND within the orbit-mode radius
-      // (when applicable). Cap retries to prevent infinite loop if the
-      // constraints overlap impossibly.
-      const MAX_TRIES = 40;
-      let tries = 0;
-      while (tries < MAX_TRIES) {
-        x = this.opts.leftBound + inset + rng() * (playfieldWidth - inset * 2);
-        y = this.opts.topBound + inset + rng() * (playfieldHeight - inset * 2);
-        const tooClose = spawnedPositions.some((p) => {
-          const dx = p.x - x;
-          const dy = p.y - y;
-          return dx * dx + dy * dy < minDistSq;
-        });
-        // Orbit-mode extra constraint: must be within orbitMaxRadius of
-        // the orbit center. For non-orbit modes this is always true
-        // (orbitMaxRadius = Infinity).
-        const dxOrbit = x - this.orbitCenterX;
-        const dyOrbit = y - this.orbitCenterY;
-        const tooFarFromOrbit = dxOrbit * dxOrbit + dyOrbit * dyOrbit > orbitMaxRadius * orbitMaxRadius;
-        if (!tooClose && !tooFarFromOrbit) break;
-        tries += 1;
+      // Compute the orbit theta ONCE per asteroid (used for both initial
+      // position AND stashed in `orbitThetas` for per-frame advancement).
+      // Each call to rng() consumes a different value, so computing the
+      // jitter twice would yield different thetas — initial position
+      // wouldn't match the stored theta and the asteroid would jump on
+      // the first frame.
+      let orbitTheta = 0;
+
+      if (this.currentMode === 'orbit') {
+        // Spawn directly on the ellipse at the i'th evenly-spaced theta
+        // + small random offset for visual variety. No rejection
+        // sampling needed because the even spacing already guarantees
+        // they're spread apart.
+        orbitTheta = thetaBase + i * thetaStep + (rng() * 2 - 1) * thetaJitter;
+        x = this.orbitCenterX + this.orbitSemiMajor * Math.cos(orbitTheta);
+        y = this.orbitCenterY + this.orbitSemiMinor * Math.sin(orbitTheta);
+        // (theta is assigned to the asteroid after construction below.)
+      } else {
+        // Straight + bounce: uniform random with min-distance rejection.
+        const MAX_TRIES = 40;
+        let tries = 0;
+        while (tries < MAX_TRIES) {
+          x = this.opts.leftBound + inset + rng() * (playfieldWidth - inset * 2);
+          y = this.opts.topBound + inset + rng() * (playfieldHeight - inset * 2);
+          const tooClose = spawnedPositions.some((p) => {
+            const dx = p.x - x;
+            const dy = p.y - y;
+            return dx * dx + dy * dy < minDistSq;
+          });
+          if (!tooClose) break;
+          tries += 1;
+        }
       }
       spawnedPositions.push({ x, y });
 
       // Initial velocity: random direction at the configured drift
       // speed FOR STRAIGHT/BOUNCE MODES. For ORBIT MODE, velocity is
-      // set to zero — the orbit motion comes entirely from the position-
-      // rotation step in `applyPhysicsMode`. Without this, the asteroid
-      // has BOTH a position rotation AND linear velocity drift, which
-      // spirals it outward off the orbit circle and eventually past
-      // the playfield edges (sprint 2.1 wrap-up retest #2 bug).
+      // zero — the orbit motion comes entirely from the per-asteroid
+      // theta increment in `applyPhysicsMode` (sprint 2.1 retest #2
+      // fix; retest #3 elaborated to elliptical orbit).
       let vx: number;
       let vy: number;
       if (this.currentMode === 'orbit') {
@@ -198,6 +238,14 @@ export class AsteroidWaveSystem {
         rng,
       });
       this.asteroids.push(asteroid);
+
+      // For orbit mode, stash the asteroid's initial theta so the
+      // per-frame update can advance it. Reuses the SAME `orbitTheta`
+      // computed above for the initial position, so the asteroid's
+      // stored angle exactly matches where it spawned.
+      if (this.currentMode === 'orbit') {
+        this.orbitThetas.set(asteroid, orbitTheta);
+      }
     }
 
     return this.asteroids.slice();
@@ -257,22 +305,28 @@ export class AsteroidWaveSystem {
         break;
       }
       case 'orbit': {
-        // Orbit: rotate the asteroid's POSITION around the orbit center
-        // by `orbitAngularSpeed × dt`. Velocity is intentionally zero
-        // in orbit mode (set in spawnWave) — the position-rotation IS
-        // the motion. Sprint 2.1 wrap-up retest #2 fix: prior version
-        // ALSO rotated the velocity vector, which combined with the
-        // a.advance(dt) linear translation produced a spiral that
-        // pushed asteroids past the playfield edges over time.
-        // (We still do `a.advance(dt)` after this in update(), but
-        // with vx,vy = 0 it's a no-op.)
-        const dAngle = this.orbitAngularSpeed * dt;
-        const cos = Math.cos(dAngle);
-        const sin = Math.sin(dAngle);
-        const dx = a.x - this.orbitCenterX;
-        const dy = a.y - this.orbitCenterY;
-        a.x = this.orbitCenterX + dx * cos - dy * sin;
-        a.y = this.orbitCenterY + dx * sin + dy * cos;
+        // Orbit (elliptical): advance the asteroid's stored theta by
+        // `orbitAngularSpeed × dt` and recompute its position from the
+        // ellipse parametric formula:
+        //   x = centerX + semiMajor · cos(θ)
+        //   y = centerY + semiMinor · sin(θ)
+        //
+        // Velocity is intentionally zero in orbit mode (set in
+        // spawnWave) — the theta-advance IS the motion. `a.advance(dt)`
+        // still runs after this in update(), but with vx,vy = 0 it's
+        // a no-op.
+        //
+        // Sprint 2.1 wrap-up retest #2 fix: prior version rotated
+        // BOTH position and velocity, producing a spiral that drifted
+        // off-screen. Retest #3 swapped circular rotation for the
+        // parametric ellipse formula above so semi-axes can differ
+        // (X radius = halfPlayfieldWidth, Y radius = halfPlayfieldHeight
+        // gives more on-screen presence on the wider horizontal axis).
+        let theta = this.orbitThetas.get(a) ?? 0;
+        theta += this.orbitAngularSpeed * dt;
+        this.orbitThetas.set(a, theta);
+        a.x = this.orbitCenterX + this.orbitSemiMajor * Math.cos(theta);
+        a.y = this.orbitCenterY + this.orbitSemiMinor * Math.sin(theta);
         break;
       }
     }
