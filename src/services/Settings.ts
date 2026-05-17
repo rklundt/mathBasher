@@ -6,17 +6,24 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import type { MathId, SpeedKey } from '@/core/config';
 
 /**
- * Cross-scene round selection state. The user picks `gameId` (currently always
- * `'alien-shoot'`), `mathId` (Add to 10, etc.), and `speed` across multiple
- * scenes; this module is the single place that holds the in-flight choice
- * until GameScene reads it on `create`.
+ * Cross-scene round selection state. The user picks `gameId` (which game
+ * mode), `mathId` (Add to 10, etc.), and `speed` across multiple scenes;
+ * this module is the single place that holds the in-flight choice
+ * until a game scene reads it on `create`.
+ *
+ * Sprint 2.1: `gameId` was a bare string with `'alien-shoot'` as the only
+ * value; widened to a `GameId` union when Asteroid Field landed. New game
+ * modes add a literal to this union + a tile in GameSelectScene + a route
+ * to the corresponding scene key.
  *
  * Deliberately a tiny module-level singleton — no event emitter, no
  * subscribers, no Zustand. Scenes read on `create`. If we ever need reactive
  * updates across scenes, we'll add that intentionally.
  */
+export type GameId = 'alien-shoot' | 'asteroid-field';
+
 export interface RoundSettings {
-  gameId: string;
+  gameId: GameId;
   mathId: MathId | null;
   speed: SpeedKey | null;
 }
@@ -33,7 +40,7 @@ export const Settings = {
     return state;
   },
 
-  setGameId(id: string): void {
+  setGameId(id: GameId): void {
     state.gameId = id;
     _th.logToAi('Settings.setGameId', SeverityLevel.Information, { gameId: id });
   },

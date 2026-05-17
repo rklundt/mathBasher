@@ -229,6 +229,75 @@ export const config = {
       { widthScale: 0.8, heightPx: 98, alpha: 1.0 },
     ],
   },
+  /**
+   * Sprint 2.1 — Asteroid Field game mode tuning. Drift speed + countdown
+   * scale with the Speed selector (Slow/Medium/Fast) the same way Alien
+   * Shoot's `scoring.speed.*` block does, but tuned independently because
+   * the physics are different (free 2D drift + free-aim fire vs. lane drop
+   * + auto-traverse hero).
+   *
+   * Asteroid Field reuses `scoring.speed.{slow,medium,fast}.multiplier`
+   * for the score multiplier (so a "Medium-Asteroid-Field-Multiply-12×12"
+   * round scores the same per-correct as "Medium-Alien-Shoot-Multiply-12×12").
+   */
+  asteroidField: {
+    /**
+     * Asteroid drift speed (px/s) + per-question countdown (seconds) per
+     * Speed selector. The countdown is a HARD timeout — when it hits 0,
+     * the question is marked wrong and the wave advances.
+     *
+     * First-pass values; tune in playtest. Faster speed = more drift AND
+     * less time. Slower speed = more aim time + slower targets.
+     */
+    speed: {
+      slow: { driftPxPerSec: 30, countdownSec: 25 },
+      medium: { driftPxPerSec: 50, countdownSec: 18 },
+      fast: { driftPxPerSec: 75, countdownSec: 12 },
+    },
+    /**
+     * Number of asteroids per wave. Matches `layout.targetLanes` (4) so
+     * the asteroid count == answer choices count == lane count across
+     * both game modes. Could lift to its own knob later but the symmetry
+     * is intentional for now.
+     */
+    asteroidsPerWave: 4,
+    /**
+     * Minimum spawn distance between two asteroids (design pixels). When
+     * spawning, rejected positions force a re-roll until all asteroids
+     * are at least this far from each other. Prevents the wave from
+     * launching with asteroids visually overlapping.
+     */
+    minSpawnDistancePx: 200,
+    /**
+     * Asteroid radius (display + collision) in design pixels. Per-instance
+     * scale variation applies on top: each rendered asteroid is between
+     * `radiusPx × scaleMin` and `radiusPx × scaleMax`.
+     */
+    asteroidRadiusPx: 38,
+    asteroidScaleMin: 0.85,
+    asteroidScaleMax: 1.15,
+    /**
+     * Per-question physics mode is randomly picked from this enabled set.
+     * Each entry produces a different drift behavior:
+     *   - "straight" — asteroids drift in straight lines, wrap at edges
+     *   - "bounce" — asteroids bounce off the playfield edges
+     *   - "orbit" — asteroids orbit slowly around a random center
+     * Disable individual modes by removing them from this array.
+     */
+    enabledPhysicsModes: ['straight', 'bounce', 'orbit'] as const,
+    /**
+     * Hero projectile speed (px/s) — faster than the answer asteroids so
+     * a fired shot reaches the target before the asteroid drifts very
+     * far. Tuned to feel snappy without being uncatchable visually.
+     */
+    projectileSpeedPxPerSec: 600,
+    /**
+     * Hero rotation speed in radians per second, used by the keyboard
+     * arrow-key rotation path. Mouse/touch aim is absolute (point-to-
+     * position), so this only affects keyboard players.
+     */
+    heroRotationRadPerSec: 4.0,
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,

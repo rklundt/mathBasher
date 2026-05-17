@@ -7,8 +7,8 @@ import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
-import { ScoreCalculator } from '@/services/ScoreCalculator';
-import { getGenerator } from '@/math/registry';
+import { RoundController } from '@/game/services/RoundController';
+import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { Hero } from '@/game/entities/Hero';
 import { Projectile } from '@/game/entities/Projectile';
@@ -57,7 +57,7 @@ import { TouchFireButton } from '@/game/ui/TouchFireButton';
  *     other aliens have faded out, by which point the hit alien is
  *     gone and its position is lost.
  */
-export class GameScene extends Phaser.Scene {
+export class GameScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.Game;
 
   // Configured at create()
@@ -66,21 +66,19 @@ export class GameScene extends Phaser.Scene {
   private hero!: Hero;
   private waveSystem!: WaveSystem;
   private inputSystem!: InputSystem;
-  private scoreCalculator!: ScoreCalculator;
+  /**
+   * Round controller: owns question-loop bookkeeping (current index,
+   * anti-repeat sliding window, score). Reset each round in create()
+   * (Phaser scene-instance reuse — same gotcha as HudScene.progressDots
+   * in sprint 1.1 wrap-up). Extracted in sprint 2.1 so AsteroidFieldScene
+   * can share the same bookkeeping without duplicating the anti-repeat code.
+   */
+  private roundController!: RoundController;
 
   private projectile: Projectile | null = null;
   private currentQuestion: Question | null = null;
-  private questionIndex = 0;
   private transitioning = false;
   private paused = false;
-  /**
-   * Sliding-window of recent prompts for the anti-repeat re-roll loop in
-   * `startNextQuestion`. Size capped at `config.round.recentPromptHistoryLimit`.
-   * Initialized in `create()` to defend against Phaser's scene-instance
-   * reuse across rounds (same gotcha that bit HudScene.progressDots in
-   * sprint 1.1 wrap-up).
-   */
-  private recentPrompts: string[] = [];
 
   /**
    * Snapshot of the in-flight question, exposed so HudScene can sync up after
@@ -92,7 +90,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.currentQuestion) return null;
     return {
       question: this.currentQuestion,
-      index: this.questionIndex,
+      index: this.roundController.questionIndex,
       total: config.round.questionsPerRound,
     };
   }
@@ -118,9 +116,12 @@ export class GameScene extends Phaser.Scene {
     setupScene(this, props);
     _th.logToAi('RoundStarted', SeverityLevel.Information, props);
 
-    // Hud overlay (parallel scene), guarded against double-launch.
+    // Hud overlay (parallel scene), guarded against double-launch. Sprint
+    // 2.1: pass this scene's key so HudScene can route events to the right
+    // game-mode scene (this one OR the future AsteroidFieldScene).
     if (!this.scene.isActive(SceneKeys.Hud)) {
-      this.scene.launch(SceneKeys.Hud);
+      const hudInit: HudSceneInit = { gameSceneKey: GameScene.key };
+      this.scene.launch(SceneKeys.Hud, hudInit);
     }
 
     const { width, height } = this.scale;
@@ -144,16 +145,15 @@ export class GameScene extends Phaser.Scene {
       heroY: heroY - 40, // contact line slightly above the hero's center
     });
 
-    this.scoreCalculator = new ScoreCalculator(this.mathId, this.speed);
-    this.questionIndex = 0;
+    // Fresh RoundController per round. Phaser reuses the same scene
+    // instance, so we explicitly construct here rather than relying on
+    // class-field initializers (which only run once per Phaser scene
+    // instance — same gotcha as HudScene.progressDots in sprint 1.1
+    // wrap-up). The constructor also resets anti-repeat history and
+    // questionIndex.
+    this.roundController = new RoundController(this.mathId, this.speed);
     this.transitioning = false;
     this.paused = false;
-    // Reset anti-repeat history each round. Class-field initializer runs
-    // only on FIRST instantiation; Phaser reuses the same scene instance
-    // across rounds (same gotcha as HudScene.progressDots in sprint 1.1
-    // wrap-up). Without this, prompts from the prior round would
-    // continue blocking re-rolls in the new round.
-    this.recentPrompts = [];
 
     this.inputSystem = new InputSystem(this);
     this.inputSystem.onFire(() => this.handleFire());
@@ -265,9 +265,10 @@ export class GameScene extends Phaser.Scene {
     if (correct) {
       this.transitioning = true;
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
-      const scoreBefore = this.scoreCalculator.score;
-      this.scoreCalculator.recordOutcome({ wasCorrect: true, usedWrongShot });
-      const scoreDelta = this.scoreCalculator.score - scoreBefore;
+      const { scoreDelta } = this.roundController.recordOutcome({
+        wasCorrect: true,
+        usedWrongShot,
+      });
       // Emit `correctHit` so HudScene can spawn the "+N" score popup at
       // the alien's position (sprint 0.7 Story 8). Done HERE, before the
       // explode/fade chain — `questionEnded` (which fires later from
@@ -311,7 +312,7 @@ export class GameScene extends Phaser.Scene {
         // No state change beyond the alien being gone + speed boost applied.
       });
       _th.logToAi('WrongShot', SeverityLevel.Information, {
-        questionIndex: String(this.questionIndex),
+        questionIndex: String(this.roundController.questionIndex),
         mathId: this.mathId,
         speed: this.speed,
       });
@@ -382,7 +383,7 @@ export class GameScene extends Phaser.Scene {
 
   private handleTimeout(): void {
     this.transitioning = true;
-    this.scoreCalculator.recordOutcome({
+    this.roundController.recordOutcome({
       wasCorrect: false,
       usedWrongShot: this.waveSystem.hasUsedWrongShot(),
     });
@@ -398,7 +399,7 @@ export class GameScene extends Phaser.Scene {
 
   private afterQuestion(wasCorrect: boolean): void {
     const props: TelemetryProps = {
-      questionIndex: String(this.questionIndex),
+      questionIndex: String(this.roundController.questionIndex),
       wasCorrect: String(wasCorrect),
       usedWrongShot: String(this.waveSystem.hasUsedWrongShot()),
       mathId: this.mathId,
@@ -407,12 +408,12 @@ export class GameScene extends Phaser.Scene {
     _th.logToAi('QuestionEnded', SeverityLevel.Information, props);
     this.events.emit('questionEnded', {
       wasCorrect,
-      score: this.scoreCalculator.score,
-      correctCount: this.scoreCalculator.correctCount,
+      score: this.roundController.score,
+      correctCount: this.roundController.correctCount,
     });
 
     this.waveSystem.clearWave(true);
-    this.questionIndex += 1;
+    this.roundController.advanceQuestionIndex();
     this.transitioning = false;
     // Restart the hero skittering loop in case it was stopped during
     // the death anim. playLoop is a no-op if the loop is already
@@ -423,56 +424,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startNextQuestion(): void {
-    if (this.questionIndex >= config.round.questionsPerRound) {
+    // RoundController owns the anti-repeat sliding window + the question
+    // index. drawNextQuestion returns null when the round is over.
+    const question = this.roundController.drawNextQuestion();
+    if (question === null) {
       this.endRound();
       return;
     }
-    const generator = getGenerator(this.mathId);
-
-    // Sprint 1.1 wrap-up — anti-repeat sliding window. The generators are
-    // answer-uniform; some answer values (e.g. 0 in add-to-10) have only
-    // ONE valid prompt, so back-to-back-to-back duplicates happen
-    // naturally without intervention. Re-roll up to `maxRerolls` times
-    // if the next draw would duplicate any of the last `historyLimit`
-    // prompts in this round. Falls through to the last attempt's draw if
-    // we hit the cap (defense against a hypothetical future generator
-    // with a tiny prompt pool — never loop forever).
-    //
-    // History resets per round (see `create()`). Setting historyLimit = 0
-    // in config disables anti-repeat entirely (every draw shipped as-is).
-    const historyLimit = config.round.recentPromptHistoryLimit;
-    const maxRerolls = config.round.recentPromptMaxRerolls;
-    let question: Question = generator.generate();
-    if (historyLimit > 0) {
-      let attempts = 1;
-      while (attempts < maxRerolls && this.recentPrompts.includes(question.prompt)) {
-        question = generator.generate();
-        attempts += 1;
-      }
-    }
     this.currentQuestion = question;
-
-    // Push the accepted prompt into history; trim to keep window size at
-    // most `historyLimit`. Done AFTER assignment so the in-flight question
-    // is itself in-window for the NEXT call (i.e. the immediately-next
-    // question can't match this one).
-    if (historyLimit > 0) {
-      this.recentPrompts.push(question.prompt);
-      while (this.recentPrompts.length > historyLimit) {
-        this.recentPrompts.shift();
-      }
-    }
-
     this.waveSystem.spawnWave(this.currentQuestion);
 
     _th.logToAi('QuestionStarted', SeverityLevel.Information, {
-      questionIndex: String(this.questionIndex),
+      questionIndex: String(this.roundController.questionIndex),
       mathId: this.mathId,
       speed: this.speed,
     });
     this.events.emit('questionStarted', {
       question: this.currentQuestion,
-      index: this.questionIndex,
+      index: this.roundController.questionIndex,
       total: config.round.questionsPerRound,
     });
   }
@@ -481,18 +450,18 @@ export class GameScene extends Phaser.Scene {
     const props: TelemetryProps = {
       mathId: this.mathId,
       speed: this.speed,
-      roundScore: String(this.scoreCalculator.score),
-      roundCorrectCount: String(this.scoreCalculator.correctCount),
-      passed: String(this.scoreCalculator.passed),
+      roundScore: String(this.roundController.score),
+      roundCorrectCount: String(this.roundController.correctCount),
+      passed: String(this.roundController.passed),
     };
     _th.logToAi('RoundEnded', SeverityLevel.Information, props);
 
     this.scene.stop(SceneKeys.Hud);
     this.scene.start(SceneKeys.GameOver, {
-      score: this.scoreCalculator.score,
-      correctCount: this.scoreCalculator.correctCount,
-      passed: this.scoreCalculator.passed,
-      stars: this.scoreCalculator.stars,
+      score: this.roundController.score,
+      correctCount: this.roundController.correctCount,
+      passed: this.roundController.passed,
+      stars: this.roundController.stars,
       mathId: this.mathId,
       speed: this.speed,
     });
@@ -528,7 +497,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Questions COMPLETED so far (i.e. answered or timed out). Used by RoundAbandoned. */
   getQuestionsCompleted(): number {
-    return this.questionIndex;
+    return this.roundController.questionIndex;
   }
 
   /**
@@ -556,7 +525,7 @@ export class GameScene extends Phaser.Scene {
     _th.logToAi('GamePaused', SeverityLevel.Information, {
       mathId: this.mathId,
       speed: this.speed,
-      questionIndex: String(this.questionIndex),
+      questionIndex: String(this.roundController.questionIndex),
     });
   }
 
@@ -575,7 +544,7 @@ export class GameScene extends Phaser.Scene {
     _th.logToAi('GameResumed', SeverityLevel.Information, {
       mathId: this.mathId,
       speed: this.speed,
-      questionIndex: String(this.questionIndex),
+      questionIndex: String(this.roundController.questionIndex),
     });
   }
 
@@ -591,7 +560,7 @@ export class GameScene extends Phaser.Scene {
     _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
       mathId: this.mathId,
       speed: this.speed,
-      questionsCompleted: String(this.questionIndex),
+      questionsCompleted: String(this.roundController.questionIndex),
     });
     // Resume tweens before exit so any cleanup tweens GameScene's children
     // queue up don't sit frozen on the next round.

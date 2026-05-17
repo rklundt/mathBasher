@@ -20,7 +20,22 @@ export const SceneKeys = {
   Menu: 'menu',
   GameSelect: 'game-select',
   Difficulty: 'difficulty',
+  /**
+   * Alien Shoot — the original gameplay mode (4 lanes, aliens descend,
+   * hero auto-runs side-to-side, tap to fire upward). Despite the
+   * generic 'game' key, this is the SPECIFIC Alien Shoot mode; the key
+   * predates Phase 2's introduction of multiple game modes (sprint 2.1)
+   * and is kept for back-compat with all prior telemetry, scene
+   * transitions, and bookmarks. New game modes get their own keys
+   * (e.g. AsteroidField below).
+   */
   Game: 'game',
+  /**
+   * Asteroid Field — sprint 2.1 second game mode. 4 asteroids drift
+   * in 2D positions; hero rotates to aim + fires in aimed direction;
+   * countdown timer per question.
+   */
+  AsteroidField: 'asteroid-field',
   Hud: 'hud',
   GameOver: 'game-over',
   Attribution: 'attribution',
