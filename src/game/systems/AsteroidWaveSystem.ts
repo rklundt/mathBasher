@@ -67,14 +67,20 @@ export class AsteroidWaveSystem {
   private orbitCenterX = 0;
   private orbitCenterY = 0;
   /**
-   * Orbit angular speed in rad/ms. Sprint 2.1 wrap-up retest #2 bumped
-   * 0.0008 → 0.0014 — original was so slow that asteroids cycling
-   * "behind" the orbit (toward the playfield edges) stayed off-screen
-   * too long. At 0.0014, a full orbit is ~4.5s — every asteroid swings
-   * through the visible region multiple times per question even at
-   * the Slow countdown (25s).
+   * Orbit angular speed in rad/ms. Computed per-wave in `spawnWave`
+   * from `driftPxPerSec / semiMajor` so that the asteroid's PEAK
+   * linear speed (at the top/bottom of the ellipse, where it's
+   * traveling along the major-axis tangent) matches the current
+   * speed setting's drift. Without this scaling, a fixed angular
+   * speed × the new larger elliptical radii (sprint 2.1 retest #3)
+   * made orbit asteroids fly past the playfield 5-10x faster than
+   * straight/bounce asteroids — visually jarring and unfair.
+   *
+   * Conversion note: driftPxPerSec / semiMajor gives rad/s; divide by
+   * 1000 to convert to rad/ms (the unit `update(dt)` expects, since
+   * Phaser passes dt in milliseconds).
    */
-  private readonly orbitAngularSpeed = 0.0014;
+  private orbitAngularSpeed = 0;
   /**
    * Sprint 2.1 wrap-up retest #3 — elliptical orbit support.
    *
@@ -157,6 +163,13 @@ export class AsteroidWaveSystem {
     const asteroidRadius = config.asteroidField.asteroidRadiusPx;
     this.orbitSemiMajor = playfieldWidth / 2 - asteroidRadius;
     this.orbitSemiMinor = playfieldHeight / 2 - asteroidRadius;
+    // Peak linear speed on the ellipse = ω × semiMajor (reached at
+    // top/bottom where motion is along the wider axis). Set ω so this
+    // peak equals the current speed setting's drift, so an orbit
+    // asteroid never crosses the screen meaningfully faster than a
+    // straight/bounce one. Divide by 1000 to convert rad/s → rad/ms.
+    const safeSemiMajor = Math.max(1, this.orbitSemiMajor);
+    this.orbitAngularSpeed = this.opts.driftPxPerSec / safeSemiMajor / 1000;
     this.orbitThetas.clear();
 
     // Spawn asteroids — orbit mode and straight/bounce modes use
