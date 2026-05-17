@@ -10,6 +10,7 @@ import type { Question } from '@/math/types';
 import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { getAudioManager } from '@/services/audioManagerFactory';
+import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
 import { MUTE_ICON_BG, MUTE_ICON_HOVER } from '@/game/ui/uiPalette';
@@ -41,18 +42,29 @@ interface CorrectHitPayload {
 }
 
 /**
- * Heads-up display, runs in PARALLEL with GameScene. Listens for events
- * GameScene emits and updates the top bar:
+ * Heads-up display, runs in PARALLEL with the active game scene
+ * (GameScene OR AsteroidFieldScene). Listens for events the game scene
+ * emits and updates the top bar:
  *
- *   Score: 1500    7 + 5 = ?    Q: 5/20
+ *   Round: 580  Total: 1500    7 + 5 = ?    Q: 5/20
  *
- * Score popup ("+200") rises briefly when a question is answered correctly,
- * giving snappy positive feedback in addition to the score-counter update.
+ * Score popup ("+200") rises briefly when a question is answered
+ * correctly, giving snappy positive feedback in addition to the
+ * score-counter update.
+ *
+ * Sprint 2.1.5 — top-left now shows BOTH the current-round score AND
+ * the cumulative session-total score (`SessionTotalScore`). The session
+ * total only mutates between rounds (each game scene's `endRound` adds
+ * the just-finished round's score), so the HUD reads
+ * `SessionTotalScore.get()` on scene mount + on every `questionEnded`
+ * — cheap polling that stays in sync without needing a dedicated
+ * total-changed event.
  */
 export class HudScene extends Phaser.Scene {
   static readonly key = SceneKeys.Hud;
 
-  private scoreText!: Phaser.GameObjects.Text;
+  private roundScoreText!: Phaser.GameObjects.Text;
+  private totalScoreText!: Phaser.GameObjects.Text;
   private promptText!: Phaser.GameObjects.Text;
   private counterText!: Phaser.GameObjects.Text;
   /**
@@ -129,7 +141,25 @@ export class HudScene extends Phaser.Scene {
     // Q counter (22px primary), 'prompt' for the math equation (24px
     // amber bold). Origin anchoring (left/center/right) is set per call
     // since the HUD bar uses three different anchors.
-    this.scoreText = text(this, 16, barHeight / 2, 'Score: 0', 'body').setOrigin(0, 0.5);
+    //
+    // Sprint 2.1.5 — score area shows TWO labels side-by-side:
+    //   "Round: N" (this round's running total — replaces the prior
+    //                single "Score" label)
+    //   "Total: M" (session total — accumulates across rounds)
+    // Round on the left because it's the primary "what am I earning
+    // right now" number; Total to the right with a gap so the eye
+    // groups them as a unit. Initial total is whatever the
+    // SessionTotalScore singleton already has (carries forward across
+    // scene mounts within a session).
+    this.roundScoreText = text(this, 16, barHeight / 2, 'Round: 0', 'body').setOrigin(0, 0.5);
+    const totalScoreX = 16 + this.roundScoreText.width + 24;
+    this.totalScoreText = text(
+      this,
+      totalScoreX,
+      barHeight / 2,
+      `Total: ${String(SessionTotalScore.get())}`,
+      'body',
+    ).setOrigin(0, 0.5);
 
     this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
 
@@ -457,7 +487,15 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onQuestionEnded(payload: QuestionEndedPayload): void {
-    this.scoreText.setText(`Score: ${payload.score}`);
+    this.roundScoreText.setText(`Round: ${payload.score}`);
+    // Sprint 2.1.5 — also refresh the session-total label. The total
+    // only changes at round end (when the game scene calls
+    // `SessionTotalScore.add(...)`), but reading it on every
+    // questionEnded is cheap and keeps the HUD in sync without a
+    // dedicated total-changed event. Mid-round questionEnded reads
+    // see no change (idempotent re-paint); the last questionEnded
+    // before endRound sees the just-added round score.
+    this.totalScoreText.setText(`Total: ${String(SessionTotalScore.get())}`);
     // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score
     // popup is NO LONGER triggered here; it's now driven by the
     // `correctHit` event (which fires earlier with alien coords).
