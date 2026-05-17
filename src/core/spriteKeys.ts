@@ -2,6 +2,8 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
+import type { GameId } from '@/services/Settings';
+
 /**
  * Stable string keys for every preloadable sprite asset, organized by kind.
  * Mirrors the `audioKeys.ts` pattern: every reference to a sprite asset goes
@@ -374,12 +376,37 @@ export const BgSpriteKeys = {
    * Gameplay backdrop — Midjourney-generated dark purple/blue nebula,
    * darkened 40% via the processor to tame visual competition with
    * foreground sprites. 1280×717 RGB. Loaded once at boot, rendered as
-   * the static base layer of `GameScene` (Story 6).
+   * the static base layer of `BackgroundScene`. Used by Alien Shoot
+   * (and as the default for all menu/non-game scenes).
    */
   Nebula: 'nebula',
+  /**
+   * Asteroid Field backdrop — Midjourney-generated asteroid-belt
+   * vista, darkened 40% (same brightness recipe as the nebula so the
+   * two backgrounds feel like a coherent visual family). 1280×717 RGB.
+   * Sprint 2.1.1 — first per-game-mode backdrop, established the
+   * mapping convention in `GAME_BG_MAP` below.
+   */
+  AsteroidBelt: 'asteroid-belt',
   // StarsFar: 'stars-far',     // (planned — parallax stars, Story 6)
   // StarsNear: 'stars-near',   // (planned — parallax stars, Story 6)
 } as const;
+
+/**
+ * Per-game-mode background mapping. Each `GameId` resolves to a
+ * `BgSpriteKey` so `BackgroundScene` can swap the backdrop when the
+ * player enters a different game. Adding a new game mode = add a row
+ * here + a `BgSpriteKeys` entry above. Kept here in `spriteKeys.ts`
+ * so the "which bg goes with which game" data lives next to the keys
+ * it references. Declared as a Record over GameId so a future game-
+ * mode addition is flagged by the TypeScript exhaustiveness check
+ * (TS error: "missing property 'number-climb'") rather than silently
+ * defaulting at runtime.
+ */
+export const GAME_BG_MAP: Readonly<Record<GameId, string>> = {
+  'alien-shoot': BgSpriteKeys.Nebula,
+  'asteroid-field': BgSpriteKeys.AsteroidBelt,
+};
 
 /**
  * Sprite-kind union. The runtime kind taxonomy across `scripts/sprites/`

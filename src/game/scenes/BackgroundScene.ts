@@ -5,7 +5,8 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
-import { BgSpriteKeys, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { BgSpriteKeys, GAME_BG_MAP, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { Settings } from '@/services/Settings';
 
 /**
  * Persistent parallel scene that renders the gameplay backdrop — a static
@@ -54,6 +55,15 @@ export class BackgroundScene extends Phaser.Scene {
   private starLayers: StarLayer[] = [];
   private cachedWidth = 0;
   private cachedHeight = 0;
+  /**
+   * The static backdrop image. Held as a field (rather than created
+   * + forgotten) so `Settings.onGameIdChange` can swap its texture
+   * when the player enters a different game mode. Sprint 2.1.1
+   * established the per-game bg architecture; Alien Shoot uses
+   * `Nebula`, Asteroid Field uses `AsteroidBelt`, future modes add
+   * to `GAME_BG_MAP` in `spriteKeys.ts`.
+   */
+  private backdrop?: Phaser.GameObjects.Image;
 
   constructor() {
     super(BackgroundScene.key);
@@ -67,13 +77,32 @@ export class BackgroundScene extends Phaser.Scene {
     this.cachedWidth = W;
     this.cachedHeight = H;
 
-    // === Layer 1: Nebula (static, fills the canvas) ===
-    // The Midjourney-generated dark-purple/blue nebula processed via
-    // process.mjs with 40% brightness reduction (so it doesn't compete
-    // with foreground sprites). Stretched to fill the design canvas
-    // exactly — minor distortion vs the 1280×717 source is invisible.
-    const nebula = this.add.image(W / 2, H / 2, BgSpriteKeys.Nebula);
-    nebula.setDisplaySize(W, H);
+    // === Layer 1: Static backdrop (per-game-mode) ===
+    // Picked from `GAME_BG_MAP` based on the current `Settings.round.gameId`.
+    // Sprint 2.1.1 — Alien Shoot keeps the original Midjourney nebula;
+    // Asteroid Field gets a Midjourney asteroid-belt vista. Both
+    // processed at 40% brightness via the sprite pipeline so they
+    // don't compete with foreground sprites. Stretched to fill the
+    // design canvas; minor distortion vs the 1280×717 source is
+    // invisible.
+    //
+    // Subscribes to `Settings.onGameIdChange` so the backdrop swaps
+    // live when the player picks a different game mode at
+    // GameSelectScene (the change fires BEFORE the game scene mounts,
+    // so the new backdrop is already showing by the time gameplay
+    // starts). BackgroundScene runs for the lifetime of the page —
+    // listener never needs to unsubscribe.
+    const initialBgKey = GAME_BG_MAP[Settings.round.gameId] ?? BgSpriteKeys.Nebula;
+    this.backdrop = this.add.image(W / 2, H / 2, initialBgKey);
+    this.backdrop.setDisplaySize(W, H);
+    Settings.onGameIdChange((newGameId) => {
+      const newKey = GAME_BG_MAP[newGameId] ?? BgSpriteKeys.Nebula;
+      this.backdrop?.setTexture(newKey);
+      // setDisplaySize must be re-called after setTexture — Phaser
+      // resets `displayWidth/Height` to the new texture's native size
+      // on texture swap, undoing the original setDisplaySize call.
+      this.backdrop?.setDisplaySize(this.cachedWidth, this.cachedHeight);
+    });
 
     // === Layer 2: Three parallax star layers (back → front) ===
     // Each layer has more stars in a lower count, brighter alpha, larger
