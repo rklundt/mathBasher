@@ -66,8 +66,15 @@ export class AsteroidWaveSystem {
   private currentMode: AsteroidPhysicsMode = 'straight';
   private orbitCenterX = 0;
   private orbitCenterY = 0;
-  /** Orbit angular speed in rad/ms (constant; tuned for "feels orbital"). */
-  private readonly orbitAngularSpeed = 0.0008;
+  /**
+   * Orbit angular speed in rad/ms. Sprint 2.1 wrap-up retest #2 bumped
+   * 0.0008 → 0.0014 — original was so slow that asteroids cycling
+   * "behind" the orbit (toward the playfield edges) stayed off-screen
+   * too long. At 0.0014, a full orbit is ~4.5s — every asteroid swings
+   * through the visible region multiple times per question even at
+   * the Slow countdown (25s).
+   */
+  private readonly orbitAngularSpeed = 0.0014;
 
   constructor(private readonly opts: AsteroidWaveOpts) {}
 
@@ -163,10 +170,23 @@ export class AsteroidWaveSystem {
       }
       spawnedPositions.push({ x, y });
 
-      // Initial velocity: random direction at the configured drift speed.
-      const angle = rng() * Math.PI * 2;
-      const vx = Math.cos(angle) * this.opts.driftPxPerSec;
-      const vy = Math.sin(angle) * this.opts.driftPxPerSec;
+      // Initial velocity: random direction at the configured drift
+      // speed FOR STRAIGHT/BOUNCE MODES. For ORBIT MODE, velocity is
+      // set to zero — the orbit motion comes entirely from the position-
+      // rotation step in `applyPhysicsMode`. Without this, the asteroid
+      // has BOTH a position rotation AND linear velocity drift, which
+      // spirals it outward off the orbit circle and eventually past
+      // the playfield edges (sprint 2.1 wrap-up retest #2 bug).
+      let vx: number;
+      let vy: number;
+      if (this.currentMode === 'orbit') {
+        vx = 0;
+        vy = 0;
+      } else {
+        const angle = rng() * Math.PI * 2;
+        vx = Math.cos(angle) * this.opts.driftPxPerSec;
+        vy = Math.sin(angle) * this.opts.driftPxPerSec;
+      }
 
       const asteroid = new Asteroid({
         scene: this.opts.scene,
@@ -237,18 +257,18 @@ export class AsteroidWaveSystem {
         break;
       }
       case 'orbit': {
-        // Orbit: rotate the velocity vector around the orbit center by
-        // `orbitAngularSpeed × dt`. This produces a gentle circular
-        // motion around the center point.
+        // Orbit: rotate the asteroid's POSITION around the orbit center
+        // by `orbitAngularSpeed × dt`. Velocity is intentionally zero
+        // in orbit mode (set in spawnWave) — the position-rotation IS
+        // the motion. Sprint 2.1 wrap-up retest #2 fix: prior version
+        // ALSO rotated the velocity vector, which combined with the
+        // a.advance(dt) linear translation produced a spiral that
+        // pushed asteroids past the playfield edges over time.
+        // (We still do `a.advance(dt)` after this in update(), but
+        // with vx,vy = 0 it's a no-op.)
         const dAngle = this.orbitAngularSpeed * dt;
         const cos = Math.cos(dAngle);
         const sin = Math.sin(dAngle);
-        const oldVx = a.getVx();
-        const oldVy = a.getVy();
-        a.setVelocity(oldVx * cos - oldVy * sin, oldVx * sin + oldVy * cos);
-        // Also rotate the asteroid's position around the orbit center
-        // so it actually orbits (without this, only the velocity
-        // rotates, producing a spiral instead of an orbit).
         const dx = a.x - this.orbitCenterX;
         const dy = a.y - this.orbitCenterY;
         a.x = this.orbitCenterX + dx * cos - dy * sin;

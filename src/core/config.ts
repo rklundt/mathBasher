@@ -287,14 +287,15 @@ export const config = {
     enabledPhysicsModes: ['straight', 'bounce', 'orbit'] as const,
     /**
      * Orbit-mode max orbital radius as a fraction of the smaller
-     * playfield dimension. Sprint 2.1 wrap-up fix: without this clamp,
-     * asteroids could orbit at a radius equal to corner-to-center
-     * (~half the canvas diagonal), swinging far off-screen for long
-     * arcs and leaving the player staring at nothing. 0.30 keeps
-     * orbits within roughly the middle 60% of the smaller axis —
-     * always at least partially visible. Tune higher for wider arcs.
+     * playfield dimension. Sprint 2.1 wrap-up retest #2 tightened
+     * 0.30 → 0.25 — the prior value still left orbits at the edges
+     * of the visible playfield, which combined with the
+     * spiral-out bug (since fixed by setting vx,vy=0 in orbit mode)
+     * to put asteroids off-screen for extended stretches. 0.25
+     * keeps orbits within the central ~50% of the smaller axis,
+     * which is comfortably visible at all viewports.
      */
-    orbitMaxRadiusFraction: 0.3,
+    orbitMaxRadiusFraction: 0.25,
     /**
      * Hero projectile speed (px/s) — faster than the answer asteroids so
      * a fired shot reaches the target before the asteroid drifts very
