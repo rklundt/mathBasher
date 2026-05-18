@@ -17,7 +17,6 @@ import {
 import { createAlienAnims } from '@/game/services/alienAnims';
 import { shouldLoadAtBoot } from '@/game/services/assetLoader';
 import { isBootScope } from '@/core/assetScope';
-import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 
 /**
  * BootScene — entry point. Briefly displays the project name, launches the
@@ -64,11 +63,15 @@ export class BootScene extends Phaser.Scene {
     // the 45-spritesheet preload (10-20 MB depending on tier), a 1-3
     // second hang felt like the app froze. The bar fills the gap visually
     // and replaces the prior 250ms `delayedCall` mask in `create()`.
-    // The `attachLoadingOverlay` call is at the END of preload (after
-    // all `load.*` queue calls) — sprint 2.1.6 — so the helper's
-    // `totalToLoad === 0` short-circuit correctly distinguishes
-    // "nothing to load" (no overlay) from "queued and waiting" (show
-    // overlay).
+    // Sprint 2.1.8 — the boot loading bar now lives in the DOM
+    // splash overlay (see `index.html` + `boot.ts`). The Phaser-side
+    // `attachLoadingOverlay` from sprint 2.1.6 was removed because
+    // it couldn't render during the post-tap construction delay —
+    // Phaser's canvas hadn't painted its first frame yet. The DOM
+    // bar paints immediately on click. The progress + complete
+    // hooks set up by `boot.ts` are wired up to Phaser's loader at
+    // the BOTTOM of this preload() so they're queued AFTER all
+    // load.image/audio/spritesheet calls below.
 
     // AUDIO_MANIFEST in `src/core/audioKeys.ts` is the single source of
     // truth for every preloadable audio asset. Sprint 2.1.6 — only
@@ -125,10 +128,23 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Loading overlay — attach AFTER all queue calls so `totalToLoad`
-    // reflects the real queue size when the helper decides whether
-    // to render.
-    attachLoadingOverlay({ scene: this });
+    // Sprint 2.1.8 — boot loading bar now lives in the DOM splash
+    // (see index.html + boot.ts), NOT in Phaser. The Phaser canvas
+    // hasn't painted its first frame yet during the construction →
+    // BootScene preload delay, so a Phaser-based bar wasn't visible
+    // until it was almost done. The DOM bar renders the instant
+    // "Tap to play" is clicked. We just drive its progress + dismiss
+    // hooks here from Phaser's loader events. The `window` namespace
+    // (`__mbBootHooks`) is private + cleaned up after `complete`.
+    type BootHooks = { onProgress: (value: number) => void; onComplete: () => void };
+    const hooks = (window as unknown as { __mbBootHooks?: BootHooks }).__mbBootHooks;
+    if (hooks !== undefined) {
+      this.load.on('progress', hooks.onProgress);
+      // Use `on` not `once` for symmetry with the progress handler —
+      // even though `complete` fires once, the splash's own
+      // setTimeout handles the min-display-floor.
+      this.load.once('complete', hooks.onComplete);
+    }
 
     this.load.on('complete', () => {
       _th.logToAi('BootScene PreloadedSfx', SeverityLevel.Information, {
@@ -155,10 +171,12 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Sprint 2.1.6 — `buildLoadingBar()` extracted to
-  // `src/game/ui/LoadingOverlay.ts` so per-game `preload()` calls reuse
-  // the same visuals. Old impl was ~30 lines of Phaser-shape geometry
-  // duplicated across scenes; now any scene's preload can do
-  // `attachLoadingOverlay({ scene: this })` after queueing its assets.
+  // `src/game/ui/LoadingOverlay.ts` for the per-game `preload()` calls
+  // (sprint 2.1.8 confirmed those still use the Phaser overlay since
+  // the per-game preloads happen mid-session with Phaser already
+  // painting). The BootScene-only path uses the DOM splash bar
+  // instead (sprint 2.1.8) since the boot path runs while Phaser is
+  // still constructing.
 
   create(): void {
     _th.logToAi('BootScene Started', SeverityLevel.Information);

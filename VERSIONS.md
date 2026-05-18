@@ -27,8 +27,43 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern from 2.1, the per-game audio-visual identity pattern from 2.1.5, and the lazy-asset-loading pattern from 2.1.6. New game-mode addition should be just a `GameId` extension + map rows + a new scene with `preload() { loadGameBundle(this, this.gameId); }`.
+- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern from 2.1, the per-game audio-visual identity pattern from 2.1.5, the lazy-asset-loading pattern from 2.1.6, and the loading-bar conventions from 2.1.8.
 - **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
+
+## [2.1.8] - 2026-05-17 — Loading-bar visibility (boot + per-game scene)
+
+Playtest of v2.1.6 surfaced two perception issues — both about loading-bar VISIBILITY between user-tap and on-screen-content, not actual load time. Both fixed.
+
+### Story 1: Splash → menu DOM loading bar
+
+The "Tap to play" splash dismissed immediately on click, leaving a visible blank-canvas moment while Phaser constructed + ran BootScene preload (the ~2 MB post-2.1.6 boot bundle). The Phaser-based bar inside `BootScene.preload` couldn't bridge the gap because the Phaser canvas hadn't painted its first frame yet.
+
+Moved the boot loading bar into the DOM (`index.html` + `boot.ts`):
+- New `#splash-loading` markup inside the existing splash overlay; revealed when `#splash` gets `.loading-active` (CSS swaps the "Tap to play" button → bar in place).
+- `boot.ts` exposes `window.__mbBootHooks = { onProgress, onComplete }` for BootScene to drive; `BootScene.preload` wires Phaser's loader events to those hooks.
+- `MIN_DISPLAY_MS = 500` floor so fast loads still flash a coherent "bar appeared, filled, dismissed" beat instead of a single-frame disappearance.
+- Removed the now-redundant `attachLoadingOverlay` call from `BootScene.preload`.
+
+### Story 2: Per-game scene-transition loading bar (LoadingScene)
+
+The Phaser-based per-game loading bar (`AsteroidFieldScene.preload` / `GameScene.preload` calling `attachLoadingOverlay`) didn't paint visibly during the scene transition — Phaser's mid-session scene-transition timing means the new scene's canvas doesn't render its first frame until `create()` runs, by which point the loader is already done. The kid saw DifficultyScene → ~1-2 second freeze → game suddenly running. Reads as a hang.
+
+Added a dedicated `LoadingScene` intermediate:
+- New `src/game/scenes/LoadingScene.ts` — runs `loadGameBundle(this, gameId)` + `attachLoadingOverlay({ caption: 'Loading <mode>…' })` in its own preload + transitions to the target game scene on create.
+- `DifficultyScene` now calls `scene.start(SceneKeys.Loading, { targetSceneKey, gameId })` instead of starting the target game scene directly.
+- `SceneKeys.Loading = 'loading'` added.
+- LoadingScene registered in `boot.ts` between Difficulty and the game scenes (matching render order).
+- Cache-hit case: cached re-loads short-circuit cleanly via `attachLoadingOverlay`'s `totalToLoad === 0` guard; LoadingScene's `create` fires immediately for an instant transition.
+
+### What didn't change
+- Asset loading itself (sprint 2.1.6's `loadGameBundle` + `loadGameBundle` + scope partition stay exactly as-is). This sprint is pure perception/UX.
+- The Phaser-based `attachLoadingOverlay` helper stays (LoadingScene uses it). It's just no longer called from inside game scenes' own preloads — the redundant call there could be removed in a future cleanup but is harmless (LoadingScene queues + loads first; the game scene's preload runs with `totalToLoad === 0`).
+- Game scenes' `preload()` calls to `loadGameBundle` were KEPT as a safety net for any direct-entry path (deep link, Play Again from GameOver — the latter is currently always a cache-hit anyway).
+- No new assets shipped; no new dependencies.
+
+### Tests + verification
+- 301 tests passing (unchanged from v2.1.6 — sprint adds scene wiring, no new logic to test in isolation).
+- Manual playtest: tap → bar appears within ~50ms (DOM paint, no Phaser) → bar fills smoothly → dismisses cleanly to menu → first per-game pick shows the bar via LoadingScene → second pick is instant.
 
 ## [2.1.6] - 2026-05-17 — Lazy per-game asset loading
 

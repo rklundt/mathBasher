@@ -11,6 +11,7 @@ import { BackgroundScene } from '@/game/scenes/BackgroundScene';
 import { MenuScene } from '@/game/scenes/MenuScene';
 import { GameSelectScene } from '@/game/scenes/GameSelectScene';
 import { DifficultyScene } from '@/game/scenes/DifficultyScene';
+import { LoadingScene } from '@/game/scenes/LoadingScene';
 import { GameScene } from '@/game/scenes/GameScene';
 import { AsteroidFieldScene } from '@/game/scenes/AsteroidFieldScene';
 import { HudScene } from '@/game/scenes/HudScene';
@@ -109,6 +110,7 @@ export function bootGame(): void {
       MenuScene,
       GameSelectScene,
       DifficultyScene,
+      LoadingScene,
       GameScene,
       AsteroidFieldScene,
       HudScene,
@@ -119,10 +121,57 @@ export function bootGame(): void {
     ],
   });
 
-  // Hide the splash. Using `display: none` (via .hidden class) rather
-  // than removing the node — keeps the DOM stable for any future
-  // teardown / replay / dev-tools inspection.
-  document.getElementById('splash')?.classList.add('hidden');
+  // Sprint 2.1.8 — splash now MORPHS into a loading bar instead of
+  // dismissing immediately. The bar is DOM-rendered (index.html
+  // markup) because Phaser hasn't painted its first frame yet during
+  // the construction delay between this tap-handler and BootScene's
+  // create() — only the existing DOM splash overlay is on-screen.
+  // Adding `.loading-active` swaps the "Tap to play" button for the
+  // bar; BootScene's loader-progress hooks (below) drive the fill;
+  // the splash dismisses entirely on BootScene's `complete`.
+  const splash = document.getElementById('splash');
+  splash?.classList.add('loading-active');
+
+  // Minimum-display-time floor: even if Phaser finishes the load in
+  // <100ms (likely on cached re-loads or fast networks at the
+  // post-2.1.6 ~2 MB boot bundle), keep the bar visible for at least
+  // MIN_DISPLAY_MS so the kid sees "the bar appeared, filled,
+  // dismissed" as a coherent beat instead of a single-frame flash.
+  // 500ms = short enough to read as snappy, long enough to register
+  // as intentional.
+  const MIN_DISPLAY_MS = 500;
+  const loadStartMs = Date.now();
+  const fillEl = document.getElementById('splash-loading-fill');
+
+  /**
+   * Hooks the DOM splash bar exposes for BootScene to drive. Stashed
+   * on `window` (private `__mbBootHooks` namespace) so BootScene can
+   * find them without needing a Phaser registry round-trip. Cleaned
+   * up after the load completes — see `onComplete` below.
+   */
+  type BootHooks = {
+    onProgress: (value: number) => void;
+    onComplete: () => void;
+  };
+  const hooks: BootHooks = {
+    onProgress: (value) => {
+      if (fillEl) fillEl.style.width = `${String(value * 100)}%`;
+    },
+    onComplete: () => {
+      // Snap to 100% in case the final `progress` event didn't reach 1.0.
+      if (fillEl) fillEl.style.width = '100%';
+      const elapsed = Date.now() - loadStartMs;
+      const wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      window.setTimeout(() => {
+        splash?.classList.add('hidden');
+        // Tidy up the global hook so a hypothetical replay (page
+        // doesn't reload but bootGame is re-invoked) doesn't reuse
+        // stale callbacks pointing at a dismissed splash.
+        delete (window as unknown as { __mbBootHooks?: BootHooks }).__mbBootHooks;
+      }, wait);
+    },
+  };
+  (window as unknown as { __mbBootHooks: BootHooks }).__mbBootHooks = hooks;
 
   // On mobile rotation, the CSS media query in index.html hides the
   // rotate-overlay automatically. Phaser's ScaleManager already listens
