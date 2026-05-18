@@ -27,9 +27,49 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 2.1.6 next** — lazy per-game asset loading (boot transfer drops from ~5.5 MB to ~2 MB; first-time game pick triggers a brief loading bar, subsequent are instant). Addresses the asset-growth-with-game-count problem so 2.2's additions don't compound the boot load.
-- **Then 2.2** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern established in 2.1 + the per-game audio-visual identity pattern from 2.1.5.
+- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern from 2.1, the per-game audio-visual identity pattern from 2.1.5, and the lazy-asset-loading pattern from 2.1.6. New game-mode addition should be just a `GameId` extension + map rows + a new scene with `preload() { loadGameBundle(this, this.gameId); }`.
 - **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
+
+## [2.1.6] - 2026-05-17 — Lazy per-game asset loading
+
+Each asset declares a scope (`eager` / `always` / `game:<gameId>`); per-game assets defer to the first time the player picks that mode. Phaser's texture cache makes subsequent picks instant. Boot transfer drops from ~5.5 MB to ~2 MB (~64%); adding a third game mode (2.2 Number Climb) no longer compounds the boot load.
+
+### New abstractions
+- `src/core/assetScope.ts` — `AssetScope` template-literal union over `GameId` + `isBootScope` / `isGameScope` predicates. Pure, unit-tested (7 tests).
+- `src/game/services/assetLoader.ts` — `loadGameBundle(scene, gameId)` queues per-game-scoped manifest entries; `shouldLoadAtBoot(entry)` is BootScene's symmetric filter.
+- `src/game/services/alienAnims.ts` — doubly-idempotent `createAlienAnims(scene)` (guards on `anims.exists` AND `textures.exists`) so the helper is safe from any scene at any time.
+- `src/game/ui/LoadingOverlay.ts` — extracted from BootScene's inline progress bar. Short-circuits when nothing's queued; renders a thin amber bar + "Loading…" label. On loader errors, telemetry fires + a "Trouble loading — Tap or press Space to retry" overlay restarts the scene (Phaser cache means only failed files re-fetch). WCAG 2.1.1 keyboard-accessible.
+
+### Manifest scope additions
+- `SPRITE_MANIFEST` + `AUDIO_MANIFEST` entries gained a required `scope` field.
+- `ALIEN_SPRITE_SCOPE` module value for the alien-spritesheet pool (separate from SPRITE_MANIFEST due to tier-aware webp loading).
+- Asteroid-Field-only assets re-scoped to `'game:asteroid-field'`: 8 asteroid rocks + 3 asteroid-hero ships + `loop-3.mp3` + `timeout-fail-1.mp3`.
+- Alien-Shoot-only assets re-scoped to `'game:alien-shoot'`: 45 alien spritesheets + 3 speeder hero ships.
+- Asteroid-belt bg stays `eager` (1.1 MB one-time cost vs. BackgroundScene swap-race complexity).
+
+### Scene wiring
+- `GameScene.preload()` + `AsteroidFieldScene.preload()` both call `loadGameBundle(this, this.gameId)` + `attachLoadingOverlay`. Idempotent — re-entering a previously-played game has nothing to load and the overlay short-circuits.
+- `GameScene.create()` calls `createAlienAnims(this)` so the 45 alien animation registrations happen AFTER the spritesheets load (post-preload).
+- `BootScene` refactored to filter manifest loops by `shouldLoadAtBoot`; alien-anim registration moved out to the shared helper.
+
+### Sprite-tier memoization
+- New `getCachedSpriteTier()` caches the boot-time `pickSpriteTier(window.innerWidth, window.devicePixelRatio)` result so per-game preloads pick the same tier as boot (ADR-0010 D4 one-tier-per-session invariant).
+- `_resetCachedSpriteTier()` test-only escape hatch.
+
+### Loader-error handling
+- Per-file `AssetLoader.fileError` telemetry at Error severity (carries failed type/key/src in `reason`).
+- Per-retry `AssetLoader.retry` telemetry at Information severity (carries failed-file count for ops visibility).
+- User-facing copy hides the count ("Trouble loading" — no number); the kid-actionable verb is the retry button only.
+
+### Tests + validation
+- 301 tests passing across 29 files (was 286 across 27). 15 new tests: 7 in `assetScope.test.ts`, 5 in `LoadingOverlay.test.ts`, 3 in `spriteKeys.test.ts` (memoization contract).
+- Pre-merge code review passed across 2 audit iterations (verdict: APPROVED with the 1 must-fix + all 7 minor items addressed before close).
+- DeveloperGuide.md gained a new "Asset scoping (lazy per-game loading)" section.
+
+### Operational impact
+- Boot transfer: ~5.5 MB → ~2 MB (positive DevOps signal — lower cold-start latency, reduced egress per session).
+- Total bytes per session roughly unchanged — distribution shifts from "one big boot fetch" to "boot + N per-game-pick fetches."
+- No new dependencies. No CI / Dockerfile / IaC changes. No new shipped assets (sprint reorganizes loading of existing assets only).
 
 ## [2.1.5] - 2026-05-17 — Per-game backgrounds + per-game music + session-total score
 
@@ -57,7 +97,7 @@ Each game mode now has its own audio-visual identity, and the HUD shows a cumula
 
 ### Tests + validation
 - 286 tests passing across 27 files (was 267 across 25). 9 new SessionTotalScore tests
-- Six-reviewer audit passed across 2 wrap iterations (verdict: APPROVED with all should-fix items addressed before close)
+- Pre-merge code review passed across 2 audit iterations (verdict: APPROVED with all minor items addressed before close)
 - No breaking changes — Alien Shoot behaves identically, no localStorage or score-store migration
 
 ## [2.1.0] - 2026-05-17 — Asteroid Field game mode + image-variant rocks + Settings tabs
