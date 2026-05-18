@@ -273,11 +273,22 @@ export class DifficultyScene extends Phaser.Scene {
           // Sprint 2.1 — route by gameId. Each game mode has its own
           // scene key; this dispatch is the single point where the
           // user's "Pick a Game" choice translates to a scene transition.
-          const target =
+          //
+          // Sprint 2.1.8 — go through LoadingScene rather than directly
+          // to the target game scene. LoadingScene shows a visible
+          // progress bar during the per-game asset preload (sprint
+          // 2.1.6's per-game-scene preload bar didn't paint in time
+          // because of Phaser scene-transition timing — the new
+          // scene's canvas doesn't render its first frame until
+          // create() runs, by which point the load is done).
+          const targetSceneKey =
             Settings.round.gameId === 'asteroid-field'
               ? SceneKeys.AsteroidField
               : SceneKeys.Game;
-          this.scene.start(target);
+          this.scene.start(SceneKeys.Loading, {
+            targetSceneKey,
+            gameId: Settings.round.gameId,
+          });
         }
       },
     });

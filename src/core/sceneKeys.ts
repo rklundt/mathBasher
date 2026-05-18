@@ -36,6 +36,17 @@ export const SceneKeys = {
    * countdown timer per question.
    */
   AsteroidField: 'asteroid-field',
+  /**
+   * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
+   * the target game scene to render a visible progress bar during
+   * the per-game asset load. Phaser's mid-session scene-transition
+   * timing means a loading bar attached in the target scene's own
+   * preload() doesn't paint visibly (canvas updates only after
+   * create() runs). Putting the bar in a separate scene that's
+   * already painting eliminates the apparent-hang playtest finding
+   * from v2.1.6.
+   */
+  Loading: 'loading',
   Hud: 'hud',
   GameOver: 'game-over',
   Attribution: 'attribution',

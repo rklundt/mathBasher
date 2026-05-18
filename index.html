@@ -63,6 +63,44 @@
       #splash button:active { background: #161b2c; transform: translateY(1px); }
       #splash.hidden { display: none; }
 
+      /* Splash loading bar (sprint 2.1.8). Hidden by default; revealed
+         when `#splash` gets the `.loading-active` class (added on
+         "Tap to play" click). The button is hidden simultaneously
+         so the splash content morphs in place: title + subtitle stay,
+         button → bar. Bar lives in the DOM rather than Phaser because
+         it must render IMMEDIATELY post-tap, before Phaser's
+         construction + first frame paint — only the existing DOM
+         splash overlay is on-screen at that moment. */
+      #splash-loading {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      #splash-loading-label {
+        font-size: 1rem;
+        color: #9ca3af;
+        font-family: inherit;
+      }
+      #splash-loading-track {
+        width: 320px;
+        height: 16px;
+        background: #1f2740;
+        border: 2px solid #475569;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      #splash-loading-fill {
+        height: 100%;
+        width: 0%;
+        background: #fbbf24;
+        /* Smooth fill animation — 120ms matches the snappy-but-not-
+           instant feel of the Phaser loading bar (sprint 0.6.3). */
+        transition: width 120ms linear;
+      }
+      #splash.loading-active #splash-start { display: none; }
+      #splash.loading-active #splash-loading { display: flex; }
+
       /* Portrait-rotate overlay (sprint 0.6). Hidden by default; the media
          query below shows it when a phone-sized viewport is in portrait.
          The game is designed for landscape (1280×720) — portrait would
@@ -119,6 +157,12 @@
       <h1>mathBasher</h1>
       <p>Math, but with aliens.</p>
       <button id="splash-start" type="button" autofocus>Tap to play</button>
+      <div id="splash-loading" aria-live="polite">
+        <div id="splash-loading-label">Loading…</div>
+        <div id="splash-loading-track">
+          <div id="splash-loading-fill"></div>
+        </div>
+      </div>
     </div>
     <!-- aria-live="polite" alone (no role="alert") — `role=alert` implies
          assertive announcement, which contradicts polite. The rotate prompt
