@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import type { GameId } from '@/services/Settings';
-import { isBootScope, isGameScope } from '@/core/assetScope';
+import { isBootScope, isGameScope, type AssetScope } from '@/core/assetScope';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
@@ -74,8 +74,6 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
  * to the existing SPRITE_MANIFEST / AUDIO_MANIFEST iteration loops
  * without restructuring.
  */
-export function shouldLoadAtBoot<T extends { scope: import('@/core/assetScope').AssetScope }>(
-  entry: T,
-): boolean {
+export function shouldLoadAtBoot<T extends { scope: AssetScope }>(entry: T): boolean {
   return isBootScope(entry.scope);
 }

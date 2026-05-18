@@ -19,7 +19,7 @@ import type { GameId } from '@/services/Settings';
  *                   the boot path treats them identically; the
  *                   distinction surfaces "boot-loaded for technical
  *                   reasons" vs "boot-loaded because both games use
- *                   them" for the next reviewer.
+ *                   them" for future readers.
  *   - `'game:<gameId>'` — loaded by the game scene's own
  *                   `preload()` the first time the player picks that
  *                   mode. Phaser's texture cache makes subsequent

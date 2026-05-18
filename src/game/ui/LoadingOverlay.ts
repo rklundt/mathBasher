@@ -2,9 +2,22 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { text } from '@/game/ui/typography';
+
+/**
+ * Phaser event-name constants used by this file. Inlined as string
+ * literals (matching `Phaser.Loader.Events.*` / `Phaser.Input.Events.*`
+ * values from Phaser 3.90) so this module is `import type`-only on
+ * Phaser. That keeps the file importable from a Node-only test
+ * environment without triggering Phaser's `OS.js:153` window touch
+ * during module bootstrap.
+ */
+const LOADER_PROGRESS = 'progress';
+const LOADER_COMPLETE = 'complete';
+const LOADER_FILE_LOAD_ERROR = 'loaderror';
+const POINTER_DOWN = 'pointerdown';
 
 /**
  * Reusable loading-bar overlay. Renders a centered "Loading…" label +
@@ -77,7 +90,7 @@ export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
   const onProgress = (value: number): void => {
     fill.width = FILL_MAX * value;
   };
-  loader.on(Phaser.Loader.Events.PROGRESS, onProgress);
+  loader.on(LOADER_PROGRESS, onProgress);
 
   // Sprint 2.1.6 — track load failures. Phaser's `loaderror` event
   // fires per failed file (network blip, 404, CORS issue) and the
@@ -93,11 +106,16 @@ export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
       reason: `${file.type}:${file.key} (${file.src})`,
     });
   };
-  loader.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+  loader.on(LOADER_FILE_LOAD_ERROR, onError);
 
-  loader.once(Phaser.Loader.Events.COMPLETE, () => {
-    loader.off(Phaser.Loader.Events.PROGRESS, onProgress);
-    loader.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+  loader.once(LOADER_COMPLETE, () => {
+    loader.off(LOADER_PROGRESS, onProgress);
+    loader.off(LOADER_FILE_LOAD_ERROR, onError);
+    // Belt-and-braces: if the scene shut down mid-load (rare — user
+    // hit back/Esc while preload was in flight), destroying already-
+    // dead GameObjects is a Phaser no-op but the isActive guard
+    // makes the intent explicit.
+    if (!scene.scene.isActive()) return;
     label.destroy();
     bg.destroy();
     fill.destroy();
@@ -112,34 +130,30 @@ export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
  * failed to load. Restarting the scene re-runs preload; Phaser's
  * cache keeps successful loads so only the failed files re-fetch.
  *
- * Self-contained — same scene reference owns lifecycle; clicking
- * the overlay destroys its children + restarts the scene.
+ * The kid-facing headline omits the failed-file count (a number like
+ * "(3)" is dev-jargon — kids can't act on it). The count IS captured
+ * in the `AssetLoader.retry` telemetry payload for ops visibility.
+ *
+ * Both pointer AND keyboard inputs trigger the retry (Space + Enter
+ * via the scene's keyboard plugin). A Chromebook user with no
+ * pointer can recover from a load failure without being stranded —
+ * WCAG 2.1.1 keyboard accessibility on the only actionable control
+ * in the failure-recovery surface.
  */
 function renderRetryOverlay(scene: Phaser.Scene, failedCount: number): void {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
   const PILL_W = 360;
   const PILL_H = 80;
-  const headline = text(
-    scene,
-    W / 2,
-    H / 2 - 44,
-    `Trouble loading (${String(failedCount)})`,
-    'bodyLarge',
-  ).setOrigin(0.5);
+  const headline = text(scene, W / 2, H / 2 - 44, 'Trouble loading', 'bodyLarge').setOrigin(0.5);
   headline.setColor('#ef4444');
   const pillBg = scene.add
     .rectangle(W / 2, H / 2 + 24, PILL_W, PILL_H, 0x1e293b)
     .setStrokeStyle(2, 0xfbbf24)
     .setInteractive({ useHandCursor: true });
-  const pillLabel = text(
-    scene,
-    W / 2,
-    H / 2 + 24,
-    'Tap to retry',
-    'bodyLarge',
-  ).setOrigin(0.5);
-  pillBg.on(Phaser.Input.Events.POINTER_DOWN, () => {
+  const pillLabel = text(scene, W / 2, H / 2 + 24, 'Tap or press Space to retry', 'bodyLarge').setOrigin(0.5);
+
+  const doRetry = (): void => {
     _th.logToAi('AssetLoader.retry', SeverityLevel.Information, {
       reason: `failedCount=${String(failedCount)}`,
     });
@@ -147,5 +161,9 @@ function renderRetryOverlay(scene: Phaser.Scene, failedCount: number): void {
     pillBg.destroy();
     pillLabel.destroy();
     scene.scene.restart();
-  });
+  };
+
+  pillBg.on(POINTER_DOWN, doRetry);
+  scene.input.keyboard?.once('keydown-SPACE', doRetry);
+  scene.input.keyboard?.once('keydown-ENTER', doRetry);
 }
