@@ -70,7 +70,21 @@ export function pickRandomHitWrongSfx(
 
 /** Atmospheric loop keys (midground kind — see encoder profile). */
 export const MidgroundKeys = {
+  /**
+   * Alien Shoot's hero-running ambient loop. Sprint 0.5.3 first wired
+   * this; pre-2.1.9 it was hard-coded into both game scenes (wrong
+   * for Asteroid Field, which has no skittering-hero gameplay
+   * concept). Now mapped per-gameId via `GAME_MIDGROUND_MAP`.
+   */
   Skittering1: 'skittering-1',
+  /**
+   * Asteroid Field's ambient space-noises loop. Sprint 2.1.9 — first
+   * per-game-mode midground asset, fixing the "Asteroid Field plays
+   * a skittering loop with no skittering happening" mismatch. 6s
+   * mono loop encoded with `--no-trim` so the loop boundary stays
+   * clean.
+   */
+  SpaceNoises1: 'space-noises-1',
 } as const;
 
 /** Music loop keys. */
@@ -117,6 +131,20 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
+};
+
+/**
+ * Sprint 2.1.9 — per-game midground (ambient under-SFX loop). Parallels
+ * `GAME_MUSIC_MAP`. Lifted because v2.1.8 hard-coded
+ * `MidgroundKeys.Skittering1` for BOTH games even though "skittering"
+ * is an Alien-Shoot-hero concept that has no place in Asteroid Field
+ * (which now plays an ambient space-noises loop). Same TypeScript
+ * exhaustiveness guarantees as the music map — adding a new GameId
+ * forces a compile-time decision on which midground it plays.
+ */
+export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, MidgroundKey>> = {
+  'alien-shoot': MidgroundKeys.Skittering1,
+  'asteroid-field': MidgroundKeys.SpaceNoises1,
 };
 
 /**
@@ -184,6 +212,7 @@ export interface AudioManifestEntry {
 function audioScopeFor(key: AudioKey): AssetScope {
   if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
+  if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
   return 'eager';
 }
 

@@ -8,7 +8,7 @@ import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
-import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AsteroidHero } from '@/game/entities/AsteroidHero';
 import { AsteroidProjectile } from '@/game/entities/AsteroidProjectile';
@@ -17,20 +17,15 @@ import { AsteroidWaveSystem } from '@/game/systems/AsteroidWaveSystem';
 import { AsteroidHitSystem } from '@/game/systems/AsteroidHitSystem';
 import { AsteroidInputSystem } from '@/game/systems/AsteroidInputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import {
   SfxKeys,
-  MidgroundKeys,
-  GAME_MUSIC_MAP,
   pickRandomHitCorrectSfx,
   pickRandomHitWrongSfx,
 } from '@/core/audioKeys';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
-import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 import { text } from '@/game/ui/typography';
-import { loadGameBundle } from '@/game/services/assetLoader';
-import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 
 /**
  * Asteroid Field game scene — sprint 2.1's second game mode.
@@ -79,6 +74,8 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   private waveSystem!: AsteroidWaveSystem;
   private inputSystem!: AsteroidInputSystem;
   private roundController!: RoundController;
+  /** Sprint 2.1.9 — game-mode-agnostic scene lifecycle helper. */
+  private lifecycle!: GameSceneLifecycle;
 
   private projectile: AsteroidProjectile | null = null;
   private currentQuestion: Question | null = null;
@@ -112,24 +109,9 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
 
   // ----- Lifecycle ---------------------------------------------------------
 
-  /**
-   * Sprint 2.1.6 — queue any Asteroid-Field-scoped assets that haven't
-   * been loaded yet. Phaser's loader is idempotent for already-cached
-   * keys, so this is safe to call on every mount: first mount fetches
-   * (story 5 will re-scope the rocks/heroes/loop-3/timeout SFX to
-   * `game:asteroid-field` so they DO get queued here); subsequent
-   * mounts find everything cached and `attachLoadingOverlay`
-   * short-circuits (renders nothing).
-   *
-   * Story 4 wires the call shape; story 5 makes it actually defer
-   * the AF-scoped assets. Until then, this preload is a no-op
-   * because all current entries are still `'eager'` scope (boot-
-   * loaded).
-   */
-  preload(): void {
-    loadGameBundle(this, this.gameId);
-    attachLoadingOverlay({ scene: this, caption: 'Loading Asteroid Field…' });
-  }
+  // Sprint 2.1.9 — preload() removed; LoadingScene now warms the
+  // per-game asset cache before this scene mounts. See GameScene for
+  // the equivalent rationale.
 
   create(): void {
     // Phaser reuses scene instances across mounts (class-field initializers
@@ -146,29 +128,6 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
-    // Defensive: assert the gameId matches the active scene. Normally
-    // GameSelectScene's tile click already sets this; the redundant set
-    // here closes the gap if a future code path starts this scene
-    // through another route (Play Again, deep link, HMR-survived state)
-    // and forgets to update Settings. Without this, downstream code
-    // that branches on `Settings.round.gameId` (e.g. SettingsScene's
-    // "Game" tab visibility) could miss-render based on stale state.
-    Settings.setGameId(this.gameId);
-
-    const props: TelemetryProps = {
-      gameId: this.gameId,
-      mathId: this.mathId,
-      speed: this.speed,
-    };
-    setupScene(this, props);
-    _th.logToAi('RoundStarted', SeverityLevel.Information, props);
-
-    // Hud overlay (parallel scene). Pass our scene key so HudScene knows
-    // which game scene to bind events on.
-    if (!this.scene.isActive(SceneKeys.Hud)) {
-      const hudInit: HudSceneInit = { gameSceneKey: AsteroidFieldScene.key };
-      this.scene.launch(SceneKeys.Hud, hudInit);
-    }
 
     // Live-update LIVE asteroids when the user toggles the Settings →
     // Game → Asteroid Images switch. Without this, a toggle would
@@ -237,15 +196,17 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       onFire: () => this.inputSystem.fire(),
     });
 
-    // Music + ambient loop (same as Alien Shoot — consistent audio bed
-    // across modes so players don't feel jarred by mode-switch).
-    const audio = getAudioManager();
-    // Per-game music: GAME_MUSIC_MAP looks up this scene's `gameId`.
-    // Stored in a const so the corresponding `stopLoop` in cleanup
-    // references the same key (a typo splitting the two would leave
-    // the loop playing forever).
-    audio.playLoop(GAME_MUSIC_MAP[this.gameId], 'music');
-    audio.playLoop(MidgroundKeys.Skittering1, 'midground');
+    // Sprint 2.1.9 — game-mode-agnostic lifecycle (defensive
+    // Settings.setGameId, telemetry, HUD launch, audio loops)
+    // consolidated into the helper.
+    this.lifecycle = new GameSceneLifecycle({
+      scene: this,
+      gameId: this.gameId,
+      mathId: this.mathId,
+      speed: this.speed,
+      roundController: this.roundController,
+    });
+    this.lifecycle.enter();
 
     // First-time Asteroid Field hint banner. Touch controls aren't
     // obvious (drag on the left, tap on the right, FIRE button — a
@@ -572,45 +533,19 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   }
 
   private endRound(): void {
-    // Sprint 2.1.5 — contribute this round's final score to the session
-    // total BEFORE the GameOver transition. Same pattern as GameScene;
-    // quit-to-menu mid-round explicitly does NOT contribute (handled
-    // by `quitToMenu` not routing through `endRound`).
-    SessionTotalScore.add(this.roundController.score);
-
-    const props: TelemetryProps = {
-      gameId: this.gameId,
-      mathId: this.mathId,
-      speed: this.speed,
-      roundScore: String(this.roundController.score),
-      roundCorrectCount: String(this.roundController.correctCount),
-      passed: String(this.roundController.passed),
-    };
-    _th.logToAi('RoundEnded', SeverityLevel.Information, props);
-
-    this.scene.stop(SceneKeys.Hud);
-    this.scene.start(SceneKeys.GameOver, {
-      score: this.roundController.score,
-      correctCount: this.roundController.correctCount,
-      passed: this.roundController.passed,
-      stars: this.roundController.stars,
-      mathId: this.mathId,
-      speed: this.speed,
-      gameId: this.gameId,
-    });
+    // Sprint 2.1.9 — round-end transition consolidated in lifecycle helper.
+    this.lifecycle.endRound();
   }
 
   private cleanup(): void {
+    // Scene-specific subsystem teardown.
     this.projectile?.kill();
     this.projectile = null;
     this.waveSystem?.clearWave(true);
     this.inputSystem?.destroy();
-    const audio = getAudioManager();
-    audio.stopLoop(GAME_MUSIC_MAP[this.gameId]);
-    audio.stopLoop(MidgroundKeys.Skittering1);
-    if (this.scene.isActive(SceneKeys.Hud)) this.scene.stop(SceneKeys.Hud);
-    if (this.scene.isActive(SceneKeys.PauseOverlay)) this.scene.stop(SceneKeys.PauseOverlay);
-    if (this.scene.isActive(SceneKeys.Settings)) this.scene.stop(SceneKeys.Settings);
+    // Sprint 2.1.9 — audio-loop stops + parallel-scene shutdown
+    // consolidated in lifecycle helper.
+    this.lifecycle.exit();
   }
 
   // ----- Pause / resume / quit (GameSceneContract) -------------------------
@@ -618,44 +553,27 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   pause(): void {
     if (this.paused) return;
     this.paused = true;
+    // Subsystem-specific pause.
     this.waveSystem?.pause();
     this.inputSystem?.setPaused(true);
-    this.tweens.pauseAll();
-    getAudioManager().pauseAllLoops();
-    if (this.scene.isActive(SceneKeys.Hud)) this.scene.pause(SceneKeys.Hud);
-    _th.logToAi('GamePaused', SeverityLevel.Information, {
-      gameId: this.gameId,
-      mathId: this.mathId,
-      speed: this.speed,
-      questionIndex: String(this.roundController.questionIndex),
-    });
+    // Sprint 2.1.9 — agnostic pause consolidated in lifecycle helper.
+    this.lifecycle.pause();
   }
 
   resume(): void {
     if (!this.paused) return;
     this.paused = false;
+    // Subsystem-specific resume.
     this.waveSystem?.resume();
-    getAudioManager().resumeAllLoops();
     this.inputSystem?.setPaused(false);
-    this.tweens.resumeAll();
-    if (this.scene.isPaused(SceneKeys.Hud)) this.scene.resume(SceneKeys.Hud);
-    _th.logToAi('GameResumed', SeverityLevel.Information, {
-      gameId: this.gameId,
-      mathId: this.mathId,
-      speed: this.speed,
-      questionIndex: String(this.roundController.questionIndex),
-    });
+    // Sprint 2.1.9 — agnostic resume consolidated in lifecycle helper.
+    this.lifecycle.resume();
   }
 
   quitToMenu(): void {
-    _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
-      gameId: this.gameId,
-      mathId: this.mathId,
-      speed: this.speed,
-      questionsCompleted: String(this.roundController.questionIndex),
-    });
-    this.tweens.resumeAll();
-    this.scene.start(SceneKeys.Menu);
+    // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
+    // scene.start(Menu) consolidated in lifecycle helper.
+    this.lifecycle.quitToMenu();
   }
 
   /** Convenience getter for the HUD's countdown ring. */
