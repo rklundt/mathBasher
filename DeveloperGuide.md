@@ -497,6 +497,8 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 |---|---|
 | What is this project? | This file (top), README.md |
 | How do I run it? | README.md "Run locally" |
+| What's planned / in-flight / shipped? | `.sprints/SPRINT-PLAN.md` (the catalog) + `.sprints/phase-X/<id>-<name>.md` (per-sprint specs). Made publicly visible in sprint 2.1.9. |
+| How do I add a new game mode? | `docs/adrs/ADR-0011-per-game-mode-dispatch.md` — 12-step checklist |
 | Where do gameplay numbers come from? | `src/core/config.ts` |
 | How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add multiplier to `config.ts` |
 | How do I add a new scene? | `src/game/scenes/<Name>Scene.ts`, register key in `src/core/sceneKeys.ts`, add to scene array in `src/main.ts` |
