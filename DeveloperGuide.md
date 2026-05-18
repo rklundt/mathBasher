@@ -435,6 +435,49 @@ The raw WAV in `.audio-source/raw/` stays on disk locally for re-processing but 
 
 ---
 
+## Asset scoping (lazy per-game loading)
+
+Added in sprint 2.1.6. Boot transfer used to be ~5.5 MB because BootScene loaded every asset the game might ever need before the splash dismissed. With multiple game modes that didn't scale — each new mode (2.2 Number Climb, future) compounded the boot load even though no single play session uses all of it.
+
+Now each asset declares a **scope** that says when it should be loaded:
+
+| Scope | Loaded when | Examples |
+|---|---|---|
+| `'eager'` | `BootScene.preload` | Splash bg, UI 9-slice, parallax stars, nebula bg |
+| `'always'` | `BootScene.preload` (semantic distinction from eager — "every game uses this") | Hit/wrong SFX, button-click, fire SFX |
+| `'game:alien-shoot'` | First time the player picks Alien Shoot | 45 alien spritesheets, speeder hero ships |
+| `'game:asteroid-field'` | First time the player picks Asteroid Field | 8 asteroid rocks, 3 asteroid-hero ships, `loop-3` music, `timeout-fail-1` SFX |
+
+The scope taxonomy lives in `src/core/assetScope.ts`. The `AssetScope` type uses a TypeScript template literal (`'eager' | 'always' | `game:${GameId}``), so adding a new GameId automatically widens the scope union — TypeScript flags any switch that forgets to handle the new game mode.
+
+### How to add a new per-game asset
+
+1. Add the file under `public/assets/...` via the audio / sprite pipeline.
+2. Add the key to the appropriate `Keys` const (e.g. `MusicKeys.Loop4: 'loop-4'`).
+3. In the manifest (`SPRITE_MANIFEST` / `AUDIO_MANIFEST`), tag the entry's `scope` field — `'eager'` for shared assets, `'game:<id>'` for per-game.
+4. For audio, the per-key scope resolver is `audioScopeFor(key)` in `audioKeys.ts` — add a row there if your asset is per-game.
+5. Run `pnpm dev`. First pick of the relevant game loads the new asset with a brief progress bar; subsequent picks are instant (Phaser cache hits).
+
+### How to add a new game mode
+
+Adding a third game (e.g. 2.2 Number Climb) requires:
+
+1. Extend `GameId` in `src/services/Settings.ts`: `'alien-shoot' | 'asteroid-field' | 'number-climb'`. TypeScript exhaustiveness on `Record<GameId, ...>` will now flag every existing map (GAME_BG_MAP, GAME_MUSIC_MAP) that doesn't handle the new value.
+2. Map the new game's bg + music in those records.
+3. The new scene's `preload()` calls `loadGameBundle(this, this.gameId)` + `attachLoadingOverlay({ scene: this, caption: 'Loading Number Climb…' })`. Mirrors the pattern in `GameScene.preload()` / `AsteroidFieldScene.preload()`.
+4. Tag the new game's assets with `'game:number-climb'` scope in the manifests.
+
+That's it — boot load stays at ~2 MB regardless of how many games exist.
+
+### Loader-error handling
+
+Phaser's `loaderror` event (one per failed file — network blip, 404, CORS) is wired in `LoadingOverlay`. Behavior:
+
+- Each failure logs an `AssetLoader.fileError` telemetry event at `Error` severity with the failed key + URL in the `reason` field.
+- When the loader settles, if any files failed, a "Trouble loading. Tap to retry." overlay appears. Tapping restarts the scene; Phaser's cache keeps successful loads, so only the failed files re-fetch.
+
+---
+
 ## License model
 
 mathBasher is **dual-licensed**:

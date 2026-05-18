@@ -29,6 +29,8 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 import { text } from '@/game/ui/typography';
+import { loadGameBundle } from '@/game/services/assetLoader';
+import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 
 /**
  * Asteroid Field game scene — sprint 2.1's second game mode.
@@ -109,6 +111,25 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   }
 
   // ----- Lifecycle ---------------------------------------------------------
+
+  /**
+   * Sprint 2.1.6 — queue any Asteroid-Field-scoped assets that haven't
+   * been loaded yet. Phaser's loader is idempotent for already-cached
+   * keys, so this is safe to call on every mount: first mount fetches
+   * (story 5 will re-scope the rocks/heroes/loop-3/timeout SFX to
+   * `game:asteroid-field` so they DO get queued here); subsequent
+   * mounts find everything cached and `attachLoadingOverlay`
+   * short-circuits (renders nothing).
+   *
+   * Story 4 wires the call shape; story 5 makes it actually defer
+   * the AF-scoped assets. Until then, this preload is a no-op
+   * because all current entries are still `'eager'` scope (boot-
+   * loaded).
+   */
+  preload(): void {
+    loadGameBundle(this, this.gameId);
+    attachLoadingOverlay({ scene: this, caption: 'Loading Asteroid Field…' });
+  }
 
   create(): void {
     // Phaser reuses scene instances across mounts (class-field initializers

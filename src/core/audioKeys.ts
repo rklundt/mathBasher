@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type { GameId } from '@/services/Settings';
+import type { AssetScope } from '@/core/assetScope';
 
 /**
  * Stable string keys for every preloadable audio asset. Mirrors the
@@ -156,6 +157,34 @@ export interface AudioManifestEntry {
   readonly key: AudioKey;
   readonly kind: 'sfx' | 'midground' | 'music';
   readonly url: string;
+  /**
+   * Sprint 2.1.6 — when this asset should be loaded. See
+   * `src/core/assetScope.ts` for the taxonomy. Story 1 tags every
+   * existing entry as `'eager'` (no behavior change vs. pre-sprint);
+   * story 5 re-scopes Asteroid-Field-only audio (`loop-3`,
+   * `timeout-fail-1`) to `'game:asteroid-field'` so it defers until
+   * the matching game is picked.
+   */
+  readonly scope: AssetScope;
+}
+
+/**
+ * Per-key audio scope resolver. Sprint 2.1.6 — most audio is shared
+ * across games (button-click, hit/wrong SFX, the Alien Shoot loop)
+ * and stays `'eager'`. A small allowlist of per-game audio
+ * (`timeout-fail-1` is Asteroid-Field-only; `loop-3` is the AF
+ * music) defers to `'game:asteroid-field'`. Default keeps the
+ * shared-audio behavior unchanged.
+ *
+ * Add a new per-game audio asset = add a row here. The function
+ * shape (rather than a `Partial<Record<AudioKey, AssetScope>>` map)
+ * makes the per-key logic readable AND lets a future scope rule
+ * dispatch on something other than the key (e.g. file size).
+ */
+function audioScopeFor(key: AudioKey): AssetScope {
+  if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
+  if (key === MusicKeys.Loop3) return 'game:asteroid-field';
+  return 'eager';
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -163,15 +192,18 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     key,
     kind: 'sfx',
     url: sfxPath(key),
+    scope: audioScopeFor(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
+    scope: audioScopeFor(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
+    scope: audioScopeFor(key),
   })),
 ];

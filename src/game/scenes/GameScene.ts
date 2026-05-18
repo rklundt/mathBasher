@@ -19,6 +19,9 @@ import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { loadGameBundle } from '@/game/services/assetLoader';
+import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
+import { createAlienAnims } from '@/game/services/alienAnims';
 import {
   SfxKeys,
   MidgroundKeys,
@@ -107,7 +110,30 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     super(GameScene.key);
   }
 
+  /**
+   * Sprint 2.1.6 — queue any Alien-Shoot-scoped assets that haven't
+   * been loaded yet. Phaser's loader is idempotent for already-cached
+   * keys, so this is safe to call on every mount: first mount fetches
+   * (story 7 moves the 45 alien spritesheets + 3 speeders to
+   * `game:alien-shoot` scope so they DO get queued here); subsequent
+   * mounts find everything cached and the LoadingOverlay
+   * short-circuits.
+   */
+  preload(): void {
+    loadGameBundle(this, this.gameId);
+    attachLoadingOverlay({ scene: this, caption: 'Loading Alien Shoot…' });
+  }
+
   create(): void {
+    // Sprint 2.1.6 — register alien animations after preload completes.
+    // The helper is idempotent (skips already-registered + skips
+    // textures not yet loaded) so multiple call sites are safe. While
+    // alien sprites are still eager-loaded (pre-story-7), the
+    // BootScene.create call already registered them and this is a
+    // no-op; once story 7 ships, GameScene's preload loads the
+    // spritesheets and this call does the registration.
+    createAlienAnims(this);
+
     const { mathId, speed } = Settings.round;
     // Defensive defaults — DifficultyScene gates progress on isReady() so
     // these should always be set, but if a future flow lands here without

@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type { GameId } from '@/services/Settings';
+import type { AssetScope } from '@/core/assetScope';
 
 /**
  * Stable string keys for every preloadable sprite asset, organized by kind.
@@ -103,6 +104,18 @@ export const ALIEN_SPRITE_KEYS: readonly string[] = (() => {
   return keys;
 })();
 
+/**
+ * Sprint 2.1.6 — scope for the whole alien-spritesheet pool. Alien
+ * sprites don't go through the SPRITE_MANIFEST (they need tier-aware
+ * webp spritesheet loading via the alien-specific path in BootScene),
+ * so they get a single module-level scope rather than per-entry tags.
+ * Story 1 leaves this as `'eager'` (no behavior change); story 7
+ * flips to `'game:alien-shoot'` after `GameScene.preload()` is wired.
+ * The partition helpers (`isBootScope` / `isGameScope`) treat this
+ * value the same way they treat per-entry manifest scopes.
+ */
+export const ALIEN_SPRITE_SCOPE: AssetScope = 'game:alien-shoot';
+
 export type SpriteTier = 128 | 192;
 
 /**
@@ -125,6 +138,39 @@ export type SpriteTier = 128 | 192;
  */
 export function pickSpriteTier(viewportWidth: number, dpr: number): SpriteTier {
   return viewportWidth * dpr >= 1920 ? 192 : 128;
+}
+
+/**
+ * Sprint 2.1.6 — memoized sprite-tier accessor. First call computes
+ * the tier from `window.innerWidth` × `window.devicePixelRatio` via
+ * `pickSpriteTier` and caches it; subsequent calls return the cached
+ * value without re-touching the viewport. Both `BootScene.preload`
+ * (eager-loaded scenes) and per-game `preload()` functions (lazy-
+ * loaded scenes — sprint 2.1.6 stories 4 + 6) read through this
+ * accessor so they always pick the SAME tier for the same device
+ * within a session.
+ *
+ * Re-deriving the tier per-preload would technically work but is
+ * slightly fragile — the viewport CAN change between BootScene's
+ * preload and a game scene's preload (window resize, orientation
+ * change). Caching at first-call locks in the boot-time decision.
+ *
+ * For unit tests, expose `_resetCachedSpriteTier` to clear the
+ * cache between tests (not exported via the main API; only the
+ * test file imports it).
+ */
+let _cachedSpriteTier: SpriteTier | null = null;
+
+export function getCachedSpriteTier(): SpriteTier {
+  if (_cachedSpriteTier === null) {
+    _cachedSpriteTier = pickSpriteTier(window.innerWidth, window.devicePixelRatio);
+  }
+  return _cachedSpriteTier;
+}
+
+/** Test-only — clears the cache so each test computes fresh. */
+export function _resetCachedSpriteTier(): void {
+  _cachedSpriteTier = null;
 }
 
 /**
@@ -524,6 +570,14 @@ export interface SpriteManifestEntry {
    */
   readonly frameWidth?: number;
   readonly frameHeight?: number;
+  /**
+   * Sprint 2.1.6 — when this asset should be loaded. See
+   * `src/core/assetScope.ts` for the taxonomy. Story 1 tags every
+   * existing entry as `'eager'` (no behavior change vs. pre-sprint);
+   * stories 5 + 7 re-scope per-game assets to `'game:<gameId>'` so
+   * they defer until the matching game is picked.
+   */
+  readonly scope: AssetScope;
 }
 
 /**
@@ -543,6 +597,8 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     kind: 'hero',
     key,
     url: spritePath('hero', key),
+    // Sprint 2.1.6 — Alien-Shoot-only (the speeder ships); deferred to that game's preload.
+    scope: 'game:alien-shoot',
   })),
   // Sprint 2.1 — Asteroid Field heroes live in the same `hero/`
   // folder on disk (single sprite kind) so we use `spritePath('hero',
@@ -553,26 +609,32 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     kind: 'hero',
     key,
     url: spritePath('hero', key),
+    // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
+    scope: 'game:asteroid-field',
   })),
   ...(Object.values(ProjectileSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'projectile',
     key,
     url: spritePath('projectile', key),
+    scope: 'eager',
   })),
   ...(Object.values(UiSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'ui',
     key,
     url: spritePath('ui', key),
+    scope: 'eager',
   })),
   ...(Object.values(ParticleSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'particle',
     key,
     url: spritePath('particle', key),
+    scope: 'eager',
   })),
   ...(Object.values(BgSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'bg',
     key,
     url: spritePath('bg', key),
+    scope: 'eager',
   })),
   // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
@@ -592,6 +654,8 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     kind: 'particle',
     key,
     url: `/assets/sprites/aliens/${key}.png`,
+    // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
+    scope: 'game:asteroid-field',
   })),
 ];
 
