@@ -27,8 +27,44 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 2.2 next** — Number Climb (climbing platformer with answer rungs). Inherits the `RoundController` + `GameSceneContract` pattern from 2.1, the per-game audio-visual identity pattern from 2.1.5, the lazy-asset-loading pattern from 2.1.6, and the loading-bar conventions from 2.1.8.
+- **Sprint 2.2 next** — Number Climb. The patterns 2.1 → 2.1.9 established are now codified in ADR-0011 + a 12-step "how to add a new game mode" checklist. Should be mechanical.
 - **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
+
+## [2.1.9] - 2026-05-18 — Pre-2.2 refactor + per-game midground audio
+
+Six-story sprint paying down debt that accumulated across 2.1 → 2.1.8 before sprint 2.2 (Number Climb) locks in three-way duplication. Also fixes the long-standing "Asteroid Field plays Alien Shoot's hero-skittering loop" mismatch with a per-game midground.
+
+### Story 1 — `GameSceneLifecycle` helper
+GameScene + AsteroidFieldScene shared ~150 lines of game-mode-agnostic boilerplate (audio loops, HUD launch, telemetry, pause/resume, endRound → SessionTotalScore → GameOver transition, defensive `Settings.setGameId`). Extracted to `src/game/services/GameSceneLifecycle.ts` (composition, not inheritance — matches `RoundController` precedent). Per-scene `pause()`/`resume()` now reads as "subsystem pause + lifecycle.pause()" instead of inline 15-line boilerplate.
+
+### Story 2 — LoadingScene cruft cleanup
+Removed redundant `loadGameBundle` + `attachLoadingOverlay` calls from `GameScene.preload()` and `AsteroidFieldScene.preload()` (both `preload()` methods deleted entirely). `LoadingScene` (sprint 2.1.8) already warms the cache before either game scene mounts.
+
+### Story 3 — ADR-0011: Per-game-mode dispatch
+New `docs/adrs/ADR-0011-per-game-mode-dispatch.md` codifies the `Record<GameId, X>` map pattern from sprints 2.1 → 2.1.8 (GAME_BG_MAP, GAME_MUSIC_MAP, GAME_MIDGROUND_MAP, audioScopeFor, per-entry asset scopes). Includes a 12-step "how to add a new game mode" checklist so 2.2 Number Climb is mechanical.
+
+### Story 4 — `createObservable<T>()` helper
+Settings.ts had two near-identical observable fields hand-rolled (`gameId`, `imageAsteroidsEnabled`). Extracted to `src/services/observable.ts` — 50 lines, 3 functions, 12 unit tests. Settings.ts refactored to consume it; behavior unchanged.
+
+### Story 5 — `.sprints/` publicly visible
+Removed `.sprints/` from `.gitignore`. SPRINT-PLAN.md back-filled with rows for 2.1.5, 2.1.6, 2.1.8, 2.1.9. DeveloperGuide.md "Where to look for what" gained pointers to sprint files + ADR-0011.
+
+### Story 6 — Per-game midground audio
+- New asset: `public/assets/audio/midground/space-noises-1.mp3` (ElevenLabs, 6s mono loop, encoded with `--no-trim`).
+- `MidgroundKeys.SpaceNoises1` + new `GAME_MIDGROUND_MAP: Record<GameId, MidgroundKey>` (parallels `GAME_MUSIC_MAP`). Alien Shoot keeps Skittering1; Asteroid Field gets SpaceNoises1.
+- `audioScopeFor` extended for the new asset (`'game:asteroid-field'` scope → lazy-loads).
+- GameSceneLifecycle + GameScene death-anim restart both read `GAME_MIDGROUND_MAP[gameId]`.
+- Fixed the v2.1.8 mismatch where Asteroid Field was playing Alien Shoot's hero-running loop despite having no skittering-hero gameplay.
+- CREDITS.md: new "Asteroid Field midground" subsection.
+
+### Tests + verification
+- 313 tests passing across 30 files (was 301 across 29). 12 new tests in `observable.test.ts`.
+- Both games play identically to v2.1.8 except for the Asteroid Field midground swap (intentional).
+
+### Operational impact
+- Smaller game-scene files; less duplication.
+- 2.2 author follows ADR-0011's 12-step checklist instead of inferring patterns from 6 file reads.
+- One new asset shipped (~71 KB midground MP3). No new deps. No CI / Dockerfile / IaC changes.
 
 ## [2.1.8] - 2026-05-17 — Loading-bar visibility (boot + per-game scene)
 

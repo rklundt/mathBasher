@@ -39,13 +39,18 @@ coverage/
 .nyc_output/
 
 # Internal workspace files (NEVER commit these)
-# Local development scaffolding — workflow notes, sprint planning drafts,
-# ADR working copies, etc. — that should not appear in the public repo.
+# Local development scaffolding — workflow notes, ADR working copies,
+# tooling-context configs — that should not appear in the public repo.
 CLAUDE.md
 .claude/
-.sprints/
 .adrs/
 backlog.md
+# Note: .sprints/ was gitignored through sprint 2.1.8. Sprint 2.1.9
+# (ADR-0011 + the per-game-mode dispatch documentation pass) made
+# sprint files PUBLIC because the "where do I see what's planned?"
+# answer should live in the public repo. Sprint files going forward
+# ship via git; .sprints/2.1.x backfill happened in the 2.1.9 close
+# commit. NOT gitignored.
 
 # Audio source / working files (NEVER commit these)
 # Raw audio (WAV from generators, untrimmed takes, alternate cuts, etc.) is

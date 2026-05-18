@@ -4,6 +4,7 @@
 
 import { _th, SeverityLevel } from '@/core/telemetry';
 import type { MathId, SpeedKey } from '@/core/config';
+import { createObservable } from '@/services/observable';
 
 /**
  * Cross-scene round selection state. The user picks `gameId` (which game
@@ -29,72 +30,49 @@ export interface RoundSettings {
 }
 
 /**
- * Asteroid Field — visual mode toggle (sprint 2.1 playtest).
- * `true`  = Midjourney image-variant rocks (default after playtest
- *           round 2 — looks better in motion than the procedural
- *           polygons; toggle survived initial review).
- * `false` = procedural polygon asteroids (rollback path; user can
- *           flip via the in-game Settings → Game tab → Image Asteroids).
+ * Sprint 2.1.9 — observables (gameId, imageAsteroidsEnabled) consume
+ * `createObservable<T>` (`src/services/observable.ts`) instead of
+ * inline Set + try/catch + idempotence-guard plumbing. Same API
+ * (subscribe-returning-unsubscribe + value-changes-fire-listeners
+ * semantics) — only the wiring changes.
  *
- * Lives at module scope (NOT in `RoundSettings`) because it's a
- * persistent visual preference, not a per-round selection. Stays
- * in-memory only — page refresh resets to the default (true). If
- * a future playtest pass keeps this past sprint 2.1 close, a
- * localStorage persistence pass is the follow-up (use the
- * AudioManager's volume-persistence pattern).
+ * `gameId` observable is the source of truth for game-mode dispatch
+ * (BackgroundScene swaps backdrop, future scenes can react). Initial
+ * value is `'alien-shoot'` — the default game when the page loads
+ * before any tile click.
+ *
+ * `imageAsteroidsEnabled` observable: ON by default after the v2.1
+ * playtest call. Stays in-memory; page reload resets to default.
+ * AsteroidFieldScene subscribes to swap LIVE asteroid visuals when
+ * the in-game Settings → Game → Asteroid Images toggle flips.
  */
-let _imageAsteroidsEnabled = true;
+const _gameId = createObservable<GameId>('gameId', 'alien-shoot');
+const _imageAsteroidsEnabled = createObservable<boolean>('imageAsteroidsEnabled', true);
 
-/**
- * Listeners for image-asteroids toggle changes. Set so a callback can
- * subscribe + unsubscribe cleanly (subscribe returns an unsubscribe
- * function — same shape as Phaser scene events / RxJS observables).
- * AsteroidFieldScene wires one of these on create() so toggling the
- * setting from the in-game Settings panel updates LIVE asteroids on
- * the playfield, not just future spawns.
- */
-type ImageAsteroidsListener = (enabled: boolean) => void;
-const _imageAsteroidsListeners = new Set<ImageAsteroidsListener>();
-
-/**
- * Listeners for game-mode (`gameId`) changes. Sprint 2.1.1 added so
- * `BackgroundScene` can swap the gameplay backdrop when the player
- * enters a different game mode. Same shape as
- * `_imageAsteroidsListeners` (Set + unsubscribe-returning subscribe);
- * keeping the pattern uniform so future observable settings follow
- * the established style.
- */
-type GameIdListener = (gameId: GameId) => void;
-const _gameIdListeners = new Set<GameIdListener>();
-
-const state: RoundSettings = {
-  gameId: 'alien-shoot',
+const state: Omit<RoundSettings, 'gameId'> = {
   mathId: null,
   speed: null,
 };
 
 export const Settings = {
-  /** Snapshot of the current selection. Read-only access for scenes. */
+  /**
+   * Snapshot of the current selection. Read-only access for scenes.
+   * `gameId` is sourced from the observable; `mathId` + `speed` from
+   * the local state (they're not observable — read once at scene
+   * `create` time, no reactive consumers today).
+   */
   get round(): Readonly<RoundSettings> {
-    return state;
+    return { gameId: _gameId.get(), mathId: state.mathId, speed: state.speed };
   },
 
   setGameId(id: GameId): void {
-    if (state.gameId === id) return;
-    state.gameId = id;
-    _th.logToAi('Settings.setGameId', SeverityLevel.Information, { gameId: id });
-    // Fan out to listeners (BackgroundScene swaps the gameplay
-    // backdrop). Same per-listener try/catch as
-    // setImageAsteroidsEnabled — one bad subscriber shouldn't break
-    // the fan-out.
-    for (const listener of _gameIdListeners) {
-      try {
-        listener(id);
-      } catch (err) {
-        _th.logToAi('Settings.gameIdListener.error', SeverityLevel.Warning, {
-          reason: err instanceof Error ? err.message : String(err),
-        });
-      }
+    const previous = _gameId.get();
+    _gameId.set(id);
+    // Telemetry fires only on real changes (observable.set is
+    // idempotent). Log AFTER set so a listener throwing doesn't
+    // suppress the audit-trail event.
+    if (previous !== id) {
+      _th.logToAi('Settings.setGameId', SeverityLevel.Information, { gameId: id });
     }
   },
 
@@ -129,27 +107,16 @@ export const Settings = {
    * change keep their original look until the next wave.
    */
   getImageAsteroidsEnabled(): boolean {
-    return _imageAsteroidsEnabled;
+    return _imageAsteroidsEnabled.get();
   },
 
   setImageAsteroidsEnabled(enabled: boolean): void {
-    if (_imageAsteroidsEnabled === enabled) return;
-    _imageAsteroidsEnabled = enabled;
-    _th.logToAi('Settings.setImageAsteroidsEnabled', SeverityLevel.Information, {
-      reason: enabled ? 'enabled' : 'disabled',
-    });
-    // Fan out to any listeners. Caught per-listener so one bad
-    // subscriber can't break the others — Settings is a global, and
-    // a listener throwing here would leave the in-flight callers
-    // (e.g. the SettingsScene toggle's onChange) in a partial state.
-    for (const listener of _imageAsteroidsListeners) {
-      try {
-        listener(enabled);
-      } catch (err) {
-        _th.logToAi('Settings.imageAsteroidsListener.error', SeverityLevel.Warning, {
-          reason: err instanceof Error ? err.message : String(err),
-        });
-      }
+    const previous = _imageAsteroidsEnabled.get();
+    _imageAsteroidsEnabled.set(enabled);
+    if (previous !== enabled) {
+      _th.logToAi('Settings.setImageAsteroidsEnabled', SeverityLevel.Information, {
+        reason: enabled ? 'enabled' : 'disabled',
+      });
     }
   },
 
@@ -158,9 +125,8 @@ export const Settings = {
    * unsubscribe function — call it on scene shutdown so the listener
    * doesn't outlive the scene that owns it.
    */
-  onImageAsteroidsChange(listener: ImageAsteroidsListener): () => void {
-    _imageAsteroidsListeners.add(listener);
-    return () => _imageAsteroidsListeners.delete(listener);
+  onImageAsteroidsChange(listener: (enabled: boolean) => void): () => void {
+    return _imageAsteroidsEnabled.subscribe(listener);
   },
 
   /**
@@ -171,8 +137,7 @@ export const Settings = {
    * unsubscribe; per-scene subscribers should call the returned
    * function on shutdown.
    */
-  onGameIdChange(listener: GameIdListener): () => void {
-    _gameIdListeners.add(listener);
-    return () => _gameIdListeners.delete(listener);
+  onGameIdChange(listener: (gameId: GameId) => void): () => void {
+    return _gameId.subscribe(listener);
   },
 };

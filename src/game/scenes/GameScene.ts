@@ -8,7 +8,7 @@ import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
-import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { Hero } from '@/game/entities/Hero';
 import { Projectile } from '@/game/entities/Projectile';
@@ -18,19 +18,15 @@ import { WaveSystem } from '@/game/systems/WaveSystem';
 import { HitSystem } from '@/game/systems/HitSystem';
 import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SessionTotalScore } from '@/services/SessionTotalScore';
-import { loadGameBundle } from '@/game/services/assetLoader';
-import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 import { createAlienAnims } from '@/game/services/alienAnims';
+import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import {
   SfxKeys,
-  MidgroundKeys,
-  GAME_MUSIC_MAP,
+  GAME_MIDGROUND_MAP,
   pickRandomHitCorrectSfx,
   pickRandomHitWrongSfx,
 } from '@/core/audioKeys';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
-import { setupScene } from '@/game/scenes/sceneSetup';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 
 /**
@@ -85,6 +81,13 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
    * can share the same bookkeeping without duplicating the anti-repeat code.
    */
   private roundController!: RoundController;
+  /**
+   * Sprint 2.1.9 — game-mode-agnostic scene lifecycle (audio loops,
+   * HUD launch, pause/resume, endRound transition, telemetry).
+   * Constructed in `create()` after `mathId`/`speed`/`roundController`
+   * are populated.
+   */
+  private lifecycle!: GameSceneLifecycle;
 
   private projectile: Projectile | null = null;
   private currentQuestion: Question | null = null;
@@ -110,19 +113,18 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     super(GameScene.key);
   }
 
-  /**
-   * Sprint 2.1.6 — queue any Alien-Shoot-scoped assets that haven't
-   * been loaded yet. Phaser's loader is idempotent for already-cached
-   * keys, so this is safe to call on every mount: first mount fetches
-   * (story 7 moves the 45 alien spritesheets + 3 speeders to
-   * `game:alien-shoot` scope so they DO get queued here); subsequent
-   * mounts find everything cached and the LoadingOverlay
-   * short-circuits.
-   */
-  preload(): void {
-    loadGameBundle(this, this.gameId);
-    attachLoadingOverlay({ scene: this, caption: 'Loading Alien Shoot…' });
-  }
+  // Sprint 2.1.9 — preload() removed. The per-game asset bundle is
+  // loaded by `LoadingScene` (sprint 2.1.8) before this scene mounts,
+  // so by the time GameScene's create() runs every key is already
+  // cached. The previous `loadGameBundle + attachLoadingOverlay` here
+  // was a no-op (totalToLoad === 0 → overlay short-circuited) and
+  // existed only as a "direct-entry safety net" — but no direct-entry
+  // path exists in production (DifficultyScene always routes through
+  // LoadingScene; GameOver Play Again routes back through it; Phaser
+  // hot-reload re-runs BootScene). Removing the redundant calls
+  // makes "what assets does this scene depend on?" answerable in
+  // one place (the manifest scope tags).
+
 
   create(): void {
     // Sprint 2.1.6 — register alien animations after preload completes.
@@ -140,29 +142,6 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // selections (e.g. dev hotload), pick reasonable fallbacks.
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
-    // Defensive: assert the gameId matches the active scene. Same
-    // reasoning as AsteroidFieldScene — if Settings.round.gameId drifts
-    // (HMR, Play Again from a different mode, future deep-link entry),
-    // downstream code branching on it (SettingsScene's Game-tab
-    // visibility) would miss-render. One-line invariant.
-    Settings.setGameId(this.gameId);
-
-    // Lifecycle telemetry + AudioManager binding. setupScene logs the
-    // standard `GameScene Started` / `GameScene Completed` lifecycle
-    // events with the round's mathId+speed for filtering. The `RoundStarted`
-    // domain event below is a separate concern (round began, not scene
-    // booted) and remains a distinct telemetry name.
-    const props: TelemetryProps = { mathId: this.mathId, speed: this.speed };
-    setupScene(this, props);
-    _th.logToAi('RoundStarted', SeverityLevel.Information, props);
-
-    // Hud overlay (parallel scene), guarded against double-launch. Sprint
-    // 2.1: pass this scene's key so HudScene can route events to the right
-    // game-mode scene (this one OR the future AsteroidFieldScene).
-    if (!this.scene.isActive(SceneKeys.Hud)) {
-      const hudInit: HudSceneInit = { gameSceneKey: GameScene.key };
-      this.scene.launch(SceneKeys.Hud, hudInit);
-    }
 
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
@@ -210,19 +189,19 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
       onFire: () => this.inputSystem.fire(),
     });
 
-    // Start the active-round loops: background music + hero movement
-    // skittering. Both are tracked by AudioManager and respect their
-    // per-kind volume sliders + master mute. They're stopped in
-    // cleanup() and pause/resumed via the pause/resume contract.
-    // (AudioManager was already bound to this scene by setupScene above,
-    // so no re-init needed here; the loops attach via the live binding.)
-    const audio = getAudioManager();
-    // Per-game music: GAME_MUSIC_MAP looks up this scene's `gameId`.
-    // Alien Shoot maps to `Loop1` (unchanged behavior — same loop
-    // shipped in sprint 0.5.3); the indirection exists so adding
-    // a third game mode is a 1-line map edit, not a code change here.
-    audio.playLoop(GAME_MUSIC_MAP[this.gameId], 'music');
-    audio.playLoop(MidgroundKeys.Skittering1, 'midground');
+    // Sprint 2.1.9 — game-mode-agnostic lifecycle (defensive
+    // Settings.setGameId, telemetry, HUD launch, audio loop start)
+    // consolidated into the helper. Must be called AFTER subsystem
+    // construction so the audio loops attach to the live scene + the
+    // HUD's events binding sees the scene as ready.
+    this.lifecycle = new GameSceneLifecycle({
+      scene: this,
+      gameId: this.gameId,
+      mathId: this.mathId,
+      speed: this.speed,
+      roundController: this.roundController,
+    });
+    this.lifecycle.enter();
 
     this.startNextQuestion();
 
@@ -431,11 +410,14 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
       wasCorrect: false,
       usedWrongShot: this.waveSystem.hasUsedWrongShot(),
     });
-    // Stop the skittering loop while the hero dies — the movement sound
+    // Stop the midground loop while the hero dies — the movement sound
     // shouldn't continue when the box is incapacitated. afterQuestion
     // restarts it before the next wave begins. Music keeps playing
-    // through the death anim (the round isn't over).
-    getAudioManager().stopLoop(MidgroundKeys.Skittering1);
+    // through the death anim (the round isn't over). Sprint 2.1.9 —
+    // read via GAME_MIDGROUND_MAP so a future game mode's per-mode
+    // midground also stops correctly during its own death-equivalent
+    // anim (though the hero-death pattern is currently Alien-Shoot-only).
+    getAudioManager().stopLoop(GAME_MIDGROUND_MAP[this.gameId]);
     this.hero.playDeathAnim(() => {
       this.afterQuestion(false);
     });
@@ -459,11 +441,11 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     this.waveSystem.clearWave(true);
     this.roundController.advanceQuestionIndex();
     this.transitioning = false;
-    // Restart the hero skittering loop in case it was stopped during
+    // Restart the per-game midground loop in case it was stopped during
     // the death anim. playLoop is a no-op if the loop is already
     // active (correct hits never stop it), so this is safe to call
     // unconditionally on every wave transition.
-    getAudioManager().playLoop(MidgroundKeys.Skittering1, 'midground');
+    getAudioManager().playLoop(GAME_MIDGROUND_MAP[this.gameId], 'midground');
     this.startNextQuestion();
   }
 
@@ -491,53 +473,20 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
   }
 
   private endRound(): void {
-    // Sprint 2.1.5 — contribute this round's final score to the session
-    // total BEFORE the GameOver transition. Quit-to-menu mid-round
-    // explicitly does NOT contribute (the partial-round score isn't
-    // earned yet — handled by `quitToMenu` not calling this).
-    SessionTotalScore.add(this.roundController.score);
-
-    const props: TelemetryProps = {
-      mathId: this.mathId,
-      speed: this.speed,
-      roundScore: String(this.roundController.score),
-      roundCorrectCount: String(this.roundController.correctCount),
-      passed: String(this.roundController.passed),
-    };
-    _th.logToAi('RoundEnded', SeverityLevel.Information, props);
-
-    this.scene.stop(SceneKeys.Hud);
-    this.scene.start(SceneKeys.GameOver, {
-      score: this.roundController.score,
-      correctCount: this.roundController.correctCount,
-      passed: this.roundController.passed,
-      stars: this.roundController.stars,
-      mathId: this.mathId,
-      speed: this.speed,
-      gameId: this.gameId,
-    });
+    // Sprint 2.1.9 — round-end transition (SessionTotalScore, RoundEnded
+    // telemetry, GameOver start) consolidated in the lifecycle helper.
+    this.lifecycle.endRound();
   }
 
   private cleanup(): void {
+    // Scene-specific subsystem teardown.
     this.projectile?.kill();
     this.projectile = null;
     this.waveSystem?.clearWave(true);
     this.inputSystem?.destroy();
-    // Stop both active loops cleanly. stopLoop is idempotent so calling
-    // on a loop that's already stopped (e.g. skittering after a death
-    // anim that didn't restart before round end) is a safe no-op.
-    const audio = getAudioManager();
-    audio.stopLoop(GAME_MUSIC_MAP[this.gameId]);
-    audio.stopLoop(MidgroundKeys.Skittering1);
-    if (this.scene.isActive(SceneKeys.Hud)) {
-      this.scene.stop(SceneKeys.Hud);
-    }
-    if (this.scene.isActive(SceneKeys.PauseOverlay)) {
-      this.scene.stop(SceneKeys.PauseOverlay);
-    }
-    if (this.scene.isActive(SceneKeys.Settings)) {
-      this.scene.stop(SceneKeys.Settings);
-    }
+    // Sprint 2.1.9 — audio-loop stops + parallel-scene shutdown
+    // (HUD/Pause/Settings) consolidated in the lifecycle helper.
+    this.lifecycle.exit();
   }
 
   // ----- Pause / resume / quit (sprint 0.5.1) ------------------------------
@@ -563,40 +512,23 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
   pause(): void {
     if (this.paused) return;
     this.paused = true;
+    // Subsystem-specific pause (game-mode-specific).
     this.waveSystem?.pause();
     this.inputSystem?.setPaused(true);
-    this.tweens.pauseAll();
-    // Pause every active audio loop (gameplay music + hero skittering).
-    // pauseAllLoops uses Phaser's Sound.pause under the hood so the loops
-    // freeze in place — resume picks up at the same playback position.
-    getAudioManager().pauseAllLoops();
-    if (this.scene.isActive(SceneKeys.Hud)) {
-      this.scene.pause(SceneKeys.Hud);
-    }
-    _th.logToAi('GamePaused', SeverityLevel.Information, {
-      mathId: this.mathId,
-      speed: this.speed,
-      questionIndex: String(this.roundController.questionIndex),
-    });
+    // Sprint 2.1.9 — game-mode-agnostic pause (tweens, audio,
+    // Hud, telemetry) consolidated in the lifecycle helper.
+    this.lifecycle.pause();
   }
 
   /** Reverse `pause()`. Idempotent. */
   resume(): void {
     if (!this.paused) return;
     this.paused = false;
+    // Subsystem-specific resume.
     this.waveSystem?.resume();
-    // Resume the loops we paused — symmetric with pause().
-    getAudioManager().resumeAllLoops();
     this.inputSystem?.setPaused(false);
-    this.tweens.resumeAll();
-    if (this.scene.isPaused(SceneKeys.Hud)) {
-      this.scene.resume(SceneKeys.Hud);
-    }
-    _th.logToAi('GameResumed', SeverityLevel.Information, {
-      mathId: this.mathId,
-      speed: this.speed,
-      questionIndex: String(this.roundController.questionIndex),
-    });
+    // Sprint 2.1.9 — game-mode-agnostic resume.
+    this.lifecycle.resume();
   }
 
   /**
@@ -608,14 +540,8 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
    * shutdown event when MenuScene takes over.
    */
   quitToMenu(): void {
-    _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
-      mathId: this.mathId,
-      speed: this.speed,
-      questionsCompleted: String(this.roundController.questionIndex),
-    });
-    // Resume tweens before exit so any cleanup tweens GameScene's children
-    // queue up don't sit frozen on the next round.
-    this.tweens.resumeAll();
-    this.scene.start(SceneKeys.Menu);
+    // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
+    // scene.start(Menu) consolidated in the lifecycle helper.
+    this.lifecycle.quitToMenu();
   }
 }
