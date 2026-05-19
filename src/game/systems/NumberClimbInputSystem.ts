@@ -66,17 +66,26 @@ export class NumberClimbInputSystem {
   /**
    * Bind pointer-down handlers to the current floor's rungs. Called
    * by the scene after `floorSystem.spawnFloor(...)` produces the
-   * new floor's rungs. Unbinds any previous-floor handlers first so
-   * stale rung references don't fire callbacks after their rungs
-   * are destroyed.
+   * new floor's rungs.
+   *
+   * Floor 1 → 2 playtest bug (sprint 2.2): previously this method
+   * called `prev.off(POINTER_DOWN)` to unbind handlers on the
+   * previous floor's rungs. But by the time bindRungs runs for
+   * floor 2, the floor 1 rungs are ALREADY DESTROYED by
+   * `floorSystem.clearFloor()` — and Phaser's Container.destroy()
+   * has ALREADY removed all listeners as part of its teardown.
+   * Calling .off() on a destroyed GameObject can throw (Phaser's
+   * EventEmitter internals expect the object's `_events` to exist),
+   * aborting `bindRungs` mid-loop so the NEW rungs never get their
+   * POINTER_DOWN handlers wired. Result: kid can't tap anything on
+   * floor 2.
+   *
+   * Fix: just reset `boundRungs` to []. Destroyed rungs are already
+   * cleaned up by Phaser; we don't need to touch them. Only the
+   * NEW rungs need handlers wired.
    */
   bindRungs(rungs: NumberClimbRung[]): void {
-    // Unbind previous-floor handlers.
-    for (const prev of this.boundRungs) {
-      prev.off(Phaser.Input.Events.POINTER_DOWN);
-    }
     this.boundRungs = [];
-
     for (const rung of rungs) {
       const handler = (): void => {
         if (!this.acceptingInput()) return;
