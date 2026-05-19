@@ -6,13 +6,30 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { Settings } from '@/services/Settings';
+import { Settings, type GameId } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+
+/**
+ * Map a `GameId` to the scene key for that game's mounted scene.
+ * Exhaustive switch — TypeScript will flag any GameId addition that
+ * forgets to add a case (matches ADR-0011's dispatch-checklist
+ * pattern). The corresponding caption switch lives in `LoadingScene`.
+ */
+function gameSceneKeyFor(gameId: GameId): string {
+  switch (gameId) {
+    case 'alien-shoot':
+      return SceneKeys.Game;
+    case 'asteroid-field':
+      return SceneKeys.AsteroidField;
+    case 'number-climb':
+      return SceneKeys.NumberClimb;
+  }
+}
 
 /**
  * Difficulty selection. Two sections:
@@ -270,21 +287,14 @@ export class DifficultyScene extends Phaser.Scene {
       disabled: true,
       onClick: () => {
         if (Settings.isReady()) {
-          // Sprint 2.1 — route by gameId. Each game mode has its own
-          // scene key; this dispatch is the single point where the
-          // user's "Pick a Game" choice translates to a scene transition.
-          //
-          // Sprint 2.1.8 — go through LoadingScene rather than directly
-          // to the target game scene. LoadingScene shows a visible
-          // progress bar during the per-game asset preload (sprint
-          // 2.1.6's per-game-scene preload bar didn't paint in time
-          // because of Phaser scene-transition timing — the new
-          // scene's canvas doesn't render its first frame until
-          // create() runs, by which point the load is done).
-          const targetSceneKey =
-            Settings.round.gameId === 'asteroid-field'
-              ? SceneKeys.AsteroidField
-              : SceneKeys.Game;
+          // Route by gameId. Each game mode has its own scene key;
+          // this dispatch is the single point where the user's "Pick
+          // a Game" choice translates to a scene transition. Per
+          // ADR-0011 — TypeScript exhaustiveness on this switch will
+          // flag any future GameId addition that forgets to map a
+          // scene key. Sprint 2.1.8 — route through LoadingScene so
+          // the per-game asset bundle preload shows a visible bar.
+          const targetSceneKey = gameSceneKeyFor(Settings.round.gameId);
           this.scene.start(SceneKeys.Loading, {
             targetSceneKey,
             gameId: Settings.round.gameId,

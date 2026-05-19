@@ -452,6 +452,12 @@ export const BgSpriteKeys = {
 export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'alien-shoot': BgSpriteKeys.Nebula,
   'asteroid-field': BgSpriteKeys.AsteroidBelt,
+  // Sprint 2.2 — PLACEHOLDER. Real climb-tower bg arrives via story 1
+  // (asset delivery). Until then, Number Climb shares the nebula
+  // backdrop so the scene can develop without a missing-texture flash.
+  // Swap to `BgSpriteKeys.NumberClimbTower` (or whatever the final key
+  // is named) when art lands.
+  'number-climb': BgSpriteKeys.Nebula,
 };
 
 /**

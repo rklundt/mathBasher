@@ -131,6 +131,11 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
+  // Sprint 2.2 — PLACEHOLDER. Real climb music arrives via story 1
+  // (asset delivery). Until then, Number Climb shares Alien Shoot's
+  // loop-1 so the scene can develop without an asset-missing crash.
+  // Swap to `MusicKeys.Loop4` (or final key) when art lands.
+  'number-climb': MusicKeys.Loop1,
 };
 
 /**
@@ -145,6 +150,14 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
 export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, MidgroundKey>> = {
   'alien-shoot': MidgroundKeys.Skittering1,
   'asteroid-field': MidgroundKeys.SpaceNoises1,
+  // Sprint 2.2 — PLACEHOLDER. Real climb-ambient loop arrives via
+  // story 1 (asset delivery). Until then, Number Climb shares Alien
+  // Shoot's skittering-1 — yes, this is the same "wrong loop for the
+  // wrong mode" problem 2.1.9 fixed for Asteroid Field; it's a
+  // deliberate temporary state, NOT a regression of the per-game-
+  // midground architecture. Swap to `MidgroundKeys.ClimbAmbient1` (or
+  // final key) when art lands.
+  'number-climb': MidgroundKeys.Skittering1,
 };
 
 /**

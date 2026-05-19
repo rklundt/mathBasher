@@ -14,6 +14,7 @@ import { DifficultyScene } from '@/game/scenes/DifficultyScene';
 import { LoadingScene } from '@/game/scenes/LoadingScene';
 import { GameScene } from '@/game/scenes/GameScene';
 import { AsteroidFieldScene } from '@/game/scenes/AsteroidFieldScene';
+import { NumberClimbScene } from '@/game/scenes/NumberClimbScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
@@ -113,6 +114,7 @@ export function bootGame(): void {
       LoadingScene,
       GameScene,
       AsteroidFieldScene,
+      NumberClimbScene,
       HudScene,
       GameOverScene,
       PauseOverlay,

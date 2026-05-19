@@ -37,6 +37,15 @@ export const SceneKeys = {
    */
   AsteroidField: 'asteroid-field',
   /**
+   * Number Climb — sprint 2.2 third game mode. Vertical climb; 10
+   * floors; kid taps the correct rung at each floor. Difficulty
+   * controls rung count (2/3/4); Speed controls cumulative timer
+   * budget (250s/180s/120s). One mulligan per floor; second wrong
+   * on same floor ends the round. Timer hitting 0 also ends the
+   * round. Stars height-based (4/7/10).
+   */
+  NumberClimb: 'number-climb',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition

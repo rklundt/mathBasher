@@ -98,11 +98,21 @@ export class LoadingScene extends Phaser.Scene {
       gameId: this.gameId,
     });
     loadGameBundle(this, this.gameId);
-    // Caption hints to the kid what they're waiting for — same copy
-    // pattern the per-game preloads used in v2.1.6 (those Phaser
-    // overlays are now redundant; LoadingScene handles the visible
-    // bar for the mid-session case).
-    const caption = this.gameId === 'asteroid-field' ? 'Loading Asteroid Field…' : 'Loading Alien Shoot…';
+    // Caption hints to the kid what they're waiting for. Exhaustive
+    // switch per ADR-0011 — adding a new GameId without a case is a
+    // compile error.
+    let caption: string;
+    switch (this.gameId) {
+      case 'alien-shoot':
+        caption = 'Loading Alien Shoot…';
+        break;
+      case 'asteroid-field':
+        caption = 'Loading Asteroid Field…';
+        break;
+      case 'number-climb':
+        caption = 'Loading Number Climb…';
+        break;
+    }
     attachLoadingOverlay({ scene: this, caption });
   }
 
