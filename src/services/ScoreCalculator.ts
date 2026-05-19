@@ -81,3 +81,36 @@ export class ScoreCalculator {
     return 0;
   }
 }
+
+/**
+ * Sprint 2.2 — height-based stars for Number Climb. The mode's
+ * success criterion is "did you reach the top?" not "did you get N
+ * correct out of M?" — so the standard ScoreCalculator.stars
+ * (correct-count-based) doesn't fit. Tied to floor count + the same
+ * 4/7/10-of-10 ladder that maps the existing 14/17/19-of-20
+ * mental model to a shorter climb.
+ *
+ * Thresholds (for 10 floors):
+ *  - 1 star: reached floor 4+
+ *  - 2 stars: reached floor 7+
+ *  - 3 stars: reached the top (floor 10)
+ *
+ * For floors below 4 (kid fell early): 0 stars.
+ *
+ * Pure function — separately unit-testable. Lives next to
+ * ScoreCalculator so the "scoring math" family stays in one file
+ * even as the modes diverge on stars logic.
+ */
+export function computeClimbStars(floorReached: number, totalFloors: number): 0 | 1 | 2 | 3 {
+  // Threshold scaling: assume the 4/7/10-of-10 ladder. If totalFloors
+  // differs from 10, scale proportionally — but defensively round
+  // down to keep thresholds achievable.
+  const oneStar = Math.floor(totalFloors * 0.4); // 4 for 10
+  const twoStar = Math.floor(totalFloors * 0.7); // 7 for 10
+  const threeStar = totalFloors; // the top
+
+  if (floorReached >= threeStar) return 3;
+  if (floorReached >= twoStar) return 2;
+  if (floorReached >= oneStar) return 1;
+  return 0;
+}

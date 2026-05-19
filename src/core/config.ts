@@ -358,6 +358,39 @@ export const config = {
       thicknessPx: 22,
     },
   },
+  /**
+   * Sprint 2.2 — Number Climb tuning. The third game mode runs SHORTER
+   * rounds (10 floors vs 20 questions) because the one-strike-on-
+   * second-wrong mechanic combined with a cumulative timer is harsh
+   * enough that 20 floors would feel punishing. Difficulty (the
+   * existing SpeedKey enum) doubles as both choice count (2/3/4
+   * rungs) AND cumulative timer budget — Slow = generous time +
+   * fewer choices, Fast = tight time + more choices.
+   */
+  numberClimb: {
+    /** Total floors per round. Stars + GameOverScene's "Pass" both pivot off reaching this. */
+    questionsPerRound: 10,
+    /**
+     * Cumulative timer budget per Difficulty (which doubles as Speed
+     * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
+     * 120s. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
+     * ends the round.
+     */
+    speed: {
+      slow: { totalTimeSec: 250 },
+      medium: { totalTimeSec: 180 },
+      fast: { totalTimeSec: 120 },
+    },
+    /**
+     * Seconds removed from the cumulative timer when the kid picks a
+     * wrong rung. Mirrors `asteroidField.wrongShotCountdownPenaltySec`
+     * for consistency across the wrong-pick-time-penalty family of
+     * modes. First wrong on a floor: -3s (mulligan). Second wrong:
+     * the wrong-terminal outcome ends the round regardless of the
+     * timer's remaining value.
+     */
+    wrongRungTimePenaltySec: 3,
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
