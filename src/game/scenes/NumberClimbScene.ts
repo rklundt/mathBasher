@@ -15,6 +15,7 @@ import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import { text } from '@/game/ui/typography';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
+import { SHIP_BLAST_TWEEN_MS } from '@/game/entities/NumberClimbFloorFrame';
 import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 
@@ -387,13 +388,18 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
 
     // Sprint 2.2 story 13e — reached the top floor (the escape room).
     // Hide the hero (kid boarded the ship), play the escape-ship
-    // fly-away with smoke trail, then drop an "Escaped Safe!" banner
-    // for one beat BEFORE GameOver mounts so the kid registers the win
-    // in-place.
+    // fly-away with smoke trail. The "Escaped Safe!" banner kicks in at
+    // 75% of the ship-blast tween (1125 ms in for the 1500 ms tween) so
+    // the banner lands WHILE the ship is still visibly rising — the
+    // win beat reads as continuous instead of a pause-then-banner.
+    // Banner displays for 1 s then GameOver mounts. The ship + smoke
+    // continue to render through the banner display; Phaser scene
+    // teardown on endRound cleans them up.
     if (this.floorReached >= this.totalFloors) {
       this.transitioning = true;
       this.hero.setVisible(false);
-      this.floorSystem.playEscapeWinAnimation(() => this.showWinBannerThenEndRound());
+      this.floorSystem.playEscapeWinAnimation();
+      this.time.delayedCall(SHIP_BLAST_TWEEN_MS * 0.75, () => this.showWinBannerThenEndRound());
       return;
     }
 

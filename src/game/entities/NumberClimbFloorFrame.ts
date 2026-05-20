@@ -33,6 +33,14 @@ const SIDE_BAR_WIDTH = 20;
 const SEPARATOR_THICKNESS = 5;
 const BLACK = 0x000000;
 
+/**
+ * Duration (ms) of the escape-ship blast-off tween. Exported so the
+ * scene can sync other UI beats to the same timing (e.g. the
+ * "Escaped Safe!" banner appears at 75% of this duration so it lands
+ * while the ship is still visibly rising).
+ */
+export const SHIP_BLAST_TWEEN_MS = 1500;
+
 export interface NumberClimbFloorFrameOpts {
   scene: Phaser.Scene;
   /** Floor center x (typically `(leftBound + rightBound) / 2`). */
@@ -191,7 +199,7 @@ export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
     scene.tweens.add({
       targets: ship,
       y: targetY,
-      duration: 1500,
+      duration: SHIP_BLAST_TWEEN_MS,
       ease: 'Quad.In',
       onUpdate: () => {
         emitter.x = ship.x;
