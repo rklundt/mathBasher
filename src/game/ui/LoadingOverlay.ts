@@ -47,6 +47,14 @@ export interface AttachLoadingOverlayOpts {
    * loads benefit from telling the kid what they're waiting for.
    */
   caption?: string;
+  /**
+   * Sprint 2.2 — minimum time (ms) the bar stays visible after
+   * `LOADER_COMPLETE` fires. Small payloads (Asteroid Field's 14
+   * files) can finish so fast the bar flashes by; holding for a beat
+   * makes the progress visible. Caller paces the scene-transition by
+   * the same amount so the bar isn't torn down before transition.
+   */
+  minDisplayMs?: number;
 }
 
 /**
@@ -64,6 +72,8 @@ export interface AttachLoadingOverlayOpts {
 export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
   const { scene } = opts;
   const loader = scene.load;
+  const minDisplayMs = opts.minDisplayMs ?? 0;
+  const attachTime = scene.time.now;
 
   // Short-circuit: nothing to load means nothing to show. Phaser's
   // loader populates totalToLoad as files are queued via `load.image`
@@ -111,16 +121,35 @@ export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
   loader.once(LOADER_COMPLETE, () => {
     loader.off(LOADER_PROGRESS, onProgress);
     loader.off(LOADER_FILE_LOAD_ERROR, onError);
-    // Belt-and-braces: if the scene shut down mid-load (rare — user
-    // hit back/Esc while preload was in flight), destroying already-
-    // dead GameObjects is a Phaser no-op but the isActive guard
-    // makes the intent explicit.
-    if (!scene.scene.isActive()) return;
-    label.destroy();
-    bg.destroy();
-    fill.destroy();
-    if (failedCount > 0) {
-      renderRetryOverlay(scene, failedCount);
+    // Fill the bar to 100% on complete (small payloads may finish
+    // before any onProgress fires, leaving the bar at 0% if we
+    // teardown without filling).
+    fill.width = FILL_MAX;
+
+    const teardown = (): void => {
+      // Belt-and-braces: if the scene shut down mid-hold (rare — user
+      // hit back/Esc while we were waiting out the min-display window),
+      // destroying already-dead GameObjects is a Phaser no-op but the
+      // isActive guard makes the intent explicit.
+      if (!scene.scene.isActive()) return;
+      label.destroy();
+      bg.destroy();
+      fill.destroy();
+      if (failedCount > 0) {
+        renderRetryOverlay(scene, failedCount);
+      }
+    };
+
+    // Sprint 2.2 — hold the filled bar visible for at least
+    // minDisplayMs. Tiny payloads (Asteroid Field's ~14 files) finish
+    // so fast the bar was a single-frame flash before this hold; now
+    // the kid sees the bar fill to 100 % and linger briefly.
+    const elapsed = scene.time.now - attachTime;
+    const remaining = Math.max(0, minDisplayMs - elapsed);
+    if (remaining > 0) {
+      scene.time.delayedCall(remaining, teardown);
+    } else {
+      teardown();
     }
   });
 }

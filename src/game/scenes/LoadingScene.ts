@@ -67,6 +67,16 @@ export interface LoadingSceneInit {
   gameId: GameId;
 }
 
+/**
+ * Sprint 2.2 — minimum time (ms) the loading bar stays visible after
+ * the loader completes. Small payloads (Asteroid Field's ~14 files)
+ * were finishing so fast the bar flashed by; this hold lets the kid
+ * register the visual. Shared between `attachLoadingOverlay` (which
+ * holds the bar) and the scene-start delay below (which holds the
+ * transition) so they stay in sync.
+ */
+const MIN_LOADING_DISPLAY_MS = 400;
+
 export class LoadingScene extends Phaser.Scene {
   static readonly key = SceneKeys.Loading;
 
@@ -113,7 +123,7 @@ export class LoadingScene extends Phaser.Scene {
         caption = 'Loading Space Escape!…';
         break;
     }
-    attachLoadingOverlay({ scene: this, caption });
+    attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }
 
   create(): void {
@@ -125,6 +135,12 @@ export class LoadingScene extends Phaser.Scene {
     // (still wired with `loadGameBundle` as a safety net for any
     // direct-entry path) finds everything cached and `totalToLoad`
     // settles to 0, completing immediately.
-    this.scene.start(this.targetSceneKey);
+    //
+    // Delay the transition by the same minDisplayMs the overlay uses so
+    // the bar's hold and the scene's hold stay in sync — bar fades, then
+    // immediately the target scene mounts.
+    this.time.delayedCall(MIN_LOADING_DISPLAY_MS, () => {
+      this.scene.start(this.targetSceneKey);
+    });
   }
 }
