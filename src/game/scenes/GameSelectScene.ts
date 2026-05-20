@@ -10,6 +10,7 @@ import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
  * Game-mode selection. Three tiles as of sprint 2.2 (Alien Shoot,
@@ -32,6 +33,10 @@ export class GameSelectScene extends Phaser.Scene {
     const cx = width / 2;
 
     text(this, cx, height * 0.18, 'Pick a Game', 'h2').setOrigin(0.5);
+
+    // Top-right mute icon — matches MenuScene + HudScene placement so
+    // the affordance is in the same spot every screen.
+    createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
     // Three tiles in a row: cx - 340, cx, cx + 340.
     // tileW (320) + 20 gap = 340 center-spacing keeps the gap visible.

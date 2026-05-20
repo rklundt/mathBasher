@@ -9,12 +9,11 @@ import { config } from '@/core/config';
 import type { Question } from '@/math/types';
 import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
-import { getAudioManager } from '@/services/audioManagerFactory';
+import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
-import { MUTE_ICON_BG, MUTE_ICON_HOVER } from '@/game/ui/uiPalette';
-import { text, textStyle } from '@/game/ui/typography';
+import { text } from '@/game/ui/typography';
 
 interface QuestionStartedPayload {
   question: Question;
@@ -216,7 +215,10 @@ export class HudScene extends Phaser.Scene {
     const buttonWidth = 44;
     const buttonGap = 24;
     const pauseBtn = this.createPauseButton(width - 16, barHeight / 2);
-    const muteBtn = this.createMuteButton(width - 16 - buttonWidth - buttonGap, barHeight / 2);
+    // Mute icon — shared helper across MenuScene, HudScene, GameSelectScene.
+    // Sprint 2.2 wrap-up consolidated the previous inline copy here.
+    const muteRightX = width - 16 - buttonWidth - buttonGap;
+    const muteBtn = createMuteIconButton(this, muteRightX - buttonWidth / 2, barHeight / 2);
     const buttonsRoom = buttonWidth * 2 + buttonGap + 16; // pause + mute + gap + edge padding
 
     // Wire both icons through a KeyboardNavigator so Tab/Shift+Tab cycles
@@ -324,62 +326,9 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * On-screen mute toggle. Speaker emoji glyph that flips 🔊 ↔ 🔇 based
-   * on AudioManager mute state. Warm-amber-tinted background distinguishes
-   * it from the Pause icon's pure slate so a kid mid-round doesn't confuse
-   * the two — visually warmer without screaming for attention.
-   *
-   * Why emoji instead of composed primitives: two prior attempts at
-   * building a speaker out of rectangles + triangles produced shapes that
-   * didn't read as speakers ("doesn't look like a speaker so I didn't
-   * realize what it was"). Unicode speaker glyphs are purpose-built and
-   * universally recognized — every kid who's used a phone knows what they
-   * mean. OS-specific rendering differs slightly but the shape is
-   * consistent everywhere.
-   *
-   * Click SFX fires BEFORE the mute toggle: turning mute ON gets an
-   * audible confirmation (SFX plays at pre-mute volume); turning mute
-   * OFF is silent (audio is muted at the moment of activation; visual
-   * state change is the confirmation). Documented in PLAYTEST.md.
-   */
-  private createMuteButton(rightX: number, centerY: number): IconButtonInstance {
-    const w = 44;
-    const h = 36;
-    const audio = getAudioManager();
-
-    return createIconButton({
-      scene: this,
-      x: rightX - w / 2,
-      y: centerY,
-      width: w,
-      height: h,
-      baseFill: MUTE_ICON_BG,
-      hoverFill: MUTE_ICON_HOVER,
-      render: (container) => {
-        // Container-anchored — use textStyle() so the spread style applies
-        // through the IconButton's internal Container transform. TextKind
-        // 'iconGlyph' is shared with MenuScene's mute icon.
-        const speakerGlyph = this.add.text(0, 1, '🔊', textStyle('iconGlyph')).setOrigin(0.5);
-        container.add(speakerGlyph);
-
-        // Refresh closure — re-evaluates glyph + alpha against current
-        // mute state. IconButton wrapper invokes this on focus changes
-        // AND right after every activation, so toggling mute auto-paints
-        // the new emoji without any extra wiring here.
-        const refresh = (): void => {
-          const muted = audio.isMuted();
-          speakerGlyph.setText(muted ? '🔇' : '🔊');
-          // Dim the OFF state so it reads at a glance even for a 6yo
-          // who doesn't notice the OS-rendered cancellation stroke.
-          speakerGlyph.setAlpha(muted ? 0.65 : 1);
-        };
-        refresh(); // initial paint reflects boot-time mute state
-        return refresh;
-      },
-      onActivate: () => audio.setMuted(!audio.isMuted()),
-    });
-  }
+  // Mute toggle rendering is now in `src/game/ui/MuteIconButton.ts`
+  // (sprint 2.2 wrap-up extraction; the same helper is used by
+  // MenuScene + GameSelectScene so the icon is consistent everywhere).
 
   /**
    * Resolve the live GameScene reference. `this.scene.get(...)` returns
