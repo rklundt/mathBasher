@@ -495,13 +495,23 @@ export const config = {
      */
     difficultyTile: {
       mathWidthPx: 220,
-      mathHeightPx: 64,
+      // Sprint 2.2 story 15b — bumped 64 → 56 to reclaim vertical
+      // headroom now that the speed row carries standalone subtitles
+      // below each button + a per-game section title ("Speed" vs
+      // "Difficulty"). 56 stays above the iOS HIG 44 px touch-target
+      // floor with margin.
+      mathHeightPx: 56,
       mathColGapPx: 20,
       mathRowGapPx: 12,
       mathMaxPerRow: 4,
       speedWidthPx: 160,
-      speedHeightPx: 64,
-      speedGapPx: 20,
+      // Same 64 → 56 height bump as the math tiles.
+      speedHeightPx: 56,
+      // Sprint 2.2 story 15b — bumped 20 → 60 so the standalone subtitle
+      // text under each speed button has horizontal breathing room. At
+      // 20 px gap the three subtitles read as one continuous run-on
+      // string ("2 rungs · 250s timer 3 rungs · 180s timer …").
+      speedGapPx: 60,
       /**
        * Vertical offset (in design pixels) of the section label ABOVE
        * the FIRST math row's center. The 32px-bold sectionLabel kind
