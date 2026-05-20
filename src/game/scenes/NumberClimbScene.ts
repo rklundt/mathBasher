@@ -213,21 +213,19 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   // ----- Floor lifecycle ---------------------------------------------------
 
   private startNextQuestion(): void {
+    console.log('[Climb] startNextQuestion', { floorReached: this.floorReached, qIndex: this.roundController.questionIndex });
     const question = this.roundController.drawNextQuestion();
     if (question === null) {
-      // Round complete — shouldn't reach here for Number Climb because
-      // floor 10 success short-circuits to endRound, but defensive.
+      console.log('[Climb] drawNextQuestion returned null → endRound');
       this.endRound();
       return;
     }
     this.currentQuestion = question;
 
-    // Compute the y for the NEXT floor (the one the kid is about to
-    // climb to). floorReached starts at 0; the first call spawns
-    // floor 1's rungs above the hero's floor-0 starting position.
     const nextFloorIndex = this.floorReached + 1;
     const nextFloorY = this.floor0Y - nextFloorIndex * FLOOR_SPACING_PX;
     const rungs = this.floorSystem.spawnFloor(question, nextFloorY);
+    console.log('[Climb] spawned floor', { nextFloorIndex, nextFloorY, rungCount: rungs.length, correctAnswer: question.correctAnswer });
     this.inputSystem.bindRungs(rungs);
     this.inputSystem.acceptInput();
 
@@ -265,6 +263,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   private handleCorrectPick(rung: NumberClimbRung): void {
+    console.log('[Climb] handleCorrectPick start', { rungX: rung.x, rungY: rung.y, floorReached: this.floorReached });
     this.transitioning = true;
     const usedMulligan = this.floorSystem.hasUsedMulligan();
     const { scoreDelta } = this.roundController.recordOutcome({
@@ -278,7 +277,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     });
 
     // Hero jumps to the correct rung.
+    console.log('[Climb] calling hero.jumpTo');
     this.hero.jumpTo(rung.x, rung.y, () => {
+      console.log('[Climb] hero.jumpTo onComplete fired');
       // Camera scroll: the hero is now higher (lower y); pan the
       // camera UP to follow with a slight lag. Story 11's "option 2"
       // semantics — hero moves up THROUGH the frame; camera follows.
@@ -298,7 +299,13 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       );
       void cameraScrollTargetY; // (reserved for a future explicit scroll path)
       this.floorReached += 1;
-      this.afterFloor(true);
+      console.log('[Climb] about to call afterFloor', { floorReached: this.floorReached });
+      try {
+        this.afterFloor(true);
+        console.log('[Climb] afterFloor returned successfully');
+      } catch (err) {
+        console.error('[Climb] afterFloor THREW', err);
+      }
     });
   }
 
