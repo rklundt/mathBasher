@@ -29,8 +29,15 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
 
 /** Black side-bars on left + right (px). Tuned in the 16-24 range from story 13a's spec. */
 const SIDE_BAR_WIDTH = 20;
-/** Thickness (px) of the horizontal black separator between floors. */
-const SEPARATOR_THICKNESS = 5;
+/**
+ * Thickness (px) of the horizontal black separator between floors.
+ * Started at 5 in story 13a; bumped to 12 in playtest because adjacent
+ * floors visually ran together with the +57% taller floor band — the
+ * preview at floor N+1 and the current floor at N read as one
+ * continuous panel. 12px gives crisp floor-to-floor separation without
+ * eating noticeable real estate from the 173 px floor band (~7%).
+ */
+const SEPARATOR_THICKNESS = 12;
 const BLACK = 0x000000;
 
 /**
