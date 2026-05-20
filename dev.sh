@@ -6,8 +6,8 @@
 # Convenience wrapper around `pnpm dev` that frees Vite's port first.
 # If a previous dev process is still bound to PORT (crashed, orphaned,
 # or a leftover from another shell), kill it before starting so we
-# don't get the "Port 5173 is already in use" prompt to fall back to
-# 5174 (which would break any browser tab pointed at the canonical
+# don't get the "Port 5183 is already in use" prompt to fall back to
+# 5184 (which would break any browser tab pointed at the canonical
 # port). 1s sleep gives Windows time to release the socket after the
 # kill before Vite tries to bind.
 #
