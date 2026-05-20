@@ -15,7 +15,7 @@
 
 set -e
 
-PORT=5173
+PORT=5183
 
 echo "[dev.sh] Checking port $PORT…"
 
