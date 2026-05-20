@@ -166,10 +166,13 @@ export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
     ship.setPosition(worldX, worldY);
     ship.setDepth(this.depth + 1);
 
-    // Smoke emitter — emits downward (angle 60-120 in Phaser's
-    // convention where 0=right, 90=down) so the engine plume trails
-    // BENEATH the rising ship.
-    const emitter = scene.add.particles(worldX, worldY, ParticleSpriteKeys.Smoke05, {
+    // Smoke emitter — anchored to the BOTTOM edge of the ship sprite
+    // so the engine plume trails from under the hull, not from its
+    // center. Phaser images default to origin (0.5, 0.5) so ship.y is
+    // the center; bottom = ship.y + ship.displayHeight/2. Emit angle
+    // 60-120 (Phaser convention: 0=right, 90=down) → downward plume.
+    const halfShipHeight = ship.displayHeight / 2;
+    const emitter = scene.add.particles(worldX, worldY + halfShipHeight, ParticleSpriteKeys.Smoke05, {
       lifespan: 800,
       speed: { min: 40, max: 120 },
       scale: { start: 0.7, end: 0 },
@@ -182,7 +185,8 @@ export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
 
     // Tween ship upward — off the top of the canvas. ~1.5s with Quad.In
     // gives that "engines spool up then it launches" pacing. onUpdate
-    // keeps the emitter glued to the ship's moving position.
+    // keeps the emitter glued to the ship's BOTTOM edge (not center)
+    // so the plume always emits from under the hull as the ship rises.
     const targetY = worldY - 900;
     scene.tweens.add({
       targets: ship,
@@ -191,7 +195,7 @@ export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
       ease: 'Quad.In',
       onUpdate: () => {
         emitter.x = ship.x;
-        emitter.y = ship.y;
+        emitter.y = ship.y + halfShipHeight;
       },
       onComplete: () => {
         // Let trailing particles fade out, then clean up.
