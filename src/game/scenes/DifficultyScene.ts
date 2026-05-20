@@ -31,6 +31,16 @@ interface SpeedDisplay {
   subtitle: string;
 }
 
+/**
+ * Per-game section title for the speed-selector row. Climb's setting
+ * controls rung count + cumulative timer (genuinely a difficulty axis),
+ * so "Difficulty" reads better than "Speed". The arcade modes keep
+ * "Speed" since they're really controlling enemy descent / drift rate.
+ */
+function speedSectionTitleFor(gameId: GameId): string {
+  return gameId === 'number-climb' ? 'Difficulty' : 'Speed';
+}
+
 function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
   switch (gameId) {
     case 'alien-shoot': {
@@ -271,31 +281,43 @@ export class DifficultyScene extends Phaser.Scene {
     // All geometry from config.layout.difficultyTile (sprint 1.5
     // wrap-up lift). See that config block for tuning history.
     const dt = config.layout.difficultyTile;
-    text(this, cx, y - dt.speedSectionLabelOffsetY, 'Speed', 'sectionLabel').setOrigin(0.5);
-
     const gameId = Settings.round.gameId;
+    text(this, cx, y - dt.speedSectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
+
     const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
     const tileWidth = dt.speedWidthPx;
     const gap = dt.speedGapPx;
     const totalWidth = speedKeys.length * tileWidth + (speedKeys.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
+    // Sprint 2.2 story 15b — subtitle text rendered as a STANDALONE
+    // line under each speed button, not embedded inside the button
+    // (which wrapped to a second line at the 160 px tile width and
+    // bled outside the tile frame). 16 px below the button bottom
+    // edge gives breathing room without crowding the Start/Back row.
+    const subtitleY = y + dt.speedHeightPx / 2 + 16;
 
     speedKeys.forEach((key, i) => {
       const display = speedDisplayFor(gameId, key);
+      const buttonX = startX + i * (tileWidth + gap);
       const button = new PlaceholderButton({
         scene: this,
-        x: startX + i * (tileWidth + gap),
+        x: buttonX,
         y,
         width: tileWidth,
         height: dt.speedHeightPx,
         label: display.label,
-        subtitle: display.subtitle,
         onClick: () => {
           Settings.setSpeed(key);
           this.refreshSelection();
         },
       });
       this.speedButtons.set(key, button);
+
+      // Standalone subtitle text — muted color, centered under the
+      // button. Not interactive; purely descriptive. Phaser destroys
+      // these automatically on scene shutdown alongside the rest of
+      // the scene's display list.
+      text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0);
     });
   }
 
