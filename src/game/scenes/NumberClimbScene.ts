@@ -183,6 +183,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       difficulty: this.speed,
       floorHeight: FLOOR_SPACING_PX,
       frameDepth: -10,
+      totalFloors: this.totalFloors,
     });
 
     // Floor 0 — the fixed "fire" ground floor. Hero starts on this; it's

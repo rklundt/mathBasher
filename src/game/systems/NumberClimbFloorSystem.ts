@@ -51,6 +51,18 @@ import {
 // `RUNGS_PER_DIFFICULTY` lives in `numberClimbFloorMath.ts` so tests
 // can import it without dragging Phaser into the Node test env.
 
+/**
+ * Sprint 2.2 story 13b — alpha used for the next-floor preview frame.
+ * 0.25 = quarter visibility — readable enough that the kid sees the
+ * silhouette / palette of what's coming, but the current floor stays
+ * visually dominant. 0.33 was the upper end of the design call (per
+ * sprint conversation); 0.25 chosen so the active floor wins the
+ * attention contest cleanly.
+ */
+const PREVIEW_ALPHA = 0.25;
+/** Tween duration (ms) for the preview-promote alpha ramp (0.25 → 1.0). */
+const PREVIEW_PROMOTE_TWEEN_MS = 300;
+
 export interface NumberClimbFloorSystemOpts {
   scene: Phaser.Scene;
   /** Playfield bounds for rung-distribution math. */
@@ -62,6 +74,12 @@ export interface NumberClimbFloorSystemOpts {
   floorHeight: number;
   /** Z-depth for the floor frames (story 13a). Frames render BELOW rungs + hero. */
   frameDepth: number;
+  /**
+   * Total climbable floors in this round. Used by story 13b's
+   * next-floor-preview to know when NOT to spawn a preview (no floor
+   * above the top floor).
+   */
+  totalFloors: number;
   /** Optional RNG injection for deterministic tests. */
   rng?: () => number;
 }
@@ -91,6 +109,23 @@ export class NumberClimbFloorSystem {
    * they climb. Cleaned up only at scene shutdown via `clearAllFrames`.
    */
   private frames: NumberClimbFloorFrame[] = [];
+  /**
+   * Sprint 2.2 story 13b — the NEXT floor's frame, pre-spawned at
+   * reduced alpha so the kid can see what's coming. On the next
+   * `spawnFloor` call (when the kid actually arrives), this frame is
+   * promoted: alpha tweens from `PREVIEW_ALPHA` → 1.0 and the frame
+   * moves into `frames`. A fresh preview is spawned for the floor
+   * above. Null only at the very start (before the first spawnFloor)
+   * or after the top floor (no floor above to preview).
+   */
+  private nextFloorPreview: NumberClimbFloorFrame | null = null;
+  /**
+   * Spawn-call counter. Increments on each `spawnFloor`. Used to know
+   * when the current spawn is for the TOP floor (so we skip the
+   * next-floor preview that would otherwise sit above the climb's max
+   * height).
+   */
+  private floorsSpawned = 0;
   /**
    * Wrong-rung count for the current floor. Starts at 0 each
    * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
@@ -147,21 +182,60 @@ export class NumberClimbFloorSystem {
     const rng = this.opts.rng ?? defaultRng;
     const targetRungCount = RUNGS_PER_DIFFICULTY[this.opts.difficulty];
 
-    // Sprint 2.2 story 13a — spawn the per-floor frame (bg + black bars).
-    // Floor 0 (the fire ground) is spawned separately via
-    // `spawnGroundFloorFrame` BEFORE the first call here, so by the time
-    // spawnFloor runs we never draw the ground bar (floor 0 owns it).
-    const frame = new NumberClimbFloorFrame({
-      scene: this.opts.scene,
-      centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
-      centerY: floorY,
-      playfieldWidth: this.opts.rightBound - this.opts.leftBound,
-      floorHeight: this.opts.floorHeight,
-      bgKey: pickRandomClimbFloorBgKey(rng),
-      drawGroundBar: false,
-    });
-    frame.setDepth(this.opts.frameDepth);
-    this.frames.push(frame);
+    this.floorsSpawned += 1;
+
+    // Sprint 2.2 story 13b — current-floor frame is either promoted from
+    // a preview spawned on the previous call, or created fresh if this
+    // is the first spawnFloor (no preview yet). Floor 0 (the fire ground)
+    // is spawned separately via `spawnGroundFloorFrame`, so we never
+    // draw the ground bar from this code path.
+    if (this.nextFloorPreview !== null) {
+      // Promote the preview: tween alpha 0.25 → 1.0 so the kid sees the
+      // "you've arrived" reveal smoothly. The bg key is whatever the
+      // preview was created with — stable across the promote, so the
+      // image the kid saw faintly is the same one they're now standing on.
+      const promoted = this.nextFloorPreview;
+      this.opts.scene.tweens.add({
+        targets: promoted,
+        alpha: 1.0,
+        duration: PREVIEW_PROMOTE_TWEEN_MS,
+        ease: 'Quad.Out',
+      });
+      this.frames.push(promoted);
+      this.nextFloorPreview = null;
+    } else {
+      // First call (or post-`clearAllFrames` reuse) — no preview to promote.
+      const frame = new NumberClimbFloorFrame({
+        scene: this.opts.scene,
+        centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
+        centerY: floorY,
+        playfieldWidth: this.opts.rightBound - this.opts.leftBound,
+        floorHeight: this.opts.floorHeight,
+        bgKey: pickRandomClimbFloorBgKey(rng),
+        drawGroundBar: false,
+      });
+      frame.setDepth(this.opts.frameDepth);
+      this.frames.push(frame);
+    }
+
+    // Sprint 2.2 story 13b — pre-spawn the NEXT floor's frame at reduced
+    // alpha so the kid can see where they're headed. Skip on the top
+    // floor (nothing to preview beyond it).
+    if (this.floorsSpawned < this.opts.totalFloors) {
+      const previewY = floorY - this.opts.floorHeight;
+      const preview = new NumberClimbFloorFrame({
+        scene: this.opts.scene,
+        centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
+        centerY: previewY,
+        playfieldWidth: this.opts.rightBound - this.opts.leftBound,
+        floorHeight: this.opts.floorHeight,
+        bgKey: pickRandomClimbFloorBgKey(rng),
+        drawGroundBar: false,
+      });
+      preview.setDepth(this.opts.frameDepth);
+      preview.setAlpha(PREVIEW_ALPHA);
+      this.nextFloorPreview = preview;
+    }
 
     // Pick `targetRungCount` answers from `question.choices`, guaranteeing
     // the correct answer is included. Choices is 4 per the math
@@ -281,15 +355,22 @@ export class NumberClimbFloorSystem {
   }
 
   /**
-   * Tear down all accumulated floor frames. Called at scene shutdown
-   * only — frames persist across floor advances (the kid sees floors
-   * stacked below them as they climb).
+   * Tear down all accumulated floor frames AND the next-floor preview.
+   * Called at scene shutdown only — frames persist across floor advances
+   * (the kid sees floors stacked below them as they climb). Also resets
+   * `floorsSpawned` so a scene-instance reuse (sprint 0.6.1 Phaser
+   * scene-reuse gotcha) doesn't carry the counter into the next round.
    */
   clearAllFrames(): void {
     for (const frame of this.frames) {
       frame.destroy();
     }
     this.frames = [];
+    if (this.nextFloorPreview !== null) {
+      this.nextFloorPreview.destroy();
+      this.nextFloorPreview = null;
+    }
+    this.floorsSpawned = 0;
   }
 }
 
