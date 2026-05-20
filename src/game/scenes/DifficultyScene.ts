@@ -6,13 +6,54 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
-import { Settings } from '@/services/Settings';
+import { Settings, type GameId } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { RUNGS_PER_DIFFICULTY } from '@/game/systems/numberClimbFloorMath';
+
+/**
+ * Per-game speed-button display (label + explanatory subtitle).
+ * Sprint 2.2 story 15b — the "Slow/Medium/Fast" labels read awkwardly
+ * for Number Climb (which changes rung count + cumulative timer, not
+ * enemy speed) so Climb gets "Easy/Medium/Hard" instead. Subtitles give
+ * first-time players the exact mechanic per tier; numbers are derived
+ * from config so re-tuning timer values auto-updates the display.
+ *
+ * Exhaustive switch on GameId — TypeScript flags any future game mode
+ * that doesn't add its display case here.
+ */
+interface SpeedDisplay {
+  label: string;
+  subtitle: string;
+}
+
+function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
+  switch (gameId) {
+    case 'alien-shoot': {
+      const map: Record<SpeedKey, SpeedDisplay> = {
+        slow: { label: 'Slow', subtitle: 'Aliens descend slowly' },
+        medium: { label: 'Medium', subtitle: 'Normal pace' },
+        fast: { label: 'Fast', subtitle: 'Aliens descend fast' },
+      };
+      return map[key];
+    }
+    case 'asteroid-field': {
+      const countdownSec = config.asteroidField.speed[key].countdownSec;
+      const labels: Record<SpeedKey, string> = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
+      return { label: labels[key], subtitle: `${countdownSec}s per question` };
+    }
+    case 'number-climb': {
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const rungs = RUNGS_PER_DIFFICULTY[key];
+      const totalSec = config.numberClimb.speed[key].totalTimeSec;
+      return { label: labels[key], subtitle: `${rungs} rungs · ${totalSec}s timer` };
+    }
+  }
+}
 
 /**
  * Difficulty selection. Two sections:
@@ -232,30 +273,29 @@ export class DifficultyScene extends Phaser.Scene {
     const dt = config.layout.difficultyTile;
     text(this, cx, y - dt.speedSectionLabelOffsetY, 'Speed', 'sectionLabel').setOrigin(0.5);
 
-    const speeds: { key: SpeedKey; label: string }[] = [
-      { key: 'slow', label: 'Slow' },
-      { key: 'medium', label: 'Medium' },
-      { key: 'fast', label: 'Fast' },
-    ];
+    const gameId = Settings.round.gameId;
+    const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
     const tileWidth = dt.speedWidthPx;
     const gap = dt.speedGapPx;
-    const totalWidth = speeds.length * tileWidth + (speeds.length - 1) * gap;
+    const totalWidth = speedKeys.length * tileWidth + (speedKeys.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
 
-    speeds.forEach((s, i) => {
+    speedKeys.forEach((key, i) => {
+      const display = speedDisplayFor(gameId, key);
       const button = new PlaceholderButton({
         scene: this,
         x: startX + i * (tileWidth + gap),
         y,
         width: tileWidth,
         height: dt.speedHeightPx,
-        label: s.label,
+        label: display.label,
+        subtitle: display.subtitle,
         onClick: () => {
-          Settings.setSpeed(s.key);
+          Settings.setSpeed(key);
           this.refreshSelection();
         },
       });
-      this.speedButtons.set(s.key, button);
+      this.speedButtons.set(key, button);
     });
   }
 
