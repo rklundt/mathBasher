@@ -409,8 +409,8 @@ export const config = {
      * to budge.
      */
     floorSpacingPx: {
-      desktop: 138,
-      mobile: 138,
+      desktop: 173,
+      mobile: 173,
     },
   },
   layout: {

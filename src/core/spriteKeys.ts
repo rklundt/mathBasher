@@ -455,15 +455,47 @@ export const BgSpriteKeys = {
 export const ClimbFloorBgKeys = {
   Fire: 'climb-floor-fire',
   Room1: 'climb-floor-room-1',
+  Room2: 'climb-floor-room-2',
+  Room3: 'climb-floor-room-3',
+  Room4: 'climb-floor-room-4',
+  Room5: 'climb-floor-room-5',
+  Room6: 'climb-floor-room-6',
+  Room7: 'climb-floor-room-7',
+  Room8: 'climb-floor-room-8',
+  Room9: 'climb-floor-room-9',
+  Room10: 'climb-floor-room-10',
+  Room11: 'climb-floor-room-11',
+  Room12: 'climb-floor-room-12',
+  Room13: 'climb-floor-room-13',
+  Room14: 'climb-floor-room-14',
+  Room15: 'climb-floor-room-15',
+  Room16: 'climb-floor-room-16',
 } as const;
 
 /**
  * Sub-pool of `ClimbFloorBgKeys` that the random picker draws from.
- * Excludes `Fire` (floor-0-only). Story 13b populates this further as
- * additional room variants are imported.
+ * Excludes `Fire` (floor-0-only) and (when story 13d ships) `Escape`
+ * (floor-10-only). Story 13c (sprint 2.2) populated this with 16 rooms
+ * — enough variety that a 10-floor round can pick all-distinct without
+ * any reuse-required fallback.
  */
 const CLIMB_RANDOM_FLOOR_KEYS: readonly string[] = [
   ClimbFloorBgKeys.Room1,
+  ClimbFloorBgKeys.Room2,
+  ClimbFloorBgKeys.Room3,
+  ClimbFloorBgKeys.Room4,
+  ClimbFloorBgKeys.Room5,
+  ClimbFloorBgKeys.Room6,
+  ClimbFloorBgKeys.Room7,
+  ClimbFloorBgKeys.Room8,
+  ClimbFloorBgKeys.Room9,
+  ClimbFloorBgKeys.Room10,
+  ClimbFloorBgKeys.Room11,
+  ClimbFloorBgKeys.Room12,
+  ClimbFloorBgKeys.Room13,
+  ClimbFloorBgKeys.Room14,
+  ClimbFloorBgKeys.Room15,
+  ClimbFloorBgKeys.Room16,
 ] as const;
 
 /**
@@ -715,14 +747,28 @@ export type ClimbFloorBgKey = (typeof ClimbFloorBgKeys)[keyof typeof ClimbFloorB
 
 /**
  * Pick a random Climb floor-bg key from the randomizable sub-pool
- * (`CLIMB_RANDOM_FLOOR_KEYS`). Excludes the floor-0-only `Fire` key.
- * Uniform random — each floor's bg is picked fresh on `spawnFloor`.
- * RNG-injectable for tests (mirrors `pickRandomAsteroidSpriteKey`).
- * With only Room1 today it's a no-op; story 13b makes the random
- * selection meaningful by adding more rooms to the pool.
+ * (`CLIMB_RANDOM_FLOOR_KEYS`). Excludes the floor-0-only `Fire` key
+ * (and `Escape` once story 13d ships).
+ *
+ * Story 13c — accepts an optional `exclusions` array of keys already
+ * used in the current round. The picker excludes those from the
+ * candidate pool so a 10-floor round shows 10 distinct rooms. With
+ * 16 keys in the pool and 10 picks per round, distinctness is always
+ * achievable; if the caller ever passes exclusions covering every
+ * pool entry (defensive — shouldn't happen in production), we fall
+ * back to picking from the full pool so the call doesn't deadlock.
+ *
+ * RNG-injectable for deterministic tests (mirrors
+ * `pickRandomAsteroidSpriteKey`).
  */
-export function pickRandomClimbFloorBgKey(rng: () => number = Math.random): ClimbFloorBgKey {
-  return CLIMB_RANDOM_FLOOR_KEYS[Math.floor(rng() * CLIMB_RANDOM_FLOOR_KEYS.length)]! as ClimbFloorBgKey;
+export function pickRandomClimbFloorBgKey(
+  rng: () => number = Math.random,
+  exclusions: readonly string[] = [],
+): ClimbFloorBgKey {
+  const exclSet = new Set(exclusions);
+  const available = CLIMB_RANDOM_FLOOR_KEYS.filter((k) => !exclSet.has(k));
+  const pool = available.length > 0 ? available : CLIMB_RANDOM_FLOOR_KEYS;
+  return pool[Math.floor(rng() * pool.length)]! as ClimbFloorBgKey;
 }
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */

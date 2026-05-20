@@ -127,6 +127,15 @@ export class NumberClimbFloorSystem {
    */
   private floorsSpawned = 0;
   /**
+   * Sprint 2.2 story 13c — keys already used as floor bgs in this round.
+   * Passed to `pickRandomClimbFloorBgKey` as exclusions so a single
+   * 10-floor round never repeats a room. Reset on `clearAllFrames`.
+   * Stores the keys for BOTH the current-floor frame and the
+   * next-floor preview (the preview becomes the current floor on the
+   * next promote, so it counts toward distinctness too).
+   */
+  private usedFloorBgKeys: string[] = [];
+  /**
    * Wrong-rung count for the current floor. Starts at 0 each
    * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
    * second wrong increments to 2 (terminal). Reset on every new
@@ -205,13 +214,15 @@ export class NumberClimbFloorSystem {
       this.nextFloorPreview = null;
     } else {
       // First call (or post-`clearAllFrames` reuse) — no preview to promote.
+      const currentBgKey = pickRandomClimbFloorBgKey(rng, this.usedFloorBgKeys);
+      this.usedFloorBgKeys.push(currentBgKey);
       const frame = new NumberClimbFloorFrame({
         scene: this.opts.scene,
         centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
         centerY: floorY,
         playfieldWidth: this.opts.rightBound - this.opts.leftBound,
         floorHeight: this.opts.floorHeight,
-        bgKey: pickRandomClimbFloorBgKey(rng),
+        bgKey: currentBgKey,
         drawGroundBar: false,
       });
       frame.setDepth(this.opts.frameDepth);
@@ -222,6 +233,8 @@ export class NumberClimbFloorSystem {
     // alpha so the kid can see where they're headed. Skip on the top
     // floor (nothing to preview beyond it).
     if (this.floorsSpawned < this.opts.totalFloors) {
+      const previewBgKey = pickRandomClimbFloorBgKey(rng, this.usedFloorBgKeys);
+      this.usedFloorBgKeys.push(previewBgKey);
       const previewY = floorY - this.opts.floorHeight;
       const preview = new NumberClimbFloorFrame({
         scene: this.opts.scene,
@@ -229,7 +242,7 @@ export class NumberClimbFloorSystem {
         centerY: previewY,
         playfieldWidth: this.opts.rightBound - this.opts.leftBound,
         floorHeight: this.opts.floorHeight,
-        bgKey: pickRandomClimbFloorBgKey(rng),
+        bgKey: previewBgKey,
         drawGroundBar: false,
       });
       preview.setDepth(this.opts.frameDepth);
@@ -371,6 +384,7 @@ export class NumberClimbFloorSystem {
       this.nextFloorPreview = null;
     }
     this.floorsSpawned = 0;
+    this.usedFloorBgKeys = [];
   }
 }
 
