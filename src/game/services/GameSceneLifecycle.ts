@@ -188,6 +188,10 @@ export class GameSceneLifecycle {
       mathId,
       speed,
       gameId,
+      // Sprint 2.2 — Climb overrides this to 10; other modes pass 20
+      // (the default from config.round.questionsPerRound). Drives the
+      // "Correct: N / total" denominator on GameOver.
+      totalQuestions: roundController.questionsPerRound,
     });
   }
 

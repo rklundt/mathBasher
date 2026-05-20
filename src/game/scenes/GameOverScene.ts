@@ -23,6 +23,14 @@ export interface GameOverData {
   mathId: MathId | null;
   speed: SpeedKey | null;
   /**
+   * Total questions/floors in the round that just ended. Used as the
+   * denominator on the "Correct: N / total" line. Optional for
+   * back-compat: legacy callers fall back to the global
+   * `config.round.questionsPerRound` (20). Number Climb passes 10 here
+   * because its round is 10 floors, not the default 20 questions.
+   */
+  totalQuestions?: number;
+  /**
    * Which game mode produced this round — passed explicitly by the
    * source scene (GameScene = 'alien-shoot', AsteroidFieldScene =
    * 'asteroid-field'). Drives:
@@ -136,8 +144,13 @@ export class GameOverScene extends Phaser.Scene {
     const scoreSummary = this.add
       .text(cx, height * 0.32, '', { ...textStyle('summary'), align: 'center' })
       .setOrigin(0.5);
+    // Round size — Number Climb passes 10 here (10 floors); other modes
+    // either pass the default 20 or omit, falling back to config. The
+    // denominator on the Correct line reads dynamically so a 10-floor
+    // Climb win displays "10 / 10" instead of the legacy "10 / 20".
+    const totalQuestions = this.roundData.totalQuestions ?? config.round.questionsPerRound;
     const renderScoreLine = (displayedScore: number): string =>
-      `Score: ${displayedScore}\nCorrect: ${this.roundData.correctCount} / ${config.round.questionsPerRound}`;
+      `Score: ${displayedScore}\nCorrect: ${this.roundData.correctCount} / ${totalQuestions}`;
     scoreSummary.setText(renderScoreLine(0));
     const scoreCounter = { value: 0 };
     this.tweens.add({
