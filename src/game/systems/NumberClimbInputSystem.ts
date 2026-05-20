@@ -85,11 +85,9 @@ export class NumberClimbInputSystem {
    * NEW rungs need handlers wired.
    */
   bindRungs(rungs: NumberClimbRung[]): void {
-    console.log('[Climb] InputSystem.bindRungs', { count: rungs.length });
     this.boundRungs = [];
     for (const rung of rungs) {
       const handler = (): void => {
-        console.log('[Climb] InputSystem POINTER_DOWN fired on rung', { answer: rung.answer, accepting: this.acceptingInput() });
         if (!this.acceptingInput()) return;
         this.commitPick(rung);
       };

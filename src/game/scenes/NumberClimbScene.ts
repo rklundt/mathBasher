@@ -161,6 +161,16 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       y: this.floor0Y,
     });
 
+    // Camera follow — option 2 from the sprint design. `startFollow`
+    // with a low lerpY makes the camera trail the hero as the kid
+    // climbs (hero visibly rises before the camera catches up). lerpX=0
+    // so the camera doesn't drift horizontally when the hero jumps to
+    // an off-center rung. Replaces a per-correct-pick `cameras.main.pan`
+    // call that broke with `this.ease is not a function` because
+    // PanEffect's ease parameter isn't resolved the same way scene
+    // tween eases are.
+    this.cameras.main.startFollow(this.hero, true, 0, 0.08);
+
     // FloorSystem — spawns rungs per floor; tracks the wrong-this-floor counter.
     this.floorSystem = new NumberClimbFloorSystem({
       scene: this,
@@ -213,19 +223,21 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   // ----- Floor lifecycle ---------------------------------------------------
 
   private startNextQuestion(): void {
-    console.log('[Climb] startNextQuestion', { floorReached: this.floorReached, qIndex: this.roundController.questionIndex });
     const question = this.roundController.drawNextQuestion();
     if (question === null) {
-      console.log('[Climb] drawNextQuestion returned null → endRound');
+      // Round complete — shouldn't reach here for Number Climb because
+      // floor 10 success short-circuits to endRound, but defensive.
       this.endRound();
       return;
     }
     this.currentQuestion = question;
 
+    // Compute the y for the NEXT floor (the one the kid is about to
+    // climb to). floorReached starts at 0; the first call spawns
+    // floor 1's rungs above the hero's floor-0 starting position.
     const nextFloorIndex = this.floorReached + 1;
     const nextFloorY = this.floor0Y - nextFloorIndex * FLOOR_SPACING_PX;
     const rungs = this.floorSystem.spawnFloor(question, nextFloorY);
-    console.log('[Climb] spawned floor', { nextFloorIndex, nextFloorY, rungCount: rungs.length, correctAnswer: question.correctAnswer });
     this.inputSystem.bindRungs(rungs);
     this.inputSystem.acceptInput();
 
@@ -263,7 +275,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   private handleCorrectPick(rung: NumberClimbRung): void {
-    console.log('[Climb] handleCorrectPick start', { rungX: rung.x, rungY: rung.y, floorReached: this.floorReached });
     this.transitioning = true;
     const usedMulligan = this.floorSystem.hasUsedMulligan();
     const { scoreDelta } = this.roundController.recordOutcome({
@@ -276,36 +287,11 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       scoreDelta,
     });
 
-    // Hero jumps to the correct rung.
-    console.log('[Climb] calling hero.jumpTo');
+    // Hero jumps to the correct rung. Camera follow (set in create())
+    // trails the hero naturally — no per-pick pan needed.
     this.hero.jumpTo(rung.x, rung.y, () => {
-      console.log('[Climb] hero.jumpTo onComplete fired');
-      // Camera scroll: the hero is now higher (lower y); pan the
-      // camera UP to follow with a slight lag. Story 11's "option 2"
-      // semantics — hero moves up THROUGH the frame; camera follows.
-      // For 10 floors at 110px spacing = 1100px climb total. Camera
-      // mid-zone is around floor 5; before that the floor reveals
-      // happen with the camera barely moving. We tween the camera's
-      // scrollY in lockstep with the hero's y so the hero appears
-      // to rise. The first ~3 floors leave the camera stationary;
-      // later floors scroll the camera up so the top stays in view.
-      const cameraScrollTargetY = Math.min(0, this.hero.y - this.scale.height / 2);
-      this.cameras.main.pan(
-        this.cameras.main.scrollX + this.scale.width / 2,
-        this.hero.y + this.scale.height / 4,
-        400,
-        'Quad.Out',
-        true,
-      );
-      void cameraScrollTargetY; // (reserved for a future explicit scroll path)
       this.floorReached += 1;
-      console.log('[Climb] about to call afterFloor', { floorReached: this.floorReached });
-      try {
-        this.afterFloor(true);
-        console.log('[Climb] afterFloor returned successfully');
-      } catch (err) {
-        console.error('[Climb] afterFloor THREW', err);
-      }
+      this.afterFloor(true);
     });
   }
 
