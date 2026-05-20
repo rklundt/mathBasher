@@ -439,6 +439,19 @@ export const BgSpriteKeys = {
 } as const;
 
 /**
+ * Number Climb — per-floor "room" images framed inside each floor band.
+ * Source MJ images are `--ar 8:1` (3072×384 raw → 1280×160 after the
+ * sprite pipeline's bg-profile resize). One image per floor, drawn
+ * inside black side-bars that let the nebula bleed through on the
+ * left/right edges + a thick horizontal black separator between floors.
+ * Sprint 2.2 story 13a established the framing pattern; story 13b adds
+ * additional Room2..RoomN variants for floor-to-floor visual variety.
+ */
+export const ClimbFloorBgKeys = {
+  Room1: 'climb-floor-room-1',
+} as const;
+
+/**
  * Per-game-mode background mapping. Each `GameId` resolves to a
  * `BgSpriteKey` so `BackgroundScene` can swap the backdrop when the
  * player enters a different game. Adding a new game mode = add a row
@@ -642,6 +655,15 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', key),
     scope: 'eager',
   })),
+  // Sprint 2.2 story 13a — Number Climb per-floor room images. Deferred
+  // to the climb game's preload via `game:number-climb` scope so they
+  // don't cost boot time for users who never enter Climb.
+  ...(Object.values(ClimbFloorBgKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:number-climb',
+  })),
   // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
   // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
@@ -674,6 +696,18 @@ export type ProjectileSpriteKey = (typeof ProjectileSpriteKeys)[keyof typeof Pro
 export type UiSpriteKey = (typeof UiSpriteKeys)[keyof typeof UiSpriteKeys];
 export type ParticleSpriteKey = (typeof ParticleSpriteKeys)[keyof typeof ParticleSpriteKeys];
 export type BgSpriteKey = (typeof BgSpriteKeys)[keyof typeof BgSpriteKeys];
+export type ClimbFloorBgKey = (typeof ClimbFloorBgKeys)[keyof typeof ClimbFloorBgKeys];
+
+/**
+ * Pick a random Climb floor-bg key. Uniform random — each floor's bg is
+ * picked fresh on `spawnFloor`. RNG-injectable for tests (mirrors
+ * `pickRandomAsteroidSpriteKey`). With only Room1 today it's a no-op;
+ * story 13b makes the random selection meaningful.
+ */
+export function pickRandomClimbFloorBgKey(rng: () => number = Math.random): ClimbFloorBgKey {
+  const keys = Object.values(ClimbFloorBgKeys);
+  return keys[Math.floor(rng() * keys.length)]!;
+}
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */
 export type NonAlienSpriteKey =
@@ -681,4 +715,5 @@ export type NonAlienSpriteKey =
   | ProjectileSpriteKey
   | UiSpriteKey
   | ParticleSpriteKey
-  | BgSpriteKey;
+  | BgSpriteKey
+  | ClimbFloorBgKey;

@@ -6,7 +6,9 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { NumberClimbRung } from '@/game/entities/NumberClimbRung';
+import { NumberClimbFloorFrame } from '@/game/entities/NumberClimbFloorFrame';
 import { defaultRng } from '@/math/rng';
+import { pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
 import {
@@ -56,6 +58,10 @@ export interface NumberClimbFloorSystemOpts {
   rightBound: number;
   /** Difficulty key (reused from SpeedKey today; story 10 may split into its own type if needed). */
   difficulty: SpeedKey;
+  /** Vertical span of one floor (px). Matches `FLOOR_SPACING_PX` in the scene. */
+  floorHeight: number;
+  /** Z-depth for the floor frames (story 13a). Frames render BELOW rungs + hero. */
+  frameDepth: number;
   /** Optional RNG injection for deterministic tests. */
   rng?: () => number;
 }
@@ -78,6 +84,13 @@ export type RungPickOutcome =
 
 export class NumberClimbFloorSystem {
   private rungs: NumberClimbRung[] = [];
+  /**
+   * Sprint 2.2 story 13a — per-floor framing visuals (bg image inside
+   * black side-bars + horizontal separator). Frames PERSIST across
+   * floor advances so the kid sees the stack of floors below them as
+   * they climb. Cleaned up only at scene shutdown via `clearAllFrames`.
+   */
+  private frames: NumberClimbFloorFrame[] = [];
   /**
    * Wrong-rung count for the current floor. Starts at 0 each
    * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
@@ -133,6 +146,23 @@ export class NumberClimbFloorSystem {
 
     const rng = this.opts.rng ?? defaultRng;
     const targetRungCount = RUNGS_PER_DIFFICULTY[this.opts.difficulty];
+
+    // Sprint 2.2 story 13a — spawn the per-floor frame (bg + black bars).
+    // First floor (frames empty) gets the ground bar at its base; all
+    // subsequent floors stack their top separator over the previous
+    // floor's top edge — the visual reads as continuous masonry.
+    const isFirstFloor = this.frames.length === 0;
+    const frame = new NumberClimbFloorFrame({
+      scene: this.opts.scene,
+      centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
+      centerY: floorY,
+      playfieldWidth: this.opts.rightBound - this.opts.leftBound,
+      floorHeight: this.opts.floorHeight,
+      bgKey: pickRandomClimbFloorBgKey(rng),
+      drawGroundBar: isFirstFloor,
+    });
+    frame.setDepth(this.opts.frameDepth);
+    this.frames.push(frame);
 
     // Pick `targetRungCount` answers from `question.choices`, guaranteeing
     // the correct answer is included. Choices is 4 per the math
@@ -227,6 +257,18 @@ export class NumberClimbFloorSystem {
       rung.destroy();
     }
     this.rungs = [];
+  }
+
+  /**
+   * Tear down all accumulated floor frames. Called at scene shutdown
+   * only — frames persist across floor advances (the kid sees floors
+   * stacked below them as they climb).
+   */
+  clearAllFrames(): void {
+    for (const frame of this.frames) {
+      frame.destroy();
+    }
+    this.frames = [];
   }
 }
 

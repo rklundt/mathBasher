@@ -172,11 +172,17 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.cameras.main.startFollow(this.hero, true, 0, 0.08);
 
     // FloorSystem — spawns rungs per floor; tracks the wrong-this-floor counter.
+    // Also owns the per-floor framing visuals (story 13a) — bg image + black
+    // side-bars + top separator. `frameDepth: -10` so frames render BEHIND
+    // rungs (depth 0) and hero (depth 0); negative depth keeps the gameplay
+    // surface untouched.
     this.floorSystem = new NumberClimbFloorSystem({
       scene: this,
       leftBound: this.leftBound,
       rightBound: this.rightBound,
       difficulty: this.speed,
+      floorHeight: FLOOR_SPACING_PX,
+      frameDepth: -10,
     });
 
     // InputSystem — tap/click + number keys → onPick(rung).
@@ -373,6 +379,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
 
   private cleanup(): void {
     this.floorSystem?.clearFloor();
+    this.floorSystem?.clearAllFrames();
     this.inputSystem?.destroy();
     this.lifecycle.exit();
   }
