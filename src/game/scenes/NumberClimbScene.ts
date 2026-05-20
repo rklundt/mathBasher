@@ -119,6 +119,10 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     };
   }
 
+  getQuestionsPerRound(): number {
+    return this.totalFloors;
+  }
+
   isPaused(): boolean {
     return this.paused;
   }

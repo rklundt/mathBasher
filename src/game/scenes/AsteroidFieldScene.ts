@@ -99,8 +99,12 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     return {
       question: this.currentQuestion,
       index: this.roundController.questionIndex,
-      total: config.round.questionsPerRound,
+      total: this.roundController.questionsPerRound,
     };
+  }
+
+  getQuestionsPerRound(): number {
+    return this.roundController.questionsPerRound;
   }
 
   isPaused(): boolean {
@@ -528,7 +532,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.events.emit('questionStarted', {
       question: this.currentQuestion,
       index: this.roundController.questionIndex,
-      total: config.round.questionsPerRound,
+      total: this.roundController.questionsPerRound,
     });
   }
 

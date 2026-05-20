@@ -76,6 +76,15 @@ export class HudScene extends Phaser.Scene {
    */
   private progressDots: Phaser.GameObjects.Arc[] = [];
   private currentQuestionIndex = 0;
+  /**
+   * Sprint 2.2 story 15a — total questions/floors in the round being
+   * displayed. Pulled from the active game scene at `create()` time via
+   * `getQuestionsPerRound()` so the Q-counter denominator and the
+   * progress-dots count read per-mode (Climb=10, Alien-Shoot=20,
+   * Asteroid-Field=20). Falls back to the global config default if the
+   * game scene contract isn't satisfied (back-compat).
+   */
+  private totalQuestions: number = config.round.questionsPerRound;
   private gameSceneListenersBound = false;
   /**
    * Per-question countdown text (sprint 2.1). Visible only when the
@@ -125,6 +134,18 @@ export class HudScene extends Phaser.Scene {
     // the first questionEnded of the new round marks dot 0 not dot 19.
     this.progressDots = [];
     this.currentQuestionIndex = 0;
+
+    // Sprint 2.2 story 15a — pull the round size from the active game
+    // scene so the counter + dots scale per-mode. By the time this
+    // HudScene.create() runs, the game scene's roundController is
+    // initialized (its create() ran first; Phaser processes parallel
+    // scene launches synchronously after the launching scene's create
+    // returns). Defensive: keep the config fallback if the game scene
+    // is missing the contract method (legacy callers).
+    const gameSceneForRoundSize = this.scene.get(this.gameSceneKey) as Partial<GameSceneContract> | null;
+    if (gameSceneForRoundSize?.getQuestionsPerRound) {
+      this.totalQuestions = gameSceneForRoundSize.getQuestionsPerRound();
+    }
 
     const { width } = this.scale;
     // Sprint 2.1 wrap-up — lifted from a `barHeight = 48` literal to
@@ -211,7 +232,7 @@ export class HudScene extends Phaser.Scene {
       this,
       width - 16 - buttonsRoom,
       barHeight / 2,
-      `Q: 0/${config.round.questionsPerRound}`,
+      `Q: 0/${this.totalQuestions}`,
       'body',
     ).setOrigin(1, 0.5);
 
@@ -410,7 +431,7 @@ export class HudScene extends Phaser.Scene {
    * the canvas width.
    */
   private buildProgressDots(width: number, barHeight: number): void {
-    const total = config.round.questionsPerRound;
+    const total = this.totalQuestions;
     const dotSize = 6;
     const dotGap = 4;
     const totalDotWidth = total * dotSize + (total - 1) * dotGap;
