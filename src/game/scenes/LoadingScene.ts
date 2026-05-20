@@ -110,7 +110,7 @@ export class LoadingScene extends Phaser.Scene {
         caption = 'Loading Asteroid Field…';
         break;
       case 'number-climb':
-        caption = 'Loading Number Climb…';
+        caption = 'Loading Space Escape!…';
         break;
     }
     attachLoadingOverlay({ scene: this, caption });

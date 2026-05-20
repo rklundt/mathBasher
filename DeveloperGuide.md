@@ -460,14 +460,15 @@ The scope taxonomy lives in `src/core/assetScope.ts`. The `AssetScope` type uses
 
 ### How to add a new game mode
 
-Adding a third game (e.g. 2.2 Number Climb) requires:
+The canonical reference is `docs/adrs/ADR-0011-per-game-mode-dispatch.md` (12-step checklist). The short version:
 
-1. Extend `GameId` in `src/services/Settings.ts`: `'alien-shoot' | 'asteroid-field' | 'number-climb'`. TypeScript exhaustiveness on `Record<GameId, ...>` will now flag every existing map (GAME_BG_MAP, GAME_MUSIC_MAP) that doesn't handle the new value.
-2. Map the new game's bg + music in those records.
-3. The new scene's `preload()` calls `loadGameBundle(this, this.gameId)` + `attachLoadingOverlay({ scene: this, caption: 'Loading Number Climb…' })`. Mirrors the pattern in `GameScene.preload()` / `AsteroidFieldScene.preload()`.
-4. Tag the new game's assets with `'game:number-climb'` scope in the manifests.
+1. Extend `GameId` in `src/services/Settings.ts`. TypeScript exhaustiveness on every `Record<GameId, ...>` will then flag every map (`GAME_BG_MAP`, `GAME_MUSIC_MAP`, `GAME_MIDGROUND_MAP`, `gameSceneKeyFor`) that doesn't handle the new value.
+2. Map the new game's bg / music / midground in those records.
+3. Add a `SceneKeys.<NewScene>` entry + register the scene in `src/app/boot.ts`. Implement `GameSceneContract` (incl. `getQuestionsPerRound()` — drives the HUD denominator + GameOver display).
+4. Add the new game's preload assets with `'game:<id>'` scope in the sprite/audio manifests so `loadGameBundle` defers them until first play.
+5. `LoadingScene` caption switch + `GameSelectScene` tile gets a one-line addition each.
 
-That's it — boot load stays at ~2 MB regardless of how many games exist.
+Sprint 2.2 shipped Number Climb (display name "Space Escape!") through this exact checklist; boot load stays at ~2 MB regardless of how many game modes ship.
 
 ### Loader-error handling
 

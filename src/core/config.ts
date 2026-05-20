@@ -427,7 +427,7 @@ export const config = {
      * playfield never overlaps the HUD ribbon. Single source of truth;
      * a future resize is a 1-line edit here.
      */
-    hudBarHeightPx: 48,
+    hudBarHeightPx: 64,
     /**
      * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
      * design pixels. Load-bearing for legal compliance — the footer must

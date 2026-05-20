@@ -78,8 +78,8 @@ export class GameSelectScene extends Phaser.Scene {
       y: tileY,
       width: TILE_W,
       height: TILE_H,
-      label: 'Number Climb',
-      subtitle: 'Tap the right rung to climb. Don\'t fall.',
+      label: 'Space Escape!',
+      subtitle: 'Climb to escape the burning station.',
       onClick: () => {
         Settings.setGameId('number-climb');
         this.scene.start(SceneKeys.Difficulty);
