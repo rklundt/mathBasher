@@ -146,10 +146,20 @@ export class DifficultyScene extends Phaser.Scene {
     // Subtitle drop is applied via `subtitle: undefined` in
     // renderMathTypes (the PlaceholderButton's existing no-subtitle
     // path auto-centers the label).
-    this.renderMathTypes(cx, height * 0.3);
-    this.renderSpeeds(cx, height * 0.72);
-    this.renderStartButton(cx, height * 0.85);
-    this.renderBackButton(cx - 250, height * 0.85);
+    // Sprint 2.2 story 15b — raised math + difficulty rows after
+    // playtest showed the page was vertically cramped. Math 0.3 → 0.22
+    // (start higher under the title), difficulty 0.72 → 0.62. Start /
+    // Back row stays at 0.85 so the gap from the difficulty subtitle
+    // (which lives ~+44 px below the difficulty button row) to the
+    // Start/Back top is comfortable.
+    this.renderMathTypes(cx, height * 0.22);
+    this.renderSpeeds(cx, height * 0.62);
+    // Center the Start/Back pair around `cx`. Back is 160 wide, Start
+    // is 200 wide, with a 40 px gap between them. The previous layout
+    // anchored Back at `cx - 250` and Start at `cx` which left the
+    // visual pair lopsided to the left of the canvas center.
+    this.renderStartButton(cx + 100, height * 0.85);
+    this.renderBackButton(cx - 120, height * 0.85);
 
     // Default selections so the user lands on a "ready to play" state.
     // Without this, a first-time user sees the keyboard-focus blue ring on
