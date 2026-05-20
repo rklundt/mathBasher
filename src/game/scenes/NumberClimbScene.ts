@@ -12,6 +12,7 @@ import { computeClimbStars } from '@/services/ScoreCalculator';
 import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
+import { text } from '@/game/ui/typography';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
 import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
@@ -386,13 +387,13 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
 
     // Sprint 2.2 story 13e — reached the top floor (the escape room).
     // Hide the hero (kid boarded the ship), play the escape-ship
-    // fly-away with smoke trail, THEN end the round. The visual order
-    // matters: animation runs BEFORE GameOver mounts so the kid sees
-    // the win beat in-place.
+    // fly-away with smoke trail, then drop an "Escaped Safe!" banner
+    // for one beat BEFORE GameOver mounts so the kid registers the win
+    // in-place.
     if (this.floorReached >= this.totalFloors) {
       this.transitioning = true;
       this.hero.setVisible(false);
-      this.floorSystem.playEscapeWinAnimation(() => this.endRound());
+      this.floorSystem.playEscapeWinAnimation(() => this.showWinBannerThenEndRound());
       return;
     }
 
@@ -405,6 +406,30 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const passed = this.floorReached >= this.totalFloors;
     const stars = computeClimbStars(this.floorReached, this.totalFloors);
     this.lifecycle.endRound({ passedOverride: passed, starsOverride: stars });
+  }
+
+  /**
+   * Sprint 2.2 story 13e polish — after the escape ship blasts off,
+   * display "Escaped Safe!" in the center of the escape floor for one
+   * beat (1000 ms) before transitioning to GameOver. Position is the
+   * escape frame's world-coord center; the camera-follow leaves this
+   * near the visible center of the canvas by the time floor 10 lands,
+   * so the message reads natively without any camera nudging.
+   */
+  private showWinBannerThenEndRound(): void {
+    const bannerX = (this.leftBound + this.rightBound) / 2;
+    // Escape frame center y — the 2× frame's center is half a (normal)
+    // floor-band above the rungs' floorY. Floor 10 rungs were at
+    // `floor0Y - totalFloors * floorSpacingPx`.
+    const bannerY = this.floor0Y - this.totalFloors * this.floorSpacingPx - this.floorSpacingPx / 2;
+    const banner = text(this, bannerX, bannerY, 'Escaped Safe!', 'headline');
+    banner.setOrigin(0.5);
+    banner.setDepth(100); // above the frame + hero z-order
+
+    this.time.delayedCall(1000, () => {
+      banner.destroy();
+      this.endRound();
+    });
   }
 
   private cleanup(): void {
