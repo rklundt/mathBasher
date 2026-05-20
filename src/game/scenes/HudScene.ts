@@ -191,11 +191,18 @@ export class HudScene extends Phaser.Scene {
     this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
 
     // Sprint 2.1 — countdown text just BELOW the prompt, only visible in
-    // game modes that expose getCountdownSec (Asteroid Field). The text
-    // updates each frame in update() with the remaining seconds, with
-    // color shifting green > yellow > red as time runs out. Built unconditionally
-    // here (one Phaser.Text per round is trivial); visibility is toggled in update().
-    this.countdownText = text(this, width / 2, barHeight + 8, '', 'body').setOrigin(0.5, 0);
+    // game modes that expose getCountdownSec (Asteroid Field, Number
+    // Climb). The text updates each frame in update() with the remaining
+    // seconds, with color shifting green > yellow > red as time runs
+    // out. Built unconditionally here (one Phaser.Text per round is
+    // trivial); visibility is toggled in update().
+    //
+    // y = barHeight + 22 (was +8): the progress dots row sits at
+    // barHeight + 10. With both elements horizontally centered + the
+    // dots row ~80px wide, the timer overlapped the middle dots when
+    // they shared the same y band. Stacked under the dots now —
+    // dots fill +7..+13, timer fills +22..+36 with ~10px gap.
+    this.countdownText = text(this, width / 2, barHeight + 22, '', 'body').setOrigin(0.5, 0);
     this.countdownText.setVisible(false);
 
     // Pause icon (top-right) and Mute icon (just left of it). Both are
