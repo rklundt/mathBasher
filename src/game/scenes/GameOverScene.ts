@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
-import { SceneKeys } from '@/core/sceneKeys';
+import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
 import { Settings, type GameId } from '@/services/Settings';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
@@ -179,11 +179,12 @@ export class GameOverScene extends Phaser.Scene {
             if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
             if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
             // Route to the game scene that matches the JUST-PLAYED
-            // gameId. Sprint 2.1 bug: hardcoded to SceneKeys.Game,
-            // which sent Asteroid Field players back to Alien Shoot.
-            const target =
-              gameId === 'asteroid-field' ? SceneKeys.AsteroidField : SceneKeys.Game;
-            this.scene.start(target);
+            // gameId via the canonical helper. The original sprint 2.1
+            // fix used an inline ternary that didn't cover number-climb
+            // (added in sprint 2.2) and silently fell through to
+            // SceneKeys.Game (Alien Shoot). Using `gameSceneKeyFor` keeps
+            // this site exhaustive against the GameId union.
+            this.scene.start(gameSceneKeyFor(gameId));
           },
         },
         {

@@ -5,31 +5,14 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
-import { SceneKeys } from '@/core/sceneKeys';
-import { Settings, type GameId } from '@/services/Settings';
+import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
+import { Settings } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
-
-/**
- * Map a `GameId` to the scene key for that game's mounted scene.
- * Exhaustive switch — TypeScript will flag any GameId addition that
- * forgets to add a case (matches ADR-0011's dispatch-checklist
- * pattern). The corresponding caption switch lives in `LoadingScene`.
- */
-function gameSceneKeyFor(gameId: GameId): string {
-  switch (gameId) {
-    case 'alien-shoot':
-      return SceneKeys.Game;
-    case 'asteroid-field':
-      return SceneKeys.AsteroidField;
-    case 'number-climb':
-      return SceneKeys.NumberClimb;
-  }
-}
 
 /**
  * Difficulty selection. Two sections:
