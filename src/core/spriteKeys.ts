@@ -446,10 +446,25 @@ export const BgSpriteKeys = {
  * left/right edges + a thick horizontal black separator between floors.
  * Sprint 2.2 story 13a established the framing pattern; story 13b adds
  * additional Room2..RoomN variants for floor-to-floor visual variety.
+ *
+ * `Fire` is the FIXED floor-0 (ground) image. The hero starts on this
+ * floor with a fire effect underfoot — a one-off visual cue that
+ * "you're escaping upward." Never appears in the random pool used by
+ * floors 1..N; reached only via the explicit floor-0 frame spawn.
  */
 export const ClimbFloorBgKeys = {
+  Fire: 'climb-floor-fire',
   Room1: 'climb-floor-room-1',
 } as const;
+
+/**
+ * Sub-pool of `ClimbFloorBgKeys` that the random picker draws from.
+ * Excludes `Fire` (floor-0-only). Story 13b populates this further as
+ * additional room variants are imported.
+ */
+const CLIMB_RANDOM_FLOOR_KEYS: readonly string[] = [
+  ClimbFloorBgKeys.Room1,
+] as const;
 
 /**
  * Per-game-mode background mapping. Each `GameId` resolves to a
@@ -699,14 +714,15 @@ export type BgSpriteKey = (typeof BgSpriteKeys)[keyof typeof BgSpriteKeys];
 export type ClimbFloorBgKey = (typeof ClimbFloorBgKeys)[keyof typeof ClimbFloorBgKeys];
 
 /**
- * Pick a random Climb floor-bg key. Uniform random — each floor's bg is
- * picked fresh on `spawnFloor`. RNG-injectable for tests (mirrors
- * `pickRandomAsteroidSpriteKey`). With only Room1 today it's a no-op;
- * story 13b makes the random selection meaningful.
+ * Pick a random Climb floor-bg key from the randomizable sub-pool
+ * (`CLIMB_RANDOM_FLOOR_KEYS`). Excludes the floor-0-only `Fire` key.
+ * Uniform random — each floor's bg is picked fresh on `spawnFloor`.
+ * RNG-injectable for tests (mirrors `pickRandomAsteroidSpriteKey`).
+ * With only Room1 today it's a no-op; story 13b makes the random
+ * selection meaningful by adding more rooms to the pool.
  */
 export function pickRandomClimbFloorBgKey(rng: () => number = Math.random): ClimbFloorBgKey {
-  const keys = Object.values(ClimbFloorBgKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return CLIMB_RANDOM_FLOOR_KEYS[Math.floor(rng() * CLIMB_RANDOM_FLOOR_KEYS.length)]! as ClimbFloorBgKey;
 }
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */

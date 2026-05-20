@@ -8,7 +8,7 @@ import { config } from '@/core/config';
 import { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 import { NumberClimbFloorFrame } from '@/game/entities/NumberClimbFloorFrame';
 import { defaultRng } from '@/math/rng';
-import { pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
+import { ClimbFloorBgKeys, pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
 import {
@@ -148,10 +148,9 @@ export class NumberClimbFloorSystem {
     const targetRungCount = RUNGS_PER_DIFFICULTY[this.opts.difficulty];
 
     // Sprint 2.2 story 13a — spawn the per-floor frame (bg + black bars).
-    // First floor (frames empty) gets the ground bar at its base; all
-    // subsequent floors stack their top separator over the previous
-    // floor's top edge — the visual reads as continuous masonry.
-    const isFirstFloor = this.frames.length === 0;
+    // Floor 0 (the fire ground) is spawned separately via
+    // `spawnGroundFloorFrame` BEFORE the first call here, so by the time
+    // spawnFloor runs we never draw the ground bar (floor 0 owns it).
     const frame = new NumberClimbFloorFrame({
       scene: this.opts.scene,
       centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
@@ -159,7 +158,7 @@ export class NumberClimbFloorSystem {
       playfieldWidth: this.opts.rightBound - this.opts.leftBound,
       floorHeight: this.opts.floorHeight,
       bgKey: pickRandomClimbFloorBgKey(rng),
-      drawGroundBar: isFirstFloor,
+      drawGroundBar: false,
     });
     frame.setDepth(this.opts.frameDepth);
     this.frames.push(frame);
@@ -257,6 +256,28 @@ export class NumberClimbFloorSystem {
       rung.destroy();
     }
     this.rungs = [];
+  }
+
+  /**
+   * Spawn the floor-0 (ground) frame — the platform the hero starts on.
+   * Uses the fixed `Fire` bg image (the "on fire, climb to escape"
+   * visual cue) and draws the ground bar at its bottom edge so the
+   * tower visually rests on something. Called ONCE from the scene's
+   * `create()` before any `spawnFloor(...)` calls. Excluded from the
+   * pickRandom pool — see `CLIMB_RANDOM_FLOOR_KEYS` in `spriteKeys.ts`.
+   */
+  spawnGroundFloorFrame(floorY: number): void {
+    const frame = new NumberClimbFloorFrame({
+      scene: this.opts.scene,
+      centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
+      centerY: floorY,
+      playfieldWidth: this.opts.rightBound - this.opts.leftBound,
+      floorHeight: this.opts.floorHeight,
+      bgKey: ClimbFloorBgKeys.Fire,
+      drawGroundBar: true,
+    });
+    frame.setDepth(this.opts.frameDepth);
+    this.frames.push(frame);
   }
 
   /**

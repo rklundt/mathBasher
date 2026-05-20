@@ -185,6 +185,13 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       frameDepth: -10,
     });
 
+    // Floor 0 — the fixed "fire" ground floor. Hero starts on this; it's
+    // never randomized and always uses the `ClimbFloorBgKeys.Fire` image
+    // (the "on fire, climb to escape" visual). Must be spawned BEFORE
+    // `startNextQuestion()` because `spawnFloor` no longer draws the
+    // ground bar — floor 0 owns it.
+    this.floorSystem.spawnGroundFloorFrame(this.floor0Y);
+
     // InputSystem — tap/click + number keys → onPick(rung).
     this.inputSystem = new NumberClimbInputSystem({
       scene: this,
