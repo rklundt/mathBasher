@@ -97,16 +97,14 @@ export class NumberClimbFloorSystem {
     // Disable rung pick during pause — kid mashing taps during a
     // pause shouldn't queue up picks for after-resume.
     for (const rung of this.rungs) {
-      rung.disableInteractive();
+      rung.setInputEnabled(false);
     }
   }
 
   resume(): void {
     this.paused = false;
     for (const rung of this.rungs) {
-      // Re-enable interactivity (Phaser's setInteractive WITHOUT a
-      // hitArea param re-enables the existing one).
-      rung.setInteractive();
+      rung.setInputEnabled(true);
     }
   }
 

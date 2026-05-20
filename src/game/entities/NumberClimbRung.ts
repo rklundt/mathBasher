@@ -50,6 +50,17 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
   readonly index: number;
 
   private readonly bodyGraphics: Phaser.GameObjects.Graphics;
+  /**
+   * Invisible Rectangle child that owns the interactive surface. Setting
+   * `setInteractive` on the Container itself produced dead-zone hit
+   * detection (same bug `PlaceholderButton.ts` + `ToggleSwitch.ts`
+   * document — Phaser's container input routing with custom hit areas
+   * has flakiness where non-interactive Text children shadow portions
+   * of the test). A leaf Rectangle with auto-derived hit bounds is
+   * reliable. We forward POINTER_DOWN through to the container so the
+   * InputSystem keeps listening on the rung as before.
+   */
+  private readonly hitTarget: Phaser.GameObjects.Rectangle;
   /** The big answer text overlay. Rendered above the body in the container child order. */
   private readonly answerText: Phaser.GameObjects.Text;
   /** Tracks hover state so paint() chooses the right fill color. */
@@ -84,22 +95,25 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
     prefix.setOrigin(0, 0);
     this.add(prefix);
 
-    // Hit area + interactive — the FloorSystem listens to POINTERDOWN
-    // to know which rung the kid picked. Hover state for desktop
-    // (touch ignores the hover paint changes).
-    this.setSize(RUNG_WIDTH, RUNG_HEIGHT);
-    this.setInteractive({
-      hitArea: new Phaser.Geom.Rectangle(-RUNG_WIDTH / 2, -RUNG_HEIGHT / 2, RUNG_WIDTH, RUNG_HEIGHT),
-      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-      useHandCursor: true,
-    });
-    this.on(Phaser.Input.Events.POINTER_OVER, () => {
+    // Invisible hit-target on top of everything — this is the surface
+    // that actually receives input. See class field doc above for why
+    // a leaf Rectangle is used instead of `this.setInteractive(...)`.
+    this.hitTarget = opts.scene.add.rectangle(0, 0, RUNG_WIDTH, RUNG_HEIGHT, 0xffffff, 0);
+    this.add(this.hitTarget);
+    this.hitTarget.setInteractive({ useHandCursor: true });
+    this.hitTarget.on(Phaser.Input.Events.POINTER_OVER, () => {
       this.hovered = true;
       this.paint();
     });
-    this.on(Phaser.Input.Events.POINTER_OUT, () => {
+    this.hitTarget.on(Phaser.Input.Events.POINTER_OUT, () => {
       this.hovered = false;
       this.paint();
+    });
+    this.hitTarget.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      // Re-emit on the container so InputSystem's `rung.on(POINTER_DOWN, ...)`
+      // wiring continues to work without it caring about our internal
+      // hit-target child.
+      this.emit(Phaser.Input.Events.POINTER_DOWN, pointer);
     });
   }
 
@@ -112,9 +126,16 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
   consume(): void {
     this.consumed = true;
     this.hovered = false;
-    this.disableInteractive();
+    this.hitTarget.disableInteractive();
     this.paint();
     this.setAlpha(0.4);
+  }
+
+  /** Temporarily disable input (pause flow). */
+  setInputEnabled(enabled: boolean): void {
+    if (this.consumed) return; // consumed rungs stay disabled regardless
+    if (enabled) this.hitTarget.setInteractive();
+    else this.hitTarget.disableInteractive();
   }
 
   /** Redraw the body based on hover / consumed state. */
