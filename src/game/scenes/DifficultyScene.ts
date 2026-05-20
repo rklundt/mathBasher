@@ -101,7 +101,12 @@ export class DifficultyScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    text(this, cx, height * 0.1, 'Pick Difficulty', 'h3').setOrigin(0.5);
+    // Title at 0.05 (was 0.1) — after raising the Math Type row to
+    // 0.22 the page header was overlapping the "Math Type" section
+    // label. 0.05 puts the 44px title's top edge at y≈9 (close to
+    // canvas top) and its bottom at y≈63, leaving ~15px gap above
+    // the section label that sits around y=78.
+    text(this, cx, height * 0.05, 'Pick Difficulty', 'h3').setOrigin(0.5);
 
     // Defensive fallback: if for some reason the math registry has no
     // implemented generators (every entry is a stub), don't render an empty
