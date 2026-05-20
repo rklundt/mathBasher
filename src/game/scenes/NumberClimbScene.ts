@@ -160,7 +160,14 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.rightBound = width - padding - 8;
     const topPlayfield = hudBarHeight + padding + 16;
     const bottomPlayfield = height - footerHeight - 16;
-    this.floor0Y = bottomPlayfield - NumberClimbHero.HEIGHT / 2;
+    // Sprint 2.2 story 13d — anchor floor 0 so its FRAME bottom aligns
+    // with the playfield bottom (not the hero's feet). With the taller
+    // floor band (173 px after stories 13b + 13c bumps), centering on
+    // the hero's feet left the frame's ground bar clipped into the AGPL
+    // footer + dark dead space at the bottom of the canvas. Center y
+    // is half a floor-band above the playfield bottom so the frame
+    // ends exactly at the playfield bottom.
+    this.floor0Y = bottomPlayfield - this.floorSpacingPx / 2;
 
     // Hero — placed at floor 0, centered horizontally.
     const heroStartX = (this.leftBound + this.rightBound) / 2;
@@ -377,9 +384,15 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.roundController.advanceQuestionIndex();
     this.transitioning = false;
 
-    // Reached the top — round complete.
+    // Sprint 2.2 story 13e — reached the top floor (the escape room).
+    // Hide the hero (kid boarded the ship), play the escape-ship
+    // fly-away with smoke trail, THEN end the round. The visual order
+    // matters: animation runs BEFORE GameOver mounts so the kid sees
+    // the win beat in-place.
     if (this.floorReached >= this.totalFloors) {
-      this.endRound();
+      this.transitioning = true;
+      this.hero.setVisible(false);
+      this.floorSystem.playEscapeWinAnimation(() => this.endRound());
       return;
     }
 

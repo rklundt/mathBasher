@@ -8,7 +8,7 @@ import { config } from '@/core/config';
 import { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 import { NumberClimbFloorFrame } from '@/game/entities/NumberClimbFloorFrame';
 import { defaultRng } from '@/math/rng';
-import { ClimbFloorBgKeys, pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
+import { ClimbEscapeShipKeys, ClimbFloorBgKeys, pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
 import {
@@ -136,6 +136,14 @@ export class NumberClimbFloorSystem {
    */
   private usedFloorBgKeys: string[] = [];
   /**
+   * Sprint 2.2 story 13e — reference to the escape (top) floor's frame
+   * so the scene can trigger its win-animation by name. Set when the
+   * escape frame is created (as preview on floor N-1's spawnFloor);
+   * stays valid through the promote-to-current transition because the
+   * preview IS the current floor — same Phaser instance.
+   */
+  private escapeFrame: NumberClimbFloorFrame | null = null;
+  /**
    * Wrong-rung count for the current floor. Starts at 0 each
    * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
    * second wrong increments to 2 (terminal). Reset on every new
@@ -214,18 +222,8 @@ export class NumberClimbFloorSystem {
       this.nextFloorPreview = null;
     } else {
       // First call (or post-`clearAllFrames` reuse) — no preview to promote.
-      const currentBgKey = pickRandomClimbFloorBgKey(rng, this.usedFloorBgKeys);
-      this.usedFloorBgKeys.push(currentBgKey);
-      const frame = new NumberClimbFloorFrame({
-        scene: this.opts.scene,
-        centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
-        centerY: floorY,
-        playfieldWidth: this.opts.rightBound - this.opts.leftBound,
-        floorHeight: this.opts.floorHeight,
-        bgKey: currentBgKey,
-        drawGroundBar: false,
-      });
-      frame.setDepth(this.opts.frameDepth);
+      const isCurrentTop = this.floorsSpawned === this.opts.totalFloors;
+      const frame = this.makeFloorFrame(floorY, isCurrentTop, 1.0, rng);
       this.frames.push(frame);
     }
 
@@ -233,20 +231,9 @@ export class NumberClimbFloorSystem {
     // alpha so the kid can see where they're headed. Skip on the top
     // floor (nothing to preview beyond it).
     if (this.floorsSpawned < this.opts.totalFloors) {
-      const previewBgKey = pickRandomClimbFloorBgKey(rng, this.usedFloorBgKeys);
-      this.usedFloorBgKeys.push(previewBgKey);
+      const isNextTop = this.floorsSpawned + 1 === this.opts.totalFloors;
       const previewY = floorY - this.opts.floorHeight;
-      const preview = new NumberClimbFloorFrame({
-        scene: this.opts.scene,
-        centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
-        centerY: previewY,
-        playfieldWidth: this.opts.rightBound - this.opts.leftBound,
-        floorHeight: this.opts.floorHeight,
-        bgKey: previewBgKey,
-        drawGroundBar: false,
-      });
-      preview.setDepth(this.opts.frameDepth);
-      preview.setAlpha(PREVIEW_ALPHA);
+      const preview = this.makeFloorFrame(previewY, isNextTop, PREVIEW_ALPHA, rng);
       this.nextFloorPreview = preview;
     }
 
@@ -346,6 +333,76 @@ export class NumberClimbFloorSystem {
   }
 
   /**
+   * Sprint 2.2 story 13e — build a floor frame at the given normal-floor
+   * y position. If `isTopFloor` is true, use the fixed Escape bg image,
+   * draw at 2× height, offset the centerY so the bottom aligns with
+   * where a 1× frame's bottom would have been, and attach the escape
+   * ship overlay. Otherwise pick a random non-repeating room bg.
+   *
+   * Stashes the escape frame in `this.escapeFrame` so the scene can
+   * later call `playEscapeWinAnimation()`.
+   */
+  private makeFloorFrame(
+    floorY: number,
+    isTopFloor: boolean,
+    alpha: number,
+    rng: () => number,
+  ): NumberClimbFloorFrame {
+    let bgKey: string;
+    let frameHeight: number;
+    let centerY: number;
+    let escapeShipKey: string | undefined;
+
+    if (isTopFloor) {
+      bgKey = ClimbFloorBgKeys.Escape;
+      frameHeight = this.opts.floorHeight * 2;
+      // Center-y is half a (normal) floor-band ABOVE the normal floor
+      // position so the 2× frame's BOTTOM aligns with where the 1×
+      // bottom would have sat. Rungs still spawn at `floorY`, so the
+      // kid lands at the bottom of the escape room — under the ship.
+      centerY = floorY - this.opts.floorHeight / 2;
+      escapeShipKey = ClimbEscapeShipKeys.EscapeShip;
+    } else {
+      bgKey = pickRandomClimbFloorBgKey(rng, this.usedFloorBgKeys);
+      this.usedFloorBgKeys.push(bgKey);
+      frameHeight = this.opts.floorHeight;
+      centerY = floorY;
+    }
+
+    const frame = new NumberClimbFloorFrame({
+      scene: this.opts.scene,
+      centerX: (this.opts.leftBound + this.opts.rightBound) / 2,
+      centerY,
+      playfieldWidth: this.opts.rightBound - this.opts.leftBound,
+      floorHeight: frameHeight,
+      bgKey,
+      drawGroundBar: false,
+      escapeShipKey,
+    });
+    frame.setDepth(this.opts.frameDepth);
+    frame.setAlpha(alpha);
+
+    if (isTopFloor) {
+      this.escapeFrame = frame;
+    }
+    return frame;
+  }
+
+  /**
+   * Sprint 2.2 story 13e — kid reached floor 10; play the win beat.
+   * The escape frame's ship tweens off-screen with a smoke trail.
+   * No-op (immediate onComplete) if the escape frame isn't set
+   * (shouldn't happen in production but defensive).
+   */
+  playEscapeWinAnimation(onComplete?: () => void): void {
+    if (this.escapeFrame === null) {
+      onComplete?.();
+      return;
+    }
+    this.escapeFrame.playEscapeAnimation(onComplete);
+  }
+
+  /**
    * Spawn the floor-0 (ground) frame — the platform the hero starts on.
    * Uses the fixed `Fire` bg image (the "on fire, climb to escape"
    * visual cue) and draws the ground bar at its bottom edge so the
@@ -385,6 +442,7 @@ export class NumberClimbFloorSystem {
     }
     this.floorsSpawned = 0;
     this.usedFloorBgKeys = [];
+    this.escapeFrame = null;
   }
 }
 

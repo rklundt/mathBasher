@@ -454,6 +454,13 @@ export const BgSpriteKeys = {
  */
 export const ClimbFloorBgKeys = {
   Fire: 'climb-floor-fire',
+  /**
+   * Floor 10 (the TOP floor) — the escape route / hangar / open
+   * airlock visual. Sprint 2.2 story 13e: fixed image, never in the
+   * random pool, rendered at 2× normal floor height so the room reads
+   * as the climactic destination rather than just another room.
+   */
+  Escape: 'climb-floor-escape',
   Room1: 'climb-floor-room-1',
   Room2: 'climb-floor-room-2',
   Room3: 'climb-floor-room-3',
@@ -470,6 +477,23 @@ export const ClimbFloorBgKeys = {
   Room14: 'climb-floor-room-14',
   Room15: 'climb-floor-room-15',
   Room16: 'climb-floor-room-16',
+} as const;
+
+/**
+ * Sprint 2.2 story 13e — overlay sprite that sits on top of the
+ * escape floor (Climb floor 10). The kid sees it parked when they
+ * arrive at floor 10; the win-animation tweens it upward off-screen
+ * with a smoke trail (the "you escaped" beat). Ships from disk as
+ * `public/assets/sprites/hero/escape-ship.png` (processed with
+ * `--kind hero` for the 192×192 paletted-PNG profile — same shape as
+ * the speeder + asteroid-hero sprites).
+ *
+ * Lives in a separate const from `HeroSpriteKeys` to keep the
+ * climbing-hero / arcade-hero / escape-ship lineages distinct in code
+ * even though they all share the on-disk `hero/` folder.
+ */
+export const ClimbEscapeShipKeys = {
+  EscapeShip: 'escape-ship',
 } as const;
 
 /**
@@ -711,6 +735,15 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', key),
     scope: 'game:number-climb',
   })),
+  // Sprint 2.2 story 13e — escape ship overlay sprite. Ships in the
+  // `hero/` folder (192×192 paletted PNG) but Climb-only, so deferred
+  // via the same `game:number-climb` scope.
+  ...(Object.values(ClimbEscapeShipKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'game:number-climb',
+  })),
   // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
   // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
@@ -744,6 +777,7 @@ export type UiSpriteKey = (typeof UiSpriteKeys)[keyof typeof UiSpriteKeys];
 export type ParticleSpriteKey = (typeof ParticleSpriteKeys)[keyof typeof ParticleSpriteKeys];
 export type BgSpriteKey = (typeof BgSpriteKeys)[keyof typeof BgSpriteKeys];
 export type ClimbFloorBgKey = (typeof ClimbFloorBgKeys)[keyof typeof ClimbFloorBgKeys];
+export type ClimbEscapeShipKey = (typeof ClimbEscapeShipKeys)[keyof typeof ClimbEscapeShipKeys];
 
 /**
  * Pick a random Climb floor-bg key from the randomizable sub-pool
@@ -778,4 +812,5 @@ export type NonAlienSpriteKey =
   | UiSpriteKey
   | ParticleSpriteKey
   | BgSpriteKey
-  | ClimbFloorBgKey;
+  | ClimbFloorBgKey
+  | ClimbEscapeShipKey;
