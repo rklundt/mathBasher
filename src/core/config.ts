@@ -390,6 +390,28 @@ export const config = {
      * timer's remaining value.
      */
     wrongRungTimePenaltySec: 3,
+    /**
+     * Vertical spacing (px) between floor centers — also the height of
+     * each floor's framed bg band. Two values so desktop and mobile can
+     * tune independently; the scene reads `pickFloorSpacingPx()` at
+     * create() time to pick based on viewport.
+     *
+     * Initial values (sprint 2.2 story 13a): 110px on both. Bumped to
+     * 138 (≈ 25% taller) during 13b playtest to give the floor image +
+     * rungs + hero more vertical breathing room. The two-value shape
+     * is the configurability hook — change either number here and the
+     * scene's whole climb retunes (camera follow, preview spacing,
+     * frame size) automatically.
+     *
+     * If desktop + mobile end up at the same value forever, this
+     * collapsing back to a single number is a 5-minute change. Keeping
+     * them separate now means we don't have to refactor when one needs
+     * to budge.
+     */
+    floorSpacingPx: {
+      desktop: 138,
+      mobile: 138,
+    },
   },
   layout: {
     /** number of answer lanes across the screen */
@@ -520,3 +542,26 @@ export const config = {
 
 export type SpeedKey = keyof typeof config.scoring.speed;
 export type MathId = keyof typeof config.scoring.mathDifficulty;
+
+/**
+ * Mobile-vs-desktop threshold for picking between two-value config
+ * fields like `config.numberClimb.floorSpacingPx`. Same logic the
+ * sprite-tier picker uses (viewport width × DPR ≥ 1920 = desktop).
+ * Lives here next to the config so any future two-value config field
+ * has a single canonical helper to read.
+ *
+ * Reads `window.innerWidth` + `window.devicePixelRatio` directly each
+ * call — cheap. For test paths that don't have a real window,
+ * pass an explicit `viewportWidth × dpr` via the optional arg.
+ */
+export function isDesktopViewport(viewportProduct?: number): boolean {
+  const product = viewportProduct ?? window.innerWidth * window.devicePixelRatio;
+  return product >= 1920;
+}
+
+/** Sprint 2.2 — pick the floor-spacing value for the current viewport. */
+export function pickFloorSpacingPx(): number {
+  return isDesktopViewport()
+    ? config.numberClimb.floorSpacingPx.desktop
+    : config.numberClimb.floorSpacingPx.mobile;
+}

@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, type MathId, type SpeedKey } from '@/core/config';
+import { config, pickFloorSpacingPx, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -61,8 +61,9 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  * `floor0Y - 10 * FLOOR_SPACING` = near the top of the climb space.
  */
 
-/** Vertical spacing between floor centers in world coords. Tuned so 10 floors fit comfortably. */
-const FLOOR_SPACING_PX = 110;
+// Vertical spacing between floor centers now comes from
+// `pickFloorSpacingPx()` (config.numberClimb.floorSpacingPx + viewport
+// pick). Read once at create() time into `floorSpacingPx` below.
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.NumberClimb;
@@ -88,6 +89,13 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   /** Current floor index (0 = ground; N reached = stars by height). */
   private floorReached = 0;
   private readonly totalFloors = config.numberClimb.questionsPerRound;
+  /**
+   * Per-round floor spacing (px). Picked at `create()` from
+   * `pickFloorSpacingPx()` so desktop and mobile can carry independent
+   * values. Used for the frame band height, next-floor y math, and the
+   * fall-back-to-floor target y on a mulligan.
+   */
+  private floorSpacingPx = 0;
 
   // Cached playfield bounds + per-floor y-coord derivation
   private leftBound = 0;
@@ -133,6 +141,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.transitioning = false;
     this.paused = false;
     this.floorReached = 0;
+    this.floorSpacingPx = pickFloorSpacingPx();
 
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
@@ -181,7 +190,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       leftBound: this.leftBound,
       rightBound: this.rightBound,
       difficulty: this.speed,
-      floorHeight: FLOOR_SPACING_PX,
+      floorHeight: this.floorSpacingPx,
       frameDepth: -10,
       totalFloors: this.totalFloors,
     });
@@ -250,7 +259,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // climb to). floorReached starts at 0; the first call spawns
     // floor 1's rungs above the hero's floor-0 starting position.
     const nextFloorIndex = this.floorReached + 1;
-    const nextFloorY = this.floor0Y - nextFloorIndex * FLOOR_SPACING_PX;
+    const nextFloorY = this.floor0Y - nextFloorIndex * this.floorSpacingPx;
     const rungs = this.floorSystem.spawnFloor(question, nextFloorY);
     this.inputSystem.bindRungs(rungs);
     this.inputSystem.acceptInput();
@@ -317,7 +326,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // Hero falls back to the CURRENT floor's base (i.e. the floor
     // the kid is still on — they haven't climbed yet). After the
     // animation, re-enable input for the second-and-final try.
-    const currentFloorY = this.floor0Y - this.floorReached * FLOOR_SPACING_PX;
+    const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     this.hero.fallBackToFloor(currentFloorY, () => {
       this.inputSystem.acceptInput();
     });
