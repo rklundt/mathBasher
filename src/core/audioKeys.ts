@@ -94,6 +94,17 @@ export const MidgroundKeys = {
    * clean.
    */
   SpaceNoises1: 'space-noises-1',
+  /**
+   * Number Climb (ships as "Space Escape!") atmospheric loop —
+   * crackling fire under a quiet emergency klaxon. Matches the
+   * burning-station escape premise. ~10s mono loop, encoded with
+   * `--no-trim` (default for midground) so the boundary stays clean,
+   * and `--loudnorm-target -26 LUFS` (4 dB quieter than the midground
+   * default of -22) so the attention-grabbing klaxon stays in the
+   * BACKGROUND rather than competing with foreground SFX. Sprint 2.2 —
+   * replaces the Skittering1 placeholder.
+   */
+  FireKlaxon1: 'fire-klaxon-1',
 } as const;
 
 /** Music loop keys. */
@@ -159,14 +170,10 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
 export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, MidgroundKey>> = {
   'alien-shoot': MidgroundKeys.Skittering1,
   'asteroid-field': MidgroundKeys.SpaceNoises1,
-  // Sprint 2.2 — PLACEHOLDER. Real climb-ambient loop arrives via
-  // story 1 (asset delivery). Until then, Number Climb shares Alien
-  // Shoot's skittering-1 — yes, this is the same "wrong loop for the
-  // wrong mode" problem 2.1.9 fixed for Asteroid Field; it's a
-  // deliberate temporary state, NOT a regression of the per-game-
-  // midground architecture. Swap to `MidgroundKeys.ClimbAmbient1` (or
-  // final key) when art lands.
-  'number-climb': MidgroundKeys.Skittering1,
+  // Sprint 2.2 — fire-klaxon ambient matches the burning-station
+  // escape premise. Replaced the Skittering1 placeholder once the
+  // real Climb midground arrived.
+  'number-climb': MidgroundKeys.FireKlaxon1,
 };
 
 /**
@@ -235,8 +242,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
   if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
-  // Sprint 2.2 — Number Climb floor-advance hatch SFX. Climb-only.
+  // Sprint 2.2 — Number Climb-only ambient + SFX assets.
   if (key === SfxKeys.HatchOpen1) return 'game:number-climb';
+  if (key === MidgroundKeys.FireKlaxon1) return 'game:number-climb';
   return 'eager';
 }
 
