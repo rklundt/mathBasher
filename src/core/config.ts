@@ -569,6 +569,27 @@ export function isDesktopViewport(viewportProduct?: number): boolean {
   return product >= 1920;
 }
 
+/**
+ * Sprint 2.2 — true if the user's PRIMARY input pointer is touch
+ * (phones, tablets) as opposed to a mouse/trackpad (desktops, laptops).
+ * Returns the CSS media query `(pointer: coarse)` result — the W3C
+ * standard for "touch-primary" detection. Decoupled from viewport size
+ * (`isDesktopViewport`) because iPads can have large viewports but
+ * still be touch-primary, and conversely small-window desktop browsers
+ * are still mouse-primary.
+ *
+ * Used by AsteroidFieldScene's aim hint — touch users see it (gesture
+ * needs the visual cue), mouse users skip it (cursor follows aim
+ * already, no gesture to learn).
+ *
+ * `matchMedia` is universally supported in browsers that run Phaser 3;
+ * the `?? false` guard covers the headless / non-browser test path
+ * where `window.matchMedia` may be undefined.
+ */
+export function isTouchPrimary(): boolean {
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false;
+}
+
 /** Sprint 2.2 — pick the floor-spacing value for the current viewport. */
 export function pickFloorSpacingPx(): number {
   return isDesktopViewport()

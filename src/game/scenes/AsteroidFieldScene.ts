@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, type MathId, type SpeedKey } from '@/core/config';
+import { config, isTouchPrimary, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -248,6 +248,11 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
    * cleared on hide.
    */
   private buildAimHint(): void {
+    // Touch-primary devices only — mouse/trackpad users get instant
+    // pointer-follow aim, no gesture to learn → no hint needed. Skip
+    // the build entirely on desktop to save the GameObjects + tween.
+    if (!isTouchPrimary()) return;
+
     // Lower-left corner, just above the footer / FIRE-button stack.
     // Hint is a smaller pill than the centered version so it sits in
     // the corner without crowding the aim zone — the kid's drags can
