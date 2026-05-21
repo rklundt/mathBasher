@@ -70,12 +70,13 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 // pick). Read once at create() time into `floorSpacingPx` below.
 
 /**
- * Sprint 2.2 — delay (ms) between the jump-click (positive button-press
- * feedback that hero.jumpTo plays at the START of its tween) and the
- * hatch-open SFX. 150 ms lets the click read alone first; the hatch
- * then joins while the hero is still mid-arc (jump runs 280 ms total).
+ * Sprint 2.2 — staged delays on the correct-pick beat. The scene fires
+ * ButtonClick1 at t=0 as immediate tap feedback; the hatch SFX joins
+ * `HATCH_SFX_DELAY_MS` later; the hero starts moving `HERO_JUMP_DELAY_MS`
+ * later so the kid sees the door open BEFORE the hero moves through it.
  */
 const HATCH_SFX_DELAY_MS = 150;
+const HERO_JUMP_DELAY_MS = 300;
 
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
@@ -334,29 +335,40 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       scoreDelta,
     });
 
-    // Hero jumps to the correct rung — `hero.jumpTo` internally plays
-    // the positive `ButtonClick1` SFX at the start of the tween + the
-    // arc animation. Camera follow (set in create()) trails the hero
-    // naturally — no per-pick pan needed.
-    this.hero.jumpTo(rung.x, rung.y, () => {
-      this.floorReached += 1;
-      this.afterFloor(true);
-    });
+    // Sprint 2.2 — staged audio + motion sequence on a correct pick:
+    //   t=0:   ButtonClick1 plays as IMMEDIATE positive feedback for
+    //          the kid's tap (loud, alone, no other sounds in flight).
+    //   t=150: HatchOpen1 starts — door opens.
+    //   t=300: hero.jumpTo runs (with its internal click SFX suppressed
+    //          since we already played it at t=0) — kid moves THROUGH
+    //          the still-playing hatch sound into the new floor.
+    //   t=580: hero lands.
+    //   t=870: hatch finishes.
+    // Hatch is skipped on the final escape floor — that floor's audio
+    // sequence (ship blast + smoke + banner) already covers the beat
+    // and a hatch underneath would compete.
+    void getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
 
-    // Sprint 2.2 — hatch SFX layered AFTER the jump click (150 ms
-    // delay) so the positive button-press click is audible cleanly
-    // first, then the hatch joins while the hero is still mid-arc
-    // (jump runs 280 ms, hatch starts at 150 ms → hero still moving
-    // as hatch plays, which was the design intent). Skipped on the
-    // final escape floor: that floor's audio sequence (ship blast +
-    // smoke + banner) already covers the beat and a hatch underneath
-    // would compete.
     const enteringEscape = this.floorReached + 1 >= this.totalFloors;
     if (!enteringEscape) {
       this.time.delayedCall(HATCH_SFX_DELAY_MS, () => {
         void getAudioManager().play(SfxKeys.HatchOpen1, 'sfx');
       });
     }
+
+    // Camera follow (set in create()) trails the hero naturally — no
+    // per-pick pan needed.
+    this.time.delayedCall(HERO_JUMP_DELAY_MS, () => {
+      this.hero.jumpTo(
+        rung.x,
+        rung.y,
+        () => {
+          this.floorReached += 1;
+          this.afterFloor(true);
+        },
+        { skipClickSfx: true },
+      );
+    });
   }
 
   private handleWrongMulligan(): void {

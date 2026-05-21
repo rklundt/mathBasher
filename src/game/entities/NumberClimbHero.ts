@@ -106,9 +106,11 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    * If a previous tween is still running, this `killTweensOf(this)`
    * cuts it off cleanly so rapid taps don't compound.
    */
-  jumpTo(targetX: number, targetY: number, onComplete: () => void): void {
+  jumpTo(targetX: number, targetY: number, onComplete: () => void, opts?: { skipClickSfx?: boolean }): void {
     this.scene.tweens.killTweensOf(this);
-    void getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
+    if (opts?.skipClickSfx !== true) {
+      void getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
+    }
     // Brief two-stage tween: rise + settle, with a small horizontal
     // shift if the rung is off-center from the hero's current x.
     const apexY = Math.min(targetY, this.y) - 24; // arc peak above the lower of the two
