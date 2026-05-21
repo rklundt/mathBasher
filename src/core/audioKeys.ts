@@ -125,6 +125,14 @@ export const MusicKeys = {
    * Future cleanup may either wire it as an alt-track or remove it.
    */
   Loop3: 'loop-3',
+  /**
+   * Number Climb (ships as "Space Escape!") gameplay loop. ~16s
+   * stereo music track encoded with the default music profile
+   * (160 kbps stereo, -18 LUFS). Layered over the FireKlaxon1
+   * midground + foreground SFX (hatch, click). Sprint 2.2 — replaces
+   * the Loop1 placeholder.
+   */
+  EscapeLoop1: 'escape-loop-1',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -151,11 +159,9 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
-  // Sprint 2.2 — PLACEHOLDER. Real climb music arrives via story 1
-  // (asset delivery). Until then, Number Climb shares Alien Shoot's
-  // loop-1 so the scene can develop without an asset-missing crash.
-  // Swap to `MusicKeys.Loop4` (or final key) when art lands.
-  'number-climb': MusicKeys.Loop1,
+  // Sprint 2.2 — escape-tower climb music. Replaced the Loop1
+  // placeholder once the real Climb track arrived.
+  'number-climb': MusicKeys.EscapeLoop1,
 };
 
 /**
@@ -242,9 +248,10 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
   if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
-  // Sprint 2.2 — Number Climb-only ambient + SFX assets.
+  // Sprint 2.2 — Number Climb-only ambient + music + SFX assets.
   if (key === SfxKeys.HatchOpen1) return 'game:number-climb';
   if (key === MidgroundKeys.FireKlaxon1) return 'game:number-climb';
+  if (key === MusicKeys.EscapeLoop1) return 'game:number-climb';
   return 'eager';
 }
 
