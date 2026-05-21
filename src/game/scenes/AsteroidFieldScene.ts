@@ -87,6 +87,13 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   private rightBound = 0;
   private topBound = 0;
   private bottomBound = 0;
+  /**
+   * Sprint 2.2 story 15c — first-question aim hint. Visible only while
+   * the kid is on question 1 of a round; hides on Q2+, OR earlier when
+   * the kid touches the playfield (gesture learned). Container holds
+   * the translucent label + hand emoji.
+   */
+  private aimHint?: Phaser.GameObjects.Container;
 
   constructor() {
     super(AsteroidFieldScene.key);
@@ -212,13 +219,12 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     });
     this.lifecycle.enter();
 
-    // First-time Asteroid Field hint banner. Touch controls aren't
-    // obvious (drag on the left, tap on the right, FIRE button — a
-    // beginner would guess tap-anywhere-to-fire). Shows ONCE per
-    // session, fades after ~4s. Session-scoped flag (not localStorage)
-    // because the hint is meant to onboard new sessions, not "you've
-    // seen this once ever."
-    this.maybeShowFirstRoundHint();
+    // Sprint 2.2 story 15c — translucent "Drag here to aim" hint on
+    // the left half of the playfield. Shown on Q1 of every round
+    // (visibility flips inside startNextQuestion), hidden on Q2+. Also
+    // dismisses on the first playfield pointerdown of Q1 — kid touched,
+    // gesture learned, no further hand-holding needed.
+    this.buildAimHint();
 
     this.startNextQuestion();
 
@@ -226,61 +232,66 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   }
 
   /**
-   * Show the first-round controls hint (once per session). Plain text
-   * at the top of the playfield with a translucent backdrop so it
-   * reads against any background; auto-fades after 4 seconds. The
-   * sessionStorage flag is wrapped in try/catch because some browsers
-   * (private mode on iOS pre-15) throw on storage access — the hint
-   * just shows every round instead of breaking the scene.
+   * Sprint 2.2 story 15c — translucent aim-zone hint, centered in the
+   * LEFT HALF of the playfield. The hand emoji + "Drag to aim" label
+   * tell the kid both WHAT to do and WHERE the touch zone is. Built
+   * ONCE per scene-create (the same Container is reused across rounds);
+   * visibility flips per question via `showAimHint` / `hideAimHint`.
+   *
+   * Pulses subtly (1.0 → 0.65 alpha over 800ms, yoyo) to draw eye
+   * without screaming for attention. Lives at depth 50 — above gameplay
+   * sprites + asteroids but below the HUD overlay.
+   *
+   * Dismiss on first pointerdown of Q1: once the kid touches anywhere
+   * in the playfield, the gesture is learned and the hint becomes
+   * noise. Scene-level pointerdown listener for that question only;
+   * cleared on hide.
    */
-  private maybeShowFirstRoundHint(): void {
-    const FLAG_KEY = 'asteroidField.hintSeen';
-    try {
-      if (sessionStorage.getItem(FLAG_KEY) === '1') return;
-      sessionStorage.setItem(FLAG_KEY, '1');
-    } catch {
-      // Storage unavailable — fall through and show the hint anyway.
-    }
+  private buildAimHint(): void {
     const { width } = this.scale;
-    const hintY = this.topBound + 32;
-    const hintText = text(
-      this,
-      width / 2,
-      hintY,
-      'Drag to aim • Tap or press FIRE to shoot',
-      'rowLabel',
-    ).setOrigin(0.5);
-    // Translucent dark pill behind the text for readability against
-    // any backdrop. Sized from the text bounds with breathing room.
-    const padX = 18;
-    const padY = 8;
-    const bg = this.add.rectangle(
-      width / 2,
-      hintY,
-      hintText.width + padX * 2,
-      hintText.height + padY * 2,
-      0x000000,
-      0.65,
-    );
+    // Center of the left half of the playfield.
+    const cx = width * 0.25;
+    const cy = (this.topBound + this.bottomBound) / 2;
+
+    const container = this.add.container(cx, cy);
+
+    const bg = this.add.rectangle(0, 0, 260, 150, 0x000000, 0.55);
+    bg.setStrokeStyle(2, 0x60a5fa, 0.75);
     bg.setOrigin(0.5);
-    bg.setStrokeStyle(2, 0x60a5fa, 0.9);
-    // Re-add the text above the rectangle (Phaser scene-level Z is
-    // insertion order; bg was added second so it covers the text).
-    hintText.setDepth(1);
-    bg.setDepth(0);
-    // Fade out after 3 seconds visible + 1 second fade.
-    this.time.delayedCall(3000, () => {
-      this.tweens.add({
-        targets: [hintText, bg],
-        alpha: 0,
-        duration: 1000,
-        ease: 'Quad.Out',
-        onComplete: () => {
-          hintText.destroy();
-          bg.destroy();
-        },
-      });
+
+    // Hand emoji as the gesture indicator. 56 px font size + center
+    // origin so it sits above the label with comfortable spacing.
+    const handIcon = this.add.text(0, -28, '👆', { fontSize: '56px' }).setOrigin(0.5);
+    const label = text(this, 0, 38, 'Drag to aim', 'rowLabel').setOrigin(0.5);
+
+    container.add([bg, handIcon, label]);
+    container.setDepth(50);
+    container.setVisible(false); // initial state — startNextQuestion toggles on Q1
+
+    this.tweens.add({
+      targets: container,
+      alpha: { from: 1.0, to: 0.65 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.InOut',
     });
+
+    this.aimHint = container;
+  }
+
+  private showAimHint(): void {
+    if (!this.aimHint) return;
+    this.aimHint.setVisible(true);
+    // Dismiss-on-touch listener — fires ONCE per Q1 show. `pointerdown`
+    // on the scene's input is global; the gesture is learned the
+    // moment the kid touches anywhere, so we don't need a region check.
+    this.input.once(Phaser.Input.Events.POINTER_DOWN, () => this.hideAimHint());
+  }
+
+  private hideAimHint(): void {
+    if (!this.aimHint) return;
+    this.aimHint.setVisible(false);
   }
 
   override update(_time: number, dt: number): void {
@@ -522,6 +533,13 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     }
     this.currentQuestion = question;
     this.waveSystem.spawnWave(this.currentQuestion);
+
+    // Sprint 2.2 story 15c — aim hint visible only on Q1.
+    if (this.roundController.questionIndex === 0) {
+      this.showAimHint();
+    } else {
+      this.hideAimHint();
+    }
 
     _th.logToAi('QuestionStarted', SeverityLevel.Information, {
       gameId: this.gameId,
