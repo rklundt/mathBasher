@@ -130,9 +130,12 @@ export const MusicKeys = {
    * stereo music track encoded with the default music profile
    * (160 kbps stereo, -18 LUFS). Layered over the FireKlaxon1
    * midground + foreground SFX (hatch, click). Sprint 2.2 — replaces
-   * the Loop1 placeholder.
+   * the Loop1 placeholder. File name `game-background-song-loop-4`
+   * follows the user's personal music-library numbering convention,
+   * not the legacy `loop-N` shipped-file series (1/2/3 are Alien Shoot
+   * / orphan / Asteroid Field respectively).
    */
-  EscapeLoop1: 'escape-loop-1',
+  EscapeLoop1: 'game-background-song-loop-4',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
