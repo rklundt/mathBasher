@@ -368,8 +368,17 @@ export const config = {
    * fewer choices, Fast = tight time + more choices.
    */
   numberClimb: {
-    /** Total floors per round. Stars + GameOverScene's "Pass" both pivot off reaching this. */
-    questionsPerRound: 10,
+    /**
+     * Total floors per round. Stars + GameOverScene's "Pass" both
+     * pivot off reaching this. Sprint 2.2 wrap-up playtest: 10 felt
+     * short, 20 (the global default for arcade modes) too long — 12
+     * landed as the sweet spot. Cumulative timer values below are
+     * UNCHANGED across the 10 → 12 bump; the slight per-floor time
+     * pressure increase IS the difficulty bump for the extra two
+     * floors. computeClimbStars scales proportionally (40 % / 70 % /
+     * 100 % of totalFloors): for 12 → 4 / 8 / 12.
+     */
+    questionsPerRound: 12,
     /**
      * Cumulative timer budget per Difficulty (which doubles as Speed
      * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
