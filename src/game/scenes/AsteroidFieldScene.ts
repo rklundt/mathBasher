@@ -248,21 +248,25 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
    * cleared on hide.
    */
   private buildAimHint(): void {
-    const { width } = this.scale;
-    // Center of the left half of the playfield.
-    const cx = width * 0.25;
-    const cy = (this.topBound + this.bottomBound) / 2;
+    // Lower-left corner, just above the footer / FIRE-button stack.
+    // Hint is a smaller pill than the centered version so it sits in
+    // the corner without crowding the aim zone — the kid's drags can
+    // happen in the same left half WITHOUT touching the hint pill.
+    const W = 200;
+    const H = 84;
+    const margin = 12;
+    const cx = this.leftBound + W / 2 + margin;
+    const cy = this.bottomBound - H / 2 - margin;
 
     const container = this.add.container(cx, cy);
 
-    const bg = this.add.rectangle(0, 0, 260, 150, 0x000000, 0.55);
+    const bg = this.add.rectangle(0, 0, W, H, 0x000000, 0.55);
     bg.setStrokeStyle(2, 0x60a5fa, 0.75);
     bg.setOrigin(0.5);
 
-    // Hand emoji as the gesture indicator. 56 px font size + center
-    // origin so it sits above the label with comfortable spacing.
-    const handIcon = this.add.text(0, -28, '👆', { fontSize: '56px' }).setOrigin(0.5);
-    const label = text(this, 0, 38, 'Drag to aim', 'rowLabel').setOrigin(0.5);
+    // Hand emoji + label laid out horizontally so the pill stays short.
+    const handIcon = this.add.text(-W / 2 + 32, 0, '👆', { fontSize: '40px' }).setOrigin(0.5);
+    const label = text(this, 16, 0, 'Drag to aim', 'rowLabel').setOrigin(0.5);
 
     container.add([bg, handIcon, label]);
     container.setDepth(50);
