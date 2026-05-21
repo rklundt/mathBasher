@@ -6,7 +6,9 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, pickFloorSpacingPx, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
+import { SfxKeys } from '@/core/audioKeys';
 import { Settings } from '@/services/Settings';
+import { getAudioManager } from '@/services/audioManagerFactory';
 import { RoundController } from '@/game/services/RoundController';
 import { computeClimbStars } from '@/services/ScoreCalculator';
 import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
@@ -66,6 +68,15 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 // Vertical spacing between floor centers now comes from
 // `pickFloorSpacingPx()` (config.numberClimb.floorSpacingPx + viewport
 // pick). Read once at create() time into `floorSpacingPx` below.
+
+/**
+ * Sprint 2.2 — delay (ms) after the hero lands on a new floor before the
+ * hatch-open SFX plays. The jump-click sound (ButtonClick1) fires when
+ * jumpTo starts; without a pause the hatch would overlap that click and
+ * read as one mushy beat. 150 ms gives the click time to finish + a
+ * tiny breath before the hatch — reads as "land, beat, hatch opens."
+ */
+const HATCH_SFX_DELAY_MS = 150;
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.NumberClimb;
@@ -327,6 +338,17 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // trails the hero naturally — no per-pick pan needed.
     this.hero.jumpTo(rung.x, rung.y, () => {
       this.floorReached += 1;
+      // Sprint 2.2 — floor-advance hatch SFX. Short pneumatic-hiss
+      // cue that fires ~150 ms after the hero lands so it doesn't
+      // overlap the jump-click; gives the new floor's reveal an
+      // audible "you've entered the next room" beat. Skipped on the
+      // final escape floor (the escape-ship blast covers that beat).
+      const enteredEscapeFloor = this.floorReached >= this.totalFloors;
+      if (!enteredEscapeFloor) {
+        this.time.delayedCall(HATCH_SFX_DELAY_MS, () => {
+          void getAudioManager().play(SfxKeys.HatchOpen1, 'sfx');
+        });
+      }
       this.afterFloor(true);
     });
   }

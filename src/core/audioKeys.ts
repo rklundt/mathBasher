@@ -41,6 +41,15 @@ export const SfxKeys = {
   // spawns. Not used by Alien Shoot (which has the alien-reaches-hero
   // death animation as its own failure cue).
   TimeoutFail1: 'timeout-fail-1',
+  /**
+   * Sprint 2.2 — Number Climb floor-advance cue. Plays ~150 ms after
+   * the hero lands on a new floor: a short pneumatic-hiss + metallic-
+   * click "space hatch sliding open" sound. Gives an audible "you've
+   * entered the next room" beat to complement the already-existing
+   * jump click. NOT played on the final escape floor (the escape ship
+   * blast is that floor's audio cue).
+   */
+  HatchOpen1: 'hatch-open-1',
 } as const;
 
 /**
@@ -226,6 +235,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
   if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
+  // Sprint 2.2 — Number Climb floor-advance hatch SFX. Climb-only.
+  if (key === SfxKeys.HatchOpen1) return 'game:number-climb';
   return 'eager';
 }
 
