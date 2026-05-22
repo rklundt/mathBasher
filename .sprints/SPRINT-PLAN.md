@@ -53,7 +53,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | [2.1.6](phase-2/2.1.6-lazy-asset-loading.md) | Lazy per-game asset loading (AssetScope + LoadingOverlay + assetLoader + alienAnims; boot transfer ~5.5 MB → ~2 MB) | Closed (2026-05-17) |
 | [2.1.8](phase-2/2.1.8-loading-bar-visibility.md) | Loading-bar visibility — DOM splash bar (post-tap → menu) + LoadingScene intermediate (DifficultyScene → game scene) | Closed (2026-05-17) |
 | [2.1.9](phase-2/2.1.9-pre-2.2-refactor-and-per-game-midground.md) | Pre-2.2 refactor (GameSceneLifecycle helper + createObservable + ADR-0011 + .sprints/ public) + per-game midground audio for Asteroid Field | Closed (2026-05-18) |
-| 2.2 | "Number Climb" — climbing platformer with answer rungs | Planned |
+| [2.2](phase-2/2.2-number-climb.md) | "Number Climb" (ships as "Space Escape!") — climbing platformer with answer rungs, 12 floors, escape-the-burning-station theme | Closed (2026-05-21) |
 | [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, and WebP migration — kid-UX hints (mulligan / timer-out / subtitle / hero-jump tune), config lift, dead-code cleanup, FloorSystem.pickRung test coverage, WebP migration for backgrounds + sprite art (~4 MB Climb bundle savings) | Planned |
 | [2.3](phase-2/2.3-scoring-trueup-calibrations-and-tweaks.md) | Level scoring true-up, calibrations, and tweaks — bring arcade modes to 12 questions, calibrate max scores per Easy/Medium/Hard across all 3 games, open slot for cross-game polish | Planned |
 
