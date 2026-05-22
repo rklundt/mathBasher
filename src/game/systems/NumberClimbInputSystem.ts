@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { _th, SeverityLevel } from '@/core/telemetry';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 import type { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
 
@@ -136,9 +137,17 @@ export class NumberClimbInputSystem {
     this.onPickCallback?.(rung);
     // Auto-restore in case the scene forgets to call acceptInput
     // (defensive — without this, a stuck callback path would leave
-    // input permanently disabled).
+    // input permanently disabled). If this branch ever FIRES, it means
+    // the scene genuinely failed to re-enable input on its own — a
+    // real bug the safety net is papering over — so surface it as a
+    // Warning rather than silently recovering.
     this.scene.time.delayedCall(POST_PICK_COOLDOWN_MS * 4, () => {
-      if (!this.accepting) this.accepting = true;
+      if (!this.accepting) {
+        this.accepting = true;
+        _th.logToAi('NumberClimbInput.cooldownAutoRestore', SeverityLevel.Warning, {
+          reason: 'scene did not call acceptInput() within the cooldown window',
+        });
+      }
     });
   }
 

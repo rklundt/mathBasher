@@ -187,11 +187,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // top margin for the HUD, bottom margin for the AGPL footer.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
-    const hudBarHeight = config.layout.hudBarHeightPx;
     const footerHeight = config.layout.attributionFooterHeightPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
-    const topPlayfield = hudBarHeight + padding + 16;
     const bottomPlayfield = height - footerHeight - 16;
     // Sprint 2.2 story 13d — anchor floor 0 so its FRAME bottom aligns
     // with the playfield bottom (not the hero's feet). With the taller
@@ -253,7 +251,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const speedCfg = config.numberClimb.speed[this.speed];
     this.totalTimeMs = speedCfg.totalTimeSec * 1000;
     this.remainingTimeMs = this.totalTimeMs;
-    void topPlayfield; // (kept for future camera-bound math)
 
     // GameSceneLifecycle — telemetry, HUD launch, audio loops,
     // defensive Settings.setGameId.

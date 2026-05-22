@@ -152,8 +152,12 @@ export class HudScene extends Phaser.Scene {
     // scene launches synchronously after the launching scene's create
     // returns). Defensive: keep the config fallback if the game scene
     // is missing the contract method (legacy callers).
-    const gameSceneForRoundSize = this.scene.get(this.gameSceneKey) as Partial<GameSceneContract> | null;
-    if (gameSceneForRoundSize?.getQuestionsPerRound) {
+    // `scene.get()` returns the registered Scene (never null for a key
+    // Phaser knows). Cast to Partial so a game scene that predates the
+    // `getQuestionsPerRound` contract method still type-checks; the
+    // optional-call guard below covers that case at runtime.
+    const gameSceneForRoundSize = this.scene.get(this.gameSceneKey) as Partial<GameSceneContract>;
+    if (gameSceneForRoundSize.getQuestionsPerRound) {
       this.totalQuestions = gameSceneForRoundSize.getQuestionsPerRound();
     }
 
