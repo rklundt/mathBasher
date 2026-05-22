@@ -4,15 +4,20 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
-import { config } from '@/core/config';
 import { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 import { NumberClimbFloorFrame } from '@/game/entities/NumberClimbFloorFrame';
 import { defaultRng } from '@/math/rng';
-import { ClimbEscapeShipKeys, ClimbFloorBgKeys, pickRandomClimbFloorBgKey } from '@/core/spriteKeys';
+import {
+  ClimbEscapeShipKeys,
+  ClimbFloorBgKeys,
+  pickRandomClimbFloorBgKey,
+  type ClimbFloorBgKey,
+} from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
 import {
   pickSubsetWithCorrect,
+  resolveRungPick,
   RUNGS_PER_DIFFICULTY,
 } from '@/game/systems/numberClimbFloorMath';
 
@@ -134,7 +139,7 @@ export class NumberClimbFloorSystem {
    * next-floor preview (the preview becomes the current floor on the
    * next promote, so it counts toward distinctness too).
    */
-  private usedFloorBgKeys: string[] = [];
+  private usedFloorBgKeys: ClimbFloorBgKey[] = [];
   /**
    * Sprint 2.2 story 13e — reference to the escape (top) floor's frame
    * so the scene can trigger its win-animation by name. Set when the
@@ -277,30 +282,41 @@ export class NumberClimbFloorSystem {
    * wrong-this-floor counter and consumes spent rungs.
    */
   pickRung(rung: NumberClimbRung): RungPickOutcome {
-    if (this.paused) return { kind: 'rung-consumed' }; // defensive — shouldn't happen but safe
-    if (!this.rungs.includes(rung)) return { kind: 'rung-consumed' };
-
-    if (rung.answer === this.correctAnswer) {
-      _th.logToAi('NumberClimb.correctPick', SeverityLevel.Verbose, {
-        reason: `answer=${String(rung.answer)} usedMulligan=${String(this.wrongsThisFloor > 0)}`,
-      });
-      return { kind: 'correct', rung };
-    }
-
-    // Wrong rung — consume it so the kid can't re-pick the same one.
-    rung.consume();
-    this.wrongsThisFloor += 1;
-    if (this.wrongsThisFloor === 1) {
-      _th.logToAi('NumberClimb.wrongMulligan', SeverityLevel.Information, {
-        reason: `wrongAnswer=${String(rung.answer)}`,
-      });
-      return { kind: 'wrong-mulligan', rung };
-    }
-    // Second wrong on this floor — terminal.
-    _th.logToAi('NumberClimb.wrongTerminal', SeverityLevel.Information, {
-      reason: `wrongAnswer=${String(rung.answer)}`,
+    // Pure decision (state machine) lives in `numberClimbFloorMath.ts`
+    // so it's unit-testable without Phaser; this method applies the
+    // side-effects + attaches the rung.
+    const decision = resolveRungPick({
+      paused: this.paused,
+      rungInFloor: this.rungs.includes(rung),
+      rungAnswer: rung.answer,
+      correctAnswer: this.correctAnswer,
+      wrongsSoFar: this.wrongsThisFloor,
     });
-    return { kind: 'wrong-terminal', rung };
+    this.wrongsThisFloor = decision.wrongsAfter;
+    if (decision.consumeRung) {
+      // Consume the wrong rung so the kid can't re-pick the same one.
+      rung.consume();
+    }
+
+    switch (decision.kind) {
+      case 'rung-consumed':
+        return { kind: 'rung-consumed' };
+      case 'correct':
+        _th.logToAi('NumberClimb.correctPick', SeverityLevel.Verbose, {
+          reason: `answer=${String(rung.answer)} usedMulligan=${String(this.wrongsThisFloor > 0)}`,
+        });
+        return { kind: 'correct', rung };
+      case 'wrong-mulligan':
+        _th.logToAi('NumberClimb.wrongMulligan', SeverityLevel.Information, {
+          reason: `wrongAnswer=${String(rung.answer)}`,
+        });
+        return { kind: 'wrong-mulligan', rung };
+      case 'wrong-terminal':
+        _th.logToAi('NumberClimb.wrongTerminal', SeverityLevel.Information, {
+          reason: `wrongAnswer=${String(rung.answer)}`,
+        });
+        return { kind: 'wrong-terminal', rung };
+    }
   }
 
   /**
@@ -348,7 +364,7 @@ export class NumberClimbFloorSystem {
     alpha: number,
     rng: () => number,
   ): NumberClimbFloorFrame {
-    let bgKey: string;
+    let bgKey: ClimbFloorBgKey;
     let frameHeight: number;
     let centerY: number;
     let escapeShipKey: string | undefined;
@@ -448,7 +464,3 @@ export class NumberClimbFloorSystem {
 
 // `pickSubsetWithCorrect` + helpers live in `numberClimbFloorMath.ts`
 // (separate file so the test imports skip Phaser).
-// Avoid the "config is declared but unused" lint by reading it once
-// for documentation purposes. The current implementation reads
-// nothing from config but future tuning likely will.
-void config;

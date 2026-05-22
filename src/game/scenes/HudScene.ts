@@ -41,6 +41,17 @@ interface CorrectHitPayload {
 }
 
 /**
+ * Sprint 2.2.1 story 1 — payload for the `timePenalty` event emitted by
+ * NumberClimbScene when a wrong rung costs the kid cumulative-timer
+ * seconds. HudScene spawns a floating "−Ns" popup at the countdown
+ * text so the kid registers the cost (mirrors the `correctHit` →
+ * score-popup pattern).
+ */
+interface TimePenaltyPayload {
+  penaltySec: number;
+}
+
+/**
  * Heads-up display, runs in PARALLEL with the active game scene
  * (GameScene OR AsteroidFieldScene). Listens for events the game scene
  * emits and updates the top bar:
@@ -67,11 +78,11 @@ export class HudScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private counterText!: Phaser.GameObjects.Text;
   /**
-   * Sprint 0.7 Story 8 — per-question progress dots. One per question
-   * (config.round.questionsPerRound = 20). Filled green for correct,
-   * red for wrong (timeout), hollow grey for not-yet-answered. Index
-   * tracked via `currentQuestionIndex` so we can color the right dot
-   * when `questionEnded` fires.
+   * Sprint 0.7 Story 8 — per-question progress dots. One per question;
+   * the count comes from `totalQuestions` (below), NOT a hardcoded value.
+   * Filled green for correct, red for wrong (timeout), hollow grey for
+   * not-yet-answered. Index tracked via `currentQuestionIndex` so we can
+   * color the right dot when `questionEnded` fires.
    */
   private progressDots: Phaser.GameObjects.Arc[] = [];
   private currentQuestionIndex = 0;
@@ -79,9 +90,10 @@ export class HudScene extends Phaser.Scene {
    * Sprint 2.2 story 15a — total questions/floors in the round being
    * displayed. Pulled from the active game scene at `create()` time via
    * `getQuestionsPerRound()` so the Q-counter denominator and the
-   * progress-dots count read per-mode (Climb=10, Alien-Shoot=20,
-   * Asteroid-Field=20). Falls back to the global config default if the
-   * game scene contract isn't satisfied (back-compat).
+   * progress-dots count read per-mode (all three modes are 12 as of
+   * sprint 2.2.1 story 10, but the value is read per-scene, not assumed).
+   * Falls back to the global config default if the game scene contract
+   * isn't satisfied (back-compat).
    */
   private totalQuestions: number = config.round.questionsPerRound;
   private gameSceneListenersBound = false;
@@ -141,8 +153,12 @@ export class HudScene extends Phaser.Scene {
     // scene launches synchronously after the launching scene's create
     // returns). Defensive: keep the config fallback if the game scene
     // is missing the contract method (legacy callers).
-    const gameSceneForRoundSize = this.scene.get(this.gameSceneKey) as Partial<GameSceneContract> | null;
-    if (gameSceneForRoundSize?.getQuestionsPerRound) {
+    // `scene.get()` returns the registered Scene (never null for a key
+    // Phaser knows). Cast to Partial so a game scene that predates the
+    // `getQuestionsPerRound` contract method still type-checks; the
+    // optional-call guard below covers that case at runtime.
+    const gameSceneForRoundSize = this.scene.get(this.gameSceneKey) as Partial<GameSceneContract>;
+    if (gameSceneForRoundSize.getQuestionsPerRound) {
       this.totalQuestions = gameSceneForRoundSize.getQuestionsPerRound();
     }
 
@@ -432,6 +448,10 @@ export class HudScene extends Phaser.Scene {
     // HUD bar corner. Separate from `questionEnded` (which fires
     // later, after fade-out of survivors).
     gameScene.events.on('correctHit', this.onCorrectHit, this);
+    // Sprint 2.2.1 story 1 — Number Climb emits `timePenalty` on a
+    // wrong-rung mulligan. Harmless to bind for the arcade modes too
+    // (they never emit it).
+    gameScene.events.on('timePenalty', this.onTimePenalty, this);
     this.gameSceneListenersBound = true;
 
     // Phaser launches parallel scenes asynchronously: GameScene.create() can
@@ -457,6 +477,7 @@ export class HudScene extends Phaser.Scene {
       gameScene.events.off('questionStarted', this.onQuestionStarted, this);
       gameScene.events.off('questionEnded', this.onQuestionEnded, this);
       gameScene.events.off('correctHit', this.onCorrectHit, this);
+      gameScene.events.off('timePenalty', this.onTimePenalty, this);
     }
     this.gameSceneListenersBound = false;
   }
@@ -557,6 +578,29 @@ export class HudScene extends Phaser.Scene {
     if (payload.scoreDelta > 0) {
       this.popupScoreDelta(payload.scoreDelta, payload.x, payload.y);
     }
+  }
+
+  /**
+   * Sprint 2.2.1 story 1 — floating "−Ns" popup at the countdown timer
+   * when a Number Climb wrong-rung mulligan costs cumulative-timer
+   * seconds. Mirrors `popupScoreDelta` but red + anchored at the
+   * timer (where the cost is paid) rather than at a hit position.
+   * No-op if the countdown text isn't present (arcade modes never
+   * emit `timePenalty`, but the guard is defensive).
+   */
+  private onTimePenalty(payload: TimePenaltyPayload): void {
+    if (!this.countdownText || payload.penaltySec <= 0) return;
+    const x = this.countdownText.x;
+    const y = this.countdownText.y;
+    const popup = text(this, x, y, `−${payload.penaltySec}s`, 'penaltyPopup').setOrigin(0.5, 0);
+    this.tweens.add({
+      targets: popup,
+      y: y - 44,
+      alpha: 0,
+      duration: 800,
+      ease: 'Quad.Out',
+      onComplete: () => popup.destroy(),
+    });
   }
 
   /**

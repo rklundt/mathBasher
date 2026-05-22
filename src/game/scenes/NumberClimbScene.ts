@@ -22,9 +22,9 @@ import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 
 /**
- * Number Climb — sprint 2.2 third game mode. Vertical climb across 10
- * floors; the kid picks the rung carrying the correct answer at each
- * floor.
+ * Number Climb — sprint 2.2 third game mode. Vertical climb across 12
+ * floors (`config.numberClimb.questionsPerRound`); the kid picks the
+ * rung carrying the correct answer at each floor.
  *
  * ## Gameplay loop (per floor)
  *
@@ -37,7 +37,7 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  * 3. Scene dispatches on the outcome:
  *      - 'correct': award score, hero `jumpTo(rung.x, rung.y)`, camera
  *        scrolls down so the hero settles back near canvas center, then
- *        `afterFloor()` → next floor OR endRound if floor 10.
+ *        `afterFloor()` → next floor OR endRound on the final floor.
  *      - 'wrong-mulligan': deduct `wrongRungTimePenaltySec` from the
  *        cumulative timer, hero `fallBackToFloor(currentFloorY)`,
  *        InputSystem `acceptInput()` to allow the second-and-final try.
@@ -48,21 +48,21 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  *
  * - Timer hits 0 mid-floor → `endRound()` (hero falls off screen).
  * - Second wrong rung on the same floor → `endRound()`.
- * - Floor 10 reached → `endRound()` with `passed=true, stars=3`.
+ * - Final floor reached → `endRound()` with `passed=true, stars=3`.
  *
  * ## Camera (option 2: hero moves up, camera follows)
  *
  * Hero starts near the bottom of the playfield; camera centered.
  * Each correct jump moves the hero UP to the picked rung's world y.
  * Camera tweens to follow at a slight lag, so the hero visibly rises
- * within the frame before the camera catches up. By floor 10 the
+ * within the frame before the camera catches up. By the final floor the
  * hero is at the top of the playable area + a celebration animation
  * fires. Floor world y-coordinates decrease as the kid climbs (lower
  * y = higher on screen in Phaser's coordinate system).
  *
  * Floor 0 (start) y = `bottomBound - heroHalfHeight`. Floor 1's
- * rungs are above at `floor0Y - FLOOR_SPACING`. Floor 10 is at
- * `floor0Y - 10 * FLOOR_SPACING` = near the top of the climb space.
+ * rungs are above at `floor0Y - FLOOR_SPACING`. The final floor is at
+ * `floor0Y - totalFloors * FLOOR_SPACING` = near the top of the climb space.
  */
 
 // Vertical spacing between floor centers now comes from
@@ -76,7 +76,22 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  * later so the kid sees the door open BEFORE the hero moves through it.
  */
 const HATCH_SFX_DELAY_MS = 150;
-const HERO_JUMP_DELAY_MS = 300;
+// Sprint 2.2.1 story 4 — 300 → 200 ms after playtest ("300 ms tap-to-
+// movement felt sluggish"). Still leaves a 50 ms gap after the hatch
+// SFX starts (150 ms) so the door audibly leads the hero's move.
+const HERO_JUMP_DELAY_MS = 200;
+
+/**
+ * Sprint 2.2.1 story 1 — how long the one-time "One more try!" mulligan
+ * banner holds at full opacity before its 300ms fade-out.
+ */
+const MULLIGAN_HINT_HOLD_MS = 1500;
+
+/**
+ * Sprint 2.2.1 story 2 — how long the "Out of time!" banner holds
+ * before the hero falls off-screen + endRound.
+ */
+const TIMER_OUT_BANNER_HOLD_MS = 600;
 
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
@@ -172,11 +187,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // top margin for the HUD, bottom margin for the AGPL footer.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
-    const hudBarHeight = config.layout.hudBarHeightPx;
     const footerHeight = config.layout.attributionFooterHeightPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
-    const topPlayfield = hudBarHeight + padding + 16;
     const bottomPlayfield = height - footerHeight - 16;
     // Sprint 2.2 story 13d — anchor floor 0 so its FRAME bottom aligns
     // with the playfield bottom (not the hero's feet). With the taller
@@ -238,7 +251,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const speedCfg = config.numberClimb.speed[this.speed];
     this.totalTimeMs = speedCfg.totalTimeSec * 1000;
     this.remainingTimeMs = this.totalTimeMs;
-    void topPlayfield; // (kept for future camera-bound math)
 
     // GameSceneLifecycle — telemetry, HUD launch, audio loops,
     // defensive Settings.setGameId.
@@ -274,7 +286,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const question = this.roundController.drawNextQuestion();
     if (question === null) {
       // Round complete — shouldn't reach here for Number Climb because
-      // floor 10 success short-circuits to endRound, but defensive.
+      // final-floor success short-circuits to endRound, but defensive.
       this.endRound();
       return;
     }
@@ -376,12 +388,58 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       0,
       this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000,
     );
+    // Sprint 2.2.1 story 1 — surface the time cost: the HUD listens for
+    // `timePenalty` and floats a red "−Ns" popup at the countdown timer
+    // so the kid registers that the wrong rung cost them time.
+    this.events.emit('timePenalty', {
+      penaltySec: config.numberClimb.wrongRungTimePenaltySec,
+    });
+    // First mulligan of the session: a one-time "One more try!" banner
+    // teaches the one-retry-per-floor rule before the kid discovers it
+    // the hard way (a second wrong ends the round).
+    this.maybeShowFirstMulliganHint();
+
     // Hero falls back to the CURRENT floor's base (i.e. the floor
     // the kid is still on — they haven't climbed yet). After the
     // animation, re-enable input for the second-and-final try.
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     this.hero.fallBackToFloor(currentFloorY, () => {
       this.inputSystem.acceptInput();
+    });
+  }
+
+  /**
+   * Sprint 2.2.1 story 1 — one-time "One more try!" banner above the
+   * hero on the kid's FIRST mulligan of the session. sessionStorage-
+   * gated so it shows once per session; the try/catch covers browsers
+   * that throw on storage access (iOS private mode pre-15) — there the
+   * hint just shows every mulligan rather than breaking the scene.
+   */
+  private maybeShowFirstMulliganHint(): void {
+    const FLAG_KEY = 'numberClimb.mulliganHintSeen';
+    try {
+      if (sessionStorage.getItem(FLAG_KEY) === '1') return;
+      sessionStorage.setItem(FLAG_KEY, '1');
+    } catch {
+      // Storage unavailable — fall through and show the hint anyway.
+    }
+    const banner = text(
+      this,
+      this.hero.x,
+      this.hero.y - NumberClimbHero.HEIGHT - 24,
+      'One more try!',
+      'warning',
+    ).setOrigin(0.5);
+    banner.setDepth(100);
+    this.applyBannerLegibility(banner);
+    this.time.delayedCall(MULLIGAN_HINT_HOLD_MS, () => {
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        duration: 300,
+        ease: 'Quad.Out',
+        onComplete: () => banner.destroy(),
+      });
     });
   }
 
@@ -405,8 +463,26 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.transitioning = true;
     this.cameras.main.flash(180, 239, 68, 68, false);
     this.cameras.main.shake(180, 0.006);
-    this.hero.fallOffScreen(this.scale.height, () => {
-      this.endRound();
+    // Sprint 2.2.1 story 2 — "Out of time!" banner so the kid registers
+    // that the CUMULATIVE TIMER ran out. Without it, the hero falling
+    // off-screen reads as "I picked the wrong rung" rather than
+    // "time's up." Screen-fixed (scrollFactor 0) since the camera may
+    // be anywhere up the climb. Holds ~600ms, then the hero falls.
+    const banner = text(
+      this,
+      this.scale.width / 2,
+      this.scale.height / 2,
+      'Out of time!',
+      'warning',
+    ).setOrigin(0.5);
+    banner.setScrollFactor(0);
+    banner.setDepth(100);
+    this.applyBannerLegibility(banner);
+    this.time.delayedCall(TIMER_OUT_BANNER_HOLD_MS, () => {
+      banner.destroy();
+      this.hero.fallOffScreen(this.scale.height, () => {
+        this.endRound();
+      });
     });
   }
 
@@ -450,6 +526,20 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.startNextQuestion();
   }
 
+  /**
+   * Sprint 2.2.1 audit (Support reviewer) — shared legibility treatment
+   * for the scene's centered banners ("One more try!", "Out of time!",
+   * "Escaped Safe!"). These render over per-floor background art that can
+   * be bright (the fire floor, lit station rooms), where the bare warm-
+   * amber / light-grey fill drops below the WCAG-AA 4.5:1 contrast bar.
+   * A heavy dark stroke + soft drop shadow makes the copy readable on any
+   * floor backdrop without needing a backing rect per call site.
+   */
+  private applyBannerLegibility(banner: Phaser.GameObjects.Text): void {
+    banner.setStroke('#0b1020', 8);
+    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+  }
+
   // ----- End-round + cleanup ----------------------------------------------
 
   private endRound(): void {
@@ -475,6 +565,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const banner = text(this, bannerX, bannerY, 'Escaped Safe!', 'headline');
     banner.setOrigin(0.5);
     banner.setDepth(100); // above the frame + hero z-order
+    this.applyBannerLegibility(banner);
 
     this.time.delayedCall(1000, () => {
       banner.destroy();
