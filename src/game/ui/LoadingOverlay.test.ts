@@ -113,6 +113,14 @@ function makeMockScene(loader: MockLoader): MockScene {
     },
     scene: { isActive: vi.fn(() => true), restart: vi.fn() },
     input: { keyboard: { once: vi.fn() } },
+    // Sprint 2.2 — minDisplayMs hold uses `scene.time.now` for elapsed
+    // calculation + `scene.time.delayedCall` for the post-load wait.
+    // The mock runs delayedCall's callback synchronously so the existing
+    // test assertions ("destroyed on COMPLETE") still see the teardown.
+    time: {
+      now: 0,
+      delayedCall: vi.fn((_ms: number, fn: () => void) => fn()),
+    },
     __destroyedItems: destroyed,
   };
   return scene;

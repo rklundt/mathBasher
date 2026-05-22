@@ -5,14 +5,65 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
-import { SceneKeys } from '@/core/sceneKeys';
-import { Settings } from '@/services/Settings';
+import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
+import { Settings, type GameId } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { RUNGS_PER_DIFFICULTY } from '@/game/systems/numberClimbFloorMath';
+
+/**
+ * Per-game speed-button display (label + explanatory subtitle).
+ * Sprint 2.2 story 15b — the "Slow/Medium/Fast" labels read awkwardly
+ * for Number Climb (which changes rung count + cumulative timer, not
+ * enemy speed) so Climb gets "Easy/Medium/Hard" instead. Subtitles give
+ * first-time players the exact mechanic per tier; numbers are derived
+ * from config so re-tuning timer values auto-updates the display.
+ *
+ * Exhaustive switch on GameId — TypeScript flags any future game mode
+ * that doesn't add its display case here.
+ */
+interface SpeedDisplay {
+  label: string;
+  subtitle: string;
+}
+
+/**
+ * Per-game section title for the speed-selector row. Climb's setting
+ * controls rung count + cumulative timer (genuinely a difficulty axis),
+ * so "Difficulty" reads better than "Speed". The arcade modes keep
+ * "Speed" since they're really controlling enemy descent / drift rate.
+ */
+function speedSectionTitleFor(gameId: GameId): string {
+  return gameId === 'number-climb' ? 'Difficulty' : 'Speed';
+}
+
+function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
+  switch (gameId) {
+    case 'alien-shoot': {
+      const map: Record<SpeedKey, SpeedDisplay> = {
+        slow: { label: 'Slow', subtitle: 'Aliens descend slowly' },
+        medium: { label: 'Medium', subtitle: 'Normal pace' },
+        fast: { label: 'Fast', subtitle: 'Aliens descend fast' },
+      };
+      return map[key];
+    }
+    case 'asteroid-field': {
+      const countdownSec = config.asteroidField.speed[key].countdownSec;
+      const labels: Record<SpeedKey, string> = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
+      return { label: labels[key], subtitle: `${countdownSec}s per question` };
+    }
+    case 'number-climb': {
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const rungs = RUNGS_PER_DIFFICULTY[key];
+      const totalSec = config.numberClimb.speed[key].totalTimeSec;
+      return { label: labels[key], subtitle: `${rungs} rungs · ${totalSec}s timer` };
+    }
+  }
+}
 
 /**
  * Difficulty selection. Two sections:
@@ -50,7 +101,12 @@ export class DifficultyScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    text(this, cx, height * 0.1, 'Pick Difficulty', 'h3').setOrigin(0.5);
+    // Title at 0.05 (was 0.1) — after raising the Math Type row to
+    // 0.22 the page header was overlapping the "Math Type" section
+    // label. 0.05 puts the 44px title's top edge at y≈9 (close to
+    // canvas top) and its bottom at y≈63, leaving ~15px gap above
+    // the section label that sits around y=78.
+    text(this, cx, height * 0.05, 'Pick Difficulty', 'h3').setOrigin(0.5);
 
     // Defensive fallback: if for some reason the math registry has no
     // implemented generators (every entry is a stub), don't render an empty
@@ -95,10 +151,20 @@ export class DifficultyScene extends Phaser.Scene {
     // Subtitle drop is applied via `subtitle: undefined` in
     // renderMathTypes (the PlaceholderButton's existing no-subtitle
     // path auto-centers the label).
-    this.renderMathTypes(cx, height * 0.3);
-    this.renderSpeeds(cx, height * 0.72);
-    this.renderStartButton(cx, height * 0.85);
-    this.renderBackButton(cx - 250, height * 0.85);
+    // Sprint 2.2 story 15b — raised math + difficulty rows after
+    // playtest showed the page was vertically cramped. Math 0.3 → 0.22
+    // (start higher under the title), difficulty 0.72 → 0.62. Start /
+    // Back row stays at 0.85 so the gap from the difficulty subtitle
+    // (which lives ~+44 px below the difficulty button row) to the
+    // Start/Back top is comfortable.
+    this.renderMathTypes(cx, height * 0.22);
+    this.renderSpeeds(cx, height * 0.62);
+    // Center the Start/Back pair around `cx`. Back is 160 wide, Start
+    // is 200 wide, with a 40 px gap between them. The previous layout
+    // anchored Back at `cx - 250` and Start at `cx` which left the
+    // visual pair lopsided to the left of the canvas center.
+    this.renderStartButton(cx + 100, height * 0.85);
+    this.renderBackButton(cx - 120, height * 0.85);
 
     // Default selections so the user lands on a "ready to play" state.
     // Without this, a first-time user sees the keyboard-focus blue ring on
@@ -230,32 +296,43 @@ export class DifficultyScene extends Phaser.Scene {
     // All geometry from config.layout.difficultyTile (sprint 1.5
     // wrap-up lift). See that config block for tuning history.
     const dt = config.layout.difficultyTile;
-    text(this, cx, y - dt.speedSectionLabelOffsetY, 'Speed', 'sectionLabel').setOrigin(0.5);
+    const gameId = Settings.round.gameId;
+    text(this, cx, y - dt.speedSectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
 
-    const speeds: { key: SpeedKey; label: string }[] = [
-      { key: 'slow', label: 'Slow' },
-      { key: 'medium', label: 'Medium' },
-      { key: 'fast', label: 'Fast' },
-    ];
+    const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
     const tileWidth = dt.speedWidthPx;
     const gap = dt.speedGapPx;
-    const totalWidth = speeds.length * tileWidth + (speeds.length - 1) * gap;
+    const totalWidth = speedKeys.length * tileWidth + (speedKeys.length - 1) * gap;
     const startX = cx - totalWidth / 2 + tileWidth / 2;
+    // Sprint 2.2 story 15b — subtitle text rendered as a STANDALONE
+    // line under each speed button, not embedded inside the button
+    // (which wrapped to a second line at the 160 px tile width and
+    // bled outside the tile frame). 16 px below the button bottom
+    // edge gives breathing room without crowding the Start/Back row.
+    const subtitleY = y + dt.speedHeightPx / 2 + 16;
 
-    speeds.forEach((s, i) => {
+    speedKeys.forEach((key, i) => {
+      const display = speedDisplayFor(gameId, key);
+      const buttonX = startX + i * (tileWidth + gap);
       const button = new PlaceholderButton({
         scene: this,
-        x: startX + i * (tileWidth + gap),
+        x: buttonX,
         y,
         width: tileWidth,
         height: dt.speedHeightPx,
-        label: s.label,
+        label: display.label,
         onClick: () => {
-          Settings.setSpeed(s.key);
+          Settings.setSpeed(key);
           this.refreshSelection();
         },
       });
-      this.speedButtons.set(s.key, button);
+      this.speedButtons.set(key, button);
+
+      // Standalone subtitle text — muted color, centered under the
+      // button. Not interactive; purely descriptive. Phaser destroys
+      // these automatically on scene shutdown alongside the rest of
+      // the scene's display list.
+      text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0);
     });
   }
 
@@ -270,21 +347,14 @@ export class DifficultyScene extends Phaser.Scene {
       disabled: true,
       onClick: () => {
         if (Settings.isReady()) {
-          // Sprint 2.1 — route by gameId. Each game mode has its own
-          // scene key; this dispatch is the single point where the
-          // user's "Pick a Game" choice translates to a scene transition.
-          //
-          // Sprint 2.1.8 — go through LoadingScene rather than directly
-          // to the target game scene. LoadingScene shows a visible
-          // progress bar during the per-game asset preload (sprint
-          // 2.1.6's per-game-scene preload bar didn't paint in time
-          // because of Phaser scene-transition timing — the new
-          // scene's canvas doesn't render its first frame until
-          // create() runs, by which point the load is done).
-          const targetSceneKey =
-            Settings.round.gameId === 'asteroid-field'
-              ? SceneKeys.AsteroidField
-              : SceneKeys.Game;
+          // Route by gameId. Each game mode has its own scene key;
+          // this dispatch is the single point where the user's "Pick
+          // a Game" choice translates to a scene transition. Per
+          // ADR-0011 — TypeScript exhaustiveness on this switch will
+          // flag any future GameId addition that forgets to map a
+          // scene key. Sprint 2.1.8 — route through LoadingScene so
+          // the per-game asset bundle preload shows a visible bar.
+          const targetSceneKey = gameSceneKeyFor(Settings.round.gameId);
           this.scene.start(SceneKeys.Loading, {
             targetSceneKey,
             gameId: Settings.round.gameId,

@@ -2,6 +2,8 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
+import type { GameId } from '@/services/Settings';
+
 /**
  * Stable string keys for every Phaser scene in the app. Use these constants
  * everywhere — never hand-write the string `'menu'` in a `scene.start(...)`
@@ -37,6 +39,15 @@ export const SceneKeys = {
    */
   AsteroidField: 'asteroid-field',
   /**
+   * Number Climb — sprint 2.2 third game mode. Vertical climb; 10
+   * floors; kid taps the correct rung at each floor. Difficulty
+   * controls rung count (2/3/4); Speed controls cumulative timer
+   * budget (250s/180s/120s). One mulligan per floor; second wrong
+   * on same floor ends the round. Timer hitting 0 also ends the
+   * round. Stars height-based (4/7/10).
+   */
+  NumberClimb: 'number-climb',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -55,3 +66,25 @@ export const SceneKeys = {
 } as const;
 
 export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];
+
+/**
+ * Map a GameId to its game scene key. Exhaustive switch so adding a
+ * fourth game mode is a TypeScript error here until the new case is
+ * filled in (ADR-0011's per-game-mode dispatch pattern).
+ *
+ * Used by DifficultyScene (to pick which scene to launch via LoadingScene)
+ * and GameOverScene (to route "Play Again" back to the matching mode).
+ * Was originally inlined in DifficultyScene; lifted to this shared module
+ * in sprint 2.2 after the Climb "Play Again routes to Alien Shoot" bug
+ * showed the second call site had silently drifted.
+ */
+export function gameSceneKeyFor(gameId: GameId): SceneKey {
+  switch (gameId) {
+    case 'alien-shoot':
+      return SceneKeys.Game;
+    case 'asteroid-field':
+      return SceneKeys.AsteroidField;
+    case 'number-climb':
+      return SceneKeys.NumberClimb;
+  }
+}

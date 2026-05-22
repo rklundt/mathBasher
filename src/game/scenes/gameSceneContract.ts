@@ -49,6 +49,16 @@ export interface GameSceneContract extends Phaser.Scene {
    * decide whether to render the countdown text + what number to show.
    */
   getCountdownSec?(): number | undefined;
+
+  /**
+   * Total questions / floors in this round. Sprint 2.2 story 15a —
+   * HudScene reads this at create() time so the initial "Q: 0/N"
+   * counter text and the progress-dots row use the right per-mode
+   * count (Number Climb = 10; Alien Shoot + Asteroid Field = 20).
+   * Implementations delegate to `roundController.questionsPerRound`,
+   * which already carries any per-mode override.
+   */
+  getQuestionsPerRound(): number;
 }
 
 /**

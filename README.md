@@ -31,7 +31,7 @@ pnpm install
 pnpm dev                   # Vite dev server with HMR
 ```
 
-Then open the URL Vite prints (typically `http://localhost:5173`).
+Then open the URL Vite prints (typically `http://localhost:5183`).
 
 `.env` is **optional** — defaults work out of the box. Copy `.env.example` only if you want to override `VITE_SOURCE_URL` (the source link the in-app attribution footer points to) or wire Application Insights locally:
 

@@ -14,7 +14,7 @@ note on why) and date it.
 pnpm dev
 ```
 
-Open the URL Vite prints (typically `http://localhost:5173`). Click through
+Open the URL Vite prints (typically `http://localhost:5183`). Click through
 to a round (Menu → Pick a Game → Pick Difficulty → Start).
 
 ---
@@ -254,7 +254,7 @@ This sprint is **internal-only refactor + a one-knob tuning change** — no new 
 |   | Volume of the click sound responds to the **Sound effects** slider in Settings |
 |   | Master mute silences click sound |
 |   | Console shows `SplashStarted` event when the splash button is clicked |
-|   | Dev shortcut: opening the page with `?autostart` (e.g. `http://localhost:5173/?autostart`) skips the splash — game loads directly |
+|   | Dev shortcut: opening the page with `?autostart` (e.g. `http://localhost:5183/?autostart`) skips the splash — game loads directly |
 
 ## Pause + Escape (sprint 0.5.1)
 

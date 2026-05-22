@@ -47,7 +47,7 @@ The install is **fully self-contained** — both `node_modules/` and the pnpm co
 ### 3. Run the app
 
 ```bash
-pnpm dev                 # Vite dev server with HMR (default http://localhost:5173)
+pnpm dev                 # Vite dev server with HMR (default http://localhost:5183)
 ```
 
 Open the printed URL. You should see the Phaser canvas with `mathBasher` centered on a deep-space background and the AGPL §7(b) attribution footer along the bottom edge.
@@ -102,7 +102,7 @@ Multi-stage build using `node:20-alpine` for both stages. Final image runs as th
 |---|---|---|
 | `EADDRINUSE` on port 8080 from `pnpm start` | another process on 8080 | `PORT=9000 pnpm start` (the server logs a friendly message and the new port) |
 | `pnpm: command not found` | Corepack not enabled OR no global install | re-run the Corepack steps in §1 |
-| Vite dev server picks a random port instead of 5173 | `strictPort: true` should prevent this — likely 5173 already in use | kill the process holding 5173 |
+| Vite dev server picks a random port instead of 5183 | `strictPort: true` should prevent this — likely 5183 already in use | kill the process holding 5183 |
 | `cp` not found on Windows | git-bash isn't always on PATH | use `Copy-Item .env.example .env` in PowerShell |
 | Install pulls down 2.3GB | normal — Phaser is large (see size note above) | be patient on first install |
 
@@ -382,7 +382,7 @@ function startRound(mathId: string, speed: SpeedKey): void {
 | Command | What it does |
 |---|---|
 | `pnpm install` | Install deps into local `node_modules` and `.pnpm-store` |
-| `pnpm dev` | Vite dev server with HMR (default `http://localhost:5173`) |
+| `pnpm dev` | Vite dev server with HMR (default `http://localhost:5183`) |
 | `pnpm build` | Build client (Vite → `dist/`) and server (tsc → `server/dist/`) |
 | `pnpm start` | Run the Express server against the built assets (port 8080 by default) |
 | `pnpm test` | Run the Vitest suite once |
@@ -460,14 +460,15 @@ The scope taxonomy lives in `src/core/assetScope.ts`. The `AssetScope` type uses
 
 ### How to add a new game mode
 
-Adding a third game (e.g. 2.2 Number Climb) requires:
+The canonical reference is `docs/adrs/ADR-0011-per-game-mode-dispatch.md` (12-step checklist). The short version:
 
-1. Extend `GameId` in `src/services/Settings.ts`: `'alien-shoot' | 'asteroid-field' | 'number-climb'`. TypeScript exhaustiveness on `Record<GameId, ...>` will now flag every existing map (GAME_BG_MAP, GAME_MUSIC_MAP) that doesn't handle the new value.
-2. Map the new game's bg + music in those records.
-3. The new scene's `preload()` calls `loadGameBundle(this, this.gameId)` + `attachLoadingOverlay({ scene: this, caption: 'Loading Number Climb…' })`. Mirrors the pattern in `GameScene.preload()` / `AsteroidFieldScene.preload()`.
-4. Tag the new game's assets with `'game:number-climb'` scope in the manifests.
+1. Extend `GameId` in `src/services/Settings.ts`. TypeScript exhaustiveness on every `Record<GameId, ...>` will then flag every map (`GAME_BG_MAP`, `GAME_MUSIC_MAP`, `GAME_MIDGROUND_MAP`, `gameSceneKeyFor`) that doesn't handle the new value.
+2. Map the new game's bg / music / midground in those records.
+3. Add a `SceneKeys.<NewScene>` entry + register the scene in `src/app/boot.ts`. Implement `GameSceneContract` (incl. `getQuestionsPerRound()` — drives the HUD denominator + GameOver display).
+4. Add the new game's preload assets with `'game:<id>'` scope in the sprite/audio manifests so `loadGameBundle` defers them until first play.
+5. `LoadingScene` caption switch + `GameSelectScene` tile gets a one-line addition each.
 
-That's it — boot load stays at ~2 MB regardless of how many games exist.
+Sprint 2.2 shipped Number Climb (display name "Space Escape!") through this exact checklist; boot load stays at ~2 MB regardless of how many game modes ship.
 
 ### Loader-error handling
 
@@ -533,7 +534,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Why does the audio init happen in MenuScene, not BootScene? | iOS Safari blocks `WebAudioContext` creation/resumption outside a user-gesture handler. `init()` from BootScene works on Chrome and Firefox but silently fails on iOS, leaving the kid pressing fire forever in silence. Wiring `init()` to the first Start-button click is the canonical fix. Asset preload is fine in BootScene (no audio context needed); only the live binding has to happen inside a gesture. (As of v0.5.4 the click-to-start splash provides an even earlier user-gesture moment, but MenuScene's `init()` call stays as defense-in-depth.) |
 | How does the boot sequence work? | The page loads `index.html` which renders a splash overlay (`<div id="splash">` with title + Tap-to-play button). `src/main.ts` runs at module load but ONLY wires the splash button's click handler — `Phaser.Game` construction is deferred. On click, the `startGame()` function constructs the AudioManager singleton, then `new Phaser.Game(...)` (this is when the AudioContext is created, inside a user-gesture context — eliminates the browser's `AudioContext was prevented from starting automatically` warning), then hides the splash. BootScene then runs for ~250ms (no title text — splash already showed it), launches AttributionScene in parallel, transitions to MenuScene. A static contract test in `src/main.test.ts` enforces that `new Phaser.Game(` never appears at top level. |
 | Where do button click sounds play? | `PlaceholderButton.playClickSfx()` calls `getAudioManager().play(SfxKeys.ButtonClick1, 'sfx')` from BOTH the pointerdown handler AND the `activate()` keyboard path. The two HUD icon buttons (Pause + Mute) are not PlaceholderButtons but inline the same call from their pointerdown + activate paths. Disabled buttons skip the sound (the click handler short-circuits). Volume rides on the SFX slider; master mute silences. Edge case: clicking the Mute icon to UNMUTE produces no click sound (audio is muted at the moment of activation); the visual state change is the confirmation. |
-| What's the `?autostart` URL param? | Dev convenience. `http://localhost:5173/?autostart` skips the splash and boots Phaser directly — same code path as the click handler, just triggered immediately on page load. Saves a click on every HMR reload during heavy iteration. Production users never see this param. |
+| What's the `?autostart` URL param? | Dev convenience. `http://localhost:5183/?autostart` skips the splash and boots Phaser directly — same code path as the click handler, just triggered immediately on page load. Saves a click on every HMR reload during heavy iteration. Production users never see this param. |
 | Where does Phaser get constructed? | `src/app/boot.ts` exports `bootGame()`, called from `src/main.ts` inside the splash button's click handler (or via `?autostart`). `main.ts` itself does NOT import Phaser — that contract is enforced by a static test in `main.test.ts`. The pre-0.5.5 model put the construction directly in `main.ts`; the boot logic was extracted into its own module so future Phase 1 mobile concerns (orientation gate, asset-preload progress bar, WebAudio fallback) can land in one focused file. |
 | Where do button colors live? | `src/game/ui/uiPalette.ts` — all button-state hex constants (`SLATE_BG`, `SLATE_HOVER`, `BORDER_GREY`, `FOCUS_BLUE`, `SELECTED_AMBER`, `DISABLED_BG`, plus the warm-amber `MUTE_ICON_BG`/`MUTE_ICON_HOVER` for the HUD mute toggle). `PlaceholderButton`, `IconButton`, and the splash `index.html` CSS all reference these values; CSS is hand-synced (the splash loads before any TS module). A "make all controls higher-contrast for outdoor phone use" change is a 1-file edit. |
 | Where do text styles live? | `src/game/ui/typography.ts` — `FONT_FAMILY` constant + named `TEXT_*` color constants + a `text(scene, x, y, str, kind)` helper that picks size + color + weight from a vocabulary of 12 named `TextKind`s (`title`, `h2`, `h3`, `body`, `subtitle`, `prompt`, `accent`, `success`, `warning`, `stars`, `sectionLabel`, `bodyMuted`). Scenes use the helper; one-off sizes inline `{ fontFamily: FONT_FAMILY, ... }` and reference the named color constants. The `'system-ui, sans-serif'` literal appears nowhere outside this file. |

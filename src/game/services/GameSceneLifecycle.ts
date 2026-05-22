@@ -154,11 +154,20 @@ export class GameSceneLifecycle {
    * score to the session total, fires `RoundEnded` telemetry, stops
    * HUD, transitions to GameOver. Quit-to-menu mid-round explicitly
    * does NOT route through here — `quitToMenu()` instead.
+   *
+   * Sprint 2.1.9 default: uses `roundController.passed` + `.stars`
+   * (correct-count-based). Sprint 2.2 adds optional overrides for
+   * Number Climb which computes stars by HEIGHT REACHED + passed
+   * by REACHED THE TOP. Other modes ignore the overrides and use
+   * the defaults.
    */
-  endRound(): void {
+  endRound(overrides?: { passedOverride?: boolean; starsOverride?: 0 | 1 | 2 | 3 }): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
     // Sprint 2.1.5 invariant — contribute BEFORE GameOver transition.
     SessionTotalScore.add(roundController.score);
+
+    const finalPassed = overrides?.passedOverride ?? roundController.passed;
+    const finalStars = overrides?.starsOverride ?? roundController.stars;
 
     const props: TelemetryProps = {
       gameId,
@@ -166,7 +175,7 @@ export class GameSceneLifecycle {
       speed,
       roundScore: String(roundController.score),
       roundCorrectCount: String(roundController.correctCount),
-      passed: String(roundController.passed),
+      passed: String(finalPassed),
     };
     _th.logToAi('RoundEnded', SeverityLevel.Information, props);
 
@@ -174,11 +183,15 @@ export class GameSceneLifecycle {
     scene.scene.start(SceneKeys.GameOver, {
       score: roundController.score,
       correctCount: roundController.correctCount,
-      passed: roundController.passed,
-      stars: roundController.stars,
+      passed: finalPassed,
+      stars: finalStars,
       mathId,
       speed,
       gameId,
+      // Sprint 2.2 — Climb overrides this to 10; other modes pass 20
+      // (the default from config.round.questionsPerRound). Drives the
+      // "Correct: N / total" denominator on GameOver.
+      totalQuestions: roundController.questionsPerRound,
     });
   }
 
