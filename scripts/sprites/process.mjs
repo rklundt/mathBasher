@@ -9,7 +9,17 @@
  * one-pass through `sharp`, metadata stripped, deterministic output.
  *
  * Usage:
- *   pnpm sprite:process [--kind <kind>] [--name <basename>] [--no-resize] <input.png> [output.png]
+ *   pnpm sprite:process [--kind <kind>] [--name <basename>] [--no-resize]
+ *                       [--format <png|webp|webp-lossless>] [--brightness <N>]
+ *                       [--flop] <input.png> [output.png]
+ *
+ * Optional flags (run with `--help` for the full text):
+ *   --format     png (default) | webp (lossy q85) | webp-lossless. webp /
+ *                webp-lossless write a `.webp` file instead of `.png`.
+ *   --brightness N  multiplies output brightness via sharp's `.modulate()`
+ *                (default 1.0). e.g. `--brightness 0.6` = 40% darker.
+ *   --flop       horizontally mirrors the output (sharp's `.flop()`).
+ *   --no-resize  skips the resize pass (input already at target size).
  *
  * Kinds (the only legal values for `--kind`):
  *   alien        — enemy sprites; 96×96 max bounding box   → public/assets/sprites/aliens/
@@ -130,8 +140,24 @@ const PROFILES = {
 // Argument parsing — minimal, matches `audio/encode.mjs` style.
 // ------------------------------------------------------------------
 
+/** Output formats. `webp` = lossy q85 (photo-like bg art); `webp-lossless`
+ *  = lossless WebP (sprite art with alpha — no edge halos); `png` = the
+ *  legacy default. Sprint 2.2.1 story 6. */
+const FORMATS = ['png', 'webp', 'webp-lossless'];
+/** Quality for lossy WebP — q85 is the bg sweet spot (≈60 % smaller than PNG, no visible artefacts). */
+const WEBP_LOSSY_QUALITY = 85;
+/** sharp WebP `effort` (0-6) — 6 = best compression, worth it for a one-shot build asset. */
+const WEBP_EFFORT = 6;
+
 function parseArgs(args) {
-  const opts = { kind: 'alien', resize: true, name: null, brightness: 1.0, flop: false };
+  const opts = {
+    kind: 'alien',
+    resize: true,
+    name: null,
+    brightness: 1.0,
+    flop: false,
+    format: 'png',
+  };
   const positional = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -139,6 +165,12 @@ function parseArgs(args) {
       opts.kind = args[++i];
     } else if (a === '--name') {
       opts.name = args[++i];
+    } else if (a === '--format') {
+      opts.format = args[++i];
+      if (!FORMATS.includes(opts.format)) {
+        console.error(`--format must be one of ${FORMATS.join(', ')} (got "${opts.format}")`);
+        exit(1);
+      }
     } else if (a === '--no-resize') {
       opts.resize = false;
     } else if (a === '--resize') {
@@ -188,7 +220,10 @@ function parseArgs(args) {
     }
   } else if (positional.length === 1 && opts.name !== null) {
     input = positional[0];
-    output = `${PROFILES[opts.kind].folder}/${opts.name}.png`;
+    // Output extension follows the chosen format — webp / webp-lossless
+    // both write `.webp`; png writes `.png`.
+    const outExt = opts.format === 'png' ? 'png' : 'webp';
+    output = `${PROFILES[opts.kind].folder}/${opts.name}.${outExt}`;
   } else {
     console.error(
       'Need either: (a) two positional args <input.png> <output.png>, ' +
@@ -215,6 +250,9 @@ Output path resolution (in priority order):
 ${Object.entries(PROFILES).map(([k, p]) => `       ${k.padEnd(11)} ${p.folder}/`).join('\n')}
 
 Defaults to --kind alien if --kind is omitted.
+--format <png|webp|webp-lossless> picks the output encoder (default png).
+  webp = lossy q85 (photo-like bg art); webp-lossless = lossless WebP
+  (sprite art with alpha). webp / webp-lossless write a .webp file.
 --no-resize skips the resize pass (use when input is already at target size).
 --brightness N multiplies output brightness via sharp's .modulate() (default 1.0
   = unchanged). Useful for taming visually-busy bg assets so they don't compete
@@ -305,22 +343,35 @@ async function main() {
     pipeline = pipeline.modulate({ brightness: opts.brightness });
   }
 
-  // PNG output config. `palette: true` for kinds that quantize cleanly
-  // (most sprite art); `palette: false` for `bg` which needs full RGB
-  // for gradients. `compressionLevel: 9` is the highest zlib setting
-  // (slower compress, smaller output, no quality difference).
-  pipeline = pipeline.png({
-    palette: profile.palette,
-    compressionLevel: profile.compressionLevel,
-    quality: profile.quality,
-    // `effort` is a libimagequant knob (only applies when palette: true).
-    // 7 = good balance of speed vs compression. 10 is the max but
-    // takes ~3x longer for marginal size savings.
-    effort: 7,
-    // Adaptive filtering chooses the best PNG row filter per row. For
-    // pixel art / sprites this is consistently a small win.
-    adaptiveFiltering: true,
-  });
+  // Output encoder — branch on --format (sprint 2.2.1 story 6).
+  if (opts.format === 'webp') {
+    // Lossy WebP — for photo-like bg art with no transparency. q85 is
+    // the sweet spot: ≈60 % smaller than PNG with no visible artefacts
+    // at gameplay viewing size.
+    pipeline = pipeline.webp({ quality: WEBP_LOSSY_QUALITY, effort: WEBP_EFFORT });
+  } else if (opts.format === 'webp-lossless') {
+    // Lossless WebP — for sprite art WITH alpha. Pixel-identical to the
+    // source (no edge halos around transparent areas, which lossy can
+    // introduce) while still ≈25 % smaller than paletted PNG.
+    pipeline = pipeline.webp({ lossless: true, effort: WEBP_EFFORT });
+  } else {
+    // PNG output config. `palette: true` for kinds that quantize cleanly
+    // (most sprite art); `palette: false` for `bg` which needs full RGB
+    // for gradients. `compressionLevel: 9` is the highest zlib setting
+    // (slower compress, smaller output, no quality difference).
+    pipeline = pipeline.png({
+      palette: profile.palette,
+      compressionLevel: profile.compressionLevel,
+      quality: profile.quality,
+      // `effort` is a libimagequant knob (only applies when palette: true).
+      // 7 = good balance of speed vs compression. 10 is the max but
+      // takes ~3x longer for marginal size savings.
+      effort: 7,
+      // Adaptive filtering chooses the best PNG row filter per row. For
+      // pixel art / sprites this is consistently a small win.
+      adaptiveFiltering: true,
+    });
+  }
 
   // Sharp by default strips most metadata. Explicitly NOT calling
   // `.withMetadata()` ensures no EXIF / IPTC / XMP / ICC profile

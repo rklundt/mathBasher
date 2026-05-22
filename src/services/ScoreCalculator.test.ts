@@ -243,3 +243,59 @@ describe('computeClimbStars', () => {
     });
   });
 });
+
+/**
+ * Sprint 2.2.1 story 11 — cross-game max-score parity.
+ *
+ * After story 10 all three game modes run 12-question rounds
+ * (`config.round.questionsPerRound = 12`; Number Climb passes its own
+ * 12 via the RoundController override). `ScoreCalculator`'s constructor
+ * is `(mathId, speed)` — there is NO game-mode axis. Score per correct
+ * answer is `basePerCorrect × mathMultiplier × speedMultiplier`, all
+ * three terms game-agnostic. Therefore a PERFECT round (12 clean
+ * correct answers) produces an IDENTICAL maximum score in Alien Shoot,
+ * Asteroid Field, and Number Climb for the same (mathId, speed).
+ *
+ * The per-game mechanics (Alien Shoot's wrong-shot penalty, Asteroid
+ * Field's per-question timeout, Number Climb's mulligan) only reduce
+ * a round BELOW max — they never change the max itself. So the games
+ * are already calibrated; no per-game scoring multiplier is needed.
+ *
+ * This block locks the invariant: if a future change introduces a
+ * per-game scoring term, the structural assertion below breaks and
+ * calibration must be revisited.
+ */
+describe('cross-game max-score parity (story 11)', () => {
+  const ROUND_SIZE = 12;
+
+  function perfectRoundScore(mathId: MathId, speed: SpeedKey): number {
+    const calc = new ScoreCalculator(mathId, speed);
+    for (let i = 0; i < ROUND_SIZE; i++) {
+      calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
+    }
+    return calc.score;
+  }
+
+  // Reference math type for the cross-game comparison — math choice is
+  // orthogonal to game choice, so any fixed mathId works; add-to-10
+  // (multiplier 1.0) keeps the expected numbers easy to read.
+  const REF_MATH: MathId = 'add-to-10';
+
+  for (const speed of ['slow', 'medium', 'fast'] as SpeedKey[]) {
+    it(`perfect ${speed} round = 12 × base × mathMult × speedMult`, () => {
+      const expected =
+        ROUND_SIZE *
+        config.scoring.basePerCorrect *
+        config.scoring.mathDifficulty[REF_MATH] *
+        config.scoring.speed[speed].multiplier;
+      expect(perfectRoundScore(REF_MATH, speed)).toBe(expected);
+    });
+  }
+
+  // Cross-game parity is a structural guarantee, not a runtime one:
+  // `ScoreCalculator`'s constructor signature is `(mathId, speed)` — there
+  // is no game-mode parameter through which the max could diverge. The
+  // per-speed formula tests above fully lock the score; a runtime test
+  // comparing two identical `(mathId, speed)` calls would only restate
+  // `x === x`, so none is added here.
+});

@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   pickSubsetWithCorrect,
+  resolveRungPick,
   RUNGS_PER_DIFFICULTY,
 } from '@/game/systems/numberClimbFloorMath';
 
@@ -126,5 +127,111 @@ describe('RUNGS_PER_DIFFICULTY', () => {
   });
   it('Hard → 4 rungs', () => {
     expect(RUNGS_PER_DIFFICULTY.fast).toBe(4);
+  });
+});
+
+/**
+ * Sprint 2.2.1 story 8 — `resolveRungPick` is the pure decision logic
+ * extracted from `NumberClimbFloorSystem.pickRung` so the floor's
+ * pick-resolution state machine can be unit-tested without spinning up
+ * Phaser. Four outcome kinds + the wrongs-this-floor counter + the
+ * consume-rung flag are all locked here.
+ */
+describe('resolveRungPick', () => {
+  const CORRECT = 7;
+
+  it('correct pick → "correct", counter unchanged, no consume', () => {
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: true,
+      rungAnswer: CORRECT,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 0,
+    });
+    expect(d.kind).toBe('correct');
+    expect(d.wrongsAfter).toBe(0);
+    expect(d.consumeRung).toBe(false);
+  });
+
+  it('correct pick AFTER a mulligan → still "correct", counter stays at 1', () => {
+    // The kid used their one mulligan, then picked the right rung.
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: true,
+      rungAnswer: CORRECT,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 1,
+    });
+    expect(d.kind).toBe('correct');
+    expect(d.wrongsAfter).toBe(1); // preserved so the half-points telemetry flag still reads true
+    expect(d.consumeRung).toBe(false);
+  });
+
+  it('first wrong pick → "wrong-mulligan", counter 0 → 1, consume the rung', () => {
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: true,
+      rungAnswer: 3,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 0,
+    });
+    expect(d.kind).toBe('wrong-mulligan');
+    expect(d.wrongsAfter).toBe(1);
+    expect(d.consumeRung).toBe(true);
+  });
+
+  it('second wrong pick on the same floor → "wrong-terminal", counter 1 → 2', () => {
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: true,
+      rungAnswer: 5,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 1,
+    });
+    expect(d.kind).toBe('wrong-terminal');
+    expect(d.wrongsAfter).toBe(2);
+    expect(d.consumeRung).toBe(true);
+  });
+
+  it('paused → "rung-consumed" no-op, even for an otherwise-correct rung', () => {
+    const d = resolveRungPick({
+      paused: true,
+      rungInFloor: true,
+      rungAnswer: CORRECT,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 0,
+    });
+    expect(d.kind).toBe('rung-consumed');
+    expect(d.wrongsAfter).toBe(0);
+    expect(d.consumeRung).toBe(false);
+  });
+
+  it('rung not in the current floor → "rung-consumed" no-op (e.g. stale double-tap)', () => {
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: false,
+      rungAnswer: CORRECT,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 0,
+    });
+    expect(d.kind).toBe('rung-consumed');
+    expect(d.wrongsAfter).toBe(0);
+    expect(d.consumeRung).toBe(false);
+  });
+
+  it('a wrong pick while already at the terminal count stays terminal (defensive)', () => {
+    // Shouldn't happen — the scene ends the round on the first
+    // wrong-terminal — but the state machine must not crash or produce
+    // a nonsense kind if pickRung is somehow called again. `wrongsAfter`
+    // caps at 2 rather than ticking up to a meaningless 3.
+    const d = resolveRungPick({
+      paused: false,
+      rungInFloor: true,
+      rungAnswer: 9,
+      correctAnswer: CORRECT,
+      wrongsSoFar: 2,
+    });
+    expect(d.kind).toBe('wrong-terminal');
+    expect(d.wrongsAfter).toBe(2);
   });
 });

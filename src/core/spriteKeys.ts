@@ -477,6 +477,10 @@ export const ClimbFloorBgKeys = {
   Room14: 'climb-floor-room-14',
   Room15: 'climb-floor-room-15',
   Room16: 'climb-floor-room-16',
+  Room17: 'climb-floor-room-17',
+  Room18: 'climb-floor-room-18',
+  Room19: 'climb-floor-room-19',
+  Room20: 'climb-floor-room-20',
 } as const;
 
 /**
@@ -520,6 +524,10 @@ const CLIMB_RANDOM_FLOOR_KEYS: readonly string[] = [
   ClimbFloorBgKeys.Room14,
   ClimbFloorBgKeys.Room15,
   ClimbFloorBgKeys.Room16,
+  ClimbFloorBgKeys.Room17,
+  ClimbFloorBgKeys.Room18,
+  ClimbFloorBgKeys.Room19,
+  ClimbFloorBgKeys.Room20,
 ] as const;
 
 /**
@@ -567,16 +575,27 @@ const KIND_FOLDER: Record<SpriteKind, string> = {
   bg: 'bg',
 };
 
+/**
+ * Sprite kinds shipped as WebP. Sprint 2.2.1 story 6 migrated `bg`
+ * (photo-like backdrops, lossy q85 — ≈88 % smaller) and `hero`
+ * (sprite art, lossless WebP) off PNG; `alien` spritesheets were
+ * always WebP. `ui` + `particle` + `projectile` stay PNG — those are
+ * already tiny paletted sprites where WebP saves almost nothing.
+ */
+const WEBP_KINDS: ReadonlySet<SpriteKind> = new Set<SpriteKind>(['alien', 'bg', 'hero']);
+
 // Function overloads: alien REQUIRES a tier; other kinds don't accept one.
 export function spritePath(kind: 'alien', key: string, tier: SpriteTier): string;
 export function spritePath(kind: Exclude<SpriteKind, 'alien'>, key: string): string;
 /**
  * Build the URL to a shipped sprite asset.
  *
- * - For `kind === 'alien'`, includes the tier subfolder (`/128/` or `/192/`)
- *   and uses the `.webp` spritesheet extension. Tier is REQUIRED.
- * - For other kinds, single resolution per kind (no tier subfolder), `.png`
- *   extension (Kenney packs ship PNG; `process.mjs` keeps that format).
+ * - For `kind === 'alien'`, includes the tier subfolder (`/128/` or `/192/`).
+ *   Tier is REQUIRED.
+ * - For other kinds, single resolution per kind (no tier subfolder).
+ * - Extension: `.webp` for the kinds in `WEBP_KINDS` (alien / bg / hero),
+ *   `.png` for the rest (ui / particle / projectile — Kenney-pack art
+ *   kept as PNG, see story 6).
  *
  * Vite serves `public/` at root in both dev and prod, so `/assets/sprites/...`
  * resolves the same way in both modes.
@@ -588,7 +607,8 @@ export function spritePath(kind: SpriteKind, key: string, tier?: SpriteTier): st
     }
     return `/assets/sprites/${KIND_FOLDER.alien}/${tier}/${key}.webp`;
   }
-  return `/assets/sprites/${KIND_FOLDER[kind]}/${key}.png`;
+  const ext = WEBP_KINDS.has(kind) ? 'webp' : 'png';
+  return `/assets/sprites/${KIND_FOLDER[kind]}/${key}.${ext}`;
 }
 
 /**
@@ -736,7 +756,7 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     scope: 'game:number-climb',
   })),
   // Sprint 2.2 story 13e — escape ship overlay sprite. Ships in the
-  // `hero/` folder (192×192 paletted PNG) but Climb-only, so deferred
+  // `hero/` folder (192×192 lossless WebP) but Climb-only, so deferred
   // via the same `game:number-climb` scope.
   ...(Object.values(ClimbEscapeShipKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'hero',
@@ -744,9 +764,9 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', key),
     scope: 'game:number-climb',
   })),
-  // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
+  // Sprint 2.1 playtest — image-variant asteroid sprites. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
-  // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
+  // the 192×192 profile match) but aren't `alien` SEMANTICS
   // — they're target rocks in Asteroid Field, not enemy spritesheets.
   // Tagged as `kind: 'particle'` in the manifest because (a) the
   // SpriteManifestEntry type excludes `alien` (alien needs the
@@ -761,7 +781,10 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
   ...(Object.values(AsteroidSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'particle',
     key,
-    url: `/assets/sprites/aliens/${key}.png`,
+    // Sprint 2.2.1 story 6 — migrated to lossless WebP. URL is still
+    // hardcoded (these live in `aliens/` but aren't `alien`-kind, so
+    // `spritePath` doesn't cover them); the extension flipped .png → .webp.
+    url: `/assets/sprites/aliens/${key}.webp`,
     // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
     scope: 'game:asteroid-field',
   })),

@@ -82,3 +82,76 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
   }
   return arr;
 }
+
+/**
+ * Sprint 2.2.1 story 8 — the four discrete outcomes resolving a rung
+ * pick can produce:
+ *  - `correct`        — the picked rung carries the right answer.
+ *  - `wrong-mulligan` — first wrong pick on this floor; the kid gets
+ *                       one retry.
+ *  - `wrong-terminal` — second wrong on the same floor; round ends.
+ *  - `rung-consumed`  — defensive: the pick should be ignored (the
+ *                       floor is paused, or the rung isn't part of the
+ *                       current floor — e.g. a double-tap of an
+ *                       already-spent rung).
+ */
+export type RungPickKind = 'correct' | 'wrong-mulligan' | 'wrong-terminal' | 'rung-consumed';
+
+/**
+ * Pure result of `resolveRungPick`. The FloorSystem applies these:
+ * `wrongsAfter` becomes the new wrong-this-floor counter; `consumeRung`
+ * tells it whether to disable the picked rung.
+ */
+export interface RungPickDecision {
+  kind: RungPickKind;
+  /** Wrong-this-floor counter AFTER this pick (unchanged for correct / rung-consumed). */
+  wrongsAfter: number;
+  /** True if the caller should consume (disable) the picked rung — wrong picks only. */
+  consumeRung: boolean;
+}
+
+/**
+ * Pure decision logic for resolving a rung pick — extracted from
+ * `NumberClimbFloorSystem.pickRung` so the state machine can be
+ * unit-tested without dragging Phaser into the Node test env (same
+ * precedent as `pickSubsetWithCorrect`). The FloorSystem method is
+ * now a thin wrapper that calls this, applies the side-effects
+ * (rung.consume(), counter update, telemetry), and attaches the rung.
+ *
+ * State machine:
+ *  - paused OR rung not in the current floor → `rung-consumed` (no-op).
+ *  - rungAnswer === correctAnswer            → `correct`.
+ *  - first wrong (wrongsSoFar 0 → 1)         → `wrong-mulligan`.
+ *  - second wrong (wrongsSoFar 1 → 2)        → `wrong-terminal`.
+ *
+ * `wrongsAfter` is capped at `TERMINAL_WRONGS` (2) so a defensive
+ * re-entry (the scene ends the round on the first `wrong-terminal`, so
+ * `wrongsSoFar: 2` should never reach here) stays terminal rather than
+ * producing a nonsense counter value of 3.
+ *
+ * Locked in `NumberClimbFloorSystem.test.ts`.
+ */
+export function resolveRungPick(input: {
+  paused: boolean;
+  rungInFloor: boolean;
+  rungAnswer: number;
+  correctAnswer: number;
+  wrongsSoFar: number;
+}): RungPickDecision {
+  const { paused, rungInFloor, rungAnswer, correctAnswer, wrongsSoFar } = input;
+
+  if (paused || !rungInFloor) {
+    return { kind: 'rung-consumed', wrongsAfter: wrongsSoFar, consumeRung: false };
+  }
+  if (rungAnswer === correctAnswer) {
+    return { kind: 'correct', wrongsAfter: wrongsSoFar, consumeRung: false };
+  }
+  /** Two wrongs on a floor ends the round — the wrong-this-floor ceiling. */
+  const TERMINAL_WRONGS = 2;
+  const wrongsAfter = Math.min(wrongsSoFar + 1, TERMINAL_WRONGS);
+  return {
+    kind: wrongsAfter >= TERMINAL_WRONGS ? 'wrong-terminal' : 'wrong-mulligan',
+    wrongsAfter,
+    consumeRung: true,
+  };
+}

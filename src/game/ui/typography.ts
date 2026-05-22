@@ -65,6 +65,8 @@ export const TEXT_AMBER = '#facc15';
 export const TEXT_AMBER_WARM = '#fbbf24';
 /** Success / passed-round copy. */
 export const TEXT_GREEN = '#34d399';
+/** Penalty / negative-feedback copy. Matches the camera-flash red (rgb 239,68,68). */
+export const TEXT_RED = '#ef4444';
 /** Focus ring color (rarely used in text — present for parity with palette). */
 export const TEXT_BLUE = '#60a5fa';
 /** Pure white — used very sparingly (only when other tones are too colored). */
@@ -92,6 +94,7 @@ export type TextKind =
   | 'headline' // primary — extra-large overlay headline (PauseOverlay "Paused")
   | 'summary' // primary — multi-line score summary (GameOverScene)
   | 'scorePopup' // green bold — the floating "+100" popup at alien hit position
+  | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb mulligan)
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
   | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)
@@ -153,6 +156,7 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   headline: { fontSize: '67px', color: TEXT_PRIMARY },
   summary: { fontSize: '29px', color: TEXT_PRIMARY },
   scorePopup: { fontSize: '29px', color: TEXT_GREEN, fontStyle: 'bold' },
+  penaltyPopup: { fontSize: '29px', color: TEXT_RED, fontStyle: 'bold' },
   badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
   rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },
   iconGlyph: { fontSize: '26px', color: TEXT_PRIMARY }, // color is irrelevant for emoji glyphs but required by TextStyle

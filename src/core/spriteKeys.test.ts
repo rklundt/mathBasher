@@ -7,6 +7,7 @@ import {
   _resetCachedSpriteTier,
   getCachedSpriteTier,
   pickSpriteTier,
+  spritePath,
 } from '@/core/spriteKeys';
 
 /**
@@ -127,5 +128,44 @@ describe('getCachedSpriteTier', () => {
     _resetCachedSpriteTier();
     setWindow(200, 1);
     expect(getCachedSpriteTier()).toBe(128);
+  });
+});
+
+/**
+ * Sprint 2.2.1 story 6 — `spritePath` resolves the file extension per
+ * the `WEBP_KINDS` set: `alien` / `bg` / `hero` migrated to WebP, while
+ * `ui` / `particle` / `projectile` (Kenney-pack art) stayed PNG. These
+ * tests lock that split so a future kind addition can't silently flip
+ * an extension and 404 the asset.
+ */
+describe('spritePath extension resolution', () => {
+  it('bg kind resolves to .webp', () => {
+    expect(spritePath('bg', 'nebula')).toBe('/assets/sprites/bg/nebula.webp');
+  });
+
+  it('hero kind resolves to .webp', () => {
+    expect(spritePath('hero', 'speeder-1')).toBe('/assets/sprites/hero/speeder-1.webp');
+  });
+
+  it('alien kind resolves to .webp (tiered path)', () => {
+    expect(spritePath('alien', 'alien1-r0c0', 192)).toBe(
+      '/assets/sprites/aliens/192/alien1-r0c0.webp',
+    );
+  });
+
+  it('ui kind stays .png', () => {
+    expect(spritePath('ui', 'grey-large_m')).toBe('/assets/sprites/ui/grey-large_m.png');
+  });
+
+  it('particle kind stays .png', () => {
+    expect(spritePath('particle', 'circle_03')).toBe(
+      '/assets/sprites/particles/circle_03.png',
+    );
+  });
+
+  it('projectile kind stays .png', () => {
+    expect(spritePath('projectile', 'laser')).toBe(
+      '/assets/sprites/projectiles/laser.png',
+    );
   });
 });

@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { config } from '@/core/config';
 import { textStyle } from '@/game/ui/typography';
 
 /**
@@ -21,8 +22,9 @@ import { textStyle } from '@/game/ui/typography';
  * shortcut (sprint 2.2 input model — number keys 1-N pick rungs
  * left-to-right).
  */
-const RUNG_WIDTH = 180;
-const RUNG_HEIGHT = 56;
+// Sprint 2.2.1 story 5 — dimensions lifted to `config.numberClimb.rung`.
+const RUNG_WIDTH = config.numberClimb.rung.widthPx;
+const RUNG_HEIGHT = config.numberClimb.rung.heightPx;
 const RUNG_FILL_COLOR = 0x1f2740;
 const RUNG_OUTLINE_COLOR = 0x6b7280;
 const RUNG_HOVER_FILL_COLOR = 0x2a3454;
