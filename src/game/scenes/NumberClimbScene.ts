@@ -84,6 +84,12 @@ const HERO_JUMP_DELAY_MS = 300;
  */
 const MULLIGAN_HINT_HOLD_MS = 1500;
 
+/**
+ * Sprint 2.2.1 story 2 — how long the "Out of time!" banner holds
+ * before the hero falls off-screen + endRound.
+ */
+const TIMER_OUT_BANNER_HOLD_MS = 600;
+
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.NumberClimb;
@@ -456,8 +462,25 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.transitioning = true;
     this.cameras.main.flash(180, 239, 68, 68, false);
     this.cameras.main.shake(180, 0.006);
-    this.hero.fallOffScreen(this.scale.height, () => {
-      this.endRound();
+    // Sprint 2.2.1 story 2 — "Out of time!" banner so the kid registers
+    // that the CUMULATIVE TIMER ran out. Without it, the hero falling
+    // off-screen reads as "I picked the wrong rung" rather than
+    // "time's up." Screen-fixed (scrollFactor 0) since the camera may
+    // be anywhere up the climb. Holds ~600ms, then the hero falls.
+    const banner = text(
+      this,
+      this.scale.width / 2,
+      this.scale.height / 2,
+      'Out of time!',
+      'warning',
+    ).setOrigin(0.5);
+    banner.setScrollFactor(0);
+    banner.setDepth(100);
+    this.time.delayedCall(TIMER_OUT_BANNER_HOLD_MS, () => {
+      banner.destroy();
+      this.hero.fallOffScreen(this.scale.height, () => {
+        this.endRound();
+      });
     });
   }
 
