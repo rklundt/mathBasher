@@ -56,7 +56,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | [2.2](phase-2/2.2-number-climb.md) | "Number Climb" (ships as "Space Escape!") — climbing platformer with answer rungs, 12 floors, escape-the-burning-station theme | Closed (2026-05-21) |
 | [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, WebP migration, and cross-game scoring true-up — 13 active stories: kid-UX hints, config lift, dead-code cleanup, pickRung test coverage, WebP migration, arcade modes → 12 questions, cross-game max-score calibration, Phaser-chunk cache headers. | In Progress (started 2026-05-22) |
 | [2.3](phase-2/2.3-fraction-math-types.md) | Fraction math types — "Add Fractions" + "Subtract Fractions", available in all three games, content scales by difficulty (Easy = like fractions, Medium = mixed numbers, Hard = unlike fractions). First math types with non-integer answers; first generators that vary output by the Speed setting. Also centralizes scoring config + adds docs/SCORING.md. | Planned |
-| [2.4](phase-2/2.4-splash-and-graphic-intros.md) | Splash screen + improved graphic intros — boot splash / title screen using the existing title art, plus a per-game-mode graphic intro beat. Presentation-polish sprint. | Planned |
+| [2.4](phase-2/2.4-splash-and-graphic-intros.md) | Splash screen, graphic intros + hero selection — boot splash / title screen, per-game-mode intro beat, and a 4-option diverse hero picker (female/male × dark/light). Presentation sprint. | Planned |
 
 ## Phase 3 — backend + accounts
 
