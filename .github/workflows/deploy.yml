@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright 2026 Ray Klundt
+# mathBasher is also available under a commercial license — see COMMERCIAL.md
+
+name: Deploy to Azure Static Web Apps
+
+# Push-triggered deploys, two environments:
+#   push to `development` -> the "development" staging environment
+#   push to `main`        -> production
+# No pull_request trigger, so no per-PR preview environments.
+on:
+  push:
+    branches:
+      - main
+      - development
+
+# Only the latest push per branch deploys; an in-flight run is superseded.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build:client
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          # We build with pnpm above; skip_app_build tells the action not to
+          # run its own (Oryx) build — it just uploads the pre-built output.
+          skip_app_build: true
+          app_location: "/"
+          api_location: ""
+          output_location: "dist"
+          # `development` branch -> named "development" staging environment;
+          # `main` -> production (empty value = the production environment).
+          deployment_environment: ${{ github.ref_name == 'development' && 'development' || '' }}
