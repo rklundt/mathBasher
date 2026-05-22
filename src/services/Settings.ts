@@ -21,7 +21,7 @@ import { createObservable } from '@/services/observable';
  * subscribers, no Zustand. Scenes read on `create`. If we ever need reactive
  * updates across scenes, we'll add that intentionally.
  */
-export type GameId = 'alien-shoot' | 'asteroid-field';
+export type GameId = 'alien-shoot' | 'asteroid-field' | 'number-climb';
 
 export interface RoundSettings {
   gameId: GameId;

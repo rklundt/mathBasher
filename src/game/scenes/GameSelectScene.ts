@@ -10,12 +10,14 @@ import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
- * Game-mode selection. MVP has one real tile (Alien Shoot) plus at least one
- * disabled "Coming soon" tile so the layout obviously supports more — adding
- * a second game mode later means swapping a disabled tile to enabled, no
- * layout rewrite.
+ * Game-mode selection. Three tiles as of sprint 2.2 (Alien Shoot,
+ * Asteroid Field, Number Climb). The layout scales with game-mode
+ * count — a 4th tile arriving would either bump tile widths down or
+ * shift to a 2×2 grid. For now a single horizontal row at the
+ * canonical tile dimensions reads cleanly with 20px gaps.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
@@ -32,13 +34,25 @@ export class GameSelectScene extends Phaser.Scene {
 
     text(this, cx, height * 0.18, 'Pick a Game', 'h2').setOrigin(0.5);
 
-    // Active tile: Alien Shoot — the original lane-drop gameplay.
+    // Top-right mute icon — matches MenuScene + HudScene placement so
+    // the affordance is in the same spot every screen.
+    createMuteIconButton(this, width - 16 - 22, 16 + 18);
+
+    // Three tiles in a row: cx - 340, cx, cx + 340.
+    // tileW (320) + 20 gap = 340 center-spacing keeps the gap visible.
+    const TILE_W = 320;
+    const TILE_H = 200;
+    const TILE_GAP = 20;
+    const tileCenterSpacing = TILE_W + TILE_GAP;
+    const tileY = height * 0.5;
+
+    // Tile 1: Alien Shoot — the original lane-drop gameplay.
     const alienShoot = new PlaceholderButton({
       scene: this,
-      x: cx - 180,
-      y: height * 0.5,
-      width: 320,
-      height: 200,
+      x: cx - tileCenterSpacing,
+      y: tileY,
+      width: TILE_W,
+      height: TILE_H,
       label: 'Alien Shoot',
       subtitle: 'Aliens carry answers. Shoot the right one.',
       onClick: () => {
@@ -47,17 +61,32 @@ export class GameSelectScene extends Phaser.Scene {
       },
     });
 
-    // Active tile: Asteroid Field — sprint 2.1's free-aim mode.
+    // Tile 2: Asteroid Field — sprint 2.1's free-aim mode.
     const asteroidField = new PlaceholderButton({
       scene: this,
-      x: cx + 180,
-      y: height * 0.5,
-      width: 320,
-      height: 200,
+      x: cx,
+      y: tileY,
+      width: TILE_W,
+      height: TILE_H,
       label: 'Asteroid Field',
       subtitle: 'Aim at floating asteroids. Beat the timer.',
       onClick: () => {
         Settings.setGameId('asteroid-field');
+        this.scene.start(SceneKeys.Difficulty);
+      },
+    });
+
+    // Tile 3: Number Climb — sprint 2.2 vertical climbing mode.
+    const numberClimb = new PlaceholderButton({
+      scene: this,
+      x: cx + tileCenterSpacing,
+      y: tileY,
+      width: TILE_W,
+      height: TILE_H,
+      label: 'Space Escape!',
+      subtitle: 'Climb to escape the burning station.',
+      onClick: () => {
+        Settings.setGameId('number-climb');
         this.scene.start(SceneKeys.Difficulty);
       },
     });
@@ -72,7 +101,7 @@ export class GameSelectScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    new KeyboardNavigator(this, [alienShoot, asteroidField, back]);
+    new KeyboardNavigator(this, [alienShoot, asteroidField, numberClimb, back]);
 
     // Esc returns to the previous step in the menu stack.
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));

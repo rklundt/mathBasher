@@ -439,6 +439,90 @@ export const BgSpriteKeys = {
 } as const;
 
 /**
+ * Number Climb — per-floor "room" images framed inside each floor band.
+ * Source MJ images are `--ar 8:1` (3072×384 raw → 1280×160 after the
+ * sprite pipeline's bg-profile resize). One image per floor, drawn
+ * inside black side-bars that let the nebula bleed through on the
+ * left/right edges + a thick horizontal black separator between floors.
+ * Sprint 2.2 story 13a established the framing pattern; story 13b adds
+ * additional Room2..RoomN variants for floor-to-floor visual variety.
+ *
+ * `Fire` is the FIXED floor-0 (ground) image. The hero starts on this
+ * floor with a fire effect underfoot — a one-off visual cue that
+ * "you're escaping upward." Never appears in the random pool used by
+ * floors 1..N; reached only via the explicit floor-0 frame spawn.
+ */
+export const ClimbFloorBgKeys = {
+  Fire: 'climb-floor-fire',
+  /**
+   * Floor 10 (the TOP floor) — the escape route / hangar / open
+   * airlock visual. Sprint 2.2 story 13e: fixed image, never in the
+   * random pool, rendered at 2× normal floor height so the room reads
+   * as the climactic destination rather than just another room.
+   */
+  Escape: 'climb-floor-escape',
+  Room1: 'climb-floor-room-1',
+  Room2: 'climb-floor-room-2',
+  Room3: 'climb-floor-room-3',
+  Room4: 'climb-floor-room-4',
+  Room5: 'climb-floor-room-5',
+  Room6: 'climb-floor-room-6',
+  Room7: 'climb-floor-room-7',
+  Room8: 'climb-floor-room-8',
+  Room9: 'climb-floor-room-9',
+  Room10: 'climb-floor-room-10',
+  Room11: 'climb-floor-room-11',
+  Room12: 'climb-floor-room-12',
+  Room13: 'climb-floor-room-13',
+  Room14: 'climb-floor-room-14',
+  Room15: 'climb-floor-room-15',
+  Room16: 'climb-floor-room-16',
+} as const;
+
+/**
+ * Sprint 2.2 story 13e — overlay sprite that sits on top of the
+ * escape floor (Climb floor 10). The kid sees it parked when they
+ * arrive at floor 10; the win-animation tweens it upward off-screen
+ * with a smoke trail (the "you escaped" beat). Ships from disk as
+ * `public/assets/sprites/hero/escape-ship.png` (processed with
+ * `--kind hero` for the 192×192 paletted-PNG profile — same shape as
+ * the speeder + asteroid-hero sprites).
+ *
+ * Lives in a separate const from `HeroSpriteKeys` to keep the
+ * climbing-hero / arcade-hero / escape-ship lineages distinct in code
+ * even though they all share the on-disk `hero/` folder.
+ */
+export const ClimbEscapeShipKeys = {
+  EscapeShip: 'escape-ship',
+} as const;
+
+/**
+ * Sub-pool of `ClimbFloorBgKeys` that the random picker draws from.
+ * Excludes `Fire` (floor-0-only) and (when story 13d ships) `Escape`
+ * (floor-10-only). Story 13c (sprint 2.2) populated this with 16 rooms
+ * — enough variety that a 10-floor round can pick all-distinct without
+ * any reuse-required fallback.
+ */
+const CLIMB_RANDOM_FLOOR_KEYS: readonly string[] = [
+  ClimbFloorBgKeys.Room1,
+  ClimbFloorBgKeys.Room2,
+  ClimbFloorBgKeys.Room3,
+  ClimbFloorBgKeys.Room4,
+  ClimbFloorBgKeys.Room5,
+  ClimbFloorBgKeys.Room6,
+  ClimbFloorBgKeys.Room7,
+  ClimbFloorBgKeys.Room8,
+  ClimbFloorBgKeys.Room9,
+  ClimbFloorBgKeys.Room10,
+  ClimbFloorBgKeys.Room11,
+  ClimbFloorBgKeys.Room12,
+  ClimbFloorBgKeys.Room13,
+  ClimbFloorBgKeys.Room14,
+  ClimbFloorBgKeys.Room15,
+  ClimbFloorBgKeys.Room16,
+] as const;
+
+/**
  * Per-game-mode background mapping. Each `GameId` resolves to a
  * `BgSpriteKey` so `BackgroundScene` can swap the backdrop when the
  * player enters a different game. Adding a new game mode = add a row
@@ -452,6 +536,12 @@ export const BgSpriteKeys = {
 export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'alien-shoot': BgSpriteKeys.Nebula,
   'asteroid-field': BgSpriteKeys.AsteroidBelt,
+  // Sprint 2.2 — PLACEHOLDER. Real climb-tower bg arrives via story 1
+  // (asset delivery). Until then, Number Climb shares the nebula
+  // backdrop so the scene can develop without a missing-texture flash.
+  // Swap to `BgSpriteKeys.NumberClimbTower` (or whatever the final key
+  // is named) when art lands.
+  'number-climb': BgSpriteKeys.Nebula,
 };
 
 /**
@@ -636,6 +726,24 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', key),
     scope: 'eager',
   })),
+  // Sprint 2.2 story 13a — Number Climb per-floor room images. Deferred
+  // to the climb game's preload via `game:number-climb` scope so they
+  // don't cost boot time for users who never enter Climb.
+  ...(Object.values(ClimbFloorBgKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:number-climb',
+  })),
+  // Sprint 2.2 story 13e — escape ship overlay sprite. Ships in the
+  // `hero/` folder (192×192 paletted PNG) but Climb-only, so deferred
+  // via the same `game:number-climb` scope.
+  ...(Object.values(ClimbEscapeShipKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'game:number-climb',
+  })),
   // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
   // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
@@ -668,6 +776,34 @@ export type ProjectileSpriteKey = (typeof ProjectileSpriteKeys)[keyof typeof Pro
 export type UiSpriteKey = (typeof UiSpriteKeys)[keyof typeof UiSpriteKeys];
 export type ParticleSpriteKey = (typeof ParticleSpriteKeys)[keyof typeof ParticleSpriteKeys];
 export type BgSpriteKey = (typeof BgSpriteKeys)[keyof typeof BgSpriteKeys];
+export type ClimbFloorBgKey = (typeof ClimbFloorBgKeys)[keyof typeof ClimbFloorBgKeys];
+export type ClimbEscapeShipKey = (typeof ClimbEscapeShipKeys)[keyof typeof ClimbEscapeShipKeys];
+
+/**
+ * Pick a random Climb floor-bg key from the randomizable sub-pool
+ * (`CLIMB_RANDOM_FLOOR_KEYS`). Excludes the floor-0-only `Fire` key
+ * (and `Escape` once story 13d ships).
+ *
+ * Story 13c — accepts an optional `exclusions` array of keys already
+ * used in the current round. The picker excludes those from the
+ * candidate pool so a 10-floor round shows 10 distinct rooms. With
+ * 16 keys in the pool and 10 picks per round, distinctness is always
+ * achievable; if the caller ever passes exclusions covering every
+ * pool entry (defensive — shouldn't happen in production), we fall
+ * back to picking from the full pool so the call doesn't deadlock.
+ *
+ * RNG-injectable for deterministic tests (mirrors
+ * `pickRandomAsteroidSpriteKey`).
+ */
+export function pickRandomClimbFloorBgKey(
+  rng: () => number = Math.random,
+  exclusions: readonly string[] = [],
+): ClimbFloorBgKey {
+  const exclSet = new Set(exclusions);
+  const available = CLIMB_RANDOM_FLOOR_KEYS.filter((k) => !exclSet.has(k));
+  const pool = available.length > 0 ? available : CLIMB_RANDOM_FLOOR_KEYS;
+  return pool[Math.floor(rng() * pool.length)]! as ClimbFloorBgKey;
+}
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */
 export type NonAlienSpriteKey =
@@ -675,4 +811,6 @@ export type NonAlienSpriteKey =
   | ProjectileSpriteKey
   | UiSpriteKey
   | ParticleSpriteKey
-  | BgSpriteKey;
+  | BgSpriteKey
+  | ClimbFloorBgKey
+  | ClimbEscapeShipKey;

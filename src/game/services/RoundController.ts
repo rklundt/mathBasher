@@ -31,15 +31,32 @@ export class RoundController {
   private readonly recentPrompts: string[] = [];
   private readonly scoreCalculator: ScoreCalculator;
   private readonly mathId: MathId;
+  /**
+   * Total questions per round. Defaults to `config.round.questionsPerRound`
+   * (20 — used by Alien Shoot + Asteroid Field). Sprint 2.2 added the
+   * optional constructor override so Number Climb can run 10-floor
+   * rounds without dragging the other modes' question count along.
+   */
+  private readonly _questionsPerRound: number;
 
   /**
    * @param mathId Selected math type (drives generator pick + score multiplier)
    * @param speed  Selected speed (drives score multiplier; game-mode scenes
    *               separately use this for their own physics tuning)
+   * @param questionsPerRoundOverride Optional — round length for this
+   *               game-mode. Defaults to `config.round.questionsPerRound`.
+   *               Number Climb passes 10; Alien Shoot + Asteroid Field
+   *               omit + get the default 20.
    */
-  constructor(mathId: MathId, speed: SpeedKey) {
+  constructor(mathId: MathId, speed: SpeedKey, questionsPerRoundOverride?: number) {
     this.mathId = mathId;
     this.scoreCalculator = new ScoreCalculator(mathId, speed);
+    this._questionsPerRound = questionsPerRoundOverride ?? config.round.questionsPerRound;
+  }
+
+  /** Total questions for this round (per-mode if the constructor override was used). */
+  get questionsPerRound(): number {
+    return this._questionsPerRound;
   }
 
   // ----- Question loop ------------------------------------------------------
@@ -54,7 +71,7 @@ export class RoundController {
    * scenes construct a new RoundController each round).
    */
   drawNextQuestion(): Question | null {
-    if (this._questionIndex >= config.round.questionsPerRound) return null;
+    if (this._questionIndex >= this._questionsPerRound) return null;
 
     const generator = getGenerator(this.mathId);
     const historyLimit = config.round.recentPromptHistoryLimit;
@@ -125,6 +142,6 @@ export class RoundController {
   }
 
   get isRoundOver(): boolean {
-    return this._questionIndex >= config.round.questionsPerRound;
+    return this._questionIndex >= this._questionsPerRound;
   }
 }

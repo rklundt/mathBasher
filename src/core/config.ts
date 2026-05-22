@@ -358,6 +358,70 @@ export const config = {
       thicknessPx: 22,
     },
   },
+  /**
+   * Sprint 2.2 — Number Climb tuning. The third game mode runs SHORTER
+   * rounds (10 floors vs 20 questions) because the one-strike-on-
+   * second-wrong mechanic combined with a cumulative timer is harsh
+   * enough that 20 floors would feel punishing. Difficulty (the
+   * existing SpeedKey enum) doubles as both choice count (2/3/4
+   * rungs) AND cumulative timer budget — Slow = generous time +
+   * fewer choices, Fast = tight time + more choices.
+   */
+  numberClimb: {
+    /**
+     * Total floors per round. Stars + GameOverScene's "Pass" both
+     * pivot off reaching this. Sprint 2.2 wrap-up playtest: 10 felt
+     * short, 20 (the global default for arcade modes) too long — 12
+     * landed as the sweet spot. Cumulative timer values below are
+     * UNCHANGED across the 10 → 12 bump; the slight per-floor time
+     * pressure increase IS the difficulty bump for the extra two
+     * floors. computeClimbStars scales proportionally (40 % / 70 % /
+     * 100 % of totalFloors): for 12 → 4 / 8 / 12.
+     */
+    questionsPerRound: 12,
+    /**
+     * Cumulative timer budget per Difficulty (which doubles as Speed
+     * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
+     * 120s. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
+     * ends the round.
+     */
+    speed: {
+      slow: { totalTimeSec: 250 },
+      medium: { totalTimeSec: 180 },
+      fast: { totalTimeSec: 120 },
+    },
+    /**
+     * Seconds removed from the cumulative timer when the kid picks a
+     * wrong rung. Mirrors `asteroidField.wrongShotCountdownPenaltySec`
+     * for consistency across the wrong-pick-time-penalty family of
+     * modes. First wrong on a floor: -3s (mulligan). Second wrong:
+     * the wrong-terminal outcome ends the round regardless of the
+     * timer's remaining value.
+     */
+    wrongRungTimePenaltySec: 3,
+    /**
+     * Vertical spacing (px) between floor centers — also the height of
+     * each floor's framed bg band. Two values so desktop and mobile can
+     * tune independently; the scene reads `pickFloorSpacingPx()` at
+     * create() time to pick based on viewport.
+     *
+     * Initial values (sprint 2.2 story 13a): 110px on both. Bumped to
+     * 138 (≈ 25% taller) during 13b playtest to give the floor image +
+     * rungs + hero more vertical breathing room. The two-value shape
+     * is the configurability hook — change either number here and the
+     * scene's whole climb retunes (camera follow, preview spacing,
+     * frame size) automatically.
+     *
+     * If desktop + mobile end up at the same value forever, this
+     * collapsing back to a single number is a 5-minute change. Keeping
+     * them separate now means we don't have to refactor when one needs
+     * to budge.
+     */
+    floorSpacingPx: {
+      desktop: 173,
+      mobile: 173,
+    },
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
@@ -372,7 +436,7 @@ export const config = {
      * playfield never overlaps the HUD ribbon. Single source of truth;
      * a future resize is a 1-line edit here.
      */
-    hudBarHeightPx: 48,
+    hudBarHeightPx: 64,
     /**
      * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
      * design pixels. Load-bearing for legal compliance — the footer must
@@ -440,13 +504,23 @@ export const config = {
      */
     difficultyTile: {
       mathWidthPx: 220,
-      mathHeightPx: 64,
+      // Sprint 2.2 story 15b — bumped 64 → 56 to reclaim vertical
+      // headroom now that the speed row carries standalone subtitles
+      // below each button + a per-game section title ("Speed" vs
+      // "Difficulty"). 56 stays above the iOS HIG 44 px touch-target
+      // floor with margin.
+      mathHeightPx: 56,
       mathColGapPx: 20,
       mathRowGapPx: 12,
       mathMaxPerRow: 4,
       speedWidthPx: 160,
-      speedHeightPx: 64,
-      speedGapPx: 20,
+      // Same 64 → 56 height bump as the math tiles.
+      speedHeightPx: 56,
+      // Sprint 2.2 story 15b — bumped 20 → 60 so the standalone subtitle
+      // text under each speed button has horizontal breathing room. At
+      // 20 px gap the three subtitles read as one continuous run-on
+      // string ("2 rungs · 250s timer 3 rungs · 180s timer …").
+      speedGapPx: 60,
       /**
        * Vertical offset (in design pixels) of the section label ABOVE
        * the FIRST math row's center. The 32px-bold sectionLabel kind
@@ -487,3 +561,47 @@ export const config = {
 
 export type SpeedKey = keyof typeof config.scoring.speed;
 export type MathId = keyof typeof config.scoring.mathDifficulty;
+
+/**
+ * Mobile-vs-desktop threshold for picking between two-value config
+ * fields like `config.numberClimb.floorSpacingPx`. Same logic the
+ * sprite-tier picker uses (viewport width × DPR ≥ 1920 = desktop).
+ * Lives here next to the config so any future two-value config field
+ * has a single canonical helper to read.
+ *
+ * Reads `window.innerWidth` + `window.devicePixelRatio` directly each
+ * call — cheap. For test paths that don't have a real window,
+ * pass an explicit `viewportWidth × dpr` via the optional arg.
+ */
+export function isDesktopViewport(viewportProduct?: number): boolean {
+  const product = viewportProduct ?? window.innerWidth * window.devicePixelRatio;
+  return product >= 1920;
+}
+
+/**
+ * Sprint 2.2 — true if the user's PRIMARY input pointer is touch
+ * (phones, tablets) as opposed to a mouse/trackpad (desktops, laptops).
+ * Returns the CSS media query `(pointer: coarse)` result — the W3C
+ * standard for "touch-primary" detection. Decoupled from viewport size
+ * (`isDesktopViewport`) because iPads can have large viewports but
+ * still be touch-primary, and conversely small-window desktop browsers
+ * are still mouse-primary.
+ *
+ * Used by AsteroidFieldScene's aim hint — touch users see it (gesture
+ * needs the visual cue), mouse users skip it (cursor follows aim
+ * already, no gesture to learn).
+ *
+ * `matchMedia` is universally supported in browsers that run Phaser 3;
+ * the `?? false` guard covers the headless / non-browser test path
+ * where `window.matchMedia` may be undefined.
+ */
+export function isTouchPrimary(): boolean {
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false;
+}
+
+/** Sprint 2.2 — pick the floor-spacing value for the current viewport. */
+export function pickFloorSpacingPx(): number {
+  return isDesktopViewport()
+    ? config.numberClimb.floorSpacingPx.desktop
+    : config.numberClimb.floorSpacingPx.mobile;
+}

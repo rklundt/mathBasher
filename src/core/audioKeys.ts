@@ -41,6 +41,15 @@ export const SfxKeys = {
   // spawns. Not used by Alien Shoot (which has the alien-reaches-hero
   // death animation as its own failure cue).
   TimeoutFail1: 'timeout-fail-1',
+  /**
+   * Sprint 2.2 — Number Climb floor-advance cue. Plays ~150 ms after
+   * the hero lands on a new floor: a short pneumatic-hiss + metallic-
+   * click "space hatch sliding open" sound. Gives an audible "you've
+   * entered the next room" beat to complement the already-existing
+   * jump click. NOT played on the final escape floor (the escape ship
+   * blast is that floor's audio cue).
+   */
+  HatchOpen1: 'hatch-open-1',
 } as const;
 
 /**
@@ -85,6 +94,17 @@ export const MidgroundKeys = {
    * clean.
    */
   SpaceNoises1: 'space-noises-1',
+  /**
+   * Number Climb (ships as "Space Escape!") atmospheric loop —
+   * crackling fire under a quiet emergency klaxon. Matches the
+   * burning-station escape premise. ~10s mono loop, encoded with
+   * `--no-trim` (default for midground) so the boundary stays clean,
+   * and `--loudnorm-target -26 LUFS` (4 dB quieter than the midground
+   * default of -22) so the attention-grabbing klaxon stays in the
+   * BACKGROUND rather than competing with foreground SFX. Sprint 2.2 —
+   * replaces the Skittering1 placeholder.
+   */
+  FireKlaxon1: 'fire-klaxon-1',
 } as const;
 
 /** Music loop keys. */
@@ -105,6 +125,17 @@ export const MusicKeys = {
    * Future cleanup may either wire it as an alt-track or remove it.
    */
   Loop3: 'loop-3',
+  /**
+   * Number Climb (ships as "Space Escape!") gameplay loop. ~16s
+   * stereo music track encoded with the default music profile
+   * (160 kbps stereo, -18 LUFS). Layered over the FireKlaxon1
+   * midground + foreground SFX (hatch, click). Sprint 2.2 — replaces
+   * the Loop1 placeholder. File name `game-background-song-loop-4`
+   * follows the user's personal music-library numbering convention,
+   * not the legacy `loop-N` shipped-file series (1/2/3 are Alien Shoot
+   * / orphan / Asteroid Field respectively).
+   */
+  EscapeLoop1: 'game-background-song-loop-4',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -131,6 +162,9 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
+  // Sprint 2.2 — escape-tower climb music. Replaced the Loop1
+  // placeholder once the real Climb track arrived.
+  'number-climb': MusicKeys.EscapeLoop1,
 };
 
 /**
@@ -145,6 +179,10 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
 export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, MidgroundKey>> = {
   'alien-shoot': MidgroundKeys.Skittering1,
   'asteroid-field': MidgroundKeys.SpaceNoises1,
+  // Sprint 2.2 — fire-klaxon ambient matches the burning-station
+  // escape premise. Replaced the Skittering1 placeholder once the
+  // real Climb midground arrived.
+  'number-climb': MidgroundKeys.FireKlaxon1,
 };
 
 /**
@@ -213,6 +251,10 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
   if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
+  // Sprint 2.2 — Number Climb-only ambient + music + SFX assets.
+  if (key === SfxKeys.HatchOpen1) return 'game:number-climb';
+  if (key === MidgroundKeys.FireKlaxon1) return 'game:number-climb';
+  if (key === MusicKeys.EscapeLoop1) return 'game:number-climb';
   return 'eager';
 }
 

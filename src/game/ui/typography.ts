@@ -139,7 +139,7 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   bodyMuted: { fontSize: '22px', color: TEXT_MUTED },
   bodyLarge: { fontSize: '24px', color: TEXT_PRIMARY },
   bodyAccent: { fontSize: '22px', color: TEXT_AMBER },
-  prompt: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' },
+  prompt: { fontSize: '42px', color: TEXT_AMBER, fontStyle: 'bold' },
   accent: { fontSize: '34px', color: TEXT_AMBER, fontStyle: 'bold' },
   success: { fontSize: '48px', color: TEXT_GREEN },
   warning: { fontSize: '48px', color: TEXT_AMBER_WARM },

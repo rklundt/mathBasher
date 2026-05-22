@@ -105,8 +105,12 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     return {
       question: this.currentQuestion,
       index: this.roundController.questionIndex,
-      total: config.round.questionsPerRound,
+      total: this.roundController.questionsPerRound,
     };
+  }
+
+  getQuestionsPerRound(): number {
+    return this.roundController.questionsPerRound;
   }
 
   constructor() {
@@ -468,7 +472,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     this.events.emit('questionStarted', {
       question: this.currentQuestion,
       index: this.roundController.questionIndex,
-      total: config.round.questionsPerRound,
+      total: this.roundController.questionsPerRound,
     });
   }
 

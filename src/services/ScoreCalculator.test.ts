@@ -3,7 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, it, expect, vi } from 'vitest';
-import { ScoreCalculator } from '@/services/ScoreCalculator';
+import { ScoreCalculator, computeClimbStars } from '@/services/ScoreCalculator';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 
 /**
@@ -188,5 +188,58 @@ describe('ScoreCalculator', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+/**
+ * Sprint 2.2 — `computeClimbStars(floorReached, totalFloors)` —
+ * height-based stars for Number Climb. Pure function; lock the
+ * threshold ladder so a future tuning change can't silently regress
+ * the kid's GameOver-scene stars award.
+ *
+ * Ladder for 10 floors: floor < 4 → 0 stars, 4-6 → 1, 7-9 → 2, 10 → 3.
+ */
+describe('computeClimbStars', () => {
+  describe('canonical 10-floor ladder', () => {
+    it('floor 0 (never started climbing) → 0 stars', () => {
+      expect(computeClimbStars(0, 10)).toBe(0);
+    });
+    it('floor 3 (just below 1-star threshold) → 0 stars', () => {
+      expect(computeClimbStars(3, 10)).toBe(0);
+    });
+    it('floor 4 → 1 star (boundary)', () => {
+      expect(computeClimbStars(4, 10)).toBe(1);
+    });
+    it('floor 6 → 1 star (just below 2-star threshold)', () => {
+      expect(computeClimbStars(6, 10)).toBe(1);
+    });
+    it('floor 7 → 2 stars (boundary)', () => {
+      expect(computeClimbStars(7, 10)).toBe(2);
+    });
+    it('floor 9 → 2 stars (just below 3-star threshold)', () => {
+      expect(computeClimbStars(9, 10)).toBe(2);
+    });
+    it('floor 10 (top) → 3 stars', () => {
+      expect(computeClimbStars(10, 10)).toBe(3);
+    });
+    it('floor 11 (defensive: above top) → 3 stars', () => {
+      expect(computeClimbStars(11, 10)).toBe(3);
+    });
+  });
+
+  describe('scales proportionally to other floor counts', () => {
+    // Hypothetical 20-floor variant: thresholds scale to 8/14/20.
+    it('20-floor: floor 7 → 0 stars', () => {
+      expect(computeClimbStars(7, 20)).toBe(0);
+    });
+    it('20-floor: floor 8 → 1 star', () => {
+      expect(computeClimbStars(8, 20)).toBe(1);
+    });
+    it('20-floor: floor 14 → 2 stars', () => {
+      expect(computeClimbStars(14, 20)).toBe(2);
+    });
+    it('20-floor: floor 20 → 3 stars', () => {
+      expect(computeClimbStars(20, 20)).toBe(3);
+    });
   });
 });

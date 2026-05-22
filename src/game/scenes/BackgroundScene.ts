@@ -102,6 +102,7 @@ export class BackgroundScene extends Phaser.Scene {
       // resets `displayWidth/Height` to the new texture's native size
       // on texture swap, undoing the original setDisplaySize call.
       this.backdrop?.setDisplaySize(this.cachedWidth, this.cachedHeight);
+      this.applyStarVisibility();
     });
 
     // === Layer 2: Three parallax star layers (back → front) ===
@@ -117,6 +118,7 @@ export class BackgroundScene extends Phaser.Scene {
       // Near: a handful of bigger, brighter stars at higher speed.
       this.createStarLayer(ParticleSpriteKeys.Star07, 10, 36, 0.85, 0.5, 0.9),
     ];
+    this.applyStarVisibility();
 
     // === Layer 3: Bottom darkening overlay (vertical alpha gradient) ===
     // Soft fade from transparent (top of band) to `#0b1020` at
@@ -194,6 +196,23 @@ export class BackgroundScene extends Phaser.Scene {
           star.y = -star.displayHeight;
           star.x = Math.random() * W;
         }
+      }
+    }
+  }
+
+  /**
+   * Sprint 2.2 story 13a — Number Climb plays inside framed floor "rooms",
+   * not an outdoor space. The falling-star overlay implies an overhead
+   * sky/space that isn't there during the climb, so we hide the stars
+   * (nebula still shows through the framed-floor side-bars for visual
+   * interest). Other game modes keep stars visible. Called from `create`
+   * (initial state) and from the `onGameIdChange` listener (live swap).
+   */
+  private applyStarVisibility(): void {
+    const visible = Settings.round.gameId !== 'number-climb';
+    for (const layer of this.starLayers) {
+      for (const star of layer.stars) {
+        star.setVisible(visible);
       }
     }
   }
