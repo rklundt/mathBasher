@@ -477,6 +477,10 @@ export const ClimbFloorBgKeys = {
   Room14: 'climb-floor-room-14',
   Room15: 'climb-floor-room-15',
   Room16: 'climb-floor-room-16',
+  Room17: 'climb-floor-room-17',
+  Room18: 'climb-floor-room-18',
+  Room19: 'climb-floor-room-19',
+  Room20: 'climb-floor-room-20',
 } as const;
 
 /**
@@ -520,6 +524,10 @@ const CLIMB_RANDOM_FLOOR_KEYS: readonly string[] = [
   ClimbFloorBgKeys.Room14,
   ClimbFloorBgKeys.Room15,
   ClimbFloorBgKeys.Room16,
+  ClimbFloorBgKeys.Room17,
+  ClimbFloorBgKeys.Room18,
+  ClimbFloorBgKeys.Room19,
+  ClimbFloorBgKeys.Room20,
 ] as const;
 
 /**
