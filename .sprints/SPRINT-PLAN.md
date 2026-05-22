@@ -54,7 +54,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | [2.1.8](phase-2/2.1.8-loading-bar-visibility.md) | Loading-bar visibility — DOM splash bar (post-tap → menu) + LoadingScene intermediate (DifficultyScene → game scene) | Closed (2026-05-17) |
 | [2.1.9](phase-2/2.1.9-pre-2.2-refactor-and-per-game-midground.md) | Pre-2.2 refactor (GameSceneLifecycle helper + createObservable + ADR-0011 + .sprints/ public) + per-game midground audio for Asteroid Field | Closed (2026-05-18) |
 | [2.2](phase-2/2.2-number-climb.md) | "Number Climb" (ships as "Space Escape!") — climbing platformer with answer rungs, 12 floors, escape-the-burning-station theme | Closed (2026-05-21) |
-| [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, WebP migration, and cross-game scoring true-up — 14 stories: kid-UX hints, config lift, dead-code cleanup, pickRung test coverage, WebP migration, splash-screen redesign, arcade modes → 12 questions, cross-game max-score calibration, Phaser-chunk cache headers. Absorbed the former sprints 2.3 + 3.5-story-7a. | Planned |
+| [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, WebP migration, and cross-game scoring true-up — 14 stories: kid-UX hints, config lift, dead-code cleanup, pickRung test coverage, WebP migration, splash-screen redesign, arcade modes → 12 questions, cross-game max-score calibration, Phaser-chunk cache headers. Absorbed the former sprints 2.3 + 3.5-story-7a. | In Progress (started 2026-05-22) |
 
 ## Phase 3 — backend + accounts
 

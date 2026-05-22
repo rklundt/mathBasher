@@ -78,6 +78,12 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 const HATCH_SFX_DELAY_MS = 150;
 const HERO_JUMP_DELAY_MS = 300;
 
+/**
+ * Sprint 2.2.1 story 1 — how long the one-time "One more try!" mulligan
+ * banner holds at full opacity before its 300ms fade-out.
+ */
+const MULLIGAN_HINT_HOLD_MS = 1500;
+
 
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.NumberClimb;
@@ -376,12 +382,57 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       0,
       this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000,
     );
+    // Sprint 2.2.1 story 1 — surface the time cost: the HUD listens for
+    // `timePenalty` and floats a red "−Ns" popup at the countdown timer
+    // so the kid registers that the wrong rung cost them time.
+    this.events.emit('timePenalty', {
+      penaltySec: config.numberClimb.wrongRungTimePenaltySec,
+    });
+    // First mulligan of the session: a one-time "One more try!" banner
+    // teaches the one-retry-per-floor rule before the kid discovers it
+    // the hard way (a second wrong ends the round).
+    this.maybeShowFirstMulliganHint();
+
     // Hero falls back to the CURRENT floor's base (i.e. the floor
     // the kid is still on — they haven't climbed yet). After the
     // animation, re-enable input for the second-and-final try.
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     this.hero.fallBackToFloor(currentFloorY, () => {
       this.inputSystem.acceptInput();
+    });
+  }
+
+  /**
+   * Sprint 2.2.1 story 1 — one-time "One more try!" banner above the
+   * hero on the kid's FIRST mulligan of the session. sessionStorage-
+   * gated so it shows once per session; the try/catch covers browsers
+   * that throw on storage access (iOS private mode pre-15) — there the
+   * hint just shows every mulligan rather than breaking the scene.
+   */
+  private maybeShowFirstMulliganHint(): void {
+    const FLAG_KEY = 'numberClimb.mulliganHintSeen';
+    try {
+      if (sessionStorage.getItem(FLAG_KEY) === '1') return;
+      sessionStorage.setItem(FLAG_KEY, '1');
+    } catch {
+      // Storage unavailable — fall through and show the hint anyway.
+    }
+    const banner = text(
+      this,
+      this.hero.x,
+      this.hero.y - NumberClimbHero.HEIGHT - 24,
+      'One more try!',
+      'warning',
+    ).setOrigin(0.5);
+    banner.setDepth(100);
+    this.time.delayedCall(MULLIGAN_HINT_HOLD_MS, () => {
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        duration: 300,
+        ease: 'Quad.Out',
+        onComplete: () => banner.destroy(),
+      });
     });
   }
 
