@@ -149,24 +149,24 @@ A **browser-based math game for kids**, modeled on the arcade-shooter feel of th
 |                                  | constants)|           |
 |                                  +-----------+           |
 +--------------------|-------------------------------------+
-                     |  HTTP
-                     v
-+----------------------------------------------------------+
-|  Express server (Node 20)                                |
-|                                                          |
-|  - Serves /dist as static                                |
-|  - GET /health for container probes                      |
-|  - Future: API routes for persisted scores, accounts     |
-+----------------------------------------------------------+
                      |
-                     v  (production only)
+                     v  built static bundle (dist/)
 +----------------------------------------------------------+
-|  Single Linux container -> Azure App Service             |
-|  (multi-stage Docker build, runs as non-root)            |
+|  Azure Static Web Apps  (production hosting)             |
+|                                                          |
+|  - serves the static SPA bundle from a global edge       |
+|  - staticwebapp.config.json: cache headers + SPA routing |
+|  - GitHub Actions auto-deploys on push                   |
 +----------------------------------------------------------+
+
+  Express server (Node 20) — IN THE REPO, NOT deployed today.
+  Serves /dist + GET /health for local production-style runs,
+  and is the landing spot for a future "mature to Azure App
+  Service" backend move (Phase 3+). The current production
+  path is 100% static — no server sits in the request path.
 ```
 
-Single repo, single deployable. The browser side and the server side share the same TypeScript toolchain and a single `package.json`.
+Single repo. The browser side and the server side share the same TypeScript toolchain and a single `package.json`; today only the static browser bundle is deployed.
 
 ---
 
@@ -182,7 +182,7 @@ Single repo, single deployable. The browser side and the server side share the s
 | Server | Express on Node 20 (ESM) | Tiny stub today; ready for API routes when accounts ship |
 | Tests | Vitest | Co-located `*.test.ts` files; seeded RNGs for determinism |
 | Container | Multi-stage Docker, `node:20-alpine` | Lean runtime, runs as non-root user |
-| Deployment target | Azure App Service for Containers (Linux) | Mature, slot-swap blue/green, free managed TLS |
+| Deployment target | Azure Static Web Apps (static SPA) | Cheapest + simplest fit for a 100% static SPA; global edge, free managed TLS, GitHub-Actions auto-deploy |
 | Package manager | **pnpm 9** (Corepack-pinned) | Fast, deterministic, lockfile-enforced |
 
 See `docs/adrs/` for the reasoning behind each major decision.
@@ -256,7 +256,8 @@ mathBasher/
 │       │                        UI 9-slice, particles, bg) + SPRITE_MANIFEST + tier picker
 │       └── SCALE.md             canvas scaling strategy doc (FIT + 1280×720 + landscape lock)
 │
-├── public/              static assets served as-is by Vite
+├── public/              static assets served as-is by Vite (copied to dist/ root)
+│   ├── staticwebapp.config.json  Azure SWA cache headers + SPA routing
 │   └── assets/          CREDITS.md attribution ledger
 │       ├── audio/       shipped MP3s (sfx/, music/, midground/) — see scripts/audio/
 │       └── sprites/     shipped PNGs/WebPs by kind (aliens/{128,192}/, hero/, ui/, particles/, bg/)
@@ -294,7 +295,8 @@ mathBasher/
 │       └── ADR-XXXX-*.md        one ADR per significant decision
 │
 └── .github/             repo metadata GitHub recognizes
-    └── (workflow files added when CI/CD lands)
+    └── workflows/
+        └── deploy.yml   GitHub Actions — builds + deploys to Azure Static Web Apps
 ```
 
 ### Folder discipline (enforced)
@@ -479,6 +481,39 @@ Phaser's `loaderror` event (one per failed file — network blip, 404, CORS) is 
 
 ---
 
+## Deployment
+
+mathBasher deploys to **Azure Static Web Apps**. The game is a 100 % static Vite SPA, so SWA is the cheapest and simplest fit. The Express server in `/server/` is kept in the repo but is **not** part of the deploy — it is the landing spot for a future "mature to Azure App Service" backend move (Phase 3+).
+
+### Two environments, push-triggered
+
+Deploys are automatic — `.github/workflows/deploy.yml` runs on every push:
+
+| Push to | Deploys to |
+|---|---|
+| `development` | the `development` staging environment |
+| `main` | production |
+
+Branching model: sprint branches → PR → `development` (verify on the staging URL) → a separate `development → main` PR is the deliberate "ship to production" gate. `main` is only ever updated via that promotion PR. The workflow installs with pnpm, builds, runs the full test suite as a gate, then deploys — a failed typecheck or test blocks the deploy.
+
+### Cache model — why a changed asset needs a new filename
+
+`public/staticwebapp.config.json` sets three cache tiers:
+
+| Content | Cache | Why |
+|---|---|---|
+| Content-hashed JS/CSS bundles | `immutable`, 1 year | The hash changes whenever the content does — the URL *is* the version. |
+| Stable-named game assets (`sprites/`, `audio/`, `images/`) | 7 days | A strong cache, but these filenames don't change. |
+| `index.html` | `no-cache` | Re-fetched every visit, so new asset hashes are picked up immediately. |
+
+**Convention worth knowing:** because game assets keep stable filenames and are cached for 7 days, **when you change an asset's content, give it a new filename** (e.g. `nebula.webp` → `nebula-2.webp`) and update the reference. A renamed file is a new URL, so the change reaches every player on their next visit; overwriting in place can serve stale art for up to a week. Code changes need no such care — Vite's content-hashing handles them automatically. (`Ctrl+Shift+R` only busts the cache for the one person pressing it — it is not a release mechanism.)
+
+### Rollback
+
+A redeploy is the rollback — `git revert` the bad commit on `main` and push, or re-run an earlier good run from the Actions tab.
+
+---
+
 ## License model
 
 mathBasher is **dual-licensed**:
@@ -503,7 +538,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where do gameplay numbers come from? | `src/core/config.ts` |
 | How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add multiplier to `config.ts` |
 | How do I add a new scene? | `src/game/scenes/<Name>Scene.ts`, register key in `src/core/sceneKeys.ts`, add to scene array in `src/main.ts` |
-| What's the deployment target? | `docs/adrs/ADR-0007-azure-app-service-for-containers.md` |
+| How does deployment work? | The **Deployment** section above — Azure Static Web Apps, push-triggered (`development` → staging, `main` → production). ADR-0007 covered the earlier App Service plan, now superseded by the SWA decision. |
 | Why no React? | `docs/adrs/ADR-0001-tech-stack.md` |
 | Why AGPL+commercial? | `docs/adrs/ADR-0004-agpl-commercial-dual-license.md` |
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
