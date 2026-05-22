@@ -54,11 +54,15 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
           # We build with pnpm above; skip_app_build tells the action not to
-          # run its own (Oryx) build — it just uploads the pre-built output.
+          # run its own (Oryx) build. With the build skipped, `app_location`
+          # is the folder the action uploads — point it straight at the
+          # built `dist/`. (Pointing it at repo root uploads node_modules
+          # and busts the SWA 250 MB content limit.) `output_location` is
+          # unused when skip_app_build is true.
           skip_app_build: true
-          app_location: "/"
+          app_location: "dist"
           api_location: ""
-          output_location: "dist"
+          output_location: ""
           # `development` branch -> named "development" staging environment;
           # `main` -> production (empty value = the production environment).
           deployment_environment: ${{ github.ref_name == 'development' && 'development' || '' }}
