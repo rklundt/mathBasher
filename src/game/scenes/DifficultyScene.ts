@@ -59,8 +59,15 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
     case 'number-climb': {
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const rungs = RUNGS_PER_DIFFICULTY[key];
+      const floors = config.numberClimb.questionsPerRound;
       const totalSec = config.numberClimb.speed[key].totalTimeSec;
-      return { label: labels[key], subtitle: `${rungs} rungs · ${totalSec}s timer` };
+      // Sprint 2.2.1 story 3 — subtitle includes the floor count so the
+      // kid knows the round length before pressing Start. Floor count
+      // reads from config so a future round-size change auto-updates.
+      return {
+        label: labels[key],
+        subtitle: `${rungs} rungs · ${floors} floors · ${totalSec}s timer`,
+      };
     }
   }
 }
