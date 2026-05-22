@@ -76,7 +76,10 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  * later so the kid sees the door open BEFORE the hero moves through it.
  */
 const HATCH_SFX_DELAY_MS = 150;
-const HERO_JUMP_DELAY_MS = 300;
+// Sprint 2.2.1 story 4 — 300 → 200 ms after playtest ("300 ms tap-to-
+// movement felt sluggish"). Still leaves a 50 ms gap after the hatch
+// SFX starts (150 ms) so the door audibly leads the hero's move.
+const HERO_JUMP_DELAY_MS = 200;
 
 /**
  * Sprint 2.2.1 story 1 — how long the one-time "One more try!" mulligan
