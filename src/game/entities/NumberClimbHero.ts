@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
+import { config } from '@/core/config';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys, pickRandomHitWrongSfx } from '@/core/audioKeys';
 
@@ -38,8 +39,9 @@ import { SfxKeys, pickRandomHitWrongSfx } from '@/core/audioKeys';
  * the visible motion settles so the scene can sequence its own
  * follow-up logic (next-floor reveal, GameOver transition, etc.).
  */
-const HERO_WIDTH = 56;
-const HERO_HEIGHT = 64;
+// Sprint 2.2.1 story 5 — dimensions lifted to `config.numberClimb.heroPx`.
+const HERO_WIDTH = config.numberClimb.heroPx.width;
+const HERO_HEIGHT = config.numberClimb.heroPx.height;
 /** Hero's body color — warm amber to read clearly against any backdrop. */
 const HERO_FILL_COLOR = 0xfbbf24;
 /** Hero's outline color — darker for definition. */

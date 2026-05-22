@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { config } from '@/core/config';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 
 /**
@@ -27,17 +28,13 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
  * underneath gameplay sprites without per-child fiddling.
  */
 
-/** Black side-bars on left + right (px). Tuned in the 16-24 range from story 13a's spec. */
-const SIDE_BAR_WIDTH = 20;
-/**
- * Thickness (px) of the horizontal black separator between floors.
- * Started at 5 in story 13a; bumped to 12 in playtest because adjacent
- * floors visually ran together with the +57% taller floor band — the
- * preview at floor N+1 and the current floor at N read as one
- * continuous panel. 12px gives crisp floor-to-floor separation without
- * eating noticeable real estate from the 173 px floor band (~7%).
- */
-const SEPARATOR_THICKNESS = 12;
+// Sprint 2.2.1 story 5 — frame dimensions lifted to
+// `config.numberClimb.framePx`. Tuning history: side-bar started in the
+// 16-24 range (story 13a); separator started at 5, bumped to 12 in
+// story 13a playtest because adjacent floors ran together with the
+// taller floor band.
+const SIDE_BAR_WIDTH = config.numberClimb.framePx.sideBarWidth;
+const SEPARATOR_THICKNESS = config.numberClimb.framePx.separatorThickness;
 const BLACK = 0x000000;
 
 /**

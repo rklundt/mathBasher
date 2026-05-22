@@ -433,6 +433,28 @@ export const config = {
       desktop: 173,
       mobile: 173,
     },
+    /**
+     * Sprint 2.2.1 story 5 — entity dimensions lifted from file-level
+     * constants in the Climb entities into config (matches the
+     * `asteroidField.hero` precedent). Colors, font sizes, and tween
+     * durations stay as named constants in their entity files — those
+     * are visual-design / animation-feel internals, not the
+     * gameplay-tuning numbers this config block is for.
+     */
+    heroPx: {
+      width: 56,
+      height: 64,
+    },
+    rungPx: {
+      width: 180,
+      height: 56,
+    },
+    framePx: {
+      /** Black side-bar width on each edge of a floor frame. */
+      sideBarWidth: 20,
+      /** Thickness of the horizontal black separator between floors. */
+      separatorThickness: 12,
+    },
   },
   layout: {
     /** number of answer lanes across the screen */
