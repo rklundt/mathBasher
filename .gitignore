@@ -45,6 +45,11 @@ CLAUDE.md
 .claude/
 .adrs/
 backlog.md
+# Operational deployment runbook — the one gitignored exception inside the
+# otherwise-committed docs/ folder. Holds environment URLs, the promotion
+# process, rollback steps, and token-rotation detail kept out of the public
+# repo. The public, non-sensitive deploy overview lives in DeveloperGuide.md.
+docs/deployment-runbook.md
 # Note: .sprints/ was gitignored through sprint 2.1.8. Sprint 2.1.9
 # (ADR-0011 + the per-game-mode dispatch documentation pass) made
 # sprint files PUBLIC because the "where do I see what's planned?"
