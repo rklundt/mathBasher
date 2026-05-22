@@ -12,10 +12,22 @@
  */
 export const config = {
   round: {
-    questionsPerRound: 20,
-    passingCorrect: 14,
-    /** stars awarded at: ★ at 14 correct, ★★ at 17, ★★★ at 19 */
-    starThresholds: [14, 17, 19] as const,
+    // Sprint 2.2.1 story 10 — arcade modes (Alien Shoot, Asteroid
+    // Field) dropped 20 → 12 to match Number Climb's 12-floor round
+    // (playtest: "20 felt long, 12 is the sweet spot"). Number Climb
+    // passes its own 12 via the RoundController override; this default
+    // now governs the two arcade modes.
+    questionsPerRound: 12,
+    // 70 % of 12 = 8.4 → 8 (was 14/20 = 70 %). Kept == starThresholds[0]
+    // so "passing" still means "earned at least 1 star."
+    passingCorrect: 8,
+    /**
+     * Stars awarded at: ★ at 8 correct, ★★ at 10, ★★★ at 11.
+     * Rescaled from the prior 20-question ladder [14,17,19] (70/85/95 %)
+     * to 12 questions (67/83/92 %). ★★★ at 11 (not 12) preserves the
+     * "miss one and still 3-star" near-perfect cadence.
+     */
+    starThresholds: [8, 10, 11] as const,
     /**
      * Anti-repeat sliding window — GameScene tracks the last N prompt
      * strings of the current round and re-rolls the generator (up to
