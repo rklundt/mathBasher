@@ -55,6 +55,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | [2.1.9](phase-2/2.1.9-pre-2.2-refactor-and-per-game-midground.md) | Pre-2.2 refactor (GameSceneLifecycle helper + createObservable + ADR-0011 + .sprints/ public) + per-game midground audio for Asteroid Field | Closed (2026-05-18) |
 | [2.2](phase-2/2.2-number-climb.md) | "Number Climb" (ships as "Space Escape!") — climbing platformer with answer rungs, 12 floors, escape-the-burning-station theme | Closed (2026-05-21) |
 | [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, WebP migration, and cross-game scoring true-up — 14 stories: kid-UX hints, config lift, dead-code cleanup, pickRung test coverage, WebP migration, splash-screen redesign, arcade modes → 12 questions, cross-game max-score calibration, Phaser-chunk cache headers. Absorbed the former sprints 2.3 + 3.5-story-7a. | In Progress (started 2026-05-22) |
+| [2.2.2](phase-2/2.2.2-add-fractions.md) | "Add Fractions" math type — new generator available in all three games, content scales by difficulty (Easy = like fractions, Medium = mixed numbers, Hard = unlike fractions). First math type with non-integer answers; first generator that varies output by the Speed setting. | Planned |
 
 ## Phase 3 — backend + accounts
 
