@@ -567,16 +567,27 @@ const KIND_FOLDER: Record<SpriteKind, string> = {
   bg: 'bg',
 };
 
+/**
+ * Sprite kinds shipped as WebP. Sprint 2.2.1 story 6 migrated `bg`
+ * (photo-like backdrops, lossy q85 — ≈88 % smaller) and `hero`
+ * (sprite art, lossless WebP) off PNG; `alien` spritesheets were
+ * always WebP. `ui` + `particle` + `projectile` stay PNG — those are
+ * already tiny paletted sprites where WebP saves almost nothing.
+ */
+const WEBP_KINDS: ReadonlySet<SpriteKind> = new Set<SpriteKind>(['alien', 'bg', 'hero']);
+
 // Function overloads: alien REQUIRES a tier; other kinds don't accept one.
 export function spritePath(kind: 'alien', key: string, tier: SpriteTier): string;
 export function spritePath(kind: Exclude<SpriteKind, 'alien'>, key: string): string;
 /**
  * Build the URL to a shipped sprite asset.
  *
- * - For `kind === 'alien'`, includes the tier subfolder (`/128/` or `/192/`)
- *   and uses the `.webp` spritesheet extension. Tier is REQUIRED.
- * - For other kinds, single resolution per kind (no tier subfolder), `.png`
- *   extension (Kenney packs ship PNG; `process.mjs` keeps that format).
+ * - For `kind === 'alien'`, includes the tier subfolder (`/128/` or `/192/`).
+ *   Tier is REQUIRED.
+ * - For other kinds, single resolution per kind (no tier subfolder).
+ * - Extension: `.webp` for the kinds in `WEBP_KINDS` (alien / bg / hero),
+ *   `.png` for the rest (ui / particle / projectile — Kenney-pack art
+ *   kept as PNG, see story 6).
  *
  * Vite serves `public/` at root in both dev and prod, so `/assets/sprites/...`
  * resolves the same way in both modes.
@@ -588,7 +599,8 @@ export function spritePath(kind: SpriteKind, key: string, tier?: SpriteTier): st
     }
     return `/assets/sprites/${KIND_FOLDER.alien}/${tier}/${key}.webp`;
   }
-  return `/assets/sprites/${KIND_FOLDER[kind]}/${key}.png`;
+  const ext = WEBP_KINDS.has(kind) ? 'webp' : 'png';
+  return `/assets/sprites/${KIND_FOLDER[kind]}/${key}.${ext}`;
 }
 
 /**
@@ -761,7 +773,10 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
   ...(Object.values(AsteroidSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'particle',
     key,
-    url: `/assets/sprites/aliens/${key}.png`,
+    // Sprint 2.2.1 story 6 — migrated to lossless WebP. URL is still
+    // hardcoded (these live in `aliens/` but aren't `alien`-kind, so
+    // `spritePath` doesn't cover them); the extension flipped .png → .webp.
+    url: `/assets/sprites/aliens/${key}.webp`,
     // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
     scope: 'game:asteroid-field',
   })),
