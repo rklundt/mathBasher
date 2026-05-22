@@ -27,18 +27,25 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-- **Sprint 2.2.1 — Post-Climb cleanup, UX polish, WebP migration, cross-game scoring true-up** — a catch-all sprint paying down the sprint 2.2 audit's should-fix items plus the cross-game scoring/round-size true-up. 12 stories across four buckets:
-  - **Kid-UX hints** — a session-once "One more try!" mulligan banner + a floating "−3s" timer popup; an "Out of time!" banner before the timer-out fall-off; the Number Climb difficulty subtitle now shows the floor count; hero-jump delay tuned 300 → 200 ms for snappier tap response.
-  - **Config + code cleanup** — Climb entity dimensions lifted into `config.numberClimb.{hero,rung,frame}`; dead code removed; the `pickRung` decision logic extracted to a pure, fully-tested `resolveRungPick`.
-  - **WebP migration** — `scripts/sprites/process.mjs` gained a `--format` flag; 39 background + hero + asteroid assets migrated PNG → WebP, cutting the background payload ~9.5 MB → ~1.0 MB.
-  - **Cross-game true-up** — Alien Shoot + Asteroid Field rounds normalized 20 → 12 questions (matching Number Climb); cross-game max-score parity verified and locked with tests.
-  - Six-reviewer audit fixes: a false-positive-Warning fix in the Climb input cooldown, banner legibility treatment over busy floor art, and documentation/credits accuracy.
-- **Sprint 2.2 — Number Climb (ships as "Space Escape!")** — third game mode. A burning-space-station escape arcade: kid climbs 10 floors picking the correct-answer rung at each floor, dodging a cumulative timer + a one-mulligan-per-floor cap. Difficulty controls rung count (2/3/4); Speed controls the cumulative timer budget (250s / 180s / 120s). Stars are height-based, not correct-count: floor 4 = 1 star, 7 = 2, 10 = 3.
-  - Floor visuals: 16 random "room" bg images per round (no repeat within a round) inside a black picture-frame with nebula bleed-through on the sides; next-floor preview at 25% alpha; fixed "fire" image on the ground floor; fixed "escape" image at 2× height on floor 10 with a spaceship overlay that blasts off with a smoke trail on win. "Escaped Safe!" banner fires at 75% of the ship-blast and holds for 1s before GameOver.
+_Nothing yet._
+
+## [2.2.1] - 2026-05-22 — Post-Climb cleanup, UX polish, WebP migration, cross-game scoring true-up
+
+A catch-all sprint paying down the sprint 2.2 audit's should-fix items plus the cross-game scoring/round-size true-up. 12 stories across four buckets:
+
+- **Kid-UX hints** — a session-once "One more try!" mulligan banner + a floating "−3s" timer popup; an "Out of time!" banner before the timer-out fall-off; the Number Climb difficulty subtitle now shows the floor count; hero-jump delay tuned 300 → 200 ms for snappier tap response.
+- **Config + code cleanup** — Climb entity dimensions lifted into `config.numberClimb.{hero,rung,frame}`; dead code removed; the `pickRung` decision logic extracted to a pure, fully-tested `resolveRungPick`.
+- **WebP migration** — `scripts/sprites/process.mjs` gained a `--format` flag; 39 background + hero + asteroid assets migrated PNG → WebP, cutting the background payload ~9.5 MB → ~1.0 MB.
+- **Cross-game true-up** — Alien Shoot + Asteroid Field rounds normalized 20 → 12 questions (matching Number Climb); cross-game max-score parity verified and locked with tests.
+- **Six-reviewer audit fixes** — a false-positive-Warning fix in the Climb input cooldown, a shared banner-legibility treatment over busy floor art, and documentation/credits accuracy.
+
+## [2.2.0] - 2026-05-21 — Number Climb (ships as "Space Escape!")
+
+- **Number Climb** — third game mode. A burning-space-station escape arcade: kid climbs 12 floors picking the correct-answer rung at each floor, dodging a cumulative timer + a one-mulligan-per-floor cap. Difficulty controls rung count (2/3/4); Speed controls the cumulative timer budget (250s / 180s / 120s). Stars are height-based, not correct-count.
+  - Floor visuals: random "room" bg images per round (no repeat within a round) inside a black picture-frame with nebula bleed-through on the sides; next-floor preview at 25% alpha; fixed "fire" image on the ground floor; fixed "escape" image at 2× height on the top floor with a spaceship overlay that blasts off with a smoke trail on win. "Escaped Safe!" banner fires at 75% of the ship-blast and holds for 1s before GameOver.
   - Cross-game improvements landed in this sprint: math-prompt font bumped 24px → 42px (was visually smaller than the answer numbers — fixed in `typography.ts` + `hudBarHeightPx`); HUD progress dots + Q-counter now read round size from `RoundController` so any future non-20-question mode works without HUD edits; `GameOverScene` "Correct: N/total" denominator dynamic the same way.
   - Display name flipped: "Number Climb" → "Space Escape!" in `GameSelectScene` + `LoadingScene`. Internal `'number-climb'` GameId / `SceneKeys.NumberClimb` / telemetry events / file names stay verbatim for App Insights query continuity.
   - Adds ADR-0011 conformance: every step of the 12-step "how to add a new game mode" checklist hit.
-- **Then Phase 3** — backend + accounts (Express API for high scores, ApiScoreStore, OAuth, Azure deployment via Bicep).
 
 ## [2.1.9] - 2026-05-18 — Pre-2.2 refactor + per-game midground audio
 
