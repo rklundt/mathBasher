@@ -43,6 +43,13 @@ export class NumberClimbInputSystem {
   private paused = false;
   /** Rungs whose pointer-handlers we've wired up. Cleared per-floor by `bindRungs`. */
   private boundRungs: NumberClimbRung[] = [];
+  /**
+   * Handle to the defensive auto-restore timer scheduled in `commitPick`.
+   * Cancelled the moment the scene calls `acceptInput()` on its own — so
+   * the Warning-level safety net only fires on a genuinely stuck state,
+   * not on every normal pick.
+   */
+  private cooldownTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor(opts: NumberClimbInputSystemOpts) {
     this.scene = opts.scene;
@@ -104,6 +111,11 @@ export class NumberClimbInputSystem {
    */
   acceptInput(): void {
     this.accepting = true;
+    // The scene re-enabled input on its own — cancel the defensive
+    // auto-restore timer so its Warning branch never fires on a
+    // perfectly normal pick.
+    this.cooldownTimer?.remove();
+    this.cooldownTimer = null;
   }
 
   /** Pause / resume hooks — match the lifecycle's pause flow. */
@@ -119,6 +131,8 @@ export class NumberClimbInputSystem {
       rung.off(Phaser.Input.Events.POINTER_DOWN);
     }
     this.boundRungs = [];
+    this.cooldownTimer?.remove();
+    this.cooldownTimer = null;
   }
 
   // ----- Internal ---------------------------------------------------------
@@ -137,11 +151,15 @@ export class NumberClimbInputSystem {
     this.onPickCallback?.(rung);
     // Auto-restore in case the scene forgets to call acceptInput
     // (defensive — without this, a stuck callback path would leave
-    // input permanently disabled). If this branch ever FIRES, it means
-    // the scene genuinely failed to re-enable input on its own — a
-    // real bug the safety net is papering over — so surface it as a
-    // Warning rather than silently recovering.
-    this.scene.time.delayedCall(POST_PICK_COOLDOWN_MS * 4, () => {
+    // input permanently disabled). The timer is cancelled by
+    // `acceptInput()` on every normal pick, so this branch only ever
+    // FIRES when the scene genuinely failed to re-enable input on its
+    // own — a real bug the safety net is papering over — hence the
+    // Warning. Cancel any prior pending timer before scheduling a new
+    // one so back-to-back picks don't stack stale timers.
+    this.cooldownTimer?.remove();
+    this.cooldownTimer = this.scene.time.delayedCall(POST_PICK_COOLDOWN_MS * 4, () => {
+      this.cooldownTimer = null;
       if (!this.accepting) {
         this.accepting = true;
         _th.logToAi('NumberClimbInput.cooldownAutoRestore', SeverityLevel.Warning, {

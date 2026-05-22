@@ -78,11 +78,11 @@ export class HudScene extends Phaser.Scene {
   private promptText!: Phaser.GameObjects.Text;
   private counterText!: Phaser.GameObjects.Text;
   /**
-   * Sprint 0.7 Story 8 — per-question progress dots. One per question
-   * (config.round.questionsPerRound = 20). Filled green for correct,
-   * red for wrong (timeout), hollow grey for not-yet-answered. Index
-   * tracked via `currentQuestionIndex` so we can color the right dot
-   * when `questionEnded` fires.
+   * Sprint 0.7 Story 8 — per-question progress dots. One per question;
+   * the count comes from `totalQuestions` (below), NOT a hardcoded value.
+   * Filled green for correct, red for wrong (timeout), hollow grey for
+   * not-yet-answered. Index tracked via `currentQuestionIndex` so we can
+   * color the right dot when `questionEnded` fires.
    */
   private progressDots: Phaser.GameObjects.Arc[] = [];
   private currentQuestionIndex = 0;
@@ -90,9 +90,10 @@ export class HudScene extends Phaser.Scene {
    * Sprint 2.2 story 15a — total questions/floors in the round being
    * displayed. Pulled from the active game scene at `create()` time via
    * `getQuestionsPerRound()` so the Q-counter denominator and the
-   * progress-dots count read per-mode (Climb=10, Alien-Shoot=20,
-   * Asteroid-Field=20). Falls back to the global config default if the
-   * game scene contract isn't satisfied (back-compat).
+   * progress-dots count read per-mode (all three modes are 12 as of
+   * sprint 2.2.1 story 10, but the value is read per-scene, not assumed).
+   * Falls back to the global config default if the game scene contract
+   * isn't satisfied (back-compat).
    */
   private totalQuestions: number = config.round.questionsPerRound;
   private gameSceneListenersBound = false;

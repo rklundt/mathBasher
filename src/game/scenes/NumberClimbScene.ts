@@ -22,9 +22,9 @@ import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
 
 /**
- * Number Climb — sprint 2.2 third game mode. Vertical climb across 10
- * floors; the kid picks the rung carrying the correct answer at each
- * floor.
+ * Number Climb — sprint 2.2 third game mode. Vertical climb across 12
+ * floors (`config.numberClimb.questionsPerRound`); the kid picks the
+ * rung carrying the correct answer at each floor.
  *
  * ## Gameplay loop (per floor)
  *
@@ -37,7 +37,7 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  * 3. Scene dispatches on the outcome:
  *      - 'correct': award score, hero `jumpTo(rung.x, rung.y)`, camera
  *        scrolls down so the hero settles back near canvas center, then
- *        `afterFloor()` → next floor OR endRound if floor 10.
+ *        `afterFloor()` → next floor OR endRound on the final floor.
  *      - 'wrong-mulligan': deduct `wrongRungTimePenaltySec` from the
  *        cumulative timer, hero `fallBackToFloor(currentFloorY)`,
  *        InputSystem `acceptInput()` to allow the second-and-final try.
@@ -48,21 +48,21 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  *
  * - Timer hits 0 mid-floor → `endRound()` (hero falls off screen).
  * - Second wrong rung on the same floor → `endRound()`.
- * - Floor 10 reached → `endRound()` with `passed=true, stars=3`.
+ * - Final floor reached → `endRound()` with `passed=true, stars=3`.
  *
  * ## Camera (option 2: hero moves up, camera follows)
  *
  * Hero starts near the bottom of the playfield; camera centered.
  * Each correct jump moves the hero UP to the picked rung's world y.
  * Camera tweens to follow at a slight lag, so the hero visibly rises
- * within the frame before the camera catches up. By floor 10 the
+ * within the frame before the camera catches up. By the final floor the
  * hero is at the top of the playable area + a celebration animation
  * fires. Floor world y-coordinates decrease as the kid climbs (lower
  * y = higher on screen in Phaser's coordinate system).
  *
  * Floor 0 (start) y = `bottomBound - heroHalfHeight`. Floor 1's
- * rungs are above at `floor0Y - FLOOR_SPACING`. Floor 10 is at
- * `floor0Y - 10 * FLOOR_SPACING` = near the top of the climb space.
+ * rungs are above at `floor0Y - FLOOR_SPACING`. The final floor is at
+ * `floor0Y - totalFloors * FLOOR_SPACING` = near the top of the climb space.
  */
 
 // Vertical spacing between floor centers now comes from
@@ -286,7 +286,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const question = this.roundController.drawNextQuestion();
     if (question === null) {
       // Round complete — shouldn't reach here for Number Climb because
-      // floor 10 success short-circuits to endRound, but defensive.
+      // final-floor success short-circuits to endRound, but defensive.
       this.endRound();
       return;
     }
@@ -431,6 +431,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       'warning',
     ).setOrigin(0.5);
     banner.setDepth(100);
+    this.applyBannerLegibility(banner);
     this.time.delayedCall(MULLIGAN_HINT_HOLD_MS, () => {
       this.tweens.add({
         targets: banner,
@@ -476,6 +477,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     ).setOrigin(0.5);
     banner.setScrollFactor(0);
     banner.setDepth(100);
+    this.applyBannerLegibility(banner);
     this.time.delayedCall(TIMER_OUT_BANNER_HOLD_MS, () => {
       banner.destroy();
       this.hero.fallOffScreen(this.scale.height, () => {
@@ -524,6 +526,20 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.startNextQuestion();
   }
 
+  /**
+   * Sprint 2.2.1 audit (Support reviewer) — shared legibility treatment
+   * for the scene's centered banners ("One more try!", "Out of time!",
+   * "Escaped Safe!"). These render over per-floor background art that can
+   * be bright (the fire floor, lit station rooms), where the bare warm-
+   * amber / light-grey fill drops below the WCAG-AA 4.5:1 contrast bar.
+   * A heavy dark stroke + soft drop shadow makes the copy readable on any
+   * floor backdrop without needing a backing rect per call site.
+   */
+  private applyBannerLegibility(banner: Phaser.GameObjects.Text): void {
+    banner.setStroke('#0b1020', 8);
+    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+  }
+
   // ----- End-round + cleanup ----------------------------------------------
 
   private endRound(): void {
@@ -549,6 +565,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const banner = text(this, bannerX, bannerY, 'Escaped Safe!', 'headline');
     banner.setOrigin(0.5);
     banner.setDepth(100); // above the frame + hero z-order
+    this.applyBannerLegibility(banner);
 
     this.time.delayedCall(1000, () => {
       banner.destroy();

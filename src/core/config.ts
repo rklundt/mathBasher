@@ -441,19 +441,19 @@ export const config = {
      * are visual-design / animation-feel internals, not the
      * gameplay-tuning numbers this config block is for.
      */
-    heroPx: {
-      width: 56,
-      height: 64,
+    hero: {
+      widthPx: 56,
+      heightPx: 64,
     },
-    rungPx: {
-      width: 180,
-      height: 56,
+    rung: {
+      widthPx: 180,
+      heightPx: 56,
     },
-    framePx: {
+    frame: {
       /** Black side-bar width on each edge of a floor frame. */
-      sideBarWidth: 20,
+      sideBarWidthPx: 20,
       /** Thickness of the horizontal black separator between floors. */
-      separatorThickness: 12,
+      separatorThicknessPx: 12,
     },
   },
   layout: {

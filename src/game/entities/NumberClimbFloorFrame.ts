@@ -29,12 +29,12 @@ import { ParticleSpriteKeys } from '@/core/spriteKeys';
  */
 
 // Sprint 2.2.1 story 5 — frame dimensions lifted to
-// `config.numberClimb.framePx`. Tuning history: side-bar started in the
+// `config.numberClimb.frame`. Tuning history: side-bar started in the
 // 16-24 range (story 13a); separator started at 5, bumped to 12 in
 // story 13a playtest because adjacent floors ran together with the
 // taller floor band.
-const SIDE_BAR_WIDTH = config.numberClimb.framePx.sideBarWidth;
-const SEPARATOR_THICKNESS = config.numberClimb.framePx.separatorThickness;
+const SIDE_BAR_WIDTH = config.numberClimb.frame.sideBarWidthPx;
+const SEPARATOR_THICKNESS = config.numberClimb.frame.separatorThicknessPx;
 const BLACK = 0x000000;
 
 /**

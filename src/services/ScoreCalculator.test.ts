@@ -292,15 +292,10 @@ describe('cross-game max-score parity (story 11)', () => {
     });
   }
 
-  it('max score is fully determined by (mathId, speed) — no game axis exists', () => {
-    // ScoreCalculator's constructor signature is (mathId, speed). Two
-    // calculators built with the same args MUST produce the same max —
-    // there is no parameter through which a game mode could diverge.
-    // This is the structural guarantee of cross-game parity.
-    const climbHard = perfectRoundScore('mult-to-144', 'fast');
-    const asteroidHard = perfectRoundScore('mult-to-144', 'fast');
-    const alienHard = perfectRoundScore('mult-to-144', 'fast');
-    expect(climbHard).toBe(asteroidHard);
-    expect(asteroidHard).toBe(alienHard);
-  });
+  // Cross-game parity is a structural guarantee, not a runtime one:
+  // `ScoreCalculator`'s constructor signature is `(mathId, speed)` — there
+  // is no game-mode parameter through which the max could diverge. The
+  // per-speed formula tests above fully lock the score; a runtime test
+  // comparing two identical `(mathId, speed)` calls would only restate
+  // `x === x`, so none is added here.
 });

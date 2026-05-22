@@ -9,7 +9,17 @@
  * one-pass through `sharp`, metadata stripped, deterministic output.
  *
  * Usage:
- *   pnpm sprite:process [--kind <kind>] [--name <basename>] [--no-resize] <input.png> [output.png]
+ *   pnpm sprite:process [--kind <kind>] [--name <basename>] [--no-resize]
+ *                       [--format <png|webp|webp-lossless>] [--brightness <N>]
+ *                       [--flop] <input.png> [output.png]
+ *
+ * Optional flags (run with `--help` for the full text):
+ *   --format     png (default) | webp (lossy q85) | webp-lossless. webp /
+ *                webp-lossless write a `.webp` file instead of `.png`.
+ *   --brightness N  multiplies output brightness via sharp's `.modulate()`
+ *                (default 1.0). e.g. `--brightness 0.6` = 40% darker.
+ *   --flop       horizontally mirrors the output (sharp's `.flop()`).
+ *   --no-resize  skips the resize pass (input already at target size).
  *
  * Kinds (the only legal values for `--kind`):
  *   alien        — enemy sprites; 96×96 max bounding box   → public/assets/sprites/aliens/

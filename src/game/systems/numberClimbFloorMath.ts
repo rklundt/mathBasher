@@ -124,6 +124,11 @@ export interface RungPickDecision {
  *  - first wrong (wrongsSoFar 0 → 1)         → `wrong-mulligan`.
  *  - second wrong (wrongsSoFar 1 → 2)        → `wrong-terminal`.
  *
+ * `wrongsAfter` is capped at `TERMINAL_WRONGS` (2) so a defensive
+ * re-entry (the scene ends the round on the first `wrong-terminal`, so
+ * `wrongsSoFar: 2` should never reach here) stays terminal rather than
+ * producing a nonsense counter value of 3.
+ *
  * Locked in `NumberClimbFloorSystem.test.ts`.
  */
 export function resolveRungPick(input: {
@@ -141,9 +146,11 @@ export function resolveRungPick(input: {
   if (rungAnswer === correctAnswer) {
     return { kind: 'correct', wrongsAfter: wrongsSoFar, consumeRung: false };
   }
-  const wrongsAfter = wrongsSoFar + 1;
+  /** Two wrongs on a floor ends the round — the wrong-this-floor ceiling. */
+  const TERMINAL_WRONGS = 2;
+  const wrongsAfter = Math.min(wrongsSoFar + 1, TERMINAL_WRONGS);
   return {
-    kind: wrongsAfter === 1 ? 'wrong-mulligan' : 'wrong-terminal',
+    kind: wrongsAfter >= TERMINAL_WRONGS ? 'wrong-terminal' : 'wrong-mulligan',
     wrongsAfter,
     consumeRung: true,
   };

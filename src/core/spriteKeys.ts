@@ -756,7 +756,7 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     scope: 'game:number-climb',
   })),
   // Sprint 2.2 story 13e — escape ship overlay sprite. Ships in the
-  // `hero/` folder (192×192 paletted PNG) but Climb-only, so deferred
+  // `hero/` folder (192×192 lossless WebP) but Climb-only, so deferred
   // via the same `game:number-climb` scope.
   ...(Object.values(ClimbEscapeShipKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'hero',
@@ -764,9 +764,9 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', key),
     scope: 'game:number-climb',
   })),
-  // Sprint 2.1 playtest — image-variant asteroid PNGs. These ship in
+  // Sprint 2.1 playtest — image-variant asteroid sprites. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for
-  // the 192×192 paletted-PNG profile match) but aren't `alien` SEMANTICS
+  // the 192×192 profile match) but aren't `alien` SEMANTICS
   // — they're target rocks in Asteroid Field, not enemy spritesheets.
   // Tagged as `kind: 'particle'` in the manifest because (a) the
   // SpriteManifestEntry type excludes `alien` (alien needs the

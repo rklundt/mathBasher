@@ -39,9 +39,9 @@ import { SfxKeys, pickRandomHitWrongSfx } from '@/core/audioKeys';
  * the visible motion settles so the scene can sequence its own
  * follow-up logic (next-floor reveal, GameOver transition, etc.).
  */
-// Sprint 2.2.1 story 5 — dimensions lifted to `config.numberClimb.heroPx`.
-const HERO_WIDTH = config.numberClimb.heroPx.width;
-const HERO_HEIGHT = config.numberClimb.heroPx.height;
+// Sprint 2.2.1 story 5 — dimensions lifted to `config.numberClimb.hero`.
+const HERO_WIDTH = config.numberClimb.hero.widthPx;
+const HERO_HEIGHT = config.numberClimb.hero.heightPx;
 /** Hero's body color — warm amber to read clearly against any backdrop. */
 const HERO_FILL_COLOR = 0xfbbf24;
 /** Hero's outline color — darker for definition. */

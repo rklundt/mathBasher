@@ -222,7 +222,8 @@ describe('resolveRungPick', () => {
   it('a wrong pick while already at the terminal count stays terminal (defensive)', () => {
     // Shouldn't happen — the scene ends the round on the first
     // wrong-terminal — but the state machine must not crash or produce
-    // a nonsense kind if pickRung is somehow called again.
+    // a nonsense kind if pickRung is somehow called again. `wrongsAfter`
+    // caps at 2 rather than ticking up to a meaningless 3.
     const d = resolveRungPick({
       paused: false,
       rungInFloor: true,
@@ -231,6 +232,6 @@ describe('resolveRungPick', () => {
       wrongsSoFar: 2,
     });
     expect(d.kind).toBe('wrong-terminal');
-    expect(d.wrongsAfter).toBe(3);
+    expect(d.wrongsAfter).toBe(2);
   });
 });
