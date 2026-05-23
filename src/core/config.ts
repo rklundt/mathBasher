@@ -97,6 +97,16 @@ export const config = {
       // be deterministic per math-type-tile, so a fixed average works. 2.5 is
       // approximately the midpoint between add-to-10 (1.0) and div-to-144 (4.0).
       mixed: 2.5,
+      // Sprint 2.4 (stories 3 + 4): fraction math types — first generators
+      // whose CONTENT varies by Speed (Easy = like fractions, Medium = mixed
+      // numbers, Hard = unlike fractions). Calibration (per story 7):
+      //   - add-fractions      = 4.0 (peer of div-to-144; grade 4/5 territory,
+      //                              on par with the hardest division facts)
+      //   - subtract-fractions = 4.5 (one +0.5 step past the existing ceiling
+      //                              — non-negative-result + borrow-across-whole
+      //                              in mixed-number mode carries extra load —
+      //                              lands in story 4 alongside its generator)
+      'add-fractions': 4.0,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {

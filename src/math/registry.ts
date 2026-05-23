@@ -12,6 +12,7 @@ import multTo144 from '@/math/generators/multTo144';
 import divTo100 from '@/math/generators/divTo100';
 import divTo144 from '@/math/generators/divTo144';
 import mixed, { setMixedDelegate } from '@/math/generators/mixed';
+import addFractions from '@/math/generators/addFractions';
 import type { QuestionGenerator } from '@/math/types';
 
 /**
@@ -48,6 +49,11 @@ export const generators: Record<MathId, QuestionGenerator> = {
   'div-to-100': divTo100,
   'div-to-144': divTo144,
   mixed,
+  // Sprint 2.4 story 3 — Add Fractions: first generator to vary its
+  // CONTENT by Speed (Easy/Medium/Hard = like/mixed/unlike bands).
+  // subtractFractions follows in story 4 (then lands in this map +
+  // gets its own MathId entry + multiplier in config.scoring).
+  'add-fractions': addFractions,
 };
 
 /**
@@ -76,18 +82,33 @@ export function getImplementedIds(): MathId[] {
 // circular import — the short version is that default-export bindings
 // don't reliably live-update through Vite's ESM/TypeScript transpile
 // when there's a cycle).
+/**
+ * Math ids Mixed Math does NOT delegate to. Sprint 2.4 story 3 — fraction
+ * generators (`add-fractions`, `subtract-fractions`) are excluded because
+ * their `correctAnswer` / `choices` are decimal values (e.g. `0.375`), not
+ * integers. Mixing those into a "Mixed Math" round whose previous questions
+ * showed bare integers would be confusing for the 6–10yo target. Kids who
+ * want fractions pick the "Add Fractions" / "Subtract Fractions" tile
+ * directly. Add new entries here if a future math type's output shape
+ * doesn't compose with integer Mixed.
+ */
+const MIXED_EXCLUDED_IDS: ReadonlySet<MathId> = new Set<MathId>([
+  'mixed',
+  'add-fractions',
+]);
+
 setMixedDelegate((rng, speed) => {
-  const delegateIds = getImplementedIds().filter((id) => id !== 'mixed');
+  const delegateIds = getImplementedIds().filter((id) => !MIXED_EXCLUDED_IDS.has(id));
   if (delegateIds.length === 0) {
     throw new Error(
-      "mixed delegate picker: no non-Mixed implemented generators in the registry " +
+      "mixed delegate picker: no non-excluded implemented generators in the registry " +
         "— cannot delegate. This is a registry-setup bug.",
     );
   }
   const idx = Math.floor(rng() * delegateIds.length);
   const pickedId = delegateIds[idx]!;
   // Sprint 2.4 story 2 — forward the round's speed to the delegated
-  // generator so speed-aware generators (e.g. fractions) see it when
-  // Mixed Math picks them. Integer generators ignore it.
+  // generator. Integer generators ignore it; speed-aware generators
+  // (when added to the Mixed pool in the future) would read it.
   return generators[pickedId].generate(rng, speed);
 });

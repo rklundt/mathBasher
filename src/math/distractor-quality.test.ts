@@ -62,8 +62,19 @@ const RANGES: Readonly<Record<MathId, RangeSpec>> = {
   // SOME implemented generator's range" for Mixed — for stricter
   // per-question validation, mixed.test.ts has its own family-detection
   // test via the prompt regex.
+  // Sprint 2.4 story 3 — Mixed Math excludes fraction generators
+  // (`add-fractions`, `subtract-fractions`) so its values stay integer;
+  // this range stays integer-only.
   mixed: { min: 0, max: 144 },
+  // Sprint 2.4 story 3 — fraction values are DECIMALS (e.g. 3/8 → 0.375),
+  // not integers. Range bounds are [0, 12]: Easy/Hard sums fit easily;
+  // Medium can reach ~9.75 (e.g. `4 7/8 + 4 7/8`). The integer-check
+  // below is skipped for fraction ids.
+  'add-fractions': { min: 0, max: 12 },
 };
+
+/** Math ids whose generator returns non-integer (decimal) choice values. */
+const FRACTIONAL_IDS: ReadonlySet<MathId> = new Set<MathId>(['add-fractions']);
 
 const SAMPLES_PER_GENERATOR = 200;
 
@@ -113,9 +124,15 @@ describe('distractor quality across all implemented generators', () => {
       });
 
       it(`every choice falls in [${range.min}, ${range.max}]`, () => {
+        const isFractional = FRACTIONAL_IDS.has(id);
         for (const q of samples) {
           for (const c of q.choices) {
-            expect(Number.isInteger(c)).toBe(true);
+            // Integer generators must yield integer choices. Fraction
+            // generators are exempt (their choices are decimal values
+            // like 0.375 by design — sprint 2.4 story 3).
+            if (!isFractional) {
+              expect(Number.isInteger(c)).toBe(true);
+            }
             expect(c, `choice ${c} out of range for ${id}`).toBeGreaterThanOrEqual(range.min);
             expect(c).toBeLessThanOrEqual(range.max);
           }

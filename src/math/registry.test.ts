@@ -13,6 +13,7 @@ import multTo144 from '@/math/generators/multTo144';
 import divTo100 from '@/math/generators/divTo100';
 import divTo144 from '@/math/generators/divTo144';
 import mixed from '@/math/generators/mixed';
+import addFractions from '@/math/generators/addFractions';
 import { generators, getGenerator, getImplementedIds } from '@/math/registry';
 
 /**
@@ -43,6 +44,7 @@ describe('registry', () => {
       ['div-to-100', divTo100],
       ['div-to-144', divTo144],
       ['mixed', mixed],
+      ['add-fractions', addFractions],
     ] as const)('%s', (id, expected) => {
       expect(getGenerator(id)).toBe(expected);
     });
@@ -62,11 +64,16 @@ describe('registry', () => {
   });
 
   describe('getImplementedIds', () => {
-    it('returns ALL nine Phase 1 ids (no stubs remain after sprint 1.5)', () => {
+    it('returns every implemented id (no stubs remain)', () => {
       const implemented = getImplementedIds().sort();
+      // Hardcoded list catches regressions where a generator silently drops
+      // out of the registry (relies on Object-keys match would still pass).
+      // Sprint 2.4 story 3 added `add-fractions`; sprint 2.4 story 4 will
+      // add `subtract-fractions`.
       expect(implemented).toEqual(
         (
           [
+            'add-fractions',
             'add-to-10',
             'add-to-20',
             'div-to-100',
