@@ -360,6 +360,26 @@ export const config = {
      */
     wrongShotCountdownPenaltySec: 3,
     /**
+     * Sprint 2.4.1 story 2 — climb-wide "lives" cap for wrong shots
+     * across the WHOLE round. Project-owner decision (combines spec
+     * options A + B + D): each wrong shot still deducts time + locks
+     * FIRE for `fireCooldownAfterWrongShotMs`; the Nth wrong shot of
+     * the round (default N=2 → "one mistake allowed") ends the round
+     * as a fail. Set to 0 to disable the round-wide cap and fall back
+     * to the old behavior (per-question time penalty + per-correct
+     * score halving only).
+     */
+    maxWrongShotsPerRound: 2,
+    /**
+     * Sprint 2.4.1 story 2 — FIRE-input lockout after a wrong shot.
+     * Prevents rapid-fire spam through the answer set: a wrong shot
+     * gates the next FIRE for this many ms. The TOUCH-FIRE button +
+     * the keyboard Space + the click-to-fire path all share this
+     * gate (it lives at the scene's `handleFire` entry). Set to 0
+     * to disable the cooldown.
+     */
+    fireCooldownAfterWrongShotMs: 1500,
+    /**
      * Hero rotation speed in radians per second, used by the keyboard
      * arrow-key rotation path. Mouse/touch aim is absolute (point-to-
      * position), so this only affects keyboard players.
