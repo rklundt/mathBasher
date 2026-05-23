@@ -29,6 +29,22 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.3.0] - 2026-05-22 — Azure Static Web Apps deployment + caching
+
+mathBasher is now **live on a public production URL** via Azure Static Web Apps. 5 stories:
+
+- **Story 1 — `public/staticwebapp.config.json`** — tiered caching (immutable for content-hashed JS/CSS bundles, 7-day for stable-named game assets, no-cache for `index.html`), SPA `navigationFallback`, basic security headers (`X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options`), explicit `.webp` MIME.
+- **Story 2 — `.github/workflows/deploy.yml`** — hand-authored push-triggered deploy. pnpm 9 + Node 20, full test suite as a gate, `Azure/static-web-apps-deploy@v1` with `skip_app_build`. `development` branch → named `development` staging environment; `main` → production. Includes a post-deploy `curl` smoke test asserting `200 + text/html` on the live URL.
+- **Story 3 — first deploy + cross-environment verification** — first staging deploy needed one fix (`app_location` must point at `dist/`, not repo root, when `skip_app_build: true`). After the fix, both `development` → staging and `main` → production deployed green; headers, MIME, SPA routing, and gameplay all verified live.
+- **Story 4 — deployment documentation** — `DeveloperGuide.md` architecture diagram + tech-stack + project-layout updated, plus a new "Deployment" section (two-environment flow, cache-tier table, "changed asset → new filename" convention). Private operational runbook (`docs/deployment-runbook.md`, gitignored) holds environment URLs, token rotation, rollback. `CLAUDE.md` architecture note amended (the container / App-Service material reframed as the future Phase 3+ path).
+- **Story 5 — six-reviewer audit + close** — APPROVED after addressing one must-fix and one chosen should-fix. Audit fixes:
+  - **Co-Authored-By: Claude trailers scrubbed from the entire repo** (project-owner decision: scrub everywhere). Both branches' history and all 25 version tags rewritten via `git filter-branch`; force-pushed (`main` required temporary lift of branch protection); `origin/main-pre-scrub` retained as backup. Going-forward policy: no AI trailer added to new commits.
+  - **Post-deploy smoke test** added to the workflow and verified working live.
+
+**Sprint 3.5** (the older App-Service-based Azure deployment sprint) was **RETIRED** at this close — superseded by the SWA decision; its backend-hosting parts are absorbed into the re-scoped Phase 3 (sprint 3.3, "Backend hosting + datastore").
+
+**Also in this release:** a Phase 3-5 sprint-plan restructure — Phase 3 narrowed to "server-side foundation, account-light"; new Phase 4 for accounts/monetization/compliance; new Phase 5 for schools; new Phase 4.6 stub for production hardening (deploy-gating, observability) before public launch. See `SPRINT-PLAN.md` for the full rationale.
+
 ## [2.2.1] - 2026-05-22 — Post-Climb cleanup, UX polish, WebP migration, cross-game scoring true-up
 
 A catch-all sprint paying down the sprint 2.2 audit's should-fix items plus the cross-game scoring/round-size true-up. 12 stories across four buckets:
