@@ -299,3 +299,58 @@ describe('cross-game max-score parity (story 11)', () => {
   // comparing two identical `(mathId, speed)` calls would only restate
   // `x === x`, so none is added here.
 });
+
+/**
+ * Sprint 2.4 story 7 — fraction-math calibration lock.
+ *
+ * The two fraction math types ship with multipliers:
+ *   - add-fractions:      4.0 (peer of div-to-144)
+ *   - subtract-fractions: 4.5 (one +0.5 step past the existing ceiling)
+ *
+ * These tests lock the calibration the same way story 11 (above) locked
+ * the integer multiplier ladder: a perfect 12-question round at each
+ * difficulty must match the explicit formula. A future tweak to either
+ * the multipliers OR the formula breaks this and forces a deliberate
+ * decision.
+ */
+describe('fraction math calibration (story 7)', () => {
+  const ROUND_SIZE = 12;
+
+  function perfectRoundScore(mathId: MathId, speed: SpeedKey): number {
+    const calc = new ScoreCalculator(mathId, speed);
+    for (let i = 0; i < ROUND_SIZE; i++) {
+      calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
+    }
+    return calc.score;
+  }
+
+  for (const mathId of ['add-fractions', 'subtract-fractions'] as MathId[]) {
+    for (const speed of ['slow', 'medium', 'fast'] as SpeedKey[]) {
+      it(`${mathId} perfect ${speed} round = 12 × base × mathMult × speedMult`, () => {
+        const expected =
+          ROUND_SIZE *
+          config.scoring.basePerCorrect *
+          config.scoring.mathDifficulty[mathId] *
+          config.scoring.speed[speed].multiplier;
+        expect(perfectRoundScore(mathId, speed)).toBe(expected);
+      });
+    }
+  }
+
+  it('subtract-fractions multiplier is exactly +0.5 past add-fractions', () => {
+    // The ladder rationale (config.scoring header) sets sub at +0.5 over
+    // add for any operation pair (sub-to-10 = +0.5 over add-to-10, etc.).
+    // Fractions follow the same +0.5 step. A future re-calibration that
+    // breaks this should be deliberate.
+    expect(
+      config.scoring.mathDifficulty['subtract-fractions'] -
+        config.scoring.mathDifficulty['add-fractions'],
+    ).toBeCloseTo(0.5, 10);
+  });
+
+  it('add-fractions multiplier matches div-to-144 (both = hardest-tier peer)', () => {
+    expect(config.scoring.mathDifficulty['add-fractions']).toBe(
+      config.scoring.mathDifficulty['div-to-144'],
+    );
+  });
+});
