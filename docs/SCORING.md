@@ -116,7 +116,7 @@ Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCal
 | Arcade star ladder | `src/core/config.ts` → `config.round.starThresholds` |
 | Climb star ladder | `src/services/ScoreCalculator.ts` → `computeClimbStars` |
 
-**After any edit above, update this file in the same commit.** The cross-cutting reviewer audit's Architect role checks for the drift.
+**After any edit above, update this file in the same commit.** A stale entry here is a documentation bug — keep the table truthful.
 
 ## Change log
 

@@ -136,6 +136,16 @@ export class Alien extends Phaser.GameObjects.Container {
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
     this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
+    // Sprint 2.4 story 9 (Support reviewer should-fix) — fraction labels
+    // can be 5-7 chars ("1 1/2", "4 11/12") vs integer answers (1-3 chars).
+    // The chassis is fixed-width, so long labels would clip / overflow
+    // onto adjacent aliens. Shrink defensively for the longer strings;
+    // integer labels (≤3 chars) render at full size, no visual change.
+    if (answerLabel.length >= 5) {
+      this.answerText.setScale(0.7);
+    } else if (answerLabel.length === 4) {
+      this.answerText.setScale(0.85);
+    }
 
     // Build the rider-sprite if a key was passed. Positioned ABOVE the
     // chassis so the number stays unobstructed; scaled to SPRITE_SIZE

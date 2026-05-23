@@ -89,7 +89,7 @@ describe('subtractFractions generator', () => {
 
     it('correctAnswer and correctDisplay are at the SAME index', () => {
       for (const q of samples) {
-        const idx = q.choices!.indexOf(q.correctAnswer);
+        const idx = q.choices.indexOf(q.correctAnswer);
         expect(idx).toBeGreaterThanOrEqual(0);
         expect(q.choiceDisplays![idx]).toBe(q.correctDisplay);
       }

@@ -148,6 +148,15 @@ export class Asteroid extends Phaser.GameObjects.Container {
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
     this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
+    // Sprint 2.4 story 9 (Support reviewer should-fix) — shrink long
+    // fraction labels so they fit the rock silhouette. See Alien.ts for
+    // the rationale; same defensive shrink applied uniformly across
+    // games for typographic consistency.
+    if (answerLabel.length >= 5) {
+      this.answerText.setScale(0.7);
+    } else if (answerLabel.length === 4) {
+      this.answerText.setScale(0.85);
+    }
 
     this.add([this.visual, this.answerText]);
     this.setScale(this.instanceScale);

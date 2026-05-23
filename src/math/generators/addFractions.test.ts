@@ -77,7 +77,7 @@ describe('addFractions generator', () => {
       // Confirms the parallel-arrays contract: the display-string for the
       // correct numeric value lives at choices.indexOf(correctAnswer).
       for (const q of samples) {
-        const idx = q.choices!.indexOf(q.correctAnswer);
+        const idx = q.choices.indexOf(q.correctAnswer);
         expect(idx).toBeGreaterThanOrEqual(0);
         expect(q.choiceDisplays![idx]).toBe(q.correctDisplay);
       }
