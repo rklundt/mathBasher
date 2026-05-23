@@ -89,12 +89,17 @@ export class WaveSystem {
     for (let lane = 0; lane < this.opts.lanes; lane++) {
       const x = this.opts.leftBound + laneWidth * (lane + 0.5);
       const answer = question.choices[lane] ?? 0;
+      // Sprint 2.4 story 5 — pass the fraction display string parallel to
+      // the numeric answer when the generator supplies one; undefined
+      // (integer generators) falls through to the bare-number render.
+      const answerDisplay = question.choiceDisplays?.[lane];
       const alien = new Alien({
         scene: this.opts.scene,
         x,
         y: this.opts.spawnY,
         lane,
         answer,
+        answerDisplay,
         descentSpeedPxPerSec: speed,
         // Per-block random sprite (sprint 0.6.3). Each new block gets its
         // own random pick — same answer can wear different faces. Sprint

@@ -65,6 +65,38 @@ export const config = {
     recentPromptHistoryLimit: 4,
     recentPromptMaxRerolls: 8,
   },
+  /**
+   * SCORING CONFIG (sprint 2.4 story 6 — single source of truth).
+   *
+   * Every knob that determines the final score lives in this `scoring`
+   * block. The formula:
+   *
+   *     score per correct = basePerCorrect
+   *                       × mathDifficulty[mathId]
+   *                       × speed[speedKey].multiplier
+   *                       × (1.0 normally, or afterWrongShotMultiplier
+   *                          once the kid has taken a wrong shot in this round)
+   *
+   * Multiplier ladder rationale:
+   *  - addition baseline = 1.0
+   *  - +0.5 per "operation step"  (add → sub → mult → div → fractions)
+   *  - +0.5 per "range step"      (to-10 → to-20, to-100 → to-144)
+   *  - Mixed = 2.5 (~average of the 8 integer types — fixed because the
+   *    per-question difficulty varies but per-tile score has to be
+   *    deterministic; could become a weighted average if a multi-select
+   *    UI ever lands)
+   *  - Fractions (add 4.0 / sub 4.5) sit at the top of the ladder.
+   *
+   * Cross-game parity: scoring has NO game-mode axis — `ScoreCalculator`
+   * takes (mathId, speed) only. Two perfect rounds of (add-to-10, fast)
+   * across any two game modes produce the same max score. Locked by the
+   * parity tests in `ScoreCalculator.test.ts`.
+   *
+   * Per-game blocks below (`asteroidField.speed`, `numberClimb.speed`)
+   * carry difficulty-related game-mechanic tuning (countdown / drift /
+   * timer), NOT score tuning. They cross-reference back to this block.
+   * Adding a new math type or scoring multiplier — only edit here.
+   */
   scoring: {
     basePerCorrect: 100,
     /** points multiplier when the player got it right after a wrong shot */
@@ -97,6 +129,16 @@ export const config = {
       // be deterministic per math-type-tile, so a fixed average works. 2.5 is
       // approximately the midpoint between add-to-10 (1.0) and div-to-144 (4.0).
       mixed: 2.5,
+      // Sprint 2.4 (stories 3 + 4): fraction math types — first generators
+      // whose CONTENT varies by Speed (Easy = like fractions, Medium = mixed
+      // numbers, Hard = unlike fractions). Calibration (per story 7):
+      //   - add-fractions      = 4.0 (peer of div-to-144; grade 4/5 territory,
+      //                              on par with the hardest division facts)
+      //   - subtract-fractions = 4.5 (one +0.5 step past the existing ceiling
+      //                              — non-negative-result + borrow-across-whole
+      //                              in mixed-number mode carries extra load)
+      'add-fractions': 4.0,
+      'subtract-fractions': 4.5,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {
@@ -260,6 +302,9 @@ export const config = {
      *
      * First-pass values; tune in playtest. Faster speed = more drift AND
      * less time. Slower speed = more aim time + slower targets.
+     *
+     * Game-mechanic tuning only — score multipliers live in
+     * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
      */
     speed: {
       slow: { driftPxPerSec: 30, countdownSec: 25 },
@@ -396,6 +441,9 @@ export const config = {
      * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
      * 120s. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
      * ends the round.
+     *
+     * Game-mechanic tuning only — score multipliers live in
+     * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
      */
     speed: {
       slow: { totalTimeSec: 250 },

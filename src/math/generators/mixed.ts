@@ -2,6 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
+import type { SpeedKey } from '@/core/config';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -39,8 +40,14 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * control).
  */
 
-/** Signature of the picker function registry.ts injects via setMixedDelegate. */
-export type MixedDelegatePicker = (rng: () => number) => Question;
+/**
+ * Signature of the picker function registry.ts injects via setMixedDelegate.
+ * Sprint 2.4 story 2 — gains an optional `speed` parameter so Mixed Math
+ * can forward the round's speed to whichever generator it delegates to
+ * (relevant for speed-aware generators like fractions; integer generators
+ * ignore it).
+ */
+export type MixedDelegatePicker = (rng: () => number, speed?: SpeedKey) => Question;
 
 let _picker: MixedDelegatePicker | null = null;
 
@@ -109,7 +116,7 @@ const mixed: QuestionGenerator = {
   // sprint 1.5 Story 5. Label fits the existing 220px tile width with
   // margin.
   label: 'Mixed Math',
-  generate(rng = defaultRng): Question {
+  generate(rng = defaultRng, speed?: SpeedKey): Question {
     if (_picker === null) {
       // Registry didn't wire us up — surface as a clear bug rather than
       // a confusing null-deref. In practice this throws only if registry.ts
@@ -120,7 +127,7 @@ const mixed: QuestionGenerator = {
           'Did registry.ts forget to call setMixedDelegate after building the generators map?',
       );
     }
-    return _picker(rng);
+    return _picker(rng, speed);
   },
 };
 
