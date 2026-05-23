@@ -71,10 +71,16 @@ const RANGES: Readonly<Record<MathId, RangeSpec>> = {
   // Medium can reach ~9.75 (e.g. `4 7/8 + 4 7/8`). The integer-check
   // below is skipped for fraction ids.
   'add-fractions': { min: 0, max: 12 },
+  // Sprint 2.4 story 4 — same range as add-fractions; non-negative
+  // result is enforced by the generator itself + its own test file.
+  'subtract-fractions': { min: 0, max: 12 },
 };
 
 /** Math ids whose generator returns non-integer (decimal) choice values. */
-const FRACTIONAL_IDS: ReadonlySet<MathId> = new Set<MathId>(['add-fractions']);
+const FRACTIONAL_IDS: ReadonlySet<MathId> = new Set<MathId>([
+  'add-fractions',
+  'subtract-fractions',
+]);
 
 const SAMPLES_PER_GENERATOR = 200;
 

@@ -104,9 +104,9 @@ export const config = {
       //                              on par with the hardest division facts)
       //   - subtract-fractions = 4.5 (one +0.5 step past the existing ceiling
       //                              — non-negative-result + borrow-across-whole
-      //                              in mixed-number mode carries extra load —
-      //                              lands in story 4 alongside its generator)
+      //                              in mixed-number mode carries extra load)
       'add-fractions': 4.0,
+      'subtract-fractions': 4.5,
       // Add new math types here. Engine reads keys via Object.keys.
     },
     speed: {

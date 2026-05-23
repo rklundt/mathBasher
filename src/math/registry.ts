@@ -13,6 +13,7 @@ import divTo100 from '@/math/generators/divTo100';
 import divTo144 from '@/math/generators/divTo144';
 import mixed, { setMixedDelegate } from '@/math/generators/mixed';
 import addFractions from '@/math/generators/addFractions';
+import subtractFractions from '@/math/generators/subtractFractions';
 import type { QuestionGenerator } from '@/math/types';
 
 /**
@@ -49,11 +50,12 @@ export const generators: Record<MathId, QuestionGenerator> = {
   'div-to-100': divTo100,
   'div-to-144': divTo144,
   mixed,
-  // Sprint 2.4 story 3 — Add Fractions: first generator to vary its
-  // CONTENT by Speed (Easy/Medium/Hard = like/mixed/unlike bands).
-  // subtractFractions follows in story 4 (then lands in this map +
-  // gets its own MathId entry + multiplier in config.scoring).
+  // Sprint 2.4 stories 3 + 4 — fraction math types: the first generators
+  // to vary their CONTENT by Speed (Easy/Medium/Hard = like/mixed/unlike
+  // bands). Both share `src/math/fractionMath.ts` for the math helpers
+  // (gcd, reduce, formatFraction, distractor-builder).
   'add-fractions': addFractions,
+  'subtract-fractions': subtractFractions,
 };
 
 /**
@@ -95,6 +97,7 @@ export function getImplementedIds(): MathId[] {
 const MIXED_EXCLUDED_IDS: ReadonlySet<MathId> = new Set<MathId>([
   'mixed',
   'add-fractions',
+  'subtract-fractions',
 ]);
 
 setMixedDelegate((rng, speed) => {

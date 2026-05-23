@@ -3,7 +3,12 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type { SpeedKey } from '@/core/config';
-import { decimalValue, formatFraction, mixedToImproper, reduce } from '@/math/fractionMath';
+import {
+  buildFractionDistractors,
+  decimalValue,
+  formatFraction,
+  mixedToImproper,
+} from '@/math/fractionMath';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -117,82 +122,6 @@ function generateHard(rng: () => number): OperandResult {
   };
 }
 
-/**
- * Build CHOICE_COUNT-1 distractor fractions modeling common kid errors:
- *   - numerator off by ±1 (close-but-wrong)
- *   - denominator off by ±1 (close-but-wrong)
- *   - "added the denominators" (a+b)/(d+d) = (a+b)/(2d) — a classic kid error
- *     when they add numerators AND denominators of like fractions
- *
- * Distractors must be DISTINCT from each other and from the correct answer,
- * checked by both reduced-form string AND decimal value (so e.g. 2/4 and 1/2
- * are recognized as the same answer).
- */
-function buildDistractors(
-  rng: () => number,
-  correctNum: number,
-  correctDen: number,
-): Array<{ num: number; den: number }> {
-  const correctR = reduce(correctNum, correctDen);
-  const correctKey = `${correctR.num}/${correctR.den}`;
-  const correctDecimal = correctR.num / correctR.den;
-  const seenKeys = new Set<string>([correctKey]);
-  const seenDecimals = new Set<number>([correctDecimal]);
-
-  // Candidate pool — generated in priority order; first CHOICE_COUNT-1
-  // distinct ones win.
-  const candidates: Array<{ num: number; den: number }> = [
-    { num: correctNum + 1, den: correctDen },
-    { num: Math.max(1, correctNum - 1), den: correctDen },
-    { num: correctNum, den: correctDen + 1 },
-    correctDen > 1 ? { num: correctNum, den: correctDen - 1 } : { num: correctNum + 2, den: correctDen },
-    // "added the denominators" kid error: (a+b)/(2d). Approximated as
-    // doubling the denominator of the correct sum — produces the half-value.
-    { num: correctNum, den: correctDen * 2 },
-    { num: correctNum + 2, den: correctDen },
-  ];
-
-  const picked: Array<{ num: number; den: number }> = [];
-  for (const c of candidates) {
-    if (c.num <= 0 || c.den <= 0) continue;
-    const r = reduce(c.num, c.den);
-    const key = `${r.num}/${r.den}`;
-    const dec = r.num / r.den;
-    if (seenKeys.has(key)) continue;
-    if (seenDecimals.has(dec)) continue;
-    seenKeys.add(key);
-    seenDecimals.add(dec);
-    picked.push(c);
-    if (picked.length === CHOICE_COUNT - 1) break;
-  }
-
-  // Safety backfill — guarantees we always return CHOICE_COUNT-1 distractors
-  // even on a degenerate correct answer where most candidates collapse to
-  // duplicates. Walks +N from the correct numerator, finding fresh distinct
-  // fractions over the correct denominator.
-  let bump = 3;
-  while (picked.length < CHOICE_COUNT - 1) {
-    const fallback = { num: correctNum + bump, den: correctDen };
-    const r = reduce(fallback.num, fallback.den);
-    const key = `${r.num}/${r.den}`;
-    const dec = r.num / r.den;
-    if (!seenKeys.has(key) && !seenDecimals.has(dec)) {
-      seenKeys.add(key);
-      seenDecimals.add(dec);
-      picked.push(fallback);
-    }
-    bump += 1;
-    if (bump > 100) {
-      throw new Error(
-        `addFractions: could not build ${CHOICE_COUNT - 1} distinct distractors for ` +
-          `correct ${correctNum}/${correctDen}. This is a generator bug.`,
-      );
-    }
-  }
-
-  return shuffle(picked, rng);
-}
-
 const addFractions: QuestionGenerator = {
   id: 'add-fractions',
   label: 'Add Fractions',
@@ -211,7 +140,12 @@ const addFractions: QuestionGenerator = {
         break;
     }
 
-    const distractors = buildDistractors(rng, result.correctNum, result.correctDen);
+    const distractors = buildFractionDistractors(
+      rng,
+      result.correctNum,
+      result.correctDen,
+      CHOICE_COUNT - 1,
+    );
 
     // Combine correct + distractors as a tagged list, then shuffle once so
     // the correct answer's position is randomized in the final choices.
