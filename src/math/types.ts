@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { MathId } from '@/core/config';
+import type { MathId, SpeedKey } from '@/core/config';
 
 /**
  * A single math question with the correct answer and a shuffled set of choices
@@ -87,7 +87,15 @@ export interface QuestionGenerator {
    * Produce one fresh question. `rng()` should return a float in [0, 1) like
    * `Math.random` — the function (not the value) is injected so callers can
    * supply seeded generators in tests.
+   *
+   * Sprint 2.4 story 2 — optional `speed` parameter lets a generator vary its
+   * question CONTENT by the round's Easy/Medium/Hard selector (e.g. fractions
+   * picks like/mixed/unlike bands by speed). Integer generators don't need to
+   * read it; they continue to ignore it. Back-compatible by design — every
+   * existing implementation `generate(rng?)` still satisfies the contract
+   * because TypeScript allows implementations to take fewer parameters than
+   * the interface.
    */
-  generate(rng?: () => number): Question;
+  generate(rng?: () => number, speed?: SpeedKey): Question;
 }
 

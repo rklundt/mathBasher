@@ -76,7 +76,7 @@ export function getImplementedIds(): MathId[] {
 // circular import — the short version is that default-export bindings
 // don't reliably live-update through Vite's ESM/TypeScript transpile
 // when there's a cycle).
-setMixedDelegate((rng) => {
+setMixedDelegate((rng, speed) => {
   const delegateIds = getImplementedIds().filter((id) => id !== 'mixed');
   if (delegateIds.length === 0) {
     throw new Error(
@@ -86,5 +86,8 @@ setMixedDelegate((rng) => {
   }
   const idx = Math.floor(rng() * delegateIds.length);
   const pickedId = delegateIds[idx]!;
-  return generators[pickedId].generate(rng);
+  // Sprint 2.4 story 2 — forward the round's speed to the delegated
+  // generator so speed-aware generators (e.g. fractions) see it when
+  // Mixed Math picks them. Integer generators ignore it.
+  return generators[pickedId].generate(rng, speed);
 });
