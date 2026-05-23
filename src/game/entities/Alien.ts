@@ -14,8 +14,15 @@ export interface AlienOpts {
   y: number;
   /** 0-indexed lane this alien occupies. Stored so HitSystem can match shots. */
   lane: number;
-  /** The answer this alien carries — displayed as text on its body. */
+  /** The answer this alien carries — used for hit-matching by HitSystem. */
   answer: number;
+  /**
+   * Optional display string for `answer`. Sprint 2.4 story 5 — for
+   * fraction math types whose `answer` is a decimal value (e.g. `0.375`)
+   * but which renders as `"3/8"` on the alien's body. When omitted, the
+   * answer is rendered as `String(answer)` (every integer math type).
+   */
+  answerDisplay?: string;
   /** Initial descent speed in pixels per second. WaveSystem can change it. */
   descentSpeedPxPerSec: number;
   /**
@@ -124,7 +131,10 @@ export class Alien extends Phaser.GameObjects.Container {
     // If you change `alienAnswer.fontSize` in typography.ts, re-tune the
     // plateLayers widths/heights to keep the opaque core covering the
     // full text glyph height.
-    this.answerText = opts.scene.add.text(0, 0, String(opts.answer), textStyle('alienAnswer'));
+    // Sprint 2.4 story 5 — render `answerDisplay` when present (fraction
+    // generators), else fall back to the bare number for integer types.
+    const answerLabel = opts.answerDisplay ?? String(opts.answer);
+    this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
 
     // Build the rider-sprite if a key was passed. Positioned ABOVE the

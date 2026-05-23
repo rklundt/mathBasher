@@ -60,8 +60,15 @@ export interface AsteroidOpts {
   x: number;
   /** Initial y in world coords. */
   y: number;
-  /** Answer number to render on the asteroid. */
+  /** Answer number — used for hit-matching by AsteroidHitSystem. */
   answer: number;
+  /**
+   * Optional display string for `answer`. Sprint 2.4 story 5 — fraction
+   * generators supply a string like `"3/8"` to render in place of the
+   * decimal numeric value (`0.375`). Integer generators omit it; the
+   * bare number renders as before.
+   */
+  answerDisplay?: string;
   /** Initial velocity x (px/s); WaveSystem will mutate via setVelocity per physics mode. */
   vx: number;
   /** Initial velocity y (px/s). */
@@ -137,7 +144,9 @@ export class Asteroid extends Phaser.GameObjects.Container {
     // existing alienAnswer TextKind for typographic consistency across
     // game modes (the kid sees the same number style whether it's on a
     // falling alien block or a drifting asteroid).
-    this.answerText = opts.scene.add.text(0, 0, String(opts.answer), textStyle('alienAnswer'));
+    // Sprint 2.4 story 5 — fraction display string if provided, else bare number.
+    const answerLabel = opts.answerDisplay ?? String(opts.answer);
+    this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
 
     this.add([this.visual, this.answerText]);

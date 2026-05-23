@@ -228,11 +228,17 @@ export class AsteroidWaveSystem {
         vy = Math.sin(angle) * this.opts.driftPxPerSec;
       }
 
+      // Sprint 2.4 story 5 — pass the fraction display string parallel to
+      // the numeric answer when the generator provides one (fractions).
+      // Integer generators leave choiceDisplays undefined; bare-number
+      // render kicks in.
+      const answerDisplay = question.choiceDisplays?.[i];
       const asteroid = new Asteroid({
         scene: this.opts.scene,
         x,
         y,
         answer,
+        answerDisplay,
         vx,
         vy,
         rng,

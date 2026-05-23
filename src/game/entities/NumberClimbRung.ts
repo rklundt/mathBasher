@@ -35,8 +35,15 @@ export interface NumberClimbRungOpts {
   x: number;
   /** Rung's center y in world coords (kid jumps up to this y). */
   y: number;
-  /** The candidate answer number rendered on the rung. */
+  /** The candidate answer number — FloorSystem reads to decide correct/wrong. */
   answer: number;
+  /**
+   * Optional display string for `answer`. Sprint 2.4 story 5 — fraction
+   * generators supply a string like `"3/8"` to render in place of the
+   * decimal numeric value (`0.375`). Integer generators omit it; the
+   * bare number renders as before.
+   */
+  answerDisplay?: string;
   /** 1-based index used for the keyboard-shortcut prefix and N-key dispatch. */
   index: number;
 }
@@ -82,7 +89,9 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
 
     // Big answer number — same TextKind as the other modes' answer
     // labels so the visual rhythm matches Alien Shoot + Asteroid Field.
-    this.answerText = opts.scene.add.text(0, 4, String(opts.answer), textStyle('alienAnswer'));
+    // Sprint 2.4 story 5 — fraction display string if provided, else bare number.
+    const answerLabel = opts.answerDisplay ?? String(opts.answer);
+    this.answerText = opts.scene.add.text(0, 4, answerLabel, textStyle('alienAnswer'));
     this.answerText.setOrigin(0.5);
     this.add(this.answerText);
 
