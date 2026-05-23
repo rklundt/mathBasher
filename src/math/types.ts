@@ -8,14 +8,52 @@ import type { MathId } from '@/core/config';
  * A single math question with the correct answer and a shuffled set of choices
  * including the correct one. `choices.length` matches `config.layout.targetLanes`
  * (4) — one per descending alien per the gameplay design.
+ *
+ * ## Display layer (sprint 2.4 story 1 — for fractions and any future
+ * non-integer math type)
+ *
+ * The numeric fields (`correctAnswer` / `choices`) carry the values used for
+ * equality checks, scoring math, and distractor-distinctness checks. They are
+ * **never displayed directly** when a generator wants control over how the
+ * answer renders. Integer generators leave the display fields undefined — the
+ * renderer falls back to `String(value)` and shows the bare number, exactly as
+ * before.
+ *
+ * Fraction generators set the display fields so `3/8` renders as `"3/8"` (and
+ * NOT as `"0.375"`). Mixed numbers render as `"1 1/2"`. The numeric value
+ * (`0.375` for `3/8`, `1.5` for `1 1/2`) is then ONLY used for internal
+ * equality / distractor math — never shown to the kid.
+ *
+ * **Contract — all-or-none:** a generator either supplies display strings for
+ * ALL choices or NONE. Partial display layers (e.g. `correctDisplay` set but
+ * `choiceDisplays` absent, or `choiceDisplays.length !== choices.length`) are
+ * a programming error. Renderers MAY assume the all-or-none invariant.
  */
 export interface Question {
-  /** Human-readable prompt, e.g. `"7 + 5 = ?"`. */
+  /** Human-readable prompt, e.g. `"7 + 5 = ?"` (or `"1/4 + 1/8 = ?"` for fractions). */
   prompt: string;
-  /** The correct numeric answer. */
+  /**
+   * The correct answer as a numeric value. For integer math types this is the
+   * number the kid picks (e.g. `12`). For non-integer math types (fractions)
+   * this is the decimal value used internally for equality + distractor checks
+   * (e.g. `3/8` → `0.375`); the kid sees `correctDisplay` instead.
+   */
   correctAnswer: number;
   /** Shuffled answer choices; always includes `correctAnswer`. */
   choices: number[];
+  /**
+   * Optional display string for `correctAnswer` (e.g. `"3/8"`, `"1 1/2"`).
+   * When present, `choiceDisplays` MUST also be present with the same length
+   * as `choices`. When both are absent (every integer generator today),
+   * renderers fall back to `String(value)`.
+   */
+  correctDisplay?: string;
+  /**
+   * Optional display strings parallel to `choices` (same length, same order).
+   * `choiceDisplays[i]` is the rendered form of `choices[i]`. See
+   * `correctDisplay` above for the all-or-none contract.
+   */
+  choiceDisplays?: string[];
 }
 
 /**
