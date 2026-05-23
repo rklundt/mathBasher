@@ -29,6 +29,16 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.4.1] - 2026-05-23 — Life rules + hero skin
+
+Three changes — two fairness fixes across existing game modes + a presentation add:
+
+- **Number Climb — cumulative 3-strike "lives" cap.** Per-floor mulligan rule unchanged; new climb-wide cap (`config.numberClimb.maxStrikesPerClimb = 3`) ends the round when total wrong picks across the whole climb hit the ceiling. Top-left HUD lives row ("Lives: ● ● ●") turns each dot from green to red as strikes are spent. Telemetry: `NumberClimb.strikeBudgetExhausted`.
+- **Asteroid Field — wrong-shot deterrent (A + B + D combined).** Existing -3s per-question timer deduction kept; NEW 1.5s FIRE-input cooldown after every wrong shot (with TouchFireButton visual dim + soft "click" SFX on attempted-fire-while-locked so the kid registers "blocked" rather than "broken"); NEW round-wide cap of 2 wrong shots (2nd ends the round as fail with "Out of shots!" banner). Top-left HUD lives row mirrors the Climb pattern. Telemetry: `AsteroidField.roundWrongShotBudgetExhausted`. All three deterrents config-gated (set any knob to 0 to disable).
+- **Space Robot hero + OG Yellow fallback.** New default Alien Shoot hero (single static Midjourney sprite at `public/assets/sprites/hero/space-robot.webp`); the original Speeder1/2/3 round-robin set is now opt-in as "OG Yellow" via Settings → Game → Hero. First time the project lets the kid pick a hero. New `Settings.heroSkin` setting, localStorage-backed (try/catch tolerant of iOS private mode); 2-button picker with sprite thumbnails so the choice reads at a glance.
+
+10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
+
 ## [2.4.0] - 2026-05-22 — Fraction math types ("Add Fractions" + "Subtract Fractions")
 
 The first math types with **non-integer answers** and the first generators whose **content varies by the difficulty selector** (Speed). 9 stories shipped:

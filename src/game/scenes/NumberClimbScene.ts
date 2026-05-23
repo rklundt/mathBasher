@@ -476,10 +476,11 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       mathId: this.mathId,
       speed: this.speed,
     });
-    // The mulligan path already called `roundController.recordOutcome`
-    // for prior pick events; this path needs its own wrong-record for
-    // the current question (we just consumed it as wrong but haven't
-    // yet emitted questionEnded).
+    // The mulligan path does NOT call `roundController.recordOutcome`
+    // for the current question (the FloorSystem returns 'wrong-mulligan'
+    // and the scene only deducts time + falls the hero back). So this
+    // path is the FIRST record for the in-flight question — mark it
+    // wrong before emitting `questionEnded`.
     this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
     this.events.emit('questionEnded', {
       wasCorrect: false,
@@ -533,6 +534,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // same floor has used 2 strikes for that floor). The round is
     // ending regardless, but we update the counter for HUD/telemetry
     // accuracy before the GameOver mounts.
+    // Asymmetry vs `handleWrongMulligan`: no `if (strikes >= max)`
+    // cap-check after the increment here because terminal ALWAYS
+    // ends the round — the cap-check would be redundant.
     this.recordStrike();
     // Record the question as wrong (with usedWrongShot flag).
     this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });

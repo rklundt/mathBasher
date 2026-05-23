@@ -127,6 +127,12 @@ export class HudScene extends Phaser.Scene {
    * Other modes leave the array empty and the row never renders.
    */
   private livesDots: Phaser.GameObjects.Arc[] = [];
+  // Sprint 2.4.1 audit fix — the "Lives:" text label (rendered to
+  // the LEFT of the dots inside `maybeBuildLivesDots`) is NOT
+  // tracked as a class field. It's added to the scene like any
+  // GameObject; Phaser's scene-shutdown lifecycle auto-destroys
+  // it. We only need the field-tracked `livesDots[]` for
+  // `applyLivesState` to mutate color state on `strikesChanged`.
   /**
    * Scene key of the game-mode scene that launched this HUD. Defaults to
    * SceneKeys.Game (Alien Shoot — back-compat for any legacy caller).
@@ -478,13 +484,23 @@ export class HudScene extends Phaser.Scene {
     const maxStrikes = gameScene?.getMaxStrikes?.();
     if (!maxStrikes || maxStrikes <= 0) return;
 
-    const dotRadius = 7;
+    // Sprint 2.4.1 audit fix (Support reviewer) — add a "Lives" text
+    // label to the LEFT of the dots so a first-time player connects
+    // "row of green circles" → "lives." Without the label, kids
+    // mistook the dots for decoration on the first round. The label
+    // uses the existing 'rowLabel' TextKind for visual consistency
+    // with the SettingsScene row labels; bumped dot radius from
+    // 7 → 9 px (audit nice-to-have) so the row reads at typical
+    // phone viewing distance.
+    const dotRadius = 9;
     const dotGap = 8;
-    const startX = 16 + dotRadius;
+    const labelX = 16;
+    const labelText = text(this, labelX, barHeight + 10, 'Lives:', 'rowLabel').setOrigin(0, 0.5);
+    const dotsStartX = labelX + labelText.width + 10 + dotRadius;
     const dotY = barHeight + 10;
     for (let i = 0; i < maxStrikes; i++) {
       const dot = this.add.circle(
-        startX + i * (dotRadius * 2 + dotGap),
+        dotsStartX + i * (dotRadius * 2 + dotGap),
         dotY,
         dotRadius,
         0x22c55e, // green — full life
@@ -579,6 +595,19 @@ export class HudScene extends Phaser.Scene {
     const inFlight = gameScene.getCurrentQuestionPayload?.();
     if (inFlight) {
       this.onQuestionStarted(inFlight);
+    }
+
+    // Sprint 2.4.1 audit fix (Senior Dev) — mirror the question-payload
+    // catch-up for the lives row. If the HUD re-binds mid-round (a
+    // future pause/resume rebind path noted above), the lives dots
+    // must repaint from the current scene state rather than stay
+    // visually stuck at "all green." Same idempotent shape as the
+    // strikesChanged listener so the call is cheap if no strikes
+    // have been taken yet.
+    if (this.livesDots.length > 0) {
+      const remaining =
+        gameScene.getStrikesRemaining?.() ?? this.livesDots.length;
+      this.applyLivesState(remaining);
     }
   }
 

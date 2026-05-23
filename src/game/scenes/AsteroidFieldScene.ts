@@ -99,6 +99,16 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
    * within the last 1500 ms of the previous question.
    */
   private fireCooldownUntilMs = 0;
+  /**
+   * Sprint 2.4.1 audit fix — TouchFireButton ref captured at create()
+   * so AsteroidFieldScene can call `setLocked(true/false)` around the
+   * wrong-shot cooldown window. Without this the cooldown was
+   * SILENT — Support reviewer flagged that a kid would conclude
+   * the FIRE button was broken when nothing happened on repeated
+   * taps. The visual dim + cooldown-end click SFX teach the rule
+   * within the first wrong-shot cycle.
+   */
+  private fireButton: TouchFireButton | null = null;
 
   // Cached playfield bounds (computed in create())
   private leftBound = 0;
@@ -132,6 +142,28 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     return this.roundController.questionsPerRound;
   }
 
+  /**
+   * Sprint 2.4.1 audit fix — wrong-shot budget remaining for the
+   * HUD's lives row. Mirrors `NumberClimbScene.getStrikesRemaining`
+   * so HudScene.maybeBuildLivesDots renders the same top-left dots
+   * pattern for Asteroid Field. The denominator is the round-wide
+   * `maxWrongShotsPerRound` cap (default 2).
+   *
+   * Returns undefined when the cap is disabled (set to 0 in config)
+   * so HudScene knows to suppress the lives row in that mode.
+   */
+  getStrikesRemaining(): number | undefined {
+    const cap = config.asteroidField.maxWrongShotsPerRound;
+    if (cap <= 0) return undefined;
+    return Math.max(0, cap - this.roundWrongShots);
+  }
+
+  /** Sprint 2.4.1 audit fix — slot count for HudScene to size the row. */
+  getMaxStrikes(): number | undefined {
+    const cap = config.asteroidField.maxWrongShotsPerRound;
+    return cap > 0 ? cap : undefined;
+  }
+
   isPaused(): boolean {
     return this.paused;
   }
@@ -155,6 +187,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.paused = false;
     this.roundWrongShots = 0;
     this.fireCooldownUntilMs = 0;
+    this.fireButton = null;
 
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
@@ -222,7 +255,9 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.inputSystem.onFire(() => this.handleFire());
 
     // On-screen FIRE button for touch — routes through inputSystem.fire().
-    new TouchFireButton({
+    // Sprint 2.4.1 audit fix — store the ref so the wrong-shot cooldown
+    // can lock/unlock the button visually.
+    this.fireButton = new TouchFireButton({
       scene: this,
       onFire: () => this.inputSystem.fire(),
     });
@@ -369,13 +404,17 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     if (this.transitioning) return;
     if (this.projectile) return; // one in flight at a time
     // Sprint 2.4.1 story 2 — FIRE-input lockout after a wrong shot.
-    // The kid's tap / click / Space silently does nothing during the
-    // cooldown window. No SFX, no projectile spawn — this is the
-    // primary deterrent against rapid-fire-through-all-asteroids. The
-    // existing wrong-hit feedback (`-3s` floater + red flash + camera
-    // shake) is the cue that the cooldown is in effect; "no FIRE for
-    // a beat" reads as "wait" without a separate UI element.
-    if (this.time.now < this.fireCooldownUntilMs) return;
+    // The kid's tap / click / Space is BLOCKED during the cooldown
+    // window. Sprint 2.4.1 audit fix: instead of silent rejection,
+    // play a soft "click" so the kid registers "I tried; it didn't
+    // fire because of the penalty," not "the button is broken."
+    // Combined with the TouchFireButton.setLocked() dim visual
+    // applied in handleHit (wrong branch), the kid gets BOTH a
+    // visible "not available" state AND an audible "you tried."
+    if (this.time.now < this.fireCooldownUntilMs) {
+      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
+      return;
+    }
     getAudioManager().play(SfxKeys.Fire1, 'sfx');
     const aimAngle = this.hero.getAimAngle();
     this.projectile = new AsteroidProjectile(this, this.hero.x, this.hero.y, aimAngle);
@@ -441,10 +480,32 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       // FIRE-input cooldown. Increment FIRST so the new value is in
       // play before any branching; then arm the cooldown so a queued
       // tap during the asteroid's explode anim can't slip a second
-      // wrong shot through.
+      // wrong shot through. Cache the cooldown ms once so the log,
+      // the gate, AND the delayed unlock all read the same value
+      // (Senior Dev audit — protects against a hypothetical mid-
+      // round config hot-reload observing inconsistent state).
+      const cooldownMs = config.asteroidField.fireCooldownAfterWrongShotMs;
+      const cap = config.asteroidField.maxWrongShotsPerRound;
       this.roundWrongShots += 1;
-      this.fireCooldownUntilMs =
-        this.time.now + config.asteroidField.fireCooldownAfterWrongShotMs;
+      this.fireCooldownUntilMs = this.time.now + cooldownMs;
+      // Sprint 2.4.1 audit fix — visible cooldown state. Lock now;
+      // schedule the unlock for cooldownMs later. The unlock is
+      // skipped (no-op) if the scene has transitioned away or the
+      // round-wide cap fires below — `setLocked` is idempotent so
+      // a stale unlock after teardown is harmless.
+      this.fireButton?.setLocked(true);
+      this.time.delayedCall(cooldownMs, () => {
+        this.fireButton?.setLocked(false);
+      });
+      // Sprint 2.4.1 audit fix — surface the round-wide cap to the
+      // HUD's lives row (same `strikesChanged` event Number Climb
+      // emits; HudScene.maybeBuildLivesDots auto-renders for any
+      // mode that implements getMaxStrikes on the contract).
+      this.events.emit('strikesChanged', {
+        strikesUsed: this.roundWrongShots,
+        maxStrikes: cap,
+        remaining: Math.max(0, cap - this.roundWrongShots),
+      });
       getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
       this.playWrongHitFeedback(asteroid.x, asteroid.y);
       this.spawnTimePenaltyFloater(asteroid.x, asteroid.y);
@@ -460,7 +521,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
         // analytics can see "kids who failed via wrong-shot exhaustion"
         // separately from per-question wrong shots.
         strikesUsed: String(this.roundWrongShots),
-        maxStrikes: String(config.asteroidField.maxWrongShotsPerRound),
+        maxStrikes: String(cap),
       });
 
       // Sprint 2.4.1 story 2 — round-wide cap. When `maxWrongShotsPerRound`
@@ -468,7 +529,6 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       // wrong-shot flag is already set on the wave system, so the
       // round-fail flow records the question as wrong + transitions
       // to GameOver.
-      const cap = config.asteroidField.maxWrongShotsPerRound;
       if (cap > 0 && this.roundWrongShots >= cap) {
         this.handleRoundWrongShotBudgetExhausted();
       }
@@ -527,7 +587,13 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     banner.setShadow(0, 3, '#0b1020', 6, true, true);
 
     // Fade the surviving asteroids in parallel so the playfield
-    // visually settles before GameOver mounts.
+    // visually settles before GameOver mounts. The fade tween is
+    // 250 ms (see Asteroid.playFadeOut), comfortably under the
+    // 700 ms banner hold below — so fades always complete before
+    // endRound() destroys the scene + its tweens. If a future
+    // refactor lengthens the fade past 700 ms, bump this delay
+    // to match (or chain the endRound off the last-fade
+    // completion callback).
     const survivors = this.waveSystem.liveAsteroids();
     for (const s of survivors) {
       s.playFadeOut(() => {

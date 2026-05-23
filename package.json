@@ -1,7 +1,7 @@
 {
   "name": "mathbasher",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "description": "A browser-based math game for kids. Aliens descend carrying answers; fire at the right one before they reach the hero.",

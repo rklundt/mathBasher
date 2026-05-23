@@ -226,6 +226,16 @@ export const HeroSpriteKeys = {
    * "OG Yellow" is selected. Lossless WebP at 128×128 (per the
    * hero-kind PROFILES + sprint 2.2.1 story 6's alpha-sprites-are-
    * lossless convention).
+   *
+   * Scope: stays with the rest of `HeroSpriteKeys` under the
+   * `game:alien-shoot` SPRITE_MANIFEST scope (see derivation
+   * below). The +17 KB boot transfer is negligible vs. the
+   * speeders' existing footprint AND the Settings-picker UI
+   * needs the texture available BEFORE the alien-shoot scene
+   * preload runs (the SettingsScene Hero-picker thumbnail draws
+   * it). If a future SettingsScene refactor lazy-loads the
+   * thumbnail asset on demand, this entry could safely move to
+   * a Hero-skin-specific scope.
    */
   SpaceRobot: 'space-robot',
 } as const;
@@ -298,8 +308,10 @@ export function pickNextHeroSpriteKey(): string {
   //     doesn't advance (no rotation when there's nothing to rotate
   //     through).
   //   - 'og-yellow': original behavior — cycle through Speeder1/2/3.
-  // Import is lazy (top-of-file) but `Settings.getHeroSkin()` is a
-  // pure-getter so the call cost is trivial.
+  // No circular-import risk on the `Settings` top-level import:
+  // Settings's own import graph terminates at telemetry, config
+  // types, and the observable helper — none of which reach back
+  // into spriteKeys.
   if (Settings.getHeroSkin() === 'space-robot') {
     return HeroSpriteKeys.SpaceRobot;
   }
