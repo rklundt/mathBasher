@@ -59,14 +59,20 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
     case 'number-climb': {
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const rungs = RUNGS_PER_DIFFICULTY[key];
-      const floors = config.numberClimb.questionsPerRound;
       const totalSec = config.numberClimb.speed[key].totalTimeSec;
-      // Sprint 2.2.1 story 3 — subtitle includes the floor count so the
-      // kid knows the round length before pressing Start. Floor count
-      // reads from config so a future round-size change auto-updates.
+      // Sprint 2.4 story 0 — "N floors" lifted OUT of the per-difficulty
+      // subtitle (it was constant across all three difficulties and
+      // pushed each subtitle wider than its tile, causing visual overlap
+      // between the three subtitles in the DifficultyScene playtest).
+      // The floor count is now rendered ONCE as a shared subtitle line
+      // in `renderSpeeds` below. Per-tile subtitles compress to
+      // "N rungs · Ms timer" and fit cleanly. (Sprint 2.2.1 story 3
+      // originally added the floor count here; the kid-facing intent —
+      // "see round length before pressing Start" — is preserved by the
+      // shared line.)
       return {
         label: labels[key],
-        subtitle: `${rungs} rungs · ${floors} floors · ${totalSec}s timer`,
+        subtitle: `${rungs} rungs · ${totalSec}s timer`,
       };
     }
   }
@@ -305,6 +311,24 @@ export class DifficultyScene extends Phaser.Scene {
     const dt = config.layout.difficultyTile;
     const gameId = Settings.round.gameId;
     text(this, cx, y - dt.speedSectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
+
+    // Sprint 2.4 story 0 — Climb only: shared "N floors per round" line
+    // sits between the section label and the three difficulty buttons.
+    // The floor count is constant across all three difficulties, so
+    // showing it once here keeps the per-tile subtitles short enough
+    // to fit their tile widths. Pre-2.4 the floor count lived inside
+    // each per-tile subtitle and the three subtitles overflowed into
+    // each other at the design canvas width.
+    if (gameId === 'number-climb') {
+      const floors = config.numberClimb.questionsPerRound;
+      text(
+        this,
+        cx,
+        y - dt.speedSectionLabelOffsetY / 2,
+        `${floors} floors per round`,
+        'subtitle',
+      ).setOrigin(0.5);
+    }
 
     const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
     const tileWidth = dt.speedWidthPx;
