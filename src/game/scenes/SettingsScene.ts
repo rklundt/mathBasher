@@ -208,7 +208,12 @@ export class SettingsScene extends Phaser.Scene {
    * control when picked).
    */
   private hasGameSettings(): boolean {
-    return Settings.round.gameId === 'asteroid-field';
+    // Sprint 2.4.1 story 3 — Alien Shoot now has a game-tab setting
+    // (the Hero skin picker), so its Game tab is no longer empty.
+    // Each game-mode branch in `renderGameTab` must render at least
+    // one control when picked; the two stay in sync.
+    const id = Settings.round.gameId;
+    return id === 'asteroid-field' || id === 'alien-shoot';
   }
 
   /**
@@ -418,7 +423,65 @@ export class SettingsScene extends Phaser.Scene {
       const sectionLabel = text(this, cx, height * 0.22, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
       this.renderAsteroidImageToggleRow(cx, height * 0.42);
+    } else if (Settings.round.gameId === 'alien-shoot') {
+      const sectionLabel = text(this, cx, height * 0.22, 'Alien Shoot', 'sectionLabel').setOrigin(0.5);
+      this.tabContent.push(sectionLabel);
+      this.renderHeroSkinRow(cx, height * 0.42);
     }
+  }
+
+  /**
+   * Sprint 2.4.1 story 3 — Hero skin picker for Alien Shoot. Two
+   * mutually-exclusive PlaceholderButtons (Space Robot / OG Yellow);
+   * the active one carries the `selected` chrome (amber border).
+   * Clicking the inactive button flips the choice + persists via
+   * `Settings.setHeroSkin`, then toggles both buttons' selected
+   * states so the new pick reads as active.
+   *
+   * Layout: label on the left ("Hero"), then two ~150 px option
+   * buttons side-by-side to the right. Matches the visual rhythm of
+   * the Asteroid Field image-toggle row (control on the LEFT, label
+   * adjacent) — except here both controls + the row label sit in
+   * one horizontal line so the kid sees both options at once
+   * instead of a single toggle they have to decode.
+   */
+  private renderHeroSkinRow(cx: number, y: number): void {
+    const rowLabel = text(this, cx - 200, y, 'Hero', 'rowLabel').setOrigin(0, 0.5);
+    this.tabContent.push(rowLabel);
+
+    // The two option buttons. Stored in a closure-shared object so
+    // the click handlers can update each other's `selected` state.
+    const buttons: { spaceRobot?: PlaceholderButton; ogYellow?: PlaceholderButton } = {};
+
+    const setSelection = (skin: 'space-robot' | 'og-yellow'): void => {
+      Settings.setHeroSkin(skin);
+      buttons.spaceRobot?.setSelected(skin === 'space-robot');
+      buttons.ogYellow?.setSelected(skin === 'og-yellow');
+    };
+
+    const current = Settings.getHeroSkin();
+    buttons.spaceRobot = new PlaceholderButton({
+      scene: this,
+      x: cx - 30,
+      y,
+      width: 150,
+      height: 56,
+      label: 'Space Robot',
+      selected: current === 'space-robot',
+      onClick: () => setSelection('space-robot'),
+    });
+    buttons.ogYellow = new PlaceholderButton({
+      scene: this,
+      x: cx + 140,
+      y,
+      width: 150,
+      height: 56,
+      label: 'OG Yellow',
+      selected: current === 'og-yellow',
+      onClick: () => setSelection('og-yellow'),
+    });
+    this.tabContent.push(buttons.spaceRobot, buttons.ogYellow);
+    this.tabContentFocusables.push(buttons.spaceRobot, buttons.ogYellow);
   }
 
   /**

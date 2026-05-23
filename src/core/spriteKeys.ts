@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/services/Settings';
+import { Settings, type GameId } from '@/services/Settings';
 import type { AssetScope } from '@/core/assetScope';
 
 /**
@@ -217,7 +217,34 @@ export const HeroSpriteKeys = {
   Speeder1: 'speeder-1',
   Speeder2: 'speeder-2',
   Speeder3: 'speeder-3',
+  /**
+   * Sprint 2.4.1 story 3 — Space Robot. Single static sprite, NOT
+   * part of the speeder round-robin pool below. Default for the
+   * Alien Shoot hero (`Settings.getHeroSkin() === 'space-robot'`);
+   * the picker `pickNextHeroSpriteKey` consults the setting and
+   * returns either this key OR cycles through Speeder1/2/3 when
+   * "OG Yellow" is selected. Lossless WebP at 128×128 (per the
+   * hero-kind PROFILES + sprint 2.2.1 story 6's alpha-sprites-are-
+   * lossless convention).
+   */
+  SpaceRobot: 'space-robot',
 } as const;
+
+/**
+ * Sprint 2.4.1 story 3 — the round-robin SPEEDER subset of
+ * `HeroSpriteKeys` (excludes SpaceRobot). Used by `pickNextHeroSpriteKey`
+ * when the user has selected the "OG Yellow" skin: cycles
+ * Speeder1 → Speeder2 → Speeder3 → Speeder1 → ... exactly as the
+ * pre-sprint behavior. Keeping this as a separate readonly list
+ * (vs `Object.values(HeroSpriteKeys).filter(...)`) makes the cycle
+ * order explicit and avoids accidentally including any future
+ * single-skin hero entries added to the umbrella const.
+ */
+const OG_YELLOW_SPEEDER_KEYS: readonly string[] = [
+  HeroSpriteKeys.Speeder1,
+  HeroSpriteKeys.Speeder2,
+  HeroSpriteKeys.Speeder3,
+];
 
 /**
  * Asteroid Field hero sprite keys (sprint 2.1 playtest). Three
@@ -265,8 +292,18 @@ let _heroPickIndex = 0;
  * approach missed Speeder 3 on small sample sizes.
  */
 export function pickNextHeroSpriteKey(): string {
-  const keys = Object.values(HeroSpriteKeys);
-  const key = keys[_heroPickIndex % keys.length];
+  // Sprint 2.4.1 story 3 — branch on the user's selected hero skin.
+  //   - 'space-robot' (default for new + existing players): ALWAYS
+  //     return the single Space Robot sprite. The round-robin index
+  //     doesn't advance (no rotation when there's nothing to rotate
+  //     through).
+  //   - 'og-yellow': original behavior — cycle through Speeder1/2/3.
+  // Import is lazy (top-of-file) but `Settings.getHeroSkin()` is a
+  // pure-getter so the call cost is trivial.
+  if (Settings.getHeroSkin() === 'space-robot') {
+    return HeroSpriteKeys.SpaceRobot;
+  }
+  const key = OG_YELLOW_SPEEDER_KEYS[_heroPickIndex % OG_YELLOW_SPEEDER_KEYS.length]!;
   _heroPickIndex += 1;
   return key;
 }
