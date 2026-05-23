@@ -55,7 +55,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | [2.1.9](phase-2/2.1.9-pre-2.2-refactor-and-per-game-midground.md) | Pre-2.2 refactor (GameSceneLifecycle helper + createObservable + ADR-0011 + .sprints/ public) + per-game midground audio for Asteroid Field | Closed (2026-05-18) |
 | [2.2](phase-2/2.2-number-climb.md) | "Number Climb" (ships as "Space Escape!") — climbing platformer with answer rungs, 12 floors, escape-the-burning-station theme | Closed (2026-05-21) |
 | [2.2.1](phase-2/2.2.1-post-climb-cleanup.md) | Post-Climb cleanup, UX polish, WebP migration, and cross-game scoring true-up — 12 active stories: kid-UX hints, config lift, dead-code cleanup, pickRung test coverage, WebP migration, arcade modes → 12 questions, cross-game max-score calibration. | Closed (2026-05-22) |
-| [2.3](phase-2/2.3-static-web-app-deploy.md) | Azure Static Web App deployment + caching — get mathBasher onto a public URL via Azure SWA; `staticwebapp.config.json` cache headers + SPA routing (un-blocks the former Phaser-chunk cache-header story); hand-authored CI/CD with a `development`/`main` dual-environment model. | In Progress (started 2026-05-22) |
+| [2.3](phase-2/2.3-static-web-app-deploy.md) | Azure Static Web App deployment + caching — get mathBasher onto a public URL via Azure SWA; `staticwebapp.config.json` cache headers + SPA routing (un-blocks the former Phaser-chunk cache-header story); hand-authored CI/CD with a `development`/`main` dual-environment model. | Closed (2026-05-22) |
 | [2.4](phase-2/2.4-fraction-math-types.md) | Fraction math types — "Add Fractions" + "Subtract Fractions", available in all three games, content scales by difficulty (Easy = like fractions, Medium = mixed numbers, Hard = unlike fractions). First math types with non-integer answers; first generators that vary output by the Speed setting. Also centralizes scoring config + adds docs/SCORING.md. | Planned |
 | [2.5](phase-2/2.5-splash-and-graphic-intros.md) | Splash screen, graphic intros + hero selection — boot splash / title screen, per-game-mode intro beat, and a 4-option diverse hero picker (female/male × dark/light). Presentation sprint. | Planned |
 
@@ -70,7 +70,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | 3.3 | Backend hosting + datastore — graduate the SWA deployment to host an API (SWA-linked Azure Functions, or App Service); provision a database | Planned |
 | 3.4 | Persistence model with no child PII — scores tied to an anonymous device ID or a parent-managed profile; no standalone kid login | Planned |
 
-*Sprint 3.5 (`phase-3/3.5-azure-deployment.md`) — the old App-Service Azure deployment — is **superseded** by sprint 2.3's Azure Static Web Apps decision. It will be retired or re-scoped during the sprint 2.3 audit; its backend-hosting parts are absorbed into 3.3 above.*
+*Sprint 3.5 (`phase-3/3.5-azure-deployment.md`) — the old App-Service Azure deployment — was **RETIRED** at the sprint 2.3 close (2026-05-22). Superseded by sprint 2.3's Azure Static Web Apps decision. Its backend-hosting parts (when a future backend lands) are absorbed into 3.3 above.*
 
 ## Phase 4 — Individual accounts, monetization & compliance
 
@@ -83,6 +83,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | 4.3 | Account system — parent/adult accounts, auth (OAuth for adults), RBAC scaffolding | Future |
 | 4.4 | Child profiles under a parent account — per-kid history; no standalone kid login | Future |
 | 4.5 | Monetization / cost-recovery — payment processing, free vs paid tier, donation path | Future |
+| 4.6 | Production hardening before public launch — deploy-gating model (decision pending — see backlog: GitHub Environments / tag-based / scheduled / manual), App Insights wiring (real connection string + dashboards), live-ops runbook. Final Phase-4 sprint, lands before any real users. | Future |
 
 *Non-engineering prerequisite (not a sprint): form the non-profit legal entity — required before signing agreements, charging, or standing behind a privacy policy.*
 
