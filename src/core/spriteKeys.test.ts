@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { afterEach, beforeEach, describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   _resetCachedSpriteTier,
   getCachedSpriteTier,
@@ -11,7 +11,6 @@ import {
   pickSpriteTier,
   spritePath,
 } from '@/core/spriteKeys';
-import { Settings } from '@/services/Settings';
 
 /**
  * Sprint 0.7 Story 13 (D5 from sprint 0.6.3 wrap-up review) — unit
@@ -174,45 +173,25 @@ describe('spritePath extension resolution', () => {
 });
 
 /**
- * Sprint 2.4.1 story 3 — `pickNextHeroSpriteKey` branches on
- * `Settings.heroSkin`. Two paths to lock:
- *  - `'space-robot'` (default) → always return SpaceRobot, never
- *    advance the round-robin index (a future flip back to og-yellow
- *    should resume the cycle from wherever it was).
- *  - `'og-yellow'` → original 3-speeder strict cycle (Speeder1 → 2
- *    → 3 → 1 → ...).
+ * Sprint 2.4.2 hotfix — `pickNextHeroSpriteKey` is the Alien Shoot
+ * speeder picker only. Sprint 2.4.1 incorrectly added a Settings
+ * branch here that conflated the Alien Shoot speeders with the new
+ * Climb-only Space Robot hero; that branch was rolled back and the
+ * function is back to its pre-2.4.1 contract: a strict
+ * Speeder1 → 2 → 3 → 1 round-robin with no Settings dependency.
  *
  * The module-level `_heroPickIndex` is private + can't be reset
  * between tests without a re-import. Tests use round-trip patterns
  * that are robust to whatever value the counter holds at test-
- * start: "advances by N over N calls", "all 3 speeders appear in 3
- * consecutive calls", etc.
+ * start (3 consecutive calls must cover all three speeders).
+ *
+ * The Climb-side Space-Robot-vs-OG-Yellow skin choice is exercised
+ * by the `Settings.heroSkin` persistence tests in `Settings.test.ts`
+ * and is consumed inside `NumberClimbHero` (entity construction —
+ * Phaser scene required, hence not unit-testable in isolation here).
  */
-describe('pickNextHeroSpriteKey — hero skin branching', () => {
-  // Save + restore the user's persisted skin so tests don't bleed
-  // into each other (or into a real localStorage if the test env
-  // ever wires one up).
-  let originalSkin: ReturnType<typeof Settings.getHeroSkin>;
-
-  beforeEach(() => {
-    originalSkin = Settings.getHeroSkin();
-  });
-
-  afterEach(() => {
-    Settings.setHeroSkin(originalSkin);
-  });
-
-  it('returns SpaceRobot every call when heroSkin === "space-robot"', () => {
-    Settings.setHeroSkin('space-robot');
-    for (let i = 0; i < 5; i++) {
-      expect(pickNextHeroSpriteKey()).toBe(HeroSpriteKeys.SpaceRobot);
-    }
-  });
-
-  it('cycles through Speeder1/2/3 in strict round-robin when heroSkin === "og-yellow"', () => {
-    Settings.setHeroSkin('og-yellow');
-    // Three consecutive picks must cover all three speeders (in some
-    // order — the starting position depends on prior module state).
+describe('pickNextHeroSpriteKey — speeder round-robin (Alien Shoot)', () => {
+  it('cycles through Speeder1/2/3 in strict round-robin', () => {
     const picks = [
       pickNextHeroSpriteKey(),
       pickNextHeroSpriteKey(),
@@ -220,31 +199,24 @@ describe('pickNextHeroSpriteKey — hero skin branching', () => {
     ];
     const speeders = [HeroSpriteKeys.Speeder1, HeroSpriteKeys.Speeder2, HeroSpriteKeys.Speeder3];
     expect(picks.every((p) => (speeders as string[]).includes(p))).toBe(true);
-    expect(new Set(picks).size).toBe(3); // all distinct
-    // SpaceRobot must NOT appear in the og-yellow cycle.
-    expect(picks).not.toContain(HeroSpriteKeys.SpaceRobot);
+    expect(new Set(picks).size).toBe(3); // all distinct in 3 consecutive picks
   });
 
-  it('continues og-yellow cycling after a mid-session flip from space-robot', () => {
-    // Land on og-yellow, snapshot the next pick.
-    Settings.setHeroSkin('og-yellow');
-    const beforeSwap = pickNextHeroSpriteKey();
-    // Flip to space-robot — should NOT advance the og-yellow index.
-    Settings.setHeroSkin('space-robot');
-    pickNextHeroSpriteKey();
-    pickNextHeroSpriteKey();
-    pickNextHeroSpriteKey();
-    // Flip back. The next og-yellow pick should be the one
-    // immediately AFTER `beforeSwap` in the Speeder1/2/3 cycle,
-    // i.e. the round-robin index advanced by 1 — NOT by 4.
-    Settings.setHeroSkin('og-yellow');
-    const speeders: readonly string[] = [
-      HeroSpriteKeys.Speeder1,
-      HeroSpriteKeys.Speeder2,
-      HeroSpriteKeys.Speeder3,
-    ];
-    const idxBefore = speeders.indexOf(beforeSwap);
-    const expectedNext = speeders[(idxBefore + 1) % speeders.length]!;
-    expect(pickNextHeroSpriteKey()).toBe(expectedNext);
+  it('does not consult Settings.heroSkin (post-2.4.2 hotfix invariant)', () => {
+    // Black-box: calling 6 times produces a strict alternation, never
+    // a single repeated value. If Settings.heroSkin were still being
+    // consulted, a 'space-robot' override would produce all-same.
+    const picks = Array.from({ length: 6 }, () => pickNextHeroSpriteKey());
+    // Every pick must be one of the three speeders.
+    const allSpeeders = picks.every((p) =>
+      p === HeroSpriteKeys.Speeder1 ||
+      p === HeroSpriteKeys.Speeder2 ||
+      p === HeroSpriteKeys.Speeder3,
+    );
+    expect(allSpeeders).toBe(true);
+    // Cycle of length 3 means picks[i] === picks[i+3] across all i.
+    expect(picks[0]).toBe(picks[3]);
+    expect(picks[1]).toBe(picks[4]);
+    expect(picks[2]).toBe(picks[5]);
   });
 });
