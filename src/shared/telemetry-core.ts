@@ -61,7 +61,14 @@ export type TelemetryPropName =
   // `source` — "pointer" | "keyboard"; tap/mouse vs. Tab+Enter activation
   | 'label'
   | 'sceneKey'
-  | 'source';
+  | 'source'
+  // Sprint 2.4.1 story 1 — Number Climb cumulative-strike telemetry.
+  // `strikesUsed` (numeric, stringified) — total wrong picks this climb
+  // `maxStrikes` (numeric, stringified) — the configured ceiling (e.g. "3")
+  // `floorReached` (numeric, stringified) — kid's floor when the budget ran out
+  | 'strikesUsed'
+  | 'maxStrikes'
+  | 'floorReached';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so

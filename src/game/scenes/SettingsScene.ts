@@ -12,7 +12,8 @@ import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
-import { Settings } from '@/services/Settings';
+import { Settings, type HeroSkin } from '@/services/Settings';
+import { HeroSpriteKeys } from '@/core/spriteKeys';
 
 /**
  * Settings screen. Reachable from MenuScene and from PauseOverlay. Two
@@ -208,7 +209,12 @@ export class SettingsScene extends Phaser.Scene {
    * control when picked).
    */
   private hasGameSettings(): boolean {
-    return Settings.round.gameId === 'asteroid-field';
+    // Sprint 2.4.1 story 3 — Alien Shoot now has a game-tab setting
+    // (the Hero skin picker), so its Game tab is no longer empty.
+    // Each game-mode branch in `renderGameTab` must render at least
+    // one control when picked; the two stay in sync.
+    const id = Settings.round.gameId;
+    return id === 'asteroid-field' || id === 'alien-shoot';
   }
 
   /**
@@ -418,7 +424,117 @@ export class SettingsScene extends Phaser.Scene {
       const sectionLabel = text(this, cx, height * 0.22, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
       this.renderAsteroidImageToggleRow(cx, height * 0.42);
+    } else if (Settings.round.gameId === 'alien-shoot') {
+      const sectionLabel = text(this, cx, height * 0.22, 'Alien Shoot', 'sectionLabel').setOrigin(0.5);
+      this.tabContent.push(sectionLabel);
+      this.renderHeroSkinRow(cx, height * 0.42);
     }
+  }
+
+  /**
+   * Sprint 2.4.1 story 3 — Hero skin picker for Alien Shoot. Two
+   * mutually-exclusive PlaceholderButtons (Space Robot / OG Yellow);
+   * the active one carries the `selected` chrome (amber border).
+   * Clicking the inactive button flips the choice + persists via
+   * `Settings.setHeroSkin`, then toggles both buttons' selected
+   * states so the new pick reads as active.
+   *
+   * Layout: label on the left ("Hero"), then two ~150 px option
+   * buttons side-by-side to the right. Matches the visual rhythm of
+   * the Asteroid Field image-toggle row (control on the LEFT, label
+   * adjacent) — except here both controls + the row label sit in
+   * one horizontal line so the kid sees both options at once
+   * instead of a single toggle they have to decode.
+   */
+  private renderHeroSkinRow(cx: number, y: number): void {
+    const rowLabel = text(this, cx - 240, y, 'Hero', 'rowLabel').setOrigin(0, 0.5);
+    this.tabContent.push(rowLabel);
+
+    // Sprint 2.4.1 audit fix (Support reviewer) — option buttons are
+    // now WIDER (180 px) + TALLER (96 px) to make room for a sprite
+    // thumbnail above the text label. "Space Robot" / "OG Yellow"
+    // text alone is opaque for the 6-10yo target audience ("OG" is
+    // slang they won't parse); the visual makes the choice obvious
+    // at a glance. Each button shows its representative sprite —
+    // the actual Space Robot for that pick, and Speeder1 as the
+    // "this is the look you'd get" preview for OG Yellow (the
+    // og-yellow path round-robins through 1/2/3 per round; showing
+    // the first one is a reasonable single-frame stand-in).
+    const buttons: { spaceRobot?: PlaceholderButton; ogYellow?: PlaceholderButton } = {};
+
+    const setSelection = (skin: HeroSkin): void => {
+      Settings.setHeroSkin(skin);
+      buttons.spaceRobot?.setSelected(skin === 'space-robot');
+      buttons.ogYellow?.setSelected(skin === 'og-yellow');
+    };
+
+    const current = Settings.getHeroSkin();
+    const buttonW = 180;
+    const buttonH = 96;
+    const robotX = cx - 30;
+    const yellowX = cx + 170;
+
+    buttons.spaceRobot = new PlaceholderButton({
+      scene: this,
+      x: robotX,
+      y,
+      width: buttonW,
+      height: buttonH,
+      label: 'Space Robot',
+      selected: current === 'space-robot',
+      onClick: () => setSelection('space-robot'),
+    });
+    buttons.ogYellow = new PlaceholderButton({
+      scene: this,
+      x: yellowX,
+      y,
+      width: buttonW,
+      height: buttonH,
+      label: 'OG Yellow',
+      selected: current === 'og-yellow',
+      onClick: () => setSelection('og-yellow'),
+    });
+
+    // Sprite thumbnails. Layered ABOVE the button (depth bumps the
+    // image past the button background but below any selected-border
+    // chrome). 40 px target size keeps the icons readable on phones
+    // without overpowering the 28-30 px button label below. Position
+    // is the button center x, with y nudged ABOVE center to leave
+    // room for the label text.
+    //
+    // Texture-key safety: HeroSpriteKeys.SpaceRobot ('space-robot')
+    // is eager-loaded as part of HeroSpriteKeys (game:alien-shoot
+    // scope) — guaranteed to be in the texture cache by the time
+    // any game-scene SettingsScene mounts. Speeder1 ('speeder-1')
+    // ditto. textures.exists check is defensive: if a future
+    // refactor moves Hero sprites off the always-loaded path, the
+    // button just renders without a thumb instead of breaking.
+    const ICON_SIZE = 40;
+    const ICON_Y_OFFSET = -18; // px ABOVE button center; label sits below
+
+    if (this.textures.exists(HeroSpriteKeys.SpaceRobot)) {
+      const robotIcon = this.add
+        .image(robotX, y + ICON_Y_OFFSET, HeroSpriteKeys.SpaceRobot)
+        .setOrigin(0.5);
+      const robotTex = this.textures.get(HeroSpriteKeys.SpaceRobot).getSourceImage();
+      const robotMax = Math.max(robotTex.width, robotTex.height) || 1;
+      robotIcon.setScale(ICON_SIZE / robotMax);
+      robotIcon.setDepth(1);
+      this.tabContent.push(robotIcon);
+    }
+    if (this.textures.exists(HeroSpriteKeys.Speeder1)) {
+      const yellowIcon = this.add
+        .image(yellowX, y + ICON_Y_OFFSET, HeroSpriteKeys.Speeder1)
+        .setOrigin(0.5);
+      const yellowTex = this.textures.get(HeroSpriteKeys.Speeder1).getSourceImage();
+      const yellowMax = Math.max(yellowTex.width, yellowTex.height) || 1;
+      yellowIcon.setScale(ICON_SIZE / yellowMax);
+      yellowIcon.setDepth(1);
+      this.tabContent.push(yellowIcon);
+    }
+
+    this.tabContent.push(buttons.spaceRobot, buttons.ogYellow);
+    this.tabContentFocusables.push(buttons.spaceRobot, buttons.ogYellow);
   }
 
   /**

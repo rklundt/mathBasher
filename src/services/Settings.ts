@@ -23,6 +23,20 @@ import { createObservable } from '@/services/observable';
  */
 export type GameId = 'alien-shoot' | 'asteroid-field' | 'number-climb';
 
+/**
+ * Sprint 2.4.1 story 3 — Alien Shoot hero skin selector. First time
+ * the project lets the kid pick a hero. Two values:
+ *  - `'space-robot'` (default for new + existing players) — the new
+ *    single static Space Robot sprite from sprint 2.4.1.
+ *  - `'og-yellow'` — preserves the original 3-speeder random-per-round
+ *    behavior (Speeder1/2/3 round-robin).
+ *
+ * Persisted to localStorage so the choice survives reloads. Adding a
+ * third skin = extend this union + the picker in `spriteKeys.ts` +
+ * the SettingsScene UI.
+ */
+export type HeroSkin = 'space-robot' | 'og-yellow';
+
 export interface RoundSettings {
   gameId: GameId;
   mathId: MathId | null;
@@ -48,6 +62,32 @@ export interface RoundSettings {
  */
 const _gameId = createObservable<GameId>('gameId', 'alien-shoot');
 const _imageAsteroidsEnabled = createObservable<boolean>('imageAsteroidsEnabled', true);
+
+/**
+ * Sprint 2.4.1 story 3 — hero skin selector for Alien Shoot.
+ * `localStorage`-backed so the kid's choice survives reloads. Mirrors
+ * AudioManager's persisted-volume pattern (one localStorage key per
+ * stored value, try/catch around storage access for iOS-private-mode
+ * tolerance). Default is `'space-robot'` — both new players AND
+ * existing players whose localStorage has no entry land on the new
+ * sprite by default; the latter can opt back to `'og-yellow'` via
+ * Settings → Game → Hero.
+ */
+const HERO_SKIN_STORAGE_KEY = 'mathbasher.heroSkin';
+const HERO_SKIN_DEFAULT: HeroSkin = 'space-robot';
+
+function readPersistedHeroSkin(): HeroSkin {
+  try {
+    const raw = globalThis.localStorage?.getItem(HERO_SKIN_STORAGE_KEY);
+    if (raw === 'space-robot' || raw === 'og-yellow') return raw;
+  } catch {
+    // Storage unavailable (iOS private mode pre-15, sandboxed iframe).
+    // Fall through to default.
+  }
+  return HERO_SKIN_DEFAULT;
+}
+
+const _heroSkin = createObservable<HeroSkin>('heroSkin', readPersistedHeroSkin());
 
 const state: Omit<RoundSettings, 'gameId'> = {
   mathId: null,
@@ -139,5 +179,50 @@ export const Settings = {
    */
   onGameIdChange(listener: (gameId: GameId) => void): () => void {
     return _gameId.subscribe(listener);
+  },
+
+  // ----- Alien Shoot hero skin (sprint 2.4.1 story 3) ----------------
+
+  /**
+   * Current Alien Shoot hero skin. Read by `pickNextHeroSpriteKey` at
+   * round-start to decide between the static Space Robot sprite and
+   * the original Speeder1/2/3 round-robin.
+   */
+  getHeroSkin(): HeroSkin {
+    return _heroSkin.get();
+  },
+
+  /**
+   * Set the hero skin + persist to localStorage. Telemetry fires only
+   * on real changes (observable is idempotent). The try/catch around
+   * localStorage matches `readPersistedHeroSkin` above — a storage
+   * failure logs the choice in memory but doesn't break the toggle.
+   */
+  setHeroSkin(skin: HeroSkin): void {
+    const previous = _heroSkin.get();
+    _heroSkin.set(skin);
+    try {
+      globalThis.localStorage?.setItem(HERO_SKIN_STORAGE_KEY, skin);
+    } catch {
+      // Storage write failed — the in-memory observable is still
+      // updated so the rest of this session reflects the choice;
+      // page reload reverts to whatever persisted last (or default).
+    }
+    if (previous !== skin) {
+      _th.logToAi('Settings.setHeroSkin', SeverityLevel.Information, {
+        reason: skin,
+      });
+    }
+  },
+
+  /**
+   * Subscribe to hero-skin changes. Returns an unsubscribe function.
+   * Today no scene needs reactive updates (the picker reads on each
+   * round-start, not continuously), but the subscriber API is here
+   * for parity with the other observables and to make a future
+   * mid-game live-swap a 1-line addition.
+   */
+  onHeroSkinChange(listener: (skin: HeroSkin) => void): () => void {
+    return _heroSkin.subscribe(listener);
   },
 };
