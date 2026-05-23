@@ -360,16 +360,19 @@ export const config = {
      */
     wrongShotCountdownPenaltySec: 3,
     /**
-     * Sprint 2.4.1 story 2 — climb-wide "lives" cap for wrong shots
-     * across the WHOLE round. Project-owner decision (combines spec
-     * options A + B + D): each wrong shot still deducts time + locks
-     * FIRE for `fireCooldownAfterWrongShotMs`; the Nth wrong shot of
-     * the round (default N=2 → "one mistake allowed") ends the round
-     * as a fail. Set to 0 to disable the round-wide cap and fall back
-     * to the old behavior (per-question time penalty + per-correct
-     * score halving only).
+     * Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-QUESTION cap on
+     * wrong shots. Each wrong shot still deducts time + locks FIRE
+     * for `fireCooldownAfterWrongShotMs`; the Nth wrong shot of a
+     * single wave (default N=2 → "one mistake allowed per question")
+     * marks that question as wrong and advances to the next. Set to
+     * 0 to disable the cap entirely (per-question time penalty +
+     * per-correct score halving still apply).
+     *
+     * Renamed from `maxWrongShotsPerRound` in 2.4.2 hotfix — sprint
+     * 2.4.1 incorrectly implemented this as a round-wide budget
+     * (cumulative across 12 questions); intent was always per-wave.
      */
-    maxWrongShotsPerRound: 2,
+    maxWrongShotsPerQuestion: 2,
     /**
      * Sprint 2.4.1 story 2 — FIRE-input lockout after a wrong shot.
      * Prevents rapid-fire spam through the answer set: a wrong shot

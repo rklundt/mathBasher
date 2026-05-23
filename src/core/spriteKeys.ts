@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { Settings, type GameId } from '@/services/Settings';
+import type { GameId } from '@/services/Settings';
 import type { AssetScope } from '@/core/assetScope';
 
 /**
@@ -217,44 +217,31 @@ export const HeroSpriteKeys = {
   Speeder1: 'speeder-1',
   Speeder2: 'speeder-2',
   Speeder3: 'speeder-3',
-  /**
-   * Sprint 2.4.1 story 3 — Space Robot. Single static sprite, NOT
-   * part of the speeder round-robin pool below. Default for the
-   * Alien Shoot hero (`Settings.getHeroSkin() === 'space-robot'`);
-   * the picker `pickNextHeroSpriteKey` consults the setting and
-   * returns either this key OR cycles through Speeder1/2/3 when
-   * "OG Yellow" is selected. Lossless WebP at 128×128 (per the
-   * hero-kind PROFILES + sprint 2.2.1 story 6's alpha-sprites-are-
-   * lossless convention).
-   *
-   * Scope: stays with the rest of `HeroSpriteKeys` under the
-   * `game:alien-shoot` SPRITE_MANIFEST scope (see derivation
-   * below). The +17 KB boot transfer is negligible vs. the
-   * speeders' existing footprint AND the Settings-picker UI
-   * needs the texture available BEFORE the alien-shoot scene
-   * preload runs (the SettingsScene Hero-picker thumbnail draws
-   * it). If a future SettingsScene refactor lazy-loads the
-   * thumbnail asset on demand, this entry could safely move to
-   * a Hero-skin-specific scope.
-   */
-  SpaceRobot: 'space-robot',
 } as const;
 
 /**
- * Sprint 2.4.1 story 3 — the round-robin SPEEDER subset of
- * `HeroSpriteKeys` (excludes SpaceRobot). Used by `pickNextHeroSpriteKey`
- * when the user has selected the "OG Yellow" skin: cycles
- * Speeder1 → Speeder2 → Speeder3 → Speeder1 → ... exactly as the
- * pre-sprint behavior. Keeping this as a separate readonly list
- * (vs `Object.values(HeroSpriteKeys).filter(...)`) makes the cycle
- * order explicit and avoids accidentally including any future
- * single-skin hero entries added to the umbrella const.
+ * Sprint 2.4.2 hotfix — Number Climb hero skin keys. The Space Robot
+ * sprite is the new DEFAULT climber (replaces the long-standing
+ * procedural amber-rectangle placeholder in `NumberClimbHero.ts`).
+ * Sprint 2.4.1 incorrectly wired it into Alien Shoot; this const +
+ * the `NumberClimbHero` branching restores Alien Shoot to its
+ * original Speeder1/2/3 random behavior and moves the new sprite to
+ * its intended home.
+ *
+ * Single static sprite — no round-robin, no animation frames.
+ * Lossless WebP at 128×128 per the sprint 2.2.1 story 6 alpha-sprites-
+ * are-lossless convention. Lives in `public/assets/sprites/hero/`
+ * (same folder as the speeders + asteroid heroes + escape ship —
+ * all hero-kind sprites share one disk location).
+ *
+ * If a third Climb skin lands later, add it here + extend the
+ * `HeroSkin` union in `Settings.ts` + the picker UI in
+ * `SettingsScene.renderHeroSkinRow`.
  */
-const OG_YELLOW_SPEEDER_KEYS: readonly string[] = [
-  HeroSpriteKeys.Speeder1,
-  HeroSpriteKeys.Speeder2,
-  HeroSpriteKeys.Speeder3,
-];
+export const ClimbHeroSkinKeys = {
+  SpaceRobot: 'space-robot',
+} as const;
+export type ClimbHeroSkinKey = (typeof ClimbHeroSkinKeys)[keyof typeof ClimbHeroSkinKeys];
 
 /**
  * Asteroid Field hero sprite keys (sprint 2.1 playtest). Three
@@ -302,20 +289,14 @@ let _heroPickIndex = 0;
  * approach missed Speeder 3 on small sample sizes.
  */
 export function pickNextHeroSpriteKey(): string {
-  // Sprint 2.4.1 story 3 — branch on the user's selected hero skin.
-  //   - 'space-robot' (default for new + existing players): ALWAYS
-  //     return the single Space Robot sprite. The round-robin index
-  //     doesn't advance (no rotation when there's nothing to rotate
-  //     through).
-  //   - 'og-yellow': original behavior — cycle through Speeder1/2/3.
-  // No circular-import risk on the `Settings` top-level import:
-  // Settings's own import graph terminates at telemetry, config
-  // types, and the observable helper — none of which reach back
-  // into spriteKeys.
-  if (Settings.getHeroSkin() === 'space-robot') {
-    return HeroSpriteKeys.SpaceRobot;
-  }
-  const key = OG_YELLOW_SPEEDER_KEYS[_heroPickIndex % OG_YELLOW_SPEEDER_KEYS.length]!;
+  // Sprint 2.4.2 hotfix — restored to the pre-2.4.1 behavior: a
+  // strict Speeder1/2/3 round-robin with no Settings consultation.
+  // Sprint 2.4.1 story 3 incorrectly added a Settings.heroSkin branch
+  // here, displacing the long-established Alien Shoot speeder set.
+  // The hero-skin picker now lives on Number Climb (see
+  // `NumberClimbHero` for the Settings consumer).
+  const keys = Object.values(HeroSpriteKeys);
+  const key = keys[_heroPickIndex % keys.length]!;
   _heroPickIndex += 1;
   return key;
 }
@@ -808,6 +789,17 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
   // `hero/` folder (192×192 lossless WebP) but Climb-only, so deferred
   // via the same `game:number-climb` scope.
   ...(Object.values(ClimbEscapeShipKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'game:number-climb',
+  })),
+  // Sprint 2.4.2 hotfix — Number Climb hero skin sprites. Today this
+  // is just the Space Robot (the new default climber); a second skin
+  // would land here without touching the manifest derivation logic.
+  // `game:number-climb` scope so the texture only transfers when the
+  // kid actually picks Climb — not part of the eager boot payload.
+  ...(Object.values(ClimbHeroSkinKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'hero',
     key,
     url: spritePath('hero', key),

@@ -29,6 +29,16 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.4.2] - 2026-05-23 — Hotfix: hero wiring rollback + Asteroid wrong-shot scope
+
+Hotfix on sprint 2.4.1 (which was closed to staging but never shipped to production). Two scope corrections caught by the project owner during pre-promotion review:
+
+- **Roll back Alien Shoot to Speeder1/2/3 round-robin.** Sprint 2.4.1 incorrectly wired the new Space Robot sprite into Alien Shoot, displacing the long-established speeder set. `pickNextHeroSpriteKey` is back to its pre-2.4.1 behavior (strict Speeder1 → 2 → 3 cycle, no `Settings` consultation).
+- **Move Space Robot to Number Climb as the new default climber.** The new sprite (raw file: `hero_climber.png`) was always intended for the Climb's climber character — replacing the procedural amber-rectangle placeholder that's been in place since sprint 2.2. `Settings → Game → Hero` picker moves Alien Shoot → Number Climb; the "OG Yellow" option preserves the procedural amber-rectangle with a matching procedural thumbnail in the picker (no new asset needed).
+- **Asteroid Field wrong-shot cap is now per-QUESTION, not per-round.** Sprint 2.4.1 implemented `maxWrongShotsPerRound = 2` as a cumulative budget across all 12 questions (2nd wrong shot ended the entire round). Intent was always per-wave: 2 wrong shots within one question = that question scores 0 and the kid advances to the next. Config key renamed `maxWrongShotsPerQuestion`; telemetry event renamed `AsteroidField.questionWrongShotBudgetExhausted`. Round only ends now via per-question timer-zero or the 12th-question completion.
+
+The Climb 3-strike cap, lives indicator pattern, FIRE cooldown visual + click SFX, and Settings hero-skin persistence from 2.4.1 are all preserved. This release supersedes the un-released v2.4.1.
+
 ## [2.4.1] - 2026-05-23 — Life rules + hero skin
 
 Three changes — two fairness fixes across existing game modes + a presentation add:

@@ -13,7 +13,7 @@ import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
 import { Settings, type HeroSkin } from '@/services/Settings';
-import { HeroSpriteKeys } from '@/core/spriteKeys';
+import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
 
 /**
  * Settings screen. Reachable from MenuScene and from PauseOverlay. Two
@@ -209,12 +209,14 @@ export class SettingsScene extends Phaser.Scene {
    * control when picked).
    */
   private hasGameSettings(): boolean {
-    // Sprint 2.4.1 story 3 — Alien Shoot now has a game-tab setting
-    // (the Hero skin picker), so its Game tab is no longer empty.
-    // Each game-mode branch in `renderGameTab` must render at least
-    // one control when picked; the two stay in sync.
+    // Sprint 2.4.2 hotfix — picker moved Alien Shoot → Number Climb
+    // (the Space Robot sprite belongs to Climb, not Alien Shoot).
+    // Alien Shoot's Game tab is empty again. Asteroid Field keeps
+    // its image-asteroids toggle. Each branch in `renderGameTab`
+    // must render at least one control when picked; the two
+    // stay in sync.
     const id = Settings.round.gameId;
-    return id === 'asteroid-field' || id === 'alien-shoot';
+    return id === 'asteroid-field' || id === 'number-climb';
   }
 
   /**
@@ -424,8 +426,12 @@ export class SettingsScene extends Phaser.Scene {
       const sectionLabel = text(this, cx, height * 0.22, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
       this.renderAsteroidImageToggleRow(cx, height * 0.42);
-    } else if (Settings.round.gameId === 'alien-shoot') {
-      const sectionLabel = text(this, cx, height * 0.22, 'Alien Shoot', 'sectionLabel').setOrigin(0.5);
+    } else if (Settings.round.gameId === 'number-climb') {
+      // Sprint 2.4.2 hotfix — Hero picker moved here from
+      // Alien Shoot. The Space Robot sprite was always intended for
+      // the Climb's climber character; the picker lives where the
+      // consumer game lives.
+      const sectionLabel = text(this, cx, height * 0.22, 'Number Climb', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
       this.renderHeroSkinRow(cx, height * 0.42);
     }
@@ -495,43 +501,56 @@ export class SettingsScene extends Phaser.Scene {
       onClick: () => setSelection('og-yellow'),
     });
 
-    // Sprite thumbnails. Layered ABOVE the button (depth bumps the
-    // image past the button background but below any selected-border
-    // chrome). 40 px target size keeps the icons readable on phones
-    // without overpowering the 28-30 px button label below. Position
-    // is the button center x, with y nudged ABOVE center to leave
-    // room for the label text.
+    // Thumbnails. Two paths because the two options are NOT the same
+    // asset shape: Space Robot is a sprite texture, OG Yellow is a
+    // procedural shape (the Climb's amber-rectangle climber). We
+    // render each with the matching primitive:
+    //   - Space Robot: Phaser.Image from ClimbHeroSkinKeys.SpaceRobot
+    //     texture (scope game:number-climb — guaranteed loaded by
+    //     the time a Climb-game SettingsScene opens).
+    //   - OG Yellow: a small Graphics object replicating the
+    //     `NumberClimbHero.paintBody` shape (rounded amber rect + 2
+    //     eye dots) at thumbnail size. No new asset; matches what
+    //     the kid will see on-screen if they pick this option.
     //
-    // Texture-key safety: HeroSpriteKeys.SpaceRobot ('space-robot')
-    // is eager-loaded as part of HeroSpriteKeys (game:alien-shoot
-    // scope) — guaranteed to be in the texture cache by the time
-    // any game-scene SettingsScene mounts. Speeder1 ('speeder-1')
-    // ditto. textures.exists check is defensive: if a future
-    // refactor moves Hero sprites off the always-loaded path, the
-    // button just renders without a thumb instead of breaking.
+    // 40 px target size keeps the icons readable on phones without
+    // overpowering the 28-30 px button label below. Position: button
+    // center x; y nudged ABOVE center to leave room for the label.
+    //
+    // Defensive: textures.exists guard on the Space Robot path — if
+    // a future refactor moves the texture off the always-loaded
+    // path, the button just renders without a thumb instead of
+    // throwing.
     const ICON_SIZE = 40;
     const ICON_Y_OFFSET = -18; // px ABOVE button center; label sits below
 
-    if (this.textures.exists(HeroSpriteKeys.SpaceRobot)) {
+    if (this.textures.exists(ClimbHeroSkinKeys.SpaceRobot)) {
       const robotIcon = this.add
-        .image(robotX, y + ICON_Y_OFFSET, HeroSpriteKeys.SpaceRobot)
+        .image(robotX, y + ICON_Y_OFFSET, ClimbHeroSkinKeys.SpaceRobot)
         .setOrigin(0.5);
-      const robotTex = this.textures.get(HeroSpriteKeys.SpaceRobot).getSourceImage();
+      const robotTex = this.textures.get(ClimbHeroSkinKeys.SpaceRobot).getSourceImage();
       const robotMax = Math.max(robotTex.width, robotTex.height) || 1;
       robotIcon.setScale(ICON_SIZE / robotMax);
       robotIcon.setDepth(1);
       this.tabContent.push(robotIcon);
     }
-    if (this.textures.exists(HeroSpriteKeys.Speeder1)) {
-      const yellowIcon = this.add
-        .image(yellowX, y + ICON_Y_OFFSET, HeroSpriteKeys.Speeder1)
-        .setOrigin(0.5);
-      const yellowTex = this.textures.get(HeroSpriteKeys.Speeder1).getSourceImage();
-      const yellowMax = Math.max(yellowTex.width, yellowTex.height) || 1;
-      yellowIcon.setScale(ICON_SIZE / yellowMax);
-      yellowIcon.setDepth(1);
-      this.tabContent.push(yellowIcon);
-    }
+
+    // OG Yellow procedural thumbnail. Colors match NumberClimbHero
+    // constants (HERO_FILL_COLOR=0xfbbf24 + HERO_OUTLINE_COLOR=0x713f12).
+    // We don't import those (entity file pulls Phaser); literals are
+    // fine — they're scoped to this preview and trivial to refresh
+    // if the entity ever changes its palette.
+    const yellowG = this.add.graphics();
+    const half = ICON_SIZE / 2;
+    yellowG.fillStyle(0xfbbf24, 1);
+    yellowG.fillRoundedRect(yellowX - half, y + ICON_Y_OFFSET - half, ICON_SIZE, ICON_SIZE, 8);
+    yellowG.lineStyle(2, 0x713f12, 1);
+    yellowG.strokeRoundedRect(yellowX - half, y + ICON_Y_OFFSET - half, ICON_SIZE, ICON_SIZE, 8);
+    yellowG.fillStyle(0x1a1a2e, 1);
+    yellowG.fillCircle(yellowX - 7, y + ICON_Y_OFFSET - 5, 3);
+    yellowG.fillCircle(yellowX + 7, y + ICON_Y_OFFSET - 5, 3);
+    yellowG.setDepth(1);
+    this.tabContent.push(yellowG);
 
     this.tabContent.push(buttons.spaceRobot, buttons.ogYellow);
     this.tabContentFocusables.push(buttons.spaceRobot, buttons.ogYellow);
