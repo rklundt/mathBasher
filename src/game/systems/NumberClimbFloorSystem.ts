@@ -253,6 +253,23 @@ export class NumberClimbFloorSystem {
       rng,
     );
 
+    // Sprint 2.4 story 5 — map each numeric choice back to its parallel
+    // display string. For integer generators `choiceDisplays` is undefined;
+    // the map stays empty and rungs render the bare number. For fraction
+    // generators, the map gives each picked numeric value (a decimal like
+    // 0.375) its rendered fraction string ("3/8"). Choices are distinct
+    // per the generator contract, so value-keyed lookup is safe.
+    const displayByValue = new Map<number, string>();
+    if (question.choiceDisplays !== undefined) {
+      for (let j = 0; j < question.choices.length; j++) {
+        const value = question.choices[j];
+        const display = question.choiceDisplays[j];
+        if (value !== undefined && display !== undefined) {
+          displayByValue.set(value, display);
+        }
+      }
+    }
+
     // Distribute rungs horizontally — even spacing across the
     // playfield with safe margins. With N rungs, the spacing between
     // centers = playfieldWidth / N (so each rung gets its own band).
@@ -261,11 +278,13 @@ export class NumberClimbFloorSystem {
     for (let i = 0; i < targetRungCount; i++) {
       // Center of the i-th band, in world coords.
       const x = this.opts.leftBound + bandWidth * (i + 0.5);
+      const answer = pickedAnswers[i]!;
       const rung = new NumberClimbRung({
         scene: this.opts.scene,
         x,
         y: floorY,
-        answer: pickedAnswers[i]!,
+        answer,
+        answerDisplay: displayByValue.get(answer),
         index: i + 1, // 1-based for the keyboard shortcut + visible prefix
       });
       this.rungs.push(rung);

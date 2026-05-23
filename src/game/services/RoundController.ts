@@ -32,6 +32,13 @@ export class RoundController {
   private readonly scoreCalculator: ScoreCalculator;
   private readonly mathId: MathId;
   /**
+   * Stored round speed — sprint 2.4 story 2. Passed through to the generator
+   * at draw time so speed-aware generators (e.g. fractions) can vary their
+   * question content by the round's Easy/Medium/Hard selector. Speed-agnostic
+   * generators (every integer math type today) ignore it.
+   */
+  private readonly _speed: SpeedKey;
+  /**
    * Total questions per round. Defaults to `config.round.questionsPerRound`
    * (20 — used by Alien Shoot + Asteroid Field). Sprint 2.2 added the
    * optional constructor override so Number Climb can run 10-floor
@@ -50,6 +57,7 @@ export class RoundController {
    */
   constructor(mathId: MathId, speed: SpeedKey, questionsPerRoundOverride?: number) {
     this.mathId = mathId;
+    this._speed = speed;
     this.scoreCalculator = new ScoreCalculator(mathId, speed);
     this._questionsPerRound = questionsPerRoundOverride ?? config.round.questionsPerRound;
   }
@@ -77,11 +85,11 @@ export class RoundController {
     const historyLimit = config.round.recentPromptHistoryLimit;
     const maxRerolls = config.round.recentPromptMaxRerolls;
 
-    let question: Question = generator.generate();
+    let question: Question = generator.generate(undefined, this._speed);
     if (historyLimit > 0) {
       let attempts = 1;
       while (attempts < maxRerolls && this.recentPrompts.includes(question.prompt)) {
-        question = generator.generate();
+        question = generator.generate(undefined, this._speed);
         attempts += 1;
       }
       // Push the accepted prompt into history AFTER the draw so the
