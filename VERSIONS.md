@@ -29,6 +29,25 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.4.0] - 2026-05-22 — Fraction math types ("Add Fractions" + "Subtract Fractions")
+
+The first math types with **non-integer answers** and the first generators whose **content varies by the difficulty selector** (Speed). 9 stories shipped:
+
+- **Story 0 — DifficultyScene Climb subtitle overflow fix** (carried in from sprint 2.3 retest). The constant "12 floors" lifted OUT of the per-difficulty subtitle into a shared header line — overlap fixed; per-tile subtitles compress cleanly.
+- **Story 1 — `Question` display layer.** Optional `correctDisplay` + `choiceDisplays` fields. Integer generators ignore (back-compat); fraction generators populate them so `3/8` renders as `"3/8"` rather than `"0.375"`.
+- **Story 2 — Speed-aware generator plumbing.** `QuestionGenerator.generate()` gains an optional `speed?: SpeedKey` parameter. RoundController threads it through. Reusable infrastructure — any future difficulty-varying generator just reads the param.
+- **Story 3 — `addFractions` generator + 38 tests.** Three bands: Easy (like fractions), Medium (mixed numbers), Hard (unlike fractions, smaller denom ×2 or ×3). Shared `src/math/fractionMath.ts` helpers (gcd, reduce, formatFraction, decimalValue, mixedToImproper, buildFractionDistractors).
+- **Story 4 — `subtractFractions` generator + 41 tests.** Mirror of Add with a non-negative-result constraint enforced at three layers (operand-ordering at generation, defensive throw in `generate`, cross-band test). Reuses the shared helpers.
+- **Story 5 — Cross-game fraction rendering.** All three games (Alien Shoot, Asteroid Field, Number Climb) thread `answerDisplay` through to their answer-slot renderers. Integer generators continue to render bare numbers exactly as before. Defensive font-shrink (via `setScale`) for long fraction labels so `"1 1/2"` and `"4 11/12"` fit the chassis / rock / rung without clipping.
+- **Story 6 — Centralized scoring config.** A single well-commented `config.scoring` region documents the formula (`basePerCorrect × mathDifficulty × speed.multiplier × wrongShotMult`) and the multiplier-ladder rationale. Per-game `speed` blocks cross-reference back. Pure docs refactor.
+- **Story 7 — Score calibration.** New `'add-fractions': 4.0` and `'subtract-fractions': 4.5` multipliers (peer of div-to-144 and one +0.5 step past). 8 parity tests in `ScoreCalculator.test.ts` lock the calibration. Mixed Math **excludes** fractions (decimal answers don't compose with Mixed's integer rounds).
+- **Story 8 — `docs/SCORING.md` reference doc.** Public formula + multiplier table + cross-game max-score grid + star ladders. CLAUDE.md gains a "keep SCORING.md in sync" convention rule.
+- **Story 9 — Six-reviewer audit + close.** APPROVED after a Legal must-fix (SCORING.md tooling-leak rephrased) and a Support should-fix (the long-fraction font-shrink).
+
+Test suite: **440 tests** (was 353 pre-sprint; +87 net). Typecheck clean, build green throughout.
+
+**Follow-up sprint stubbed:** [2.4.1 — Life rules](.sprints/phase-2/2.4.1-life-rules.md). Two fairness fixes surfaced during sprint 2.4 review (Climb cumulative 3-strike cap; Asteroid wrong-shot timer-reduction deterrent).
+
 ## [2.3.0] - 2026-05-22 — Azure Static Web Apps deployment + caching
 
 mathBasher is now **live on a public production URL** via Azure Static Web Apps. 5 stories:
