@@ -52,6 +52,20 @@ interface TimePenaltyPayload {
 }
 
 /**
+ * Sprint 2.4.1 story 1 — payload for the `strikesChanged` event emitted
+ * by NumberClimbScene when the cumulative-strike counter ticks up. The
+ * HUD repaints its lives row (`strikesRemaining` filled green; the rest
+ * hollow red). Other game modes never emit this event (they don't
+ * implement `getStrikesRemaining` on the scene contract, so the HUD
+ * never builds the row in the first place).
+ */
+interface StrikesChangedPayload {
+  strikesUsed: number;
+  maxStrikes: number;
+  remaining: number;
+}
+
+/**
  * Heads-up display, runs in PARALLEL with the active game scene
  * (GameScene OR AsteroidFieldScene). Listens for events the game scene
  * emits and updates the top bar:
@@ -106,6 +120,14 @@ export class HudScene extends Phaser.Scene {
    */
   private countdownText?: Phaser.GameObjects.Text;
   /**
+   * Sprint 2.4.1 story 1 — Number Climb's "lives remaining" indicator.
+   * One filled circle per slot (`getMaxStrikes()`); green while available,
+   * dimmed red once spent. Built only for game scenes that implement
+   * `getStrikesRemaining` on the contract (i.e. Number Climb today).
+   * Other modes leave the array empty and the row never renders.
+   */
+  private livesDots: Phaser.GameObjects.Arc[] = [];
+  /**
    * Scene key of the game-mode scene that launched this HUD. Defaults to
    * SceneKeys.Game (Alien Shoot — back-compat for any legacy caller).
    * Sprint 2.1: HudScene became game-mode-agnostic — each game scene
@@ -145,6 +167,10 @@ export class HudScene extends Phaser.Scene {
     // the first questionEnded of the new round marks dot 0 not dot 19.
     this.progressDots = [];
     this.currentQuestionIndex = 0;
+    // Sprint 2.4.1 story 1 — reset lives row across scene reuse for
+    // the same reason as progressDots (Phaser reuses the class
+    // instance; stale destroyed Arcs would remain in the array).
+    this.livesDots = [];
 
     // Sprint 2.2 story 15a — pull the round size from the active game
     // scene so the counter + dots scale per-mode. By the time this
@@ -266,6 +292,13 @@ export class HudScene extends Phaser.Scene {
     // initially. Centered horizontally; dot size + gap tuned so the full
     // row at 20 questions stays under ~220px wide (~30% of canvas width).
     this.buildProgressDots(width, barHeight);
+
+    // Sprint 2.4.1 story 1 — Number Climb's lives indicator. Built only
+    // when the active game scene implements `getMaxStrikes`; other
+    // modes opt out and the top-left lives row never appears for them.
+    // Anchored at the top-left of the playfield (just under the HUD
+    // bar, beside the score area) per the project-owner UX call.
+    this.maybeBuildLivesDots(barHeight);
 
     // Bind to GameScene events. The GameScene event emitter is per-scene
     // and lives as long as the scene; we listen via scene.get(...).events.
@@ -423,6 +456,81 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
+   * Sprint 2.4.1 story 1 — build the lives row for game scenes that
+   * expose `getMaxStrikes`. Currently Number Climb only; other modes
+   * return undefined / don't implement the contract method, in which
+   * case this is a no-op and no row appears.
+   *
+   * Positioned at the top-left of the playfield, just under the HUD
+   * bar — anchored at x = 16 (same left margin as the round-score
+   * label above it) and y = barHeight + 10 (same y as the progress
+   * dots row, but in the LEFT corner instead of centered).
+   *
+   * Each "life" is a 10 px filled circle. Available = green; spent =
+   * dim red. Diameter intentionally larger than the per-question
+   * progress dots (6 px) so the kid reads them as a different,
+   * higher-stakes status indicator. Tooltip / label not yet added —
+   * the green→red transition on the kid's first wrong should teach
+   * the rule; revisit in playtest if it doesn't read.
+   */
+  private maybeBuildLivesDots(barHeight: number): void {
+    const gameScene = this.getGameScene();
+    const maxStrikes = gameScene?.getMaxStrikes?.();
+    if (!maxStrikes || maxStrikes <= 0) return;
+
+    const dotRadius = 7;
+    const dotGap = 8;
+    const startX = 16 + dotRadius;
+    const dotY = barHeight + 10;
+    for (let i = 0; i < maxStrikes; i++) {
+      const dot = this.add.circle(
+        startX + i * (dotRadius * 2 + dotGap),
+        dotY,
+        dotRadius,
+        0x22c55e, // green — full life
+      );
+      dot.setStrokeStyle(2, 0x16a34a);
+      this.livesDots.push(dot);
+    }
+
+    // Apply current state immediately (the kid hasn't taken any
+    // strikes at scene mount, so this is usually a no-op visual, but
+    // it's robust to a hypothetical mount-mid-round path).
+    const remaining = gameScene?.getStrikesRemaining?.() ?? maxStrikes;
+    this.applyLivesState(remaining);
+  }
+
+  /**
+   * Sprint 2.4.1 story 1 — repaint the lives row given the number of
+   * lives still available. First `remaining` dots stay green; the rest
+   * flip to dim red (spent). Idempotent + cheap; called on every
+   * `strikesChanged` event from NumberClimbScene.
+   */
+  private applyLivesState(remaining: number): void {
+    for (let i = 0; i < this.livesDots.length; i++) {
+      const dot = this.livesDots[i]!;
+      if (i < remaining) {
+        dot.setFillStyle(0x22c55e); // green — still available
+        dot.setStrokeStyle(2, 0x16a34a);
+      } else {
+        dot.setFillStyle(0xef4444); // red — spent
+        dot.setStrokeStyle(2, 0xb91c1c);
+      }
+    }
+  }
+
+  /**
+   * Sprint 2.4.1 story 1 — handler for the `strikesChanged` event
+   * emitted by NumberClimbScene on every wrong pick. Defensive guard
+   * for the (impossible-in-practice) case where the event fires on a
+   * mode whose HUD didn't build the lives row.
+   */
+  private onStrikesChanged(payload: StrikesChangedPayload): void {
+    if (this.livesDots.length === 0) return;
+    this.applyLivesState(payload.remaining);
+  }
+
+  /**
    * Sprint 0.7 Story 8 — update a single progress dot's fill color
    * based on outcome. Called from `onQuestionEnded` with the index of
    * the just-completed question.
@@ -452,6 +560,10 @@ export class HudScene extends Phaser.Scene {
     // wrong-rung mulligan. Harmless to bind for the arcade modes too
     // (they never emit it).
     gameScene.events.on('timePenalty', this.onTimePenalty, this);
+    // Sprint 2.4.1 story 1 — Number Climb emits `strikesChanged` on
+    // every wrong pick so the lives row repaints. Other modes never
+    // emit; binding here is cheap and consistent.
+    gameScene.events.on('strikesChanged', this.onStrikesChanged, this);
     this.gameSceneListenersBound = true;
 
     // Phaser launches parallel scenes asynchronously: GameScene.create() can
@@ -478,6 +590,7 @@ export class HudScene extends Phaser.Scene {
       gameScene.events.off('questionEnded', this.onQuestionEnded, this);
       gameScene.events.off('correctHit', this.onCorrectHit, this);
       gameScene.events.off('timePenalty', this.onTimePenalty, this);
+      gameScene.events.off('strikesChanged', this.onStrikesChanged, this);
     }
     this.gameSceneListenersBound = false;
   }

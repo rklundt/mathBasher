@@ -460,6 +460,23 @@ export const config = {
      */
     wrongRungTimePenaltySec: 3,
     /**
+     * Sprint 2.4.1 story 1 — cumulative "lives" cap across the whole
+     * climb. The per-floor mulligan rule still applies (2nd wrong on
+     * one floor = wrong-terminal); this adds a climb-wide ceiling so
+     * a kid who burns a mulligan on every floor still hits a wall.
+     *
+     * A "strike" is incremented on each wrong pick (both mulligan
+     * AND wrong-terminal — so the wrong-terminal floor consumes two
+     * strikes when it was preceded by a mulligan). When `strikesUsed`
+     * reaches this value, the round ends with the same wrong-terminal
+     * fall-off animation, regardless of how the strikes were spread
+     * across floors.
+     *
+     * 3 lifted from `2.4.1-life-rules.md` (project-owner decision).
+     * Re-tune with a single edit here; HUD adapts automatically.
+     */
+    maxStrikesPerClimb: 3,
+    /**
      * Vertical spacing (px) between floor centers — also the height of
      * each floor's framed bg band. Two values so desktop and mobile can
      * tune independently; the scene reads `pickFloorSpacingPx()` at
