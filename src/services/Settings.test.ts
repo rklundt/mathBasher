@@ -134,3 +134,95 @@ describe('Settings.heroSkin — persistence + invalid-value handling', () => {
     expect(listener).toHaveBeenCalledTimes(2); // no further calls
   });
 });
+
+/**
+ * Sprint 2.5 story 4 — `Settings.chosenHero` persistence + invalid-
+ * value rejection. Same pattern as the `heroSkin` tests above, with
+ * one key difference: the default for `chosenHero` is `null` (not a
+ * literal value), because the first-run picker forces the kid to
+ * make a choice. BootScene reads `getChosenHero() === null` to
+ * decide whether to route to the picker.
+ */
+describe('Settings.chosenHero — persistence + invalid-value handling', () => {
+  let originalStorage: Storage | undefined;
+
+  beforeEach(() => {
+    originalStorage = (globalThis as { localStorage?: Storage }).localStorage;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    installStorage(originalStorage);
+    vi.resetModules();
+  });
+
+  it('defaults to null when no localStorage entry is present', async () => {
+    installStorage(makeMockStorage());
+    const { Settings } = await import('@/services/Settings');
+    expect(Settings.getChosenHero()).toBeNull();
+  });
+
+  it('reads a previously-persisted hero key at module load', async () => {
+    const storage = makeMockStorage();
+    storage.setItem('mathbasher.chosenHero', 'hero-chooser-3');
+    installStorage(storage);
+    const { Settings } = await import('@/services/Settings');
+    expect(Settings.getChosenHero()).toBe('hero-chooser-3');
+  });
+
+  it('rejects unexpected strings in storage + falls back to null', async () => {
+    const storage = makeMockStorage();
+    storage.setItem('mathbasher.chosenHero', 'hero-chooser-99'); // not in the 1-4 set
+    installStorage(storage);
+    const { Settings } = await import('@/services/Settings');
+    expect(Settings.getChosenHero()).toBeNull();
+  });
+
+  it('rejects arbitrary tampered strings', async () => {
+    const storage = makeMockStorage();
+    storage.setItem('mathbasher.chosenHero', 'banana');
+    installStorage(storage);
+    const { Settings } = await import('@/services/Settings');
+    expect(Settings.getChosenHero()).toBeNull();
+  });
+
+  it('setChosenHero persists to localStorage so a reload picks it up', async () => {
+    const storage = makeMockStorage();
+    installStorage(storage);
+    const { Settings } = await import('@/services/Settings');
+    Settings.setChosenHero('hero-chooser-2');
+    expect(storage.getItem('mathbasher.chosenHero')).toBe('hero-chooser-2');
+    Settings.setChosenHero('hero-chooser-4');
+    expect(storage.getItem('mathbasher.chosenHero')).toBe('hero-chooser-4');
+  });
+
+  it('tolerates localStorage getItem throwing at module load', async () => {
+    installStorage(makeMockStorage({ throwOn: 'getItem' }));
+    const { Settings } = await import('@/services/Settings');
+    expect(Settings.getChosenHero()).toBeNull();
+  });
+
+  it('tolerates localStorage setItem throwing (storage quota / sandboxed iframe)', async () => {
+    installStorage(makeMockStorage({ throwOn: 'setItem' }));
+    const { Settings } = await import('@/services/Settings');
+    Settings.setChosenHero('hero-chooser-1');
+    // In-memory observable still updates so the rest of this session
+    // reflects the choice; reload would revert (no persistence).
+    expect(Settings.getChosenHero()).toBe('hero-chooser-1');
+  });
+
+  it('onChosenHeroChange subscribers fire on every value change', async () => {
+    installStorage(makeMockStorage());
+    const { Settings } = await import('@/services/Settings');
+    const listener = vi.fn();
+    const unsub = Settings.onChosenHeroChange(listener);
+    Settings.setChosenHero('hero-chooser-1');
+    Settings.setChosenHero('hero-chooser-3');
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenNthCalledWith(1, 'hero-chooser-1');
+    expect(listener).toHaveBeenNthCalledWith(2, 'hero-chooser-3');
+    unsub();
+    Settings.setChosenHero('hero-chooser-4');
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+});

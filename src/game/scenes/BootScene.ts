@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
+import { Settings } from '@/services/Settings';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
@@ -210,7 +211,16 @@ export class BootScene extends Phaser.Scene {
     // (See `buildLoadingBar()` in `preload()` above.)
     this.scene.launch(SceneKeys.Background);
     this.scene.launch(SceneKeys.Attribution);
-    this.scene.start(SceneKeys.Menu);
+
+    // Sprint 2.5 story 4 — first-run hero pick gate. If the kid has
+    // never picked one (Settings.getChosenHero() === null) we route
+    // them to the HeroChooserScene; otherwise straight to Menu.
+    // Persistence is localStorage-backed, so subsequent visits skip
+    // this. ?autostart still flows through Menu (the dev shortcut is
+    // exercised after the picker, not before — flagging here in case
+    // future work needs to override).
+    const nextScene = Settings.getChosenHero() === null ? SceneKeys.HeroChooser : SceneKeys.Menu;
+    this.scene.start(nextScene);
 
     _th.logToAi('BootScene Completed', SeverityLevel.Information);
   }
