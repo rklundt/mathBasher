@@ -29,6 +29,22 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.5.0] - 2026-05-23 — Hero Chooser (4 diverse player avatars)
+
+First time the project lets the kid pick a hero. Purely cosmetic — does NOT alter in-game sprites (Alien Shoot keeps Speeders, Climb keeps its Settings → Game → Hero picker, Asteroid Field keeps its asteroid-heroes round-robin).
+
+- 4 Midjourney-generated heroes covering the female/male × dark/light skin-tone matrix shipped at `public/assets/sprites/hero/hero-chooser-{1..4}.webp` (lossless WebP, ~24 KB each). Filenames are deliberately numeric (not demographic) so analytics and code carry no encoded labels.
+- New full-screen `HeroChooserScene` with a 2×2 picker grid; selected card carries amber-accent border so a returning kid sees which one they picked last time.
+- First-run hard gate (no Skip button) so the kid commits to a pick before MenuScene mounts. Subsequent visits skip the picker; it's reachable mid-session by tapping the avatar in MenuScene's top-left corner.
+- Mid-session re-open has a visible "Back" button (added per Support audit; Esc alone wasn't enough for mobile kids).
+- New `Settings.chosenHero` setting, localStorage-backed; mirrors the existing `heroSkin` persistence pattern.
+- Chosen hero appears on MenuScene as a 56 px top-left avatar (tap to re-open picker) and on GameOverScene as an 88 px top-left banner (fades in alongside the headline pop).
+- Subtitle copy: "Just for looks — pick the one that feels like you" (framing the cosmetic-only nature as personal ownership rather than inert).
+
+**Sprint scope narrowed mid-flight:** the original 2.5 plan bundled the Hero Chooser with a splash-screen upgrade and per-game intro beats. Splash + intros carried to sprint 2.5.1 once the design conversation paused for more discussion. 2.5 ships the immersion-win Hero Chooser feature alone.
+
+8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
+
 ## [2.4.2] - 2026-05-23 — Hotfix: hero wiring rollback + Asteroid wrong-shot scope
 
 Hotfix on sprint 2.4.1 (which was closed to staging but never shipped to production). Two scope corrections caught by the project owner during pre-promotion review:

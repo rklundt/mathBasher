@@ -37,6 +37,27 @@ export type GameId = 'alien-shoot' | 'asteroid-field' | 'number-climb';
  */
 export type HeroSkin = 'space-robot' | 'og-yellow';
 
+/**
+ * Sprint 2.5 story 4 — chosen hero from the diverse 4-option picker.
+ * Purely cosmetic: drives the MenuScene avatar + the GameOver
+ * banner. Does NOT alter any in-game sprites (Alien Shoot uses its
+ * speeders, Climb uses `Settings.heroSkin`, Asteroid Field uses
+ * its asteroid-heroes round-robin — all unchanged by this).
+ *
+ * `null` means "not yet picked"; on first run the picker scene
+ * forces the kid through a choice before MenuScene mounts.
+ * Subsequent visits read the persisted localStorage value at
+ * module load.
+ *
+ * Adding a 5th hero = extend this union + `HeroChooserKeys` in
+ * `spriteKeys.ts` + the picker grid in `HeroChooserScene`.
+ */
+export type ChosenHero =
+  | 'hero-chooser-1'
+  | 'hero-chooser-2'
+  | 'hero-chooser-3'
+  | 'hero-chooser-4';
+
 export interface RoundSettings {
   gameId: GameId;
   mathId: MathId | null;
@@ -88,6 +109,34 @@ function readPersistedHeroSkin(): HeroSkin {
 }
 
 const _heroSkin = createObservable<HeroSkin>('heroSkin', readPersistedHeroSkin());
+
+/**
+ * Sprint 2.5 story 4 — `Settings.chosenHero` persistence. localStorage-
+ * backed so the kid's choice survives reloads. Mirrors the same
+ * try/catch + literal-narrowing pattern as `heroSkin` above.
+ * `null` default = first run; the picker scene forces a choice
+ * before MenuScene mounts.
+ */
+const CHOSEN_HERO_STORAGE_KEY = 'mathbasher.chosenHero';
+
+function readPersistedChosenHero(): ChosenHero | null {
+  try {
+    const raw = globalThis.localStorage?.getItem(CHOSEN_HERO_STORAGE_KEY);
+    if (
+      raw === 'hero-chooser-1' ||
+      raw === 'hero-chooser-2' ||
+      raw === 'hero-chooser-3' ||
+      raw === 'hero-chooser-4'
+    ) {
+      return raw;
+    }
+  } catch {
+    // Storage unavailable (iOS private mode pre-15, sandboxed iframe).
+  }
+  return null;
+}
+
+const _chosenHero = createObservable<ChosenHero | null>('chosenHero', readPersistedChosenHero());
 
 const state: Omit<RoundSettings, 'gameId'> = {
   mathId: null,
@@ -224,5 +273,46 @@ export const Settings = {
    */
   onHeroSkinChange(listener: (skin: HeroSkin) => void): () => void {
     return _heroSkin.subscribe(listener);
+  },
+
+  // ----- Diverse hero chooser (sprint 2.5 story 4) ------------------
+
+  /**
+   * Currently chosen hero from the 4-option picker. Returns `null` on
+   * first run (before the picker has been completed). `BootScene` reads
+   * this to decide whether to route to `HeroChooser` (null) or
+   * directly to `Menu` (non-null).
+   */
+  getChosenHero(): ChosenHero | null {
+    return _chosenHero.get();
+  },
+
+  /**
+   * Set the chosen hero + persist to localStorage. Telemetry fires
+   * only on real changes (observable is idempotent).
+   */
+  setChosenHero(hero: ChosenHero): void {
+    const previous = _chosenHero.get();
+    _chosenHero.set(hero);
+    try {
+      globalThis.localStorage?.setItem(CHOSEN_HERO_STORAGE_KEY, hero);
+    } catch {
+      // Storage write failed — in-memory observable still reflects
+      // the choice for this session; reload reverts to last-persisted.
+    }
+    if (previous !== hero) {
+      _th.logToAi('Settings.setChosenHero', SeverityLevel.Information, {
+        reason: hero,
+      });
+    }
+  },
+
+  /**
+   * Subscribe to chosen-hero changes. MenuScene + GameOverScene
+   * subscribe to repaint their avatar/banner when the picker
+   * re-opens mid-session. Returns an unsubscribe function.
+   */
+  onChosenHeroChange(listener: (hero: ChosenHero | null) => void): () => void {
+    return _chosenHero.subscribe(listener);
   },
 };

@@ -220,6 +220,33 @@ export const HeroSpriteKeys = {
 } as const;
 
 /**
+ * Sprint 2.5 story 4 — Hero Chooser sprites. Four diverse Midjourney-
+ * generated characters (female/male × dark/light skin tone matrix) the
+ * kid picks from on first visit; choice persists via
+ * `Settings.chosenHero` and surfaces as the MenuScene avatar +
+ * GameOver banner. Purely cosmetic — does NOT affect in-game sprites
+ * (Alien Shoot stays on Speeders, Climb stays on its skin picker,
+ * Asteroid Field stays on its asteroid-heroes round-robin).
+ *
+ * Lossless WebP at 192×192 per the alpha-sprites-are-lossless
+ * convention. Eager-scoped because the picker appears BEFORE
+ * MenuScene (on first run) and the chosen hero is shown on every
+ * MenuScene mount thereafter — both pre-game-pick, so they're not
+ * in any per-game scope.
+ *
+ * If a fifth diversity-representation hero lands later, add it here
+ * + extend the `ChosenHeroKey` union in `Settings.ts` + the picker
+ * grid in `HeroChooserScene`.
+ */
+export const HeroChooserKeys = {
+  Hero1: 'hero-chooser-1',
+  Hero2: 'hero-chooser-2',
+  Hero3: 'hero-chooser-3',
+  Hero4: 'hero-chooser-4',
+} as const;
+export type HeroChooserKey = (typeof HeroChooserKeys)[keyof typeof HeroChooserKeys];
+
+/**
  * Sprint 2.4.2 hotfix — Number Climb hero skin keys. The Space Robot
  * sprite is the new DEFAULT climber (replaces the long-standing
  * procedural amber-rectangle placeholder in `NumberClimbHero.ts`).
@@ -804,6 +831,16 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     key,
     url: spritePath('hero', key),
     scope: 'game:number-climb',
+  })),
+  // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
+  // BEFORE MenuScene (first-run picker) + on every MenuScene mount
+  // (avatar). +96 KB across the 4 lossless WebPs is acceptable
+  // first-load cost for a feature kids hit on every visit.
+  ...(Object.values(HeroChooserKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'eager',
   })),
   // Sprint 2.1 playtest — image-variant asteroid sprites. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for

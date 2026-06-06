@@ -110,6 +110,14 @@ export class GameOverScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
+    // Sprint 2.5 story 4 — chosen-hero banner. Top-left corner, larger
+    // than MenuScene's avatar (88 px vs 56) so the kid sees their
+    // hero present at the round-end celebration. Skipped silently if
+    // no hero is persisted (defensive — BootScene's routing ensures
+    // the picker has run before any round is played, but the guard
+    // means a test path that bypasses Boot still renders cleanly).
+    this.buildHeroBanner();
+
     // Sprint 0.7 Story 9 — entrance tween for the headline. Scale 0.7 +
     // alpha 0 → final, Back.Out ease for a small overshoot "pop." Reads
     // as a satisfying round-end celebration rather than the prior
@@ -317,5 +325,41 @@ export class GameOverScene extends Phaser.Scene {
         ease: 'Back.Out',
       });
     }
+  }
+
+  /**
+   * Sprint 2.5 story 4 — chosen-hero banner. Top-left corner;
+   * larger than MenuScene's avatar (88 px vs 56) so the kid sees
+   * their hero present at the round-end celebration. Identical
+   * defensive guards as MenuScene's `buildHeroAvatar` (null
+   * persisted choice or missing texture → no render, don't throw).
+   */
+  private buildHeroBanner(): void {
+    const hero = Settings.getChosenHero();
+    if (hero === null) return;
+    if (!this.textures.exists(hero)) return;
+
+    const BANNER_DISPLAY = 88;
+    const bx = 24 + BANNER_DISPLAY / 2;
+    const by = 24 + BANNER_DISPLAY / 2;
+
+    const bg = this.add.circle(bx, by, BANNER_DISPLAY / 2 + 6, 0x1f2740, 0.85);
+    bg.setStrokeStyle(3, 0xfbbf24);
+
+    const sprite = this.add.image(bx, by, hero).setOrigin(0.5);
+    const tex = this.textures.get(hero).getSourceImage();
+    const maxDim = Math.max(tex.width, tex.height) || 1;
+    sprite.setScale(BANNER_DISPLAY / maxDim);
+
+    // Subtle entrance to match the headline pop. Banner fades in
+    // alongside the headline tween for a coherent round-end beat.
+    bg.setAlpha(0);
+    sprite.setAlpha(0);
+    this.tweens.add({
+      targets: [bg, sprite],
+      alpha: 1,
+      duration: 350,
+      ease: 'Quad.Out',
+    });
   }
 }

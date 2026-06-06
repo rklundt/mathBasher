@@ -8,6 +8,7 @@ import { createScoreStore } from '@/services/scoreStoreFactory';
 import { createAudioManager } from '@/services/audioManagerFactory';
 import { BootScene } from '@/game/scenes/BootScene';
 import { BackgroundScene } from '@/game/scenes/BackgroundScene';
+import { HeroChooserScene } from '@/game/scenes/HeroChooserScene';
 import { MenuScene } from '@/game/scenes/MenuScene';
 import { GameSelectScene } from '@/game/scenes/GameSelectScene';
 import { DifficultyScene } from '@/game/scenes/DifficultyScene';
@@ -108,6 +109,7 @@ export function bootGame(): void {
     scene: [
       BootScene,
       BackgroundScene,
+      HeroChooserScene,
       MenuScene,
       GameSelectScene,
       DifficultyScene,
