@@ -11,6 +11,7 @@ import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { emitButtonClicked } from '@/game/ui/buttonTelemetry';
+import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 
 /**
  * Sprint 2.5 story 4 — Hero Chooser scene.
@@ -61,7 +62,11 @@ export class HeroChooserScene extends Phaser.Scene {
     super(HeroChooserScene.key);
   }
 
-  init(data: HeroChooserSceneInit): void {
+  // Sprint 2.5 audit (Senior Dev) — default the param so the
+  // "first-run no-data path" reads as such at the type level. Phaser
+  // passes `{}` when scene.start is called without data; explicit
+  // default makes the contract self-documenting.
+  init(data: HeroChooserSceneInit = {}): void {
     this.fromMenu = data.fromMenu === true;
   }
 
@@ -74,9 +79,13 @@ export class HeroChooserScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    // Title + subtitle.
+    // Title + subtitle. Sprint 2.5 audit (Support) — subtitle copy
+    // softened from "no effect on the game" (which reads as "this
+    // doesn't matter" to kids) to "pick the one that feels like
+    // you" — still honestly cosmetic but frames the pick as personal
+    // ownership rather than inert.
     text(this, cx, height * 0.10, 'Pick Your Hero', 'h2').setOrigin(0.5);
-    text(this, cx, height * 0.17, 'This is just your look — no effect on the game.', 'body')
+    text(this, cx, height * 0.17, 'Just for looks — pick the one that feels like you.', 'body')
       .setOrigin(0.5);
 
     // 2×2 grid centered horizontally + vertically.
@@ -99,8 +108,26 @@ export class HeroChooserScene extends Phaser.Scene {
     // Esc → Menu only if this is a mid-session re-open. First-run
     // has no escape hatch (deliberate hard gate so the kid commits
     // to a pick).
+    //
+    // Sprint 2.5 audit (Support) — Esc is keyboard-only; mobile kids
+    // had no way out of the mid-session picker without re-picking.
+    // Visible "Back" button (bottom-center) gives them a clear way
+    // home. Only rendered on the `fromMenu` path so the first-run
+    // hard gate stays a hard gate.
     if (this.fromMenu) {
       wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+      new PlaceholderButton({
+        scene: this,
+        x: cx,
+        y: height * 0.92,
+        width: 200,
+        height: 56,
+        label: 'Back',
+        onClick: () => {
+          emitButtonClicked('HeroChooser:Back', this.scene.key, 'pointer');
+          this.scene.start(SceneKeys.Menu);
+        },
+      });
     }
 
     this.events.once('shutdown', () => {
