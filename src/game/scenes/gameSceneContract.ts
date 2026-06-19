@@ -59,6 +59,32 @@ export interface GameSceneContract extends Phaser.Scene {
    * which already carries any per-mode override.
    */
   getQuestionsPerRound(): number;
+
+  /**
+   * Sprint 2.4.1 story 1 — climb-wide "lives" remaining (max minus
+   * strikes used). Number Climb returns a number; other game modes
+   * return undefined (no lives system there). HudScene reads at
+   * create() to decide whether to build the lives row, then keeps
+   * it in sync via the game scene's `strikesChanged` event.
+   *
+   * **Co-required with `getMaxStrikes`.** A scene that implements
+   * one without the other will silently break the HUD's lives row
+   * (HudScene reads `getMaxStrikes` to size the row + reads
+   * `getStrikesRemaining` to paint state; the two MUST stay in
+   * sync). Implementations so far: NumberClimb (story 1) +
+   * AsteroidField (story 2, sprint-2.4.1-audit-fix).
+   */
+  getStrikesRemaining?(): number | undefined;
+
+  /**
+   * Sprint 2.4.1 story 1 — climb-wide "lives" cap (e.g. 3). Returned
+   * alongside `getStrikesRemaining` so HudScene knows how many slots
+   * to draw. Number Climb returns the configured max; other modes
+   * return undefined.
+   *
+   * **Co-required with `getStrikesRemaining`** — see note above.
+   */
+  getMaxStrikes?(): number | undefined;
 }
 
 /**

@@ -19,6 +19,14 @@ import type { GameId } from '@/services/Settings';
 export const SceneKeys = {
   Boot: 'boot',
   Background: 'background',
+  /**
+   * Sprint 2.5 story 4 — Hero Chooser. Full-screen scene showing the
+   * 4 diverse hero options on first visit (before MenuScene). Once
+   * the kid picks one, BootScene routes directly to Menu on
+   * subsequent visits. The scene is also reachable mid-session
+   * from a small avatar-tap in MenuScene's corner.
+   */
+  HeroChooser: 'hero-chooser',
   Menu: 'menu',
   GameSelect: 'game-select',
   Difficulty: 'difficulty',

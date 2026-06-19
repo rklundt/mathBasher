@@ -220,6 +220,57 @@ export const HeroSpriteKeys = {
 } as const;
 
 /**
+ * Sprint 2.5 story 4 — Hero Chooser sprites. Four diverse Midjourney-
+ * generated characters (female/male × dark/light skin tone matrix) the
+ * kid picks from on first visit; choice persists via
+ * `Settings.chosenHero` and surfaces as the MenuScene avatar +
+ * GameOver banner. Purely cosmetic — does NOT affect in-game sprites
+ * (Alien Shoot stays on Speeders, Climb stays on its skin picker,
+ * Asteroid Field stays on its asteroid-heroes round-robin).
+ *
+ * Lossless WebP at 192×192 per the alpha-sprites-are-lossless
+ * convention. Eager-scoped because the picker appears BEFORE
+ * MenuScene (on first run) and the chosen hero is shown on every
+ * MenuScene mount thereafter — both pre-game-pick, so they're not
+ * in any per-game scope.
+ *
+ * If a fifth diversity-representation hero lands later, add it here
+ * + extend the `ChosenHeroKey` union in `Settings.ts` + the picker
+ * grid in `HeroChooserScene`.
+ */
+export const HeroChooserKeys = {
+  Hero1: 'hero-chooser-1',
+  Hero2: 'hero-chooser-2',
+  Hero3: 'hero-chooser-3',
+  Hero4: 'hero-chooser-4',
+} as const;
+export type HeroChooserKey = (typeof HeroChooserKeys)[keyof typeof HeroChooserKeys];
+
+/**
+ * Sprint 2.4.2 hotfix — Number Climb hero skin keys. The Space Robot
+ * sprite is the new DEFAULT climber (replaces the long-standing
+ * procedural amber-rectangle placeholder in `NumberClimbHero.ts`).
+ * Sprint 2.4.1 incorrectly wired it into Alien Shoot; this const +
+ * the `NumberClimbHero` branching restores Alien Shoot to its
+ * original Speeder1/2/3 random behavior and moves the new sprite to
+ * its intended home.
+ *
+ * Single static sprite — no round-robin, no animation frames.
+ * Lossless WebP at 128×128 per the sprint 2.2.1 story 6 alpha-sprites-
+ * are-lossless convention. Lives in `public/assets/sprites/hero/`
+ * (same folder as the speeders + asteroid heroes + escape ship —
+ * all hero-kind sprites share one disk location).
+ *
+ * If a third Climb skin lands later, add it here + extend the
+ * `HeroSkin` union in `Settings.ts` + the picker UI in
+ * `SettingsScene.renderHeroSkinRow`.
+ */
+export const ClimbHeroSkinKeys = {
+  SpaceRobot: 'space-robot',
+} as const;
+export type ClimbHeroSkinKey = (typeof ClimbHeroSkinKeys)[keyof typeof ClimbHeroSkinKeys];
+
+/**
  * Asteroid Field hero sprite keys (sprint 2.1 playtest). Three
  * Midjourney-generated ships, each shown roughly 1/3 of rounds via
  * `pickNextAsteroidHeroSpriteKey` below (round-robin).
@@ -265,8 +316,14 @@ let _heroPickIndex = 0;
  * approach missed Speeder 3 on small sample sizes.
  */
 export function pickNextHeroSpriteKey(): string {
+  // Sprint 2.4.2 hotfix — restored to the pre-2.4.1 behavior: a
+  // strict Speeder1/2/3 round-robin with no Settings consultation.
+  // Sprint 2.4.1 story 3 incorrectly added a Settings.heroSkin branch
+  // here, displacing the long-established Alien Shoot speeder set.
+  // The hero-skin picker now lives on Number Climb (see
+  // `NumberClimbHero` for the Settings consumer).
   const keys = Object.values(HeroSpriteKeys);
-  const key = keys[_heroPickIndex % keys.length];
+  const key = keys[_heroPickIndex % keys.length]!;
   _heroPickIndex += 1;
   return key;
 }
@@ -763,6 +820,27 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     key,
     url: spritePath('hero', key),
     scope: 'game:number-climb',
+  })),
+  // Sprint 2.4.2 hotfix — Number Climb hero skin sprites. Today this
+  // is just the Space Robot (the new default climber); a second skin
+  // would land here without touching the manifest derivation logic.
+  // `game:number-climb` scope so the texture only transfers when the
+  // kid actually picks Climb — not part of the eager boot payload.
+  ...(Object.values(ClimbHeroSkinKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'game:number-climb',
+  })),
+  // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
+  // BEFORE MenuScene (first-run picker) + on every MenuScene mount
+  // (avatar). +96 KB across the 4 lossless WebPs is acceptable
+  // first-load cost for a feature kids hit on every visit.
+  ...(Object.values(HeroChooserKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    scope: 'eager',
   })),
   // Sprint 2.1 playtest — image-variant asteroid sprites. These ship in
   // `public/assets/sprites/aliens/` (processed with `--kind alien` for

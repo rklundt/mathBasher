@@ -360,6 +360,29 @@ export const config = {
      */
     wrongShotCountdownPenaltySec: 3,
     /**
+     * Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-QUESTION cap on
+     * wrong shots. Each wrong shot still deducts time + locks FIRE
+     * for `fireCooldownAfterWrongShotMs`; the Nth wrong shot of a
+     * single wave (default N=2 → "one mistake allowed per question")
+     * marks that question as wrong and advances to the next. Set to
+     * 0 to disable the cap entirely (per-question time penalty +
+     * per-correct score halving still apply).
+     *
+     * Renamed from `maxWrongShotsPerRound` in 2.4.2 hotfix — sprint
+     * 2.4.1 incorrectly implemented this as a round-wide budget
+     * (cumulative across 12 questions); intent was always per-wave.
+     */
+    maxWrongShotsPerQuestion: 2,
+    /**
+     * Sprint 2.4.1 story 2 — FIRE-input lockout after a wrong shot.
+     * Prevents rapid-fire spam through the answer set: a wrong shot
+     * gates the next FIRE for this many ms. The TOUCH-FIRE button +
+     * the keyboard Space + the click-to-fire path all share this
+     * gate (it lives at the scene's `handleFire` entry). Set to 0
+     * to disable the cooldown.
+     */
+    fireCooldownAfterWrongShotMs: 1500,
+    /**
      * Hero rotation speed in radians per second, used by the keyboard
      * arrow-key rotation path. Mouse/touch aim is absolute (point-to-
      * position), so this only affects keyboard players.
@@ -459,6 +482,23 @@ export const config = {
      * timer's remaining value.
      */
     wrongRungTimePenaltySec: 3,
+    /**
+     * Sprint 2.4.1 story 1 — cumulative "lives" cap across the whole
+     * climb. The per-floor mulligan rule still applies (2nd wrong on
+     * one floor = wrong-terminal); this adds a climb-wide ceiling so
+     * a kid who burns a mulligan on every floor still hits a wall.
+     *
+     * A "strike" is incremented on each wrong pick (both mulligan
+     * AND wrong-terminal — so the wrong-terminal floor consumes two
+     * strikes when it was preceded by a mulligan). When `strikesUsed`
+     * reaches this value, the round ends with the same wrong-terminal
+     * fall-off animation, regardless of how the strikes were spread
+     * across floors.
+     *
+     * 3 lifted from `2.4.1-life-rules.md` (project-owner decision).
+     * Re-tune with a single edit here; HUD adapts automatically.
+     */
+    maxStrikesPerClimb: 3,
     /**
      * Vertical spacing (px) between floor centers — also the height of
      * each floor's framed bg band. Two values so desktop and mobile can

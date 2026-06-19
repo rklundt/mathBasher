@@ -7,6 +7,8 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys, pickRandomHitWrongSfx } from '@/core/audioKeys';
+import { Settings } from '@/services/Settings';
+import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
 
 /**
  * Number Climb hero — the climber who jumps between rungs.
@@ -61,30 +63,68 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
   static readonly HEIGHT = HERO_HEIGHT;
 
   /**
-   * The visible body. Story 1 swaps the Graphics for a Phaser.Sprite
-   * once art lands; the same `body` field can hold either type (both
-   * inherit from `GameObject`). Outlined rounded rectangle is the
-   * placeholder.
+   * The visible body. Sprint 2.4.2 hotfix — the Climb hero now has
+   * TWO skin paths, chosen at construction time from `Settings.heroSkin`:
+   *   - `'og-yellow'`: the original procedural amber-rectangle (with
+   *     two eye dots). Pre-2.4.2 default behavior, preserved as an
+   *     opt-in option.
+   *   - `'space-robot'` (default for new + existing players): a
+   *     `Phaser.GameObjects.Image` using the `ClimbHeroSkinKeys.SpaceRobot`
+   *     texture, scaled to fit `HERO_WIDTH × HERO_HEIGHT`.
+   *
+   * Only ONE of the two body fields is non-null per instance. The
+   * scene reads neither directly — both render inside this Container
+   * and inherit its world-space transform (jumpTo / fallBackToFloor
+   * tween the Container itself).
+   *
+   * Skin is captured at constructor time (per scene mount). A
+   * mid-round skin change via Settings → Game → Hero doesn't
+   * hot-swap; the new skin takes effect on the next round.
    */
-  private readonly bodyGraphics: Phaser.GameObjects.Graphics;
+  private readonly bodyGraphics: Phaser.GameObjects.Graphics | null;
+  private readonly bodyImage: Phaser.GameObjects.Image | null;
 
   constructor(opts: NumberClimbHeroOpts) {
     super(opts.scene, opts.x, opts.y);
     opts.scene.add.existing(this);
 
-    this.bodyGraphics = opts.scene.add.graphics();
-    this.paintBody();
-    this.add(this.bodyGraphics);
+    const skin = Settings.getHeroSkin();
+    if (skin === 'space-robot' && opts.scene.textures.exists(ClimbHeroSkinKeys.SpaceRobot)) {
+      // Sprite path. Image origin (0.5, 0.5) so the texture centers
+      // on the Container's transform — matches the rectangle's
+      // -W/2..+W/2 / -H/2..+H/2 layout above.
+      this.bodyImage = opts.scene.add.image(0, 0, ClimbHeroSkinKeys.SpaceRobot).setOrigin(0.5);
+      const tex = opts.scene.textures.get(ClimbHeroSkinKeys.SpaceRobot).getSourceImage();
+      const maxDim = Math.max(tex.width, tex.height) || 1;
+      // Scale to fit the larger of width/height into the hero's
+      // collision box — preserves aspect, avoids stretching.
+      const fitScale = Math.max(HERO_WIDTH, HERO_HEIGHT) / maxDim;
+      this.bodyImage.setScale(fitScale);
+      this.bodyGraphics = null;
+      this.add(this.bodyImage);
+    } else {
+      // Procedural-rectangle path. Used when skin is explicitly
+      // 'og-yellow' OR (defensively) when the space-robot texture
+      // hasn't loaded yet — better to render the placeholder than
+      // flash a missing-texture box.
+      this.bodyGraphics = opts.scene.add.graphics();
+      this.paintBody();
+      this.bodyImage = null;
+      this.add(this.bodyGraphics);
+    }
 
     this.setSize(HERO_WIDTH, HERO_HEIGHT);
   }
 
   /**
-   * Render the placeholder body — rounded rectangle with two small
-   * eye dots so it reads as a CHARACTER, not a generic box. Sprint 1
-   * art delivery replaces this with a sprite.
+   * Render the procedural "OG Yellow" body — rounded rectangle with
+   * two small eye dots so it reads as a CHARACTER, not a generic box.
+   * Sprint 2.4.2 hotfix renamed "placeholder" → the legitimate
+   * "OG Yellow" alternative skin (the new default is the Space Robot
+   * sprite path in the constructor above).
    */
   private paintBody(): void {
+    if (!this.bodyGraphics) return;
     const g = this.bodyGraphics;
     g.clear();
     // Outline + fill.

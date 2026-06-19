@@ -66,6 +66,19 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Arc;
   private readonly label: Phaser.GameObjects.Text;
   private readonly removeTouchListener: () => void;
+  /**
+   * Sprint 2.4.1 story 2 (post-audit) — locked state for the FIRE
+   * input cooldown after a wrong shot. Asteroid Field calls
+   * `setLocked(true)` when the cooldown starts and `setLocked(false)`
+   * after it expires. While locked, the rest visual is a dim grey
+   * fill so the kid sees "FIRE isn't available right now" instead of
+   * tapping a normal-looking button and getting silent rejection.
+   * The pointerdown handler still fires (so the scene's handleFire
+   * gate can play a brief "click" SFX), but the gameplay-fire path
+   * silently bails on the scene side via the `fireCooldownUntilMs`
+   * check.
+   */
+  private locked = false;
 
   constructor(opts: TouchFireButtonOpts) {
     const { scene } = opts;
@@ -168,12 +181,55 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   private applyPressedVisual(): void {
     // Smaller + more opaque = "I'm being pressed." Snappy, no tween;
     // tweens delay the visual feedback by a frame and feel laggy on touch.
+    // Sprint 2.4.1 audit fix — while locked, suppress the press visual
+    // so the kid doesn't see the button momentarily look active when it
+    // isn't. The cooldown-locked state stays uniformly dim.
+    if (this.locked) return;
     this.bg.setScale(0.92);
     this.bg.setAlpha(1);
   }
 
   private applyRestVisual(): void {
+    // Sprint 2.4.1 audit fix — preserve the locked dim if active.
+    if (this.locked) {
+      this.applyLockedVisual();
+      return;
+    }
     this.bg.setScale(1);
     this.bg.setAlpha(0.85);
+  }
+
+  /**
+   * Sprint 2.4.1 audit fix — visual treatment for the cooldown-locked
+   * state. Dim alpha + dim grey fill so the button reads as "not
+   * available right now" without leaving the playfield (the kid still
+   * needs to know WHERE FIRE is so they can tap it once the cooldown
+   * ends). 0.35 alpha matches the disabled-PlaceholderButton style
+   * used elsewhere in the UI for consistency.
+   */
+  private applyLockedVisual(): void {
+    this.bg.setScale(1);
+    this.bg.setAlpha(0.35);
+    this.bg.setFillStyle(0x6b7280, 0.35);
+  }
+
+  /**
+   * Sprint 2.4.1 audit fix — switch the button between normal and
+   * cooldown-locked visual state. Called by AsteroidFieldScene around
+   * the wrong-shot FIRE-cooldown window. Idempotent — calling with
+   * the current state is a no-op so the scene can be loose about
+   * tracking transitions.
+   */
+  setLocked(locked: boolean): void {
+    if (this.locked === locked) return;
+    this.locked = locked;
+    if (locked) {
+      this.applyLockedVisual();
+    } else {
+      // Restore normal warm-amber fill + 0.85 alpha (the resting
+      // colors set in the constructor).
+      this.bg.setFillStyle(0xfacc15, 0.85);
+      this.applyRestVisual();
+    }
   }
 }

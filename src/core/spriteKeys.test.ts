@@ -2,10 +2,12 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { afterEach, beforeEach, describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   _resetCachedSpriteTier,
   getCachedSpriteTier,
+  HeroSpriteKeys,
+  pickNextHeroSpriteKey,
   pickSpriteTier,
   spritePath,
 } from '@/core/spriteKeys';
@@ -167,5 +169,54 @@ describe('spritePath extension resolution', () => {
     expect(spritePath('projectile', 'laser')).toBe(
       '/assets/sprites/projectiles/laser.png',
     );
+  });
+});
+
+/**
+ * Sprint 2.4.2 hotfix — `pickNextHeroSpriteKey` is the Alien Shoot
+ * speeder picker only. Sprint 2.4.1 incorrectly added a Settings
+ * branch here that conflated the Alien Shoot speeders with the new
+ * Climb-only Space Robot hero; that branch was rolled back and the
+ * function is back to its pre-2.4.1 contract: a strict
+ * Speeder1 → 2 → 3 → 1 round-robin with no Settings dependency.
+ *
+ * The module-level `_heroPickIndex` is private + can't be reset
+ * between tests without a re-import. Tests use round-trip patterns
+ * that are robust to whatever value the counter holds at test-
+ * start (3 consecutive calls must cover all three speeders).
+ *
+ * The Climb-side Space-Robot-vs-OG-Yellow skin choice is exercised
+ * by the `Settings.heroSkin` persistence tests in `Settings.test.ts`
+ * and is consumed inside `NumberClimbHero` (entity construction —
+ * Phaser scene required, hence not unit-testable in isolation here).
+ */
+describe('pickNextHeroSpriteKey — speeder round-robin (Alien Shoot)', () => {
+  it('cycles through Speeder1/2/3 in strict round-robin', () => {
+    const picks = [
+      pickNextHeroSpriteKey(),
+      pickNextHeroSpriteKey(),
+      pickNextHeroSpriteKey(),
+    ];
+    const speeders = [HeroSpriteKeys.Speeder1, HeroSpriteKeys.Speeder2, HeroSpriteKeys.Speeder3];
+    expect(picks.every((p) => (speeders as string[]).includes(p))).toBe(true);
+    expect(new Set(picks).size).toBe(3); // all distinct in 3 consecutive picks
+  });
+
+  it('does not consult Settings.heroSkin (post-2.4.2 hotfix invariant)', () => {
+    // Black-box: calling 6 times produces a strict alternation, never
+    // a single repeated value. If Settings.heroSkin were still being
+    // consulted, a 'space-robot' override would produce all-same.
+    const picks = Array.from({ length: 6 }, () => pickNextHeroSpriteKey());
+    // Every pick must be one of the three speeders.
+    const allSpeeders = picks.every((p) =>
+      p === HeroSpriteKeys.Speeder1 ||
+      p === HeroSpriteKeys.Speeder2 ||
+      p === HeroSpriteKeys.Speeder3,
+    );
+    expect(allSpeeders).toBe(true);
+    // Cycle of length 3 means picks[i] === picks[i+3] across all i.
+    expect(picks[0]).toBe(picks[3]);
+    expect(picks[1]).toBe(picks[4]);
+    expect(picks[2]).toBe(picks[5]);
   });
 });

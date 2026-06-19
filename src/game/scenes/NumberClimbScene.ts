@@ -119,6 +119,17 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   private floorReached = 0;
   private readonly totalFloors = config.numberClimb.questionsPerRound;
   /**
+   * Sprint 2.4.1 story 1 — cumulative strikes used across the whole
+   * climb. Incremented on every wrong pick (both `wrong-mulligan` AND
+   * `wrong-terminal`). When this reaches `config.numberClimb.maxStrikesPerClimb`,
+   * the round ends with the same wrong-terminal fall-off animation,
+   * regardless of whether the kid was on their 1st or 2nd wrong of
+   * the current floor. The per-floor "2nd wrong = end" rule still
+   * fires independently — both gates are active.
+   */
+  private strikesUsed = 0;
+  private readonly maxStrikes = config.numberClimb.maxStrikesPerClimb;
+  /**
    * Per-round floor spacing (px). Picked at `create()` from
    * `pickFloorSpacingPx()` so desktop and mobile can carry independent
    * values. Used for the frame band height, next-floor y math, and the
@@ -150,6 +161,21 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     return this.totalFloors;
   }
 
+  /**
+   * Sprint 2.4.1 story 1 — climb-wide "lives" remaining for the HUD.
+   * Always returns a number (never undefined) on Number Climb; other
+   * scenes leave the contract method unimplemented to opt out of the
+   * lives row entirely.
+   */
+  getStrikesRemaining(): number {
+    return Math.max(0, this.maxStrikes - this.strikesUsed);
+  }
+
+  /** Sprint 2.4.1 story 1 — slot count so HudScene knows how many to draw. */
+  getMaxStrikes(): number {
+    return this.maxStrikes;
+  }
+
   isPaused(): boolean {
     return this.paused;
   }
@@ -174,6 +200,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.transitioning = false;
     this.paused = false;
     this.floorReached = 0;
+    this.strikesUsed = 0;
     this.floorSpacingPx = pickFloorSpacingPx();
 
     const { mathId, speed } = Settings.round;
@@ -394,6 +421,16 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.events.emit('timePenalty', {
       penaltySec: config.numberClimb.wrongRungTimePenaltySec,
     });
+    // Sprint 2.4.1 story 1 — cumulative strike counter. If this mulligan
+    // pushes the kid past the climb-wide cap, end the round with the
+    // wrong-terminal treatment (fall off screen → GameOver). The
+    // per-floor "2nd wrong" gate in `handleWrongTerminal` is still
+    // active for the case where strikes haven't yet hit the cap.
+    this.recordStrike();
+    if (this.strikesUsed >= this.maxStrikes) {
+      this.handleStrikeBudgetExhausted();
+      return;
+    }
     // First mulligan of the session: a one-time "One more try!" banner
     // teaches the one-retry-per-floor rule before the kid discovers it
     // the hard way (a second wrong ends the round).
@@ -405,6 +442,53 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     this.hero.fallBackToFloor(currentFloorY, () => {
       this.inputSystem.acceptInput();
+    });
+  }
+
+  /**
+   * Sprint 2.4.1 story 1 — increment the cumulative strike counter and
+   * emit `strikesChanged` so the HUD's lives row repaints. Centralized
+   * so both wrong-pick paths share one emit + telemetry surface.
+   */
+  private recordStrike(): void {
+    this.strikesUsed += 1;
+    this.events.emit('strikesChanged', {
+      strikesUsed: this.strikesUsed,
+      maxStrikes: this.maxStrikes,
+      remaining: Math.max(0, this.maxStrikes - this.strikesUsed),
+    });
+  }
+
+  /**
+   * Sprint 2.4.1 story 1 — climb-wide strike budget exhausted. Behaves
+   * like wrong-terminal (record the wrong, fall off screen, GameOver)
+   * with an extra telemetry event so we can distinguish "ran out of
+   * lives" from "second wrong on a floor" in analytics.
+   */
+  private handleStrikeBudgetExhausted(): void {
+    this.transitioning = true;
+    _th.logToAi('NumberClimb.strikeBudgetExhausted', SeverityLevel.Information, {
+      gameId: this.gameId,
+      questionIndex: String(this.roundController.questionIndex),
+      strikesUsed: String(this.strikesUsed),
+      maxStrikes: String(this.maxStrikes),
+      floorReached: String(this.floorReached),
+      mathId: this.mathId,
+      speed: this.speed,
+    });
+    // The mulligan path does NOT call `roundController.recordOutcome`
+    // for the current question (the FloorSystem returns 'wrong-mulligan'
+    // and the scene only deducts time + falls the hero back). So this
+    // path is the FIRST record for the in-flight question — mark it
+    // wrong before emitting `questionEnded`.
+    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
+    this.events.emit('questionEnded', {
+      wasCorrect: false,
+      score: this.roundController.score,
+      correctCount: this.roundController.correctCount,
+    });
+    this.hero.fallOffScreen(this.scale.height, () => {
+      this.endRound();
     });
   }
 
@@ -445,6 +529,15 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
 
   private handleWrongTerminal(): void {
     this.transitioning = true;
+    // Sprint 2.4.1 story 1 — wrong-terminal ALSO counts as a strike
+    // (so a kid who reached terminal via a 1st-then-2nd wrong on the
+    // same floor has used 2 strikes for that floor). The round is
+    // ending regardless, but we update the counter for HUD/telemetry
+    // accuracy before the GameOver mounts.
+    // Asymmetry vs `handleWrongMulligan`: no `if (strikes >= max)`
+    // cap-check after the increment here because terminal ALWAYS
+    // ends the round — the cap-check would be redundant.
+    this.recordStrike();
     // Record the question as wrong (with usedWrongShot flag).
     this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
     this.events.emit('questionEnded', {

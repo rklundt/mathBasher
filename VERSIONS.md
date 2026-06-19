@@ -29,6 +29,42 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.5.0] - 2026-05-23 — Hero Chooser (4 diverse player avatars)
+
+First time the project lets the kid pick a hero. Purely cosmetic — does NOT alter in-game sprites (Alien Shoot keeps Speeders, Climb keeps its Settings → Game → Hero picker, Asteroid Field keeps its asteroid-heroes round-robin).
+
+- 4 Midjourney-generated heroes covering the female/male × dark/light skin-tone matrix shipped at `public/assets/sprites/hero/hero-chooser-{1..4}.webp` (lossless WebP, ~24 KB each). Filenames are deliberately numeric (not demographic) so analytics and code carry no encoded labels.
+- New full-screen `HeroChooserScene` with a 2×2 picker grid; selected card carries amber-accent border so a returning kid sees which one they picked last time.
+- First-run hard gate (no Skip button) so the kid commits to a pick before MenuScene mounts. Subsequent visits skip the picker; it's reachable mid-session by tapping the avatar in MenuScene's top-left corner.
+- Mid-session re-open has a visible "Back" button (added per Support audit; Esc alone wasn't enough for mobile kids).
+- New `Settings.chosenHero` setting, localStorage-backed; mirrors the existing `heroSkin` persistence pattern.
+- Chosen hero appears on MenuScene as a 56 px top-left avatar (tap to re-open picker) and on GameOverScene as an 88 px top-left banner (fades in alongside the headline pop).
+- Subtitle copy: "Just for looks — pick the one that feels like you" (framing the cosmetic-only nature as personal ownership rather than inert).
+
+**Sprint scope narrowed mid-flight:** the original 2.5 plan bundled the Hero Chooser with a splash-screen upgrade and per-game intro beats. Splash + intros carried to sprint 2.5.1 once the design conversation paused for more discussion. 2.5 ships the immersion-win Hero Chooser feature alone.
+
+8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
+
+## [2.4.2] - 2026-05-23 — Hotfix: hero wiring rollback + Asteroid wrong-shot scope
+
+Hotfix on sprint 2.4.1 (which was closed to staging but never shipped to production). Two scope corrections caught by the project owner during pre-promotion review:
+
+- **Roll back Alien Shoot to Speeder1/2/3 round-robin.** Sprint 2.4.1 incorrectly wired the new Space Robot sprite into Alien Shoot, displacing the long-established speeder set. `pickNextHeroSpriteKey` is back to its pre-2.4.1 behavior (strict Speeder1 → 2 → 3 cycle, no `Settings` consultation).
+- **Move Space Robot to Number Climb as the new default climber.** The new sprite (raw file: `hero_climber.png`) was always intended for the Climb's climber character — replacing the procedural amber-rectangle placeholder that's been in place since sprint 2.2. `Settings → Game → Hero` picker moves Alien Shoot → Number Climb; the "OG Yellow" option preserves the procedural amber-rectangle with a matching procedural thumbnail in the picker (no new asset needed).
+- **Asteroid Field wrong-shot cap is now per-QUESTION, not per-round.** Sprint 2.4.1 implemented `maxWrongShotsPerRound = 2` as a cumulative budget across all 12 questions (2nd wrong shot ended the entire round). Intent was always per-wave: 2 wrong shots within one question = that question scores 0 and the kid advances to the next. Config key renamed `maxWrongShotsPerQuestion`; telemetry event renamed `AsteroidField.questionWrongShotBudgetExhausted`. Round only ends now via per-question timer-zero or the 12th-question completion.
+
+The Climb 3-strike cap, lives indicator pattern, FIRE cooldown visual + click SFX, and Settings hero-skin persistence from 2.4.1 are all preserved. This release supersedes the un-released v2.4.1.
+
+## [2.4.1] - 2026-05-23 — Life rules + hero skin
+
+Three changes — two fairness fixes across existing game modes + a presentation add:
+
+- **Number Climb — cumulative 3-strike "lives" cap.** Per-floor mulligan rule unchanged; new climb-wide cap (`config.numberClimb.maxStrikesPerClimb = 3`) ends the round when total wrong picks across the whole climb hit the ceiling. Top-left HUD lives row ("Lives: ● ● ●") turns each dot from green to red as strikes are spent. Telemetry: `NumberClimb.strikeBudgetExhausted`.
+- **Asteroid Field — wrong-shot deterrent (A + B + D combined).** Existing -3s per-question timer deduction kept; NEW 1.5s FIRE-input cooldown after every wrong shot (with TouchFireButton visual dim + soft "click" SFX on attempted-fire-while-locked so the kid registers "blocked" rather than "broken"); NEW round-wide cap of 2 wrong shots (2nd ends the round as fail with "Out of shots!" banner). Top-left HUD lives row mirrors the Climb pattern. Telemetry: `AsteroidField.roundWrongShotBudgetExhausted`. All three deterrents config-gated (set any knob to 0 to disable).
+- **Space Robot hero + OG Yellow fallback.** New default Alien Shoot hero (single static Midjourney sprite at `public/assets/sprites/hero/space-robot.webp`); the original Speeder1/2/3 round-robin set is now opt-in as "OG Yellow" via Settings → Game → Hero. First time the project lets the kid pick a hero. New `Settings.heroSkin` setting, localStorage-backed (try/catch tolerant of iOS private mode); 2-button picker with sprite thumbnails so the choice reads at a glance.
+
+10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
+
 ## [2.4.0] - 2026-05-22 — Fraction math types ("Add Fractions" + "Subtract Fractions")
 
 The first math types with **non-integer answers** and the first generators whose **content varies by the difficulty selector** (Speed). 9 stories shipped:

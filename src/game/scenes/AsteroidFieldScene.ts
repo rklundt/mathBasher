@@ -81,6 +81,38 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   private currentQuestion: Question | null = null;
   private transitioning = false;
   private paused = false;
+  /**
+   * Sprint 2.4.1 story 2 + 2.4.2 hotfix — PER-QUESTION wrong-shot
+   * counter. Reset at every `startNextQuestion()`. When this hits
+   * `config.asteroidField.maxWrongShotsPerQuestion`, the CURRENT
+   * QUESTION ends as a fail with an "Out of shots!" banner and we
+   * advance to the next question (the round itself only ends after
+   * all 12 questions complete OR on a per-question timeout — this
+   * counter never triggers a round-end).
+   *
+   * Sprint 2.4.1 incorrectly implemented this as a ROUND-wide
+   * cumulative counter that ended the round on the 2nd wrong shot
+   * across the whole 12-question session. 2.4.2 fixes the scope.
+   */
+  private questionWrongShots = 0;
+  /**
+   * Sprint 2.4.1 story 2 — `this.time.now` value before which `handleFire`
+   * silently bails (no projectile, no SFX). Set on every wrong shot to
+   * `now + fireCooldownAfterWrongShotMs`. Resets every wave start so
+   * the lockout doesn't leak across questions if a wrong shot landed
+   * within the last 1500 ms of the previous question.
+   */
+  private fireCooldownUntilMs = 0;
+  /**
+   * Sprint 2.4.1 audit fix — TouchFireButton ref captured at create()
+   * so AsteroidFieldScene can call `setLocked(true/false)` around the
+   * wrong-shot cooldown window. Without this the cooldown was
+   * SILENT — Support reviewer flagged that a kid would conclude
+   * the FIRE button was broken when nothing happened on repeated
+   * taps. The visual dim + cooldown-end click SFX teach the rule
+   * within the first wrong-shot cycle.
+   */
+  private fireButton: TouchFireButton | null = null;
 
   // Cached playfield bounds (computed in create())
   private leftBound = 0;
@@ -114,6 +146,29 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     return this.roundController.questionsPerRound;
   }
 
+  /**
+   * Sprint 2.4.1 audit fix + 2.4.2 hotfix — per-QUESTION wrong-shot
+   * budget remaining for the HUD's lives row. Mirrors
+   * `NumberClimbScene.getStrikesRemaining` so HudScene.maybeBuildLivesDots
+   * renders the same top-left dots pattern. The denominator is the
+   * per-question `maxWrongShotsPerQuestion` cap (default 2); the
+   * lives row repaints to full green at the start of every question.
+   *
+   * Returns undefined when the cap is disabled (set to 0 in config)
+   * so HudScene knows to suppress the lives row in that mode.
+   */
+  getStrikesRemaining(): number | undefined {
+    const cap = config.asteroidField.maxWrongShotsPerQuestion;
+    if (cap <= 0) return undefined;
+    return Math.max(0, cap - this.questionWrongShots);
+  }
+
+  /** Sprint 2.4.1 audit fix — slot count for HudScene to size the row. */
+  getMaxStrikes(): number | undefined {
+    const cap = config.asteroidField.maxWrongShotsPerQuestion;
+    return cap > 0 ? cap : undefined;
+  }
+
   isPaused(): boolean {
     return this.paused;
   }
@@ -135,6 +190,9 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.currentQuestion = null;
     this.transitioning = false;
     this.paused = false;
+    this.questionWrongShots = 0;
+    this.fireCooldownUntilMs = 0;
+    this.fireButton = null;
 
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
@@ -202,7 +260,9 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.inputSystem.onFire(() => this.handleFire());
 
     // On-screen FIRE button for touch — routes through inputSystem.fire().
-    new TouchFireButton({
+    // Sprint 2.4.1 audit fix — store the ref so the wrong-shot cooldown
+    // can lock/unlock the button visually.
+    this.fireButton = new TouchFireButton({
       scene: this,
       onFire: () => this.inputSystem.fire(),
     });
@@ -348,6 +408,18 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   private handleFire(): void {
     if (this.transitioning) return;
     if (this.projectile) return; // one in flight at a time
+    // Sprint 2.4.1 story 2 — FIRE-input lockout after a wrong shot.
+    // The kid's tap / click / Space is BLOCKED during the cooldown
+    // window. Sprint 2.4.1 audit fix: instead of silent rejection,
+    // play a soft "click" so the kid registers "I tried; it didn't
+    // fire because of the penalty," not "the button is broken."
+    // Combined with the TouchFireButton.setLocked() dim visual
+    // applied in handleHit (wrong branch), the kid gets BOTH a
+    // visible "not available" state AND an audible "you tried."
+    if (this.time.now < this.fireCooldownUntilMs) {
+      getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
+      return;
+    }
     getAudioManager().play(SfxKeys.Fire1, 'sfx');
     const aimAngle = this.hero.getAimAngle();
     this.projectile = new AsteroidProjectile(this, this.hero.x, this.hero.y, aimAngle);
@@ -409,6 +481,39 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       });
     } else {
       this.waveSystem.applyWrongShotPenalty();
+      // Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-QUESTION wrong-shot
+      // counter + FIRE-input cooldown. Increment FIRST so the new
+      // value is in play before any branching; then arm the cooldown
+      // so a queued tap during the asteroid's explode anim can't slip
+      // a second wrong shot through. Cache the cooldown ms once so
+      // the log, the gate, AND the delayed unlock all read the same
+      // value (Senior Dev audit — protects against a hypothetical
+      // mid-round config hot-reload observing inconsistent state).
+      const cooldownMs = config.asteroidField.fireCooldownAfterWrongShotMs;
+      const cap = config.asteroidField.maxWrongShotsPerQuestion;
+      this.questionWrongShots += 1;
+      this.fireCooldownUntilMs = this.time.now + cooldownMs;
+      // Sprint 2.4.1 audit fix — visible cooldown state. Lock now;
+      // schedule the unlock for cooldownMs later. The unlock is
+      // skipped (no-op) if the scene has transitioned away or the
+      // per-question cap fires below — `setLocked` is idempotent so
+      // a stale unlock after teardown is harmless.
+      this.fireButton?.setLocked(true);
+      this.time.delayedCall(cooldownMs, () => {
+        this.fireButton?.setLocked(false);
+      });
+      // Sprint 2.4.1 audit fix + 2.4.2 hotfix — surface the
+      // per-question cap to the HUD's lives row (same `strikesChanged`
+      // event Number Climb emits; HudScene.maybeBuildLivesDots
+      // auto-renders for any mode that implements getMaxStrikes on
+      // the contract). The lives row repaints to full green at every
+      // new question because `questionWrongShots` resets in
+      // `startNextQuestion`.
+      this.events.emit('strikesChanged', {
+        strikesUsed: this.questionWrongShots,
+        maxStrikes: cap,
+        remaining: Math.max(0, cap - this.questionWrongShots),
+      });
       getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
       this.playWrongHitFeedback(asteroid.x, asteroid.y);
       this.spawnTimePenaltyFloater(asteroid.x, asteroid.y);
@@ -420,8 +525,83 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
         questionIndex: String(this.roundController.questionIndex),
         mathId: this.mathId,
         speed: this.speed,
+        // Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-question counter
+        // surfaced so analytics can see "kids who blew the budget
+        // on this question" cleanly.
+        strikesUsed: String(this.questionWrongShots),
+        maxStrikes: String(cap),
+      });
+
+      // Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-question cap.
+      // When `maxWrongShotsPerQuestion` is hit, the CURRENT QUESTION
+      // ends as a fail and we advance to the next. The round itself
+      // continues — only timer-zero or the 12th-question completion
+      // ends the round.
+      if (cap > 0 && this.questionWrongShots >= cap) {
+        this.handleQuestionWrongShotBudgetExhausted();
+      }
+    }
+  }
+
+  /**
+   * Sprint 2.4.1 story 2 + 2.4.2 hotfix — per-QUESTION wrong-shot
+   * budget exhausted. Records the current question as wrong, fades
+   * survivors, plays the "Out of shots!" banner, then advances to
+   * the NEXT question (NOT round-end). 2.4.1 incorrectly ended the
+   * whole round on the 2nd wrong shot of the session; 2.4.2 narrows
+   * the scope so 2 wrongs on one wave = that wave is forfeit, kid
+   * keeps playing the round.
+   *
+   * Banner pattern matches Climb's "Out of time!" (sprint 2.2.1
+   * story 2) so the kid registers the per-question failure cue.
+   */
+  private handleQuestionWrongShotBudgetExhausted(): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    _th.logToAi('AsteroidField.questionWrongShotBudgetExhausted', SeverityLevel.Information, {
+      gameId: this.gameId,
+      questionIndex: String(this.roundController.questionIndex),
+      strikesUsed: String(this.questionWrongShots),
+      maxStrikes: String(config.asteroidField.maxWrongShotsPerQuestion),
+      mathId: this.mathId,
+      speed: this.speed,
+    });
+    // Per-question failure cue — softer than the timeout treatment
+    // (no screen-shake + camera-flash) because the round isn't
+    // ending; this is one bad question that gets cleared away and
+    // the kid keeps playing. The SFX + banner are enough signal.
+    getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
+
+    const banner = text(
+      this,
+      this.scale.width / 2,
+      this.scale.height / 2,
+      'Out of shots!',
+      'warning',
+    ).setOrigin(0.5);
+    banner.setScrollFactor(0);
+    banner.setDepth(100);
+    banner.setStroke('#0b1020', 8);
+    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+
+    // Fade the surviving asteroids in parallel so the playfield
+    // visually settles before the next question's wave spawns.
+    // Asteroid.playFadeOut is 250 ms — well under the 700 ms
+    // banner hold below.
+    const survivors = this.waveSystem.liveAsteroids();
+    for (const s of survivors) {
+      s.playFadeOut(() => {
+        // No-op — banner timer drives the question advance.
       });
     }
+    // After the banner hold, advance to the next question via
+    // afterQuestion(false) — same path as a per-question timeout.
+    // The roundController records the wrong outcome inside
+    // afterQuestion → questionEnded → next wave spawn.
+    this.time.delayedCall(700, () => {
+      banner.destroy();
+      this.afterQuestion(false);
+    });
   }
 
   private playCorrectHitFeedback(x: number, y: number): void {
@@ -542,6 +722,28 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     }
     this.currentQuestion = question;
     this.waveSystem.spawnWave(this.currentQuestion);
+    // Sprint 2.4.1 story 2 — clear any wrong-shot cooldown that was
+    // still ticking at end-of-previous-question. The deterrent's job
+    // is to slow the kid WITHIN a question (no rapid-fire through the
+    // answer set); a fresh question shouldn't punish them for a tap
+    // they made before the wave switched.
+    this.fireCooldownUntilMs = 0;
+    // Sprint 2.4.2 hotfix — reset the per-question wrong-shot counter
+    // so the kid starts each wave with a fresh budget. Also emit
+    // `strikesChanged` so the HUD's lives row repaints to all-green
+    // immediately (without this, the dots would carry the prior
+    // question's red state into the new wave). `fireButton.setLocked(false)`
+    // is defensive in case a stale cooldown unlock didn't yet fire.
+    this.questionWrongShots = 0;
+    this.fireButton?.setLocked(false);
+    const capForReset = config.asteroidField.maxWrongShotsPerQuestion;
+    if (capForReset > 0) {
+      this.events.emit('strikesChanged', {
+        strikesUsed: 0,
+        maxStrikes: capForReset,
+        remaining: capForReset,
+      });
+    }
 
     // Sprint 2.2 story 15c — aim hint visible only on Q1.
     if (this.roundController.questionIndex === 0) {
