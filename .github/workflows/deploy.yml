@@ -36,7 +36,10 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22: pnpm 11 (sprint 2.5.1) requires Node >= 22.13 — it uses
+          # the `node:sqlite` builtin, which doesn't exist on Node 20 and
+          # crashes `setup-node`'s `cache: pnpm` step (ERR_UNKNOWN_BUILTIN_MODULE).
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
