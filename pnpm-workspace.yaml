@@ -1,0 +1,58 @@
+# pnpm settings. Relocated from the package.json `"pnpm"` field AND from
+# `.npmrc` in sprint 2.5.1 — pnpm 10+ no longer reads `overrides` /
+# `onlyBuiltDependencies` from package.json, and no longer reads its config
+# (node-linker, store-dir, etc.) from `.npmrc`; both now live here, in camelCase.
+# See https://pnpm.io/settings. `.npmrc` is retained only for npm-compatible
+# registry/auth keys (none today).
+#
+# This repo is a SINGLE package, not a monorepo: this file intentionally has no
+# `packages:` workspace globs. It exists purely to hold the settings below.
+
+# --- Install layout / store (was .npmrc) ---
+
+# Flat node_modules. LOAD-BEARING on this project: the dev drive (D:) is exFAT,
+# which does not support symlinks, so pnpm's default isolated linker (the
+# `.pnpm` symlink farm) fails with EISDIR/symlink errors. Hoisted gives an
+# npm-like flat layout with no symlinks. Do not change without confirming the
+# target filesystem supports symlinks.
+nodeLinker: hoisted
+
+# Project-local content-addressable store, so the install is portable (USB
+# stick / fresh machine) and not coupled to whatever global pnpm store the
+# developer happens to have cached.
+storeDir: .pnpm-store
+
+# Prefer the committed lockfile; fall back to a fresh resolve if out of sync.
+preferFrozenLockfile: true
+
+# Quiet noisy install output; CI is the place for verbose logs.
+fund: false
+audit: false
+
+# --- Dependency overrides (was package.json "pnpm".overrides) ---
+
+overrides:
+  # Version floors that must hold across any future install / lockfile regen.
+  # vite 6.4.x is the build/dev toolchain baseline; esbuild 0.25.x carries the
+  # dev-server security fix (the pre-0.25 default let any website send requests
+  # to the running dev server). Do not lower these without a deliberate review.
+  vite: ^6.4.2
+  esbuild: ^0.25.0
+
+# --- Lifecycle-script approval (replaces package.json "pnpm".onlyBuiltDependencies) ---
+
+# pnpm blocks lifecycle (install/build) scripts by default, and pnpm 11 treats
+# ANY ignored build as a hard error (ERR_PNPM_IGNORED_BUILDS). The pnpm 11
+# approval mechanism is `allowBuilds` (a per-package boolean map), populated by
+# `pnpm approve-builds`. NOTE: the old `onlyBuiltDependencies` LIST (the pnpm 9
+# package.json key) is a no-op here — pnpm 11 ignored it and still errored until
+# `allowBuilds` was set; that's why only this map remains.
+#   - ffmpeg-static: downloads its ffmpeg binary (used by the audio pipeline)
+#   - sharp: builds its libvips bindings (used by the sprite pipeline)
+#   - esbuild: postinstall that ensures its native binary (vite's bundler)
+# To add a package that needs build scripts: `pnpm approve-builds` (interactive)
+# or add `<pkg>: true` here. Anything not listed stays script-blocked.
+allowBuilds:
+  esbuild: true
+  ffmpeg-static: true
+  sharp: true
