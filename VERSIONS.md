@@ -31,6 +31,8 @@ _Nothing yet._
 
 ## [2.5.0] - 2026-05-23 — Hero Chooser (4 diverse player avatars)
 
+> **Tooling note (sprint 2.5.1, 2026-06-26):** dev toolchain upgraded **pnpm 9.15 → 11.9.0** and **Node 20 → 22** (pnpm 11 requires Node ≥ 22.13 — it uses the `node:sqlite` builtin; CI `node-version`, `engines.node`, and both Dockerfile stages bumped to 22; caught by the clean-room CI run). `overrides` + the build-script approval moved from the package.json `pnpm` field to `pnpm-workspace.yaml`, and pnpm's own config (`node-linker`, `store-dir`, etc.) moved from `.npmrc` to `pnpm-workspace.yaml` (camelCase) — both forced by pnpm 10+ no longer reading those locations. `nodeLinker: hoisted` is load-bearing (the dev drive is exFAT / no symlinks). Build-script approval is now `allowBuilds` (esbuild/ffmpeg-static/sharp) via `pnpm approve-builds`. **No app/runtime change** — `version` stays 2.5.0; the built `dist/` is functionally identical (overrides hold vite 6.4.x + esbuild 0.25.x). Lockfile unchanged (lockfileVersion 9.0 is shared by pnpm 9/10/11).
+
 First time the project lets the kid pick a hero. Purely cosmetic — does NOT alter in-game sprites (Alien Shoot keeps Speeders, Climb keeps its Settings → Game → Hero picker, Asteroid Field keeps its asteroid-heroes round-robin).
 
 - 4 Midjourney-generated heroes covering the female/male × dark/light skin-tone matrix shipped at `public/assets/sprites/hero/hero-chooser-{1..4}.webp` (lossless WebP, ~24 KB each). Filenames are deliberately numeric (not demographic) so analytics and code carry no encoded labels.
