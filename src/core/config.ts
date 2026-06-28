@@ -479,26 +479,27 @@ export const config = {
       fast: { totalTimeSec: 120 },
     },
     /**
-     * Seconds removed from the cumulative timer when the kid picks a
-     * wrong rung. Mirrors `asteroidField.wrongShotCountdownPenaltySec`
-     * for consistency across the wrong-pick-time-penalty family of
-     * modes. First wrong on a floor: -3s (mulligan). Second wrong:
-     * the wrong-terminal outcome ends the round regardless of the
-     * timer's remaining value.
+     * Seconds removed from the cumulative timer on each wrong rung
+     * pick. Mirrors `asteroidField.wrongShotCountdownPenaltySec` for
+     * consistency across the wrong-pick-time-penalty family of modes.
+     * Every wrong pick costs -3s (and one life — see
+     * `maxStrikesPerClimb`); the kid retries until they pick correct
+     * or run out of lives.
      */
     wrongRungTimePenaltySec: 3,
     /**
      * Sprint 2.4.1 story 1 — cumulative "lives" cap across the whole
-     * climb. The per-floor mulligan rule still applies (2nd wrong on
-     * one floor = wrong-terminal); this adds a climb-wide ceiling so
-     * a kid who burns a mulligan on every floor still hits a wall.
+     * climb. Sprint 2.5.2 made this the SOLE wrong-pick round-ender:
+     * the old per-floor "2nd wrong on a floor ends the round" rule was
+     * removed because it contradicted the 3-dot lives HUD (a kid could
+     * "die" from two wrongs on one floor while the HUD still showed a
+     * life remaining).
      *
-     * A "strike" is incremented on each wrong pick (both mulligan
-     * AND wrong-terminal — so the wrong-terminal floor consumes two
-     * strikes when it was preceded by a mulligan). When `strikesUsed`
-     * reaches this value, the round ends with the same wrong-terminal
-     * fall-off animation, regardless of how the strikes were spread
-     * across floors.
+     * One life is spent on each wrong pick. When `strikesUsed` reaches
+     * this value the round ends with the fall-off animation — whether
+     * the kid spent all three on one hard floor or one each across
+     * three floors. The lives HUD decrements in lockstep, so death
+     * always lands exactly when the last dot is spent.
      *
      * 3 lifted from `2.4.1-life-rules.md` (project-owner decision).
      * Re-tune with a single edit here; HUD adapts automatically.

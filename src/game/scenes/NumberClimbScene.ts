@@ -39,15 +39,18 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  *        scrolls down so the hero settles back near canvas center, then
  *        `afterFloor()` → next floor OR endRound on the final floor.
  *      - 'wrong-mulligan': deduct `wrongRungTimePenaltySec` from the
- *        cumulative timer, hero `fallBackToFloor(currentFloorY)`,
- *        InputSystem `acceptInput()` to allow the second-and-final try.
- *      - 'wrong-terminal': end the round. Hero `fallOffScreen()`,
- *        GameOver transition (with passed=false, stars by height).
+ *        cumulative timer, spend one cumulative life, hero
+ *        `fallBackToFloor(currentFloorY)`, InputSystem `acceptInput()`
+ *        to allow another try (as long as lives remain). If that was
+ *        the last life → end the round (`fallOffScreen` → GameOver).
  *
  * ## Failure modes
  *
  * - Timer hits 0 mid-floor → `endRound()` (hero falls off screen).
- * - Second wrong rung on the same floor → `endRound()`.
+ * - Cumulative life cap (`maxStrikesPerClimb`, 3) exhausted on a wrong
+ *   pick → `endRound()`. Sprint 2.5.2 removed the old per-floor "2nd
+ *   wrong on a floor ends the round" rule; the 3-life cap is now the
+ *   sole wrong-pick round-ender (it matches the lives HUD exactly).
  * - Final floor reached → `endRound()` with `passed=true, stars=3`.
  *
  * ## Camera (option 2: hero moves up, camera follows)
@@ -119,13 +122,14 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   private floorReached = 0;
   private readonly totalFloors = config.numberClimb.questionsPerRound;
   /**
-   * Sprint 2.4.1 story 1 — cumulative strikes used across the whole
-   * climb. Incremented on every wrong pick (both `wrong-mulligan` AND
-   * `wrong-terminal`). When this reaches `config.numberClimb.maxStrikesPerClimb`,
-   * the round ends with the same wrong-terminal fall-off animation,
-   * regardless of whether the kid was on their 1st or 2nd wrong of
-   * the current floor. The per-floor "2nd wrong = end" rule still
-   * fires independently — both gates are active.
+   * Sprint 2.4.1 story 1 — cumulative "lives" used across the whole
+   * climb. Incremented on every wrong pick. When this reaches
+   * `config.numberClimb.maxStrikesPerClimb` (3), the round ends with
+   * the fall-off animation. Sprint 2.5.2 removed the per-floor "2nd
+   * wrong on a floor ends the round" rule, so this cumulative cap is
+   * now the SOLE wrong-pick round-ender — it matches the 3-dot lives
+   * HUD exactly (a kid dies precisely when the last dot is spent, never
+   * with a life still showing).
    */
   private strikesUsed = 0;
   private readonly maxStrikes = config.numberClimb.maxStrikesPerClimb;
@@ -369,9 +373,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       case 'wrong-mulligan':
         this.handleWrongMulligan();
         break;
-      case 'wrong-terminal':
-        this.handleWrongTerminal();
-        break;
       case 'rung-consumed':
         // Defensive — double-tap of an already-consumed rung. Ignore.
         break;
@@ -440,24 +441,26 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.events.emit('timePenalty', {
       penaltySec: config.numberClimb.wrongRungTimePenaltySec,
     });
-    // Sprint 2.4.1 story 1 — cumulative strike counter. If this mulligan
-    // pushes the kid past the climb-wide cap, end the round with the
-    // wrong-terminal treatment (fall off screen → GameOver). The
-    // per-floor "2nd wrong" gate in `handleWrongTerminal` is still
-    // active for the case where strikes haven't yet hit the cap.
+    // Sprint 2.4.1 story 1 + 2.5.2 — cumulative life cap. Every wrong
+    // pick costs one life; when the climb-wide cap is exhausted the
+    // round ends (fall off screen → GameOver). Sprint 2.5.2 removed the
+    // per-floor "2nd wrong ends the round" rule, so this cumulative cap
+    // is now the SOLE round-ender on a wrong pick — the kid keeps
+    // retrying (losing lives) on a floor until they pick correct or run
+    // out of lives.
     this.recordStrike();
     if (this.strikesUsed >= this.maxStrikes) {
       this.handleStrikeBudgetExhausted();
       return;
     }
-    // First mulligan of the session: a one-time "One more try!" banner
-    // teaches the one-retry-per-floor rule before the kid discovers it
-    // the hard way (a second wrong ends the round).
+    // First wrong of the session: a one-time banner teaches that a wrong
+    // pick costs a life (the lives HUD also decrements). Shown once per
+    // session via sessionStorage.
     this.maybeShowFirstMulliganHint();
 
-    // Hero falls back to the CURRENT floor's base (i.e. the floor
-    // the kid is still on — they haven't climbed yet). After the
-    // animation, re-enable input for the second-and-final try.
+    // Hero falls back to the CURRENT floor's base (the floor the kid is
+    // still on — they haven't climbed yet). After the animation,
+    // re-enable input so they can try again (as long as lives remain).
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     // Sprint 2.5.2 tweak 3 — fall back to the band-bottom resting y.
     this.hero.fallBackToFloor(this.heroRestY(currentFloorY), () => {
@@ -480,10 +483,12 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   /**
-   * Sprint 2.4.1 story 1 — climb-wide strike budget exhausted. Behaves
-   * like wrong-terminal (record the wrong, fall off screen, GameOver)
-   * with an extra telemetry event so we can distinguish "ran out of
-   * lives" from "second wrong on a floor" in analytics.
+   * Sprint 2.4.1 story 1 — climb-wide life budget exhausted: record the
+   * question wrong, fall off screen, GameOver. Sprint 2.5.2 made this
+   * the ONLY wrong-pick round-ender (the per-floor terminal was
+   * removed), so it fires whenever the kid spends their last life on a
+   * wrong pick — whether that's three wrongs on one hard floor or one
+   * wrong each across three floors.
    */
   private handleStrikeBudgetExhausted(): void {
     this.transitioning = true;
@@ -513,11 +518,14 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   /**
-   * Sprint 2.2.1 story 1 — one-time "One more try!" banner above the
-   * hero on the kid's FIRST mulligan of the session. sessionStorage-
-   * gated so it shows once per session; the try/catch covers browsers
-   * that throw on storage access (iOS private mode pre-15) — there the
-   * hint just shows every mulligan rather than breaking the scene.
+   * Sprint 2.2.1 story 1 — one-time banner above the hero on the kid's
+   * FIRST wrong pick of the session. sessionStorage-gated so it shows
+   * once per session; the try/catch covers browsers that throw on
+   * storage access (iOS private mode pre-15) — there the hint just
+   * shows on every wrong rather than breaking the scene. Sprint 2.5.2 —
+   * copy changed from "One more try!" (which implied a single per-floor
+   * retry) to a lives-accurate message now that 3 cumulative lives is
+   * the only rule.
    */
   private maybeShowFirstMulliganHint(): void {
     const FLAG_KEY = 'numberClimb.mulliganHintSeen';
@@ -531,7 +539,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       this,
       this.hero.x,
       this.hero.y - NumberClimbHero.HEIGHT - 24,
-      'One more try!',
+      'Lost a life — keep going!',
       'warning',
     ).setOrigin(0.5);
     banner.setDepth(100);
@@ -544,30 +552,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
         ease: 'Quad.Out',
         onComplete: () => banner.destroy(),
       });
-    });
-  }
-
-  private handleWrongTerminal(): void {
-    this.transitioning = true;
-    // Sprint 2.4.1 story 1 — wrong-terminal ALSO counts as a strike
-    // (so a kid who reached terminal via a 1st-then-2nd wrong on the
-    // same floor has used 2 strikes for that floor). The round is
-    // ending regardless, but we update the counter for HUD/telemetry
-    // accuracy before the GameOver mounts.
-    // Asymmetry vs `handleWrongMulligan`: no `if (strikes >= max)`
-    // cap-check after the increment here because terminal ALWAYS
-    // ends the round — the cap-check would be redundant.
-    this.recordStrike();
-    // Record the question as wrong (with usedWrongShot flag).
-    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
-    this.events.emit('questionEnded', {
-      wasCorrect: false,
-      score: this.roundController.score,
-      correctCount: this.roundController.correctCount,
-    });
-    // Hero falls off the bottom.
-    this.hero.fallOffScreen(this.scale.height, () => {
-      this.endRound();
     });
   }
 
