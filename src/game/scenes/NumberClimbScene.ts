@@ -227,12 +227,14 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // ends exactly at the playfield bottom.
     this.floor0Y = bottomPlayfield - this.floorSpacingPx / 2;
 
-    // Hero — placed at floor 0, centered horizontally.
+    // Hero — placed at floor 0, centered horizontally. Sprint 2.5.2
+    // tweak 3 — rests near the band BOTTOM (feet on the floor) via
+    // `heroRestY`, not at the band center.
     const heroStartX = (this.leftBound + this.rightBound) / 2;
     this.hero = new NumberClimbHero({
       scene: this,
       x: heroStartX,
-      y: this.floor0Y,
+      y: this.heroRestY(this.floor0Y),
     });
 
     // Camera follow — option 2 from the sprint design. `startFollow`
@@ -308,6 +310,21 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   // ----- Floor lifecycle ---------------------------------------------------
+
+  /**
+   * Sprint 2.5.2 tweak 3 — the hero's resting CENTER y for a given floor
+   * y. Floors + rungs sit at the band center (`floorY`); the hero used to
+   * rest there too, so it looked vertically centered / floating. This
+   * offsets it DOWN so its feet land `bottomGapPx` above the band bottom,
+   * reading as "standing on the floor." Applied at every resting site:
+   * the start floor, each correct-pick landing, and the mulligan
+   * fall-back. (NOT the fall-off-screen exit — that intentionally drops
+   * past the bottom.)
+   */
+  private heroRestY(floorY: number): number {
+    const h = config.numberClimb.hero;
+    return floorY + this.floorSpacingPx / 2 - h.bottomGapPx - h.heightPx / 2;
+  }
 
   private startNextQuestion(): void {
     const question = this.roundController.drawNextQuestion();
@@ -400,7 +417,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.time.delayedCall(HERO_JUMP_DELAY_MS, () => {
       this.hero.jumpTo(
         rung.x,
-        rung.y,
+        // Sprint 2.5.2 tweak 3 — land at the new floor's band BOTTOM
+        // (feet on the floor) rather than at the rung's center y.
+        this.heroRestY(rung.y),
         () => {
           this.floorReached += 1;
           this.afterFloor(true);
@@ -440,7 +459,8 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // the kid is still on — they haven't climbed yet). After the
     // animation, re-enable input for the second-and-final try.
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
-    this.hero.fallBackToFloor(currentFloorY, () => {
+    // Sprint 2.5.2 tweak 3 — fall back to the band-bottom resting y.
+    this.hero.fallBackToFloor(this.heroRestY(currentFloorY), () => {
       this.inputSystem.acceptInput();
     });
   }

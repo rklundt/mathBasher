@@ -321,10 +321,17 @@ export class DifficultyScene extends Phaser.Scene {
     // each other at the design canvas width.
     if (gameId === 'number-climb') {
       const floors = config.numberClimb.questionsPerRound;
+      // Sprint 2.5.2 tweak 2 — the floor-count line was at
+      // `y - speedSectionLabelOffsetY/2` (y-37.5), only ~9 px above the
+      // button top edge (y - speedHeightPx/2 = y-28), so its bottom
+      // collided with the buttons ("partially covered by buttons"
+      // playtest). Re-anchored to the button TOP edge with a clear
+      // 16 px gap so it sits cleanly between the section label and the
+      // button row regardless of the section-label offset.
       text(
         this,
         cx,
-        y - dt.speedSectionLabelOffsetY / 2,
+        y - dt.speedHeightPx / 2 - 16,
         `${floors} floors per round`,
         'subtitle',
       ).setOrigin(0.5);

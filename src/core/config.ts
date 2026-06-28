@@ -166,8 +166,13 @@ export const config = {
       //   1.10 × 1.10 × 0.85 ≈ 1.03 → ~3% faster than the original
       //   baseline (i.e. effectively neutral; the two +10% passes
       //   over-corrected and the -15% pulls it back near baseline).
-      slow: { multiplier: 1.0, descentPxPerSec: 41, penaltyPxPerSec: 123 },
-      medium: { multiplier: 1.25, descentPxPerSec: 62, penaltyPxPerSec: 185 },
+      // Sprint 2.5.2 tweak 5 — another -15% on slow + medium ONLY (fast
+      // unchanged). Playtest: "the speeder doesn't make it back and forth
+      // enough before collision" on the easier tiers. Both descent AND the
+      // wrong-shot penalty drop 15% so the accelerated drop stays
+      // proportional. slow: 41→35 / 123→105; medium: 62→53 / 185→157.
+      slow: { multiplier: 1.0, descentPxPerSec: 35, penaltyPxPerSec: 105 },
+      medium: { multiplier: 1.25, descentPxPerSec: 53, penaltyPxPerSec: 157 },
       fast: { multiplier: 1.5, descentPxPerSec: 93, penaltyPxPerSec: 278 },
     },
   },
@@ -530,8 +535,24 @@ export const config = {
      * gameplay-tuning numbers this config block is for.
      */
     hero: {
-      widthPx: 56,
-      heightPx: 64,
+      // Sprint 2.5.2 tweak 3 — +33% larger (56→75, 64→85). The sprite
+      // path scales to fit max(widthPx,heightPx); the OG-Yellow
+      // procedural rectangle uses these directly. NumberClimbHero.HEIGHT
+      // is otherwise only read for the mulligan-banner offset, so the
+      // bump is layout-safe (rung spacing is independent).
+      widthPx: 75,
+      heightPx: 85,
+      /**
+       * Sprint 2.5.2 tweak 3 — the hero used to rest at the floor-band
+       * CENTER (= the rung y), so it looked vertically centered /
+       * floating. This gap lifts the hero's FEET this many px above the
+       * band BOTTOM instead, so it reads as standing on the floor. The
+       * scene applies a downward offset of
+       * `floorSpacingPx/2 - bottomGapPx - heightPx/2` to every hero
+       * resting position (start floor, each climbed floor, mulligan
+       * fall-back). Tune in playtest.
+       */
+      bottomGapPx: 8,
     },
     rung: {
       widthPx: 180,

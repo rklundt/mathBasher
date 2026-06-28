@@ -26,7 +26,15 @@
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: #0b1020; overflow: hidden; }
       body { font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2; }
-      #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+      /* Sprint 2.5.2 tweak 4 — `100dvh` (dynamic viewport height) instead of
+         `100vh`. On mobile browsers `100vh` is the URL-bar-HIDDEN height, so
+         when the URL bar is shown the bottom of the FIT-centered canvas
+         (where the Alien Shoot speeder sits near the playfield bottom)
+         extends behind it and is hidden. `100dvh` tracks the VISIBLE viewport
+         and Phaser's FIT re-fits as the URL bar shows/hides, keeping the
+         speeder visible. `100vh` is kept as the fallback for the handful of
+         browsers without dvh support (they get the prior behavior, no worse). */
+      #game { width: 100vw; height: 100vh; height: 100dvh; display: flex; align-items: center; justify-content: center; }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the
          AudioContext is created inside a user-gesture context
