@@ -47,12 +47,12 @@ export const SceneKeys = {
    */
   AsteroidField: 'asteroid-field',
   /**
-   * Number Climb — sprint 2.2 third game mode. Vertical climb; 10
+   * Number Climb — sprint 2.2 third game mode. Vertical climb; 12
    * floors; kid taps the correct rung at each floor. Difficulty
    * controls rung count (2/3/4); Speed controls cumulative timer
-   * budget (250s/180s/120s). One mulligan per floor; second wrong
-   * on same floor ends the round. Timer hitting 0 also ends the
-   * round. Stars height-based (4/7/10).
+   * budget (250s/180s/120s). 3 cumulative lives (sprint 2.5.2 — every
+   * wrong pick costs a life; round ends when all 3 are spent or the
+   * timer hits 0). Stars height-based.
    */
   NumberClimb: 'number-climb',
   /**

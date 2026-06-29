@@ -166,8 +166,13 @@ export const config = {
       //   1.10 × 1.10 × 0.85 ≈ 1.03 → ~3% faster than the original
       //   baseline (i.e. effectively neutral; the two +10% passes
       //   over-corrected and the -15% pulls it back near baseline).
-      slow: { multiplier: 1.0, descentPxPerSec: 41, penaltyPxPerSec: 123 },
-      medium: { multiplier: 1.25, descentPxPerSec: 62, penaltyPxPerSec: 185 },
+      // Sprint 2.5.2 tweak 5 — another -15% on slow + medium ONLY (fast
+      // unchanged). Playtest: "the speeder doesn't make it back and forth
+      // enough before collision" on the easier tiers. Both descent AND the
+      // wrong-shot penalty drop 15% so the accelerated drop stays
+      // proportional. slow: 41→35 / 123→105; medium: 62→53 / 185→157.
+      slow: { multiplier: 1.0, descentPxPerSec: 35, penaltyPxPerSec: 105 },
+      medium: { multiplier: 1.25, descentPxPerSec: 53, penaltyPxPerSec: 157 },
       fast: { multiplier: 1.5, descentPxPerSec: 93, penaltyPxPerSec: 278 },
     },
   },
@@ -474,26 +479,27 @@ export const config = {
       fast: { totalTimeSec: 120 },
     },
     /**
-     * Seconds removed from the cumulative timer when the kid picks a
-     * wrong rung. Mirrors `asteroidField.wrongShotCountdownPenaltySec`
-     * for consistency across the wrong-pick-time-penalty family of
-     * modes. First wrong on a floor: -3s (mulligan). Second wrong:
-     * the wrong-terminal outcome ends the round regardless of the
-     * timer's remaining value.
+     * Seconds removed from the cumulative timer on each wrong rung
+     * pick. Mirrors `asteroidField.wrongShotCountdownPenaltySec` for
+     * consistency across the wrong-pick-time-penalty family of modes.
+     * Every wrong pick costs -3s (and one life — see
+     * `maxStrikesPerClimb`); the kid retries until they pick correct
+     * or run out of lives.
      */
     wrongRungTimePenaltySec: 3,
     /**
      * Sprint 2.4.1 story 1 — cumulative "lives" cap across the whole
-     * climb. The per-floor mulligan rule still applies (2nd wrong on
-     * one floor = wrong-terminal); this adds a climb-wide ceiling so
-     * a kid who burns a mulligan on every floor still hits a wall.
+     * climb. Sprint 2.5.2 made this the SOLE wrong-pick round-ender:
+     * the old per-floor "2nd wrong on a floor ends the round" rule was
+     * removed because it contradicted the 3-dot lives HUD (a kid could
+     * "die" from two wrongs on one floor while the HUD still showed a
+     * life remaining).
      *
-     * A "strike" is incremented on each wrong pick (both mulligan
-     * AND wrong-terminal — so the wrong-terminal floor consumes two
-     * strikes when it was preceded by a mulligan). When `strikesUsed`
-     * reaches this value, the round ends with the same wrong-terminal
-     * fall-off animation, regardless of how the strikes were spread
-     * across floors.
+     * One life is spent on each wrong pick. When `strikesUsed` reaches
+     * this value the round ends with the fall-off animation — whether
+     * the kid spent all three on one hard floor or one each across
+     * three floors. The lives HUD decrements in lockstep, so death
+     * always lands exactly when the last dot is spent.
      *
      * 3 lifted from `2.4.1-life-rules.md` (project-owner decision).
      * Re-tune with a single edit here; HUD adapts automatically.
@@ -530,8 +536,24 @@ export const config = {
      * gameplay-tuning numbers this config block is for.
      */
     hero: {
-      widthPx: 56,
-      heightPx: 64,
+      // Sprint 2.5.2 tweak 3 — +33% larger (56→75, 64→85). The sprite
+      // path scales to fit max(widthPx,heightPx); the OG-Yellow
+      // procedural rectangle uses these directly. NumberClimbHero.HEIGHT
+      // is otherwise only read for the mulligan-banner offset, so the
+      // bump is layout-safe (rung spacing is independent).
+      widthPx: 75,
+      heightPx: 85,
+      /**
+       * Sprint 2.5.2 tweak 3 — the hero used to rest at the floor-band
+       * CENTER (= the rung y), so it looked vertically centered /
+       * floating. This gap lifts the hero's FEET this many px above the
+       * band BOTTOM instead, so it reads as standing on the floor. The
+       * scene applies a downward offset of
+       * `floorSpacingPx/2 - bottomGapPx - heightPx/2` to every hero
+       * resting position (start floor, each climbed floor, mulligan
+       * fall-back). Tune in playtest.
+       */
+      bottomGapPx: 8,
     },
     rung: {
       widthPx: 180,

@@ -84,13 +84,20 @@ export class HeroChooserScene extends Phaser.Scene {
     // doesn't matter" to kids) to "pick the one that feels like
     // you" — still honestly cosmetic but frames the pick as personal
     // ownership rather than inert.
+    // Sprint 2.5.2 tweak 1 — the subtitle (was 0.17) overlapped the top
+    // card row. Lifted to 0.135 (just under the title) and the grid
+    // pushed down (0.52 → 0.55) so title / subtitle / grid read as three
+    // clearly separated bands. Math (1280×720 FIT design canvas): top
+    // card top edge = 0.55·720 − halfY − CARD_H/2 = 396 − 136 − 120 =
+    // 140, clear of the subtitle's ~108 bottom; bottom card bottom edge
+    // = 396 + 256 = 652, clear of the AGPL footer.
     text(this, cx, height * 0.10, 'Pick Your Hero', 'h2').setOrigin(0.5);
-    text(this, cx, height * 0.17, 'Just for looks — pick the one that feels like you.', 'body')
+    text(this, cx, height * 0.135, 'Just for looks — pick the one that feels like you.', 'body')
       .setOrigin(0.5);
 
     // 2×2 grid centered horizontally + vertically.
     // Centers at (cx - half, cy - half) → (cx + half, cy + half).
-    const gridCenterY = height * 0.52;
+    const gridCenterY = height * 0.55;
     const halfX = (CARD_W + CARD_GAP) / 2;
     const halfY = (CARD_H + CARD_GAP) / 2;
     const positions: ReadonlyArray<{ key: ChosenHero; x: number; y: number }> = [

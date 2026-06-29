@@ -12,25 +12,28 @@ Get from a fresh clone to a running app in under five minutes.
 
 | Tool | Version | Notes |
 |---|---|---|
-| **Node.js** | 20.0.0 or newer | LTS recommended; verify with `node --version` |
-| **pnpm** | 9.x (project pins `9.15.0`) | Install via Corepack (preferred) or globally via npm |
+| **Node.js** | 22.13.0 or newer | required by pnpm 11; verify with `node --version` |
+| **pnpm** | 11 (project pins `11.9.0`) | Use Corepack — do NOT `npm install -g pnpm` (see warning) |
 | **Git** | any recent | for cloning |
 | **Docker** | 24+ (optional) | only needed if you want to build the production image locally |
 
-#### Install pnpm via Corepack (preferred — bundled with Node 20)
+#### Install pnpm via Corepack (the only supported path — bundled with Node)
+
+Corepack reads `package.json#packageManager` and runs the project-pinned pnpm (11.9.0) automatically, per project:
 
 ```bash
 corepack enable
-corepack prepare pnpm@9.15.0 --activate
-pnpm --version          # should print 9.15.0
+pnpm --version          # should print 11.9.0
 ```
 
-#### Or install pnpm globally via npm
-
-```bash
-npm install -g pnpm@9.15.0
-pnpm --version
-```
+> ⚠️ **Do NOT install pnpm globally (`npm install -g pnpm`).** A global pnpm lands on PATH ahead of Corepack's shim and shadows it, locking you to a single pnpm version across all projects. This repo's pnpm config lives in `pnpm-workspace.yaml` (overrides + `onlyBuiltDependencies` + `nodeLinker: hoisted`), which **requires pnpm 10+** — an older shadowing global fails with `ERROR packages field missing or empty`. This exact gap surfaced during the sprint 2.5.1 toolchain upgrade.
+>
+> **Troubleshooting** — if `pnpm --version` does not print `11.9.0` after `corepack enable`, a global install is winning your PATH. Remove it:
+> ```bash
+> npm uninstall -g pnpm
+> pnpm --version          # now resolves via Corepack → 11.9.0
+> ```
+> On Windows specifically, the shadowing binary is usually `%APPDATA%\npm\pnpm`. The pnpm config relocation from `.npmrc` / the package.json `pnpm` field into `pnpm-workspace.yaml` is a pnpm 10+ feature — see ADR/sprint 2.5.1 for the migration detail.
 
 ### 2. Clone and install
 
@@ -159,7 +162,7 @@ A **browser-based math game for kids**, modeled on the arcade-shooter feel of th
 |  - GitHub Actions auto-deploys on push                   |
 +----------------------------------------------------------+
 
-  Express server (Node 20) — IN THE REPO, NOT deployed today.
+  Express server (Node 22) — IN THE REPO, NOT deployed today.
   Serves /dist + GET /health for local production-style runs,
   and is the landing spot for a future "mature to Azure App
   Service" backend move (Phase 3+). The current production
@@ -179,11 +182,11 @@ Single repo. The browser side and the server side share the same TypeScript tool
 | UI | All Phaser scenes (no React) | One engine to reason about; consistent feel mobile↔desktop |
 | State (cross-scene) | Plain TS singleton modules | No state library needed at this scale |
 | Math | Pure TypeScript modules | No Phaser imports — unit-testable in isolation |
-| Server | Express on Node 20 (ESM) | Tiny stub today; ready for API routes when accounts ship |
+| Server | Express on Node 22 (ESM) | Tiny stub today; ready for API routes when accounts ship |
 | Tests | Vitest | Co-located `*.test.ts` files; seeded RNGs for determinism |
-| Container | Multi-stage Docker, `node:20-alpine` | Lean runtime, runs as non-root user |
+| Container | Multi-stage Docker, `node:22-alpine` | Lean runtime, runs as non-root user |
 | Deployment target | Azure Static Web Apps (static SPA) | Cheapest + simplest fit for a 100% static SPA; global edge, free managed TLS, GitHub-Actions auto-deploy |
-| Package manager | **pnpm 9** (Corepack-pinned) | Fast, deterministic, lockfile-enforced |
+| Package manager | **pnpm 11** (Corepack-pinned) | Fast, deterministic, lockfile-enforced; settings in `pnpm-workspace.yaml` |
 
 See `docs/adrs/` for the reasoning behind each major decision.
 
