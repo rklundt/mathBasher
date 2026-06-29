@@ -46,12 +46,19 @@ export interface HeroChooserSceneInit {
   fromMenu?: boolean;
 }
 
-/** Card visual dimensions (px). Tuned to fit 2x2 inside the 1280x720 design canvas. */
+/**
+ * Card visual dimensions (px). Sprint 2.5.2 (2nd pass) — shrunk from
+ * 280x240 to 280x200 (gap 32→24) so the full stack fits the 1280x720
+ * design canvas WITHOUT overlap: the 58px h2 title + 22px subtitle at
+ * the top AND the 56px "Back" button at the bottom (shown on the
+ * mid-session re-open path). The old 240px cards made a 512px-tall grid
+ * that collided with both. See the layout math in `create()`.
+ */
 const CARD_W = 280;
-const CARD_H = 240;
-const CARD_GAP = 32;
-/** Sprite display size inside a card (px, max dim — preserves aspect). */
-const CARD_SPRITE_DISPLAY_SIZE = 180;
+const CARD_H = 200;
+const CARD_GAP = 24;
+/** Sprite display size inside a card (px, max dim — preserves aspect). Fits the 200px card + label. */
+const CARD_SPRITE_DISPLAY_SIZE = 155;
 
 export class HeroChooserScene extends Phaser.Scene {
   static readonly key = SceneKeys.HeroChooser;
@@ -84,20 +91,23 @@ export class HeroChooserScene extends Phaser.Scene {
     // doesn't matter" to kids) to "pick the one that feels like
     // you" — still honestly cosmetic but frames the pick as personal
     // ownership rather than inert.
-    // Sprint 2.5.2 tweak 1 — the subtitle (was 0.17) overlapped the top
-    // card row. Lifted to 0.135 (just under the title) and the grid
-    // pushed down (0.52 → 0.55) so title / subtitle / grid read as three
-    // clearly separated bands. Math (1280×720 FIT design canvas): top
-    // card top edge = 0.55·720 − halfY − CARD_H/2 = 396 − 136 − 120 =
-    // 140, clear of the subtitle's ~108 bottom; bottom card bottom edge
-    // = 396 + 256 = 652, clear of the AGPL footer.
-    text(this, cx, height * 0.10, 'Pick Your Hero', 'h2').setOrigin(0.5);
-    text(this, cx, height * 0.135, 'Just for looks — pick the one that feels like you.', 'body')
+    // Sprint 2.5.2 (2nd pass) — full-stack layout that clears the 58px
+    // h2 title, the 22px subtitle, the 2×2 grid, AND the bottom "Back"
+    // button (re-open path), on the 1280×720 FIT canvas. Vertical map
+    // (center y, with rendered half-heights):
+    //   title  h2  @ 0.08·720 = 58   → block ~23..93
+    //   subtitle  @ 0.16·720 = 115   → block ~102..128  (clears title)
+    //   grid center @ 0.53·720 = 382, CARD_H 200 / GAP 24 → halfY 112:
+    //     top card top edge    = 382 − 112 − 100 = 170  (37px below subtitle)
+    //     bottom card bot edge = 382 + 112 + 100 = 594
+    //   Back button @ 0.92·720 = 662 → top edge 634  (40px below grid)
+    text(this, cx, height * 0.08, 'Pick Your Hero', 'h2').setOrigin(0.5);
+    text(this, cx, height * 0.16, 'Just for looks — pick the one that feels like you.', 'body')
       .setOrigin(0.5);
 
     // 2×2 grid centered horizontally + vertically.
     // Centers at (cx - half, cy - half) → (cx + half, cy + half).
-    const gridCenterY = height * 0.55;
+    const gridCenterY = height * 0.53;
     const halfX = (CARD_W + CARD_GAP) / 2;
     const halfY = (CARD_H + CARD_GAP) / 2;
     const positions: ReadonlyArray<{ key: ChosenHero; x: number; y: number }> = [
