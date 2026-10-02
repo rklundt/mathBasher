@@ -4,8 +4,16 @@
 
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { bootGame } from '@/app/boot';
+import { mountAttributionFooter } from '@/game/ui/domAttributionFooter';
 
 _th.logToAi('AppBoot Started', SeverityLevel.Information);
+
+// Sprint 2.5.2 — render the AGPL §7(b) attribution footer. It lives in the
+// DOM (not the Phaser canvas) so it pins to the true visible viewport
+// bottom — always above a mobile URL bar — while the canvas keeps its
+// "halfway" viewport. Mounted here (not in game boot) so the license
+// notice is present from first paint, independent of the tap-to-play gate.
+mountAttributionFooter();
 
 // Wire the splash button. `{ once: true }` means the handler fires only
 // on the first click — a second click is impossible because the splash

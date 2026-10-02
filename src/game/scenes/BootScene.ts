@@ -210,7 +210,10 @@ export class BootScene extends Phaser.Scene {
     // and removing it makes the boot feel snappier on fast loads.
     // (See `buildLoadingBar()` in `preload()` above.)
     this.scene.launch(SceneKeys.Background);
-    this.scene.launch(SceneKeys.Attribution);
+    // Sprint 2.5.2 — the AGPL §7(b) attribution footer is no longer a
+    // Phaser scene; it's a DOM element (see `mountAttributionFooter` in
+    // main.ts) pinned to the visible viewport bottom so it clears the
+    // mobile URL bar. Nothing to launch here anymore.
 
     // Sprint 2.5 story 4 — first-run hero pick gate. If the kid has
     // never picked one (Settings.getChosenHero() === null) we route

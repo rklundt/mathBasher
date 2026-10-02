@@ -9,12 +9,15 @@ import type { GameId } from '@/services/Settings';
  * everywhere — never hand-write the string `'menu'` in a `scene.start(...)`
  * call, because a typo silently sends you nowhere.
  *
- * Two scenes run in PARALLEL with every other non-Boot scene:
- *  - `Background` (sprint 0.7 Story 6) — renders the nebula + parallax stars
- *    BEHIND everything else, providing the visual atmosphere
- *  - `Attribution` — renders the AGPL §7(b) footer ON TOP of everything
+ * `Background` (sprint 0.7 Story 6) runs in PARALLEL with every other
+ * non-Boot scene — it renders the nebula + parallax stars BEHIND
+ * everything else, providing the visual atmosphere. The rest are
+ * mutually exclusive (one active at a time).
  *
- * The rest are mutually exclusive (one active at a time).
+ * The AGPL §7(b) attribution footer used to be a parallel `Attribution`
+ * scene rendered on top; sprint 2.5.2 moved it to a DOM element (see
+ * `mountAttributionFooter`) so it pins to the visible viewport bottom
+ * above the mobile URL bar.
  */
 export const SceneKeys = {
   Boot: 'boot',
@@ -68,7 +71,9 @@ export const SceneKeys = {
   Loading: 'loading',
   Hud: 'hud',
   GameOver: 'game-over',
-  Attribution: 'attribution',
+  // Attribution scene retired in sprint 2.5.2 — the AGPL §7(b) footer is
+  // now a DOM element (see mountAttributionFooter) pinned to the visible
+  // viewport bottom so it clears the mobile URL bar.
   PauseOverlay: 'pause-overlay',
   Settings: 'settings',
 } as const;
