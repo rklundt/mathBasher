@@ -11,6 +11,7 @@ import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneCon
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { Settings } from '@/services/Settings';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
 import { text } from '@/game/ui/typography';
@@ -224,7 +225,12 @@ export class HudScene extends Phaser.Scene {
     // x-position is recomputed after every round-score update (see
     // `repositionTotalLabel`) so growing round scores don't crowd
     // the total label.
-    this.roundScoreText = text(this, 16, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
+    // Sprint 2.5.2 — chosen-hero avatar at the far left of the HUD bar
+    // so the kid's picked hero (Hero Chooser) is present during play.
+    // Cosmetic only; the in-game gameplay sprite stays mode-bound. The
+    // score text starts to its right by the width the avatar consumed.
+    const heroAvatarInset = this.buildHudHeroAvatar(barHeight);
+    this.roundScoreText = text(this, 16 + heroAvatarInset, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
     this.totalScoreText = text(
       this,
       0, // placeholder; repositioned by repositionTotalLabel below
@@ -459,6 +465,33 @@ export class HudScene extends Phaser.Scene {
       dot.setStrokeStyle(1, 0x6b7280);
       this.progressDots.push(dot);
     }
+  }
+
+  /**
+   * Sprint 2.5.2 — small chosen-hero avatar at the far left of the HUD
+   * bar, so the kid's picked hero (from the Hero Chooser) is visible
+   * during play. Purely cosmetic — the in-game gameplay sprite stays
+   * mode-bound (speeder / asteroid-hero / climber). Returns the
+   * horizontal space consumed (avatar diameter + a gap) so the score
+   * text starts to its right; returns 0 when no hero is persisted or
+   * its texture isn't loaded (defensive — BootScene gates the first-run
+   * pick, so a hero is normally always set). Non-interactive: it's a
+   * presence indicator, not a mid-round re-pick control.
+   */
+  private buildHudHeroAvatar(barHeight: number): number {
+    const hero = Settings.getChosenHero();
+    if (hero === null || !this.textures.exists(hero)) return 0;
+    const diameter = barHeight - 12;
+    const r = diameter / 2;
+    const cx = 16 + r;
+    const cy = barHeight / 2;
+    const bg = this.add.circle(cx, cy, r + 2, 0x1f2740, 0.85);
+    bg.setStrokeStyle(2, 0x475569);
+    const sprite = this.add.image(cx, cy, hero).setOrigin(0.5);
+    const tex = this.textures.get(hero).getSourceImage();
+    const maxDim = Math.max(tex.width, tex.height) || 1;
+    sprite.setScale(diameter / maxDim);
+    return diameter + 12; // avatar + gap before the score text
   }
 
   /**

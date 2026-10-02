@@ -496,7 +496,10 @@ export class SettingsScene extends Phaser.Scene {
       y,
       width: buttonW,
       height: buttonH,
-      label: 'OG Yellow',
+      // Sprint 2.5.2 — label "OG Yellow" → "Classic Yellow" (Support
+      // reviewer: "OG" is slang the 6-10yo target won't parse). The
+      // persisted `heroSkin` key stays 'og-yellow' for back-compat.
+      label: 'Classic Yellow',
       selected: current === 'og-yellow',
       onClick: () => setSelection('og-yellow'),
     });
