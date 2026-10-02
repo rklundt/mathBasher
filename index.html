@@ -37,6 +37,29 @@
          `100vh` stays as the fallback for browsers without dvh (the calc is
          dropped there, leaving the prior behavior). */
       #game { width: 100vw; height: 100vh; height: calc(50vh + 50dvh); display: flex; align-items: center; justify-content: center; }
+
+      /* Sprint 2.5.2 — AGPL §7(b) footer pinned to the VISIBLE viewport
+         bottom. `bottom: calc(100vh - 100dvh)` resolves to 0 when the
+         mobile URL bar is hidden and to the bar's height when shown, so
+         the notice sits just above the bar instead of behind it (the
+         canvas above can still extend halfway behind the bar for the
+         speeder feel). z-index 5 keeps it above the canvas but below the
+         boot splash (z-index 10). pointer-events:none lets gameplay taps
+         pass through the strip; the Source link opts back in. */
+      #app-footer {
+        position: fixed; left: 0; right: 0;
+        bottom: calc(100vh - 100dvh);
+        height: 32px; z-index: 5;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; padding: 0 16px; box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.55);
+        font-family: 'Baloo 2', system-ui, -apple-system, sans-serif;
+        font-size: 12px; line-height: 1; color: #eaeaf2;
+        pointer-events: none;
+      }
+      #app-footer #app-footer-left { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #app-footer a { color: #60a5fa; text-decoration: none; pointer-events: auto; white-space: nowrap; }
+      #app-footer a:hover { color: #93c5fd; text-decoration: underline; }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the
          AudioContext is created inside a user-gesture context
@@ -183,6 +206,22 @@
       <p>mathBasher plays better wide.</p>
     </div>
     <div id="game"></div>
+    <!--
+      Sprint 2.5.2 — AGPL §7(b) attribution footer. Moved OUT of the Phaser
+      canvas (was AttributionScene) into the DOM so it can pin to the TRUE
+      visible bottom via `bottom: calc(100vh - 100dvh)` — that offset is 0
+      when the mobile URL bar is hidden and equals the bar's height when it
+      is shown, so the notice always sits just above the bar. This lets the
+      canvas keep its "halfway" (`calc(50vh + 50dvh)`) viewport for the
+      speeder feel while the license notice stays fully visible. Text is
+      filled by `mountAttributionFooter()` from the single source of truth
+      in `src/core/attribution.ts`. pointer-events:none lets gameplay taps
+      pass through the strip; only the Source link re-enables them.
+    -->
+    <footer id="app-footer" aria-label="Attribution and license">
+      <span id="app-footer-left"></span>
+      <a id="app-footer-src" target="_blank" rel="noopener noreferrer"></a>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

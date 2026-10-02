@@ -20,7 +20,6 @@ import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
 import { SettingsScene } from '@/game/scenes/SettingsScene';
-import { AttributionScene } from '@/game/scenes/AttributionScene';
 
 /**
  * Bootstrap the actual game (Phaser + service singletons). Called from
@@ -121,7 +120,9 @@ export function bootGame(): void {
       GameOverScene,
       PauseOverlay,
       SettingsScene,
-      AttributionScene,
+      // Sprint 2.5.2 — AttributionScene retired; the AGPL §7(b) footer is
+      // now a DOM element (mountAttributionFooter in main.ts) pinned to
+      // the visible viewport bottom so it clears the mobile URL bar.
     ],
   });
 
