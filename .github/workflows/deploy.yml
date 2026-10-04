@@ -50,6 +50,13 @@ jobs:
 
       - name: Build
         run: pnpm build:client
+        env:
+          # AGPL §13 "Corresponding Source" link shown in the UI footer
+          # (attribution.ts reads VITE_SOURCE_URL; Vite inlines it at build).
+          # Point each deployment at the branch it was built from, so the link
+          # matches the running version: main -> repo root (default branch),
+          # development -> the development tree.
+          VITE_SOURCE_URL: ${{ github.ref_name == 'main' && 'https://github.com/rklundt/mathBasher' || 'https://github.com/rklundt/mathBasher/tree/development' }}
 
       - name: Run tests
         run: pnpm test
