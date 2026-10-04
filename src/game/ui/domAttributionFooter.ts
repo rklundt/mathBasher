@@ -3,7 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { attribution, isUsingPlaceholderSourceUrl } from '@/core/attribution';
-import { _th, SeverityLevel } from '@/core/telemetry';
+import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 
 /**
  * Sprint 2.5.2 — fills the DOM AGPL §7(b) attribution footer (markup +
@@ -11,19 +11,19 @@ import { _th, SeverityLevel } from '@/core/telemetry';
  * `src/core/attribution.ts`.
  *
  * This replaces the former Phaser `AttributionScene`. The footer lives in
- * the DOM (not the Phaser canvas) so it can pin to the TRUE visible
- * viewport bottom via `bottom: calc(100vh - 100dvh)` — always above a
- * mobile browser's URL bar — while the canvas keeps its "halfway"
- * (`calc(50vh + 50dvh)`) viewport for the Alien Shoot speeder feel. In
- * the canvas-footer design those two goals conflicted (the footer sat at
- * the canvas bottom, which goes partly behind the bar on the halfway
- * viewport); decoupling into the DOM resolves it.
+ * the DOM, in the page's flex column directly under the game canvas: the
+ * canvas is sized to the visible-viewport space above it, so the notice
+ * always stays above a mobile browser's URL bar and no game element can
+ * sit underneath it. It wraps to a second line on narrow screens instead
+ * of truncating, per NOTICE §7(b)(b).
  *
  * Idempotent: safe to call more than once (it just re-writes the text).
  * No-ops gracefully if the elements are missing (e.g. a test harness
  * without the index.html shell).
  */
 export function mountAttributionFooter(): void {
+  _th.logToAi('mountAttributionFooter Started', SeverityLevel.Information);
+
   const left = document.getElementById('app-footer-left');
   const src = document.getElementById('app-footer-src');
 
@@ -41,8 +41,10 @@ export function mountAttributionFooter(): void {
   // misconfigured deploy shows up in App Insights instead of just looking
   // broken in the UI.
   if (isUsingPlaceholderSourceUrl) {
-    const dict: Record<string, string> = {};
+    const dict: TelemetryProps = {};
     dict['reason'] = 'VITE_SOURCE_URL env var is unset; shipping with the placeholder example.invalid URL';
     _th.logToAi('AttributionFooter PlaceholderSourceUrl', SeverityLevel.Warning, dict);
   }
+
+  _th.logToAi('mountAttributionFooter Completed', SeverityLevel.Information);
 }

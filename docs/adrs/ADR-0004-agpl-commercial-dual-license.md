@@ -1,6 +1,6 @@
 # ADR-0004: Dual license (AGPL-3.0-or-later + Commercial) with §7(b) UI attribution
 
-**Status:** Accepted (2026-05-08), supersedes a brief earlier consideration of Apache 2.0
+**Status:** Accepted (2026-05-08), supersedes a brief earlier consideration of Apache 2.0. Amended 2026-10-04 (attribution display mechanism — see Amendment below).
 
 ## Context
 
@@ -34,3 +34,15 @@ mathBasher is dual-licensed:
 - **Con:** Dual-licensing requires a CLA from any third-party contributor (so the copyright holder retains the right to relicense their work commercially). Until `CONTRIBUTING.md` + CLA mechanism exists, third-party contributions must be refused.
 - **Con:** Adds documentation complexity (LICENSE + NOTICE + COMMERCIAL + the §7(b) clause framing). Mitigated by the `AttributionScene` being a single always-on parallel scene reading from one constants module.
 - **Future:** If pricing terms or commercial license templates are needed, they're drafted with a lawyer; ADR-0004 doesn't try to specify them.
+
+## Amendment (2026-10-04, sprint 2.5.2) — attribution display mechanism
+
+The decision above is unchanged; only **how** the §7(b) notice is displayed changed. The notice moved out of the Phaser canvas (the always-on `AttributionScene`, now deleted) into a DOM footer:
+
+- Markup + CSS: `#app-footer` in `index.html`. Filled at page load by `mountAttributionFooter()` (`src/game/ui/domAttributionFooter.ts`), still from the single source of truth `src/core/attribution.ts`.
+- Layout: the page is a column the height of the visible viewport — the game canvas fills the space and the footer sits in flow directly beneath it. So the notice stays above a phone's URL bar, no game element can cover it (or sit under its Source link), and it is stacked above the boot splash so it shows from first paint.
+- It wraps to a second line on narrow screens instead of truncating (NOTICE §7(b)(b)).
+- The source link (NOTICE §7(b)(c), AGPL §13) is built by CI per deployment, pinned to the exact commit deployed (`.../tree/<short-sha>`).
+- Guarded by `src/attributionFooter.test.ts` (markup present, mounted at load, no truncation CSS, text sourced from `attribution.ts`).
+
+Why: in-canvas, the footer scaled with the FIT canvas and sat at the canvas bottom — which on phones fell partly behind the browser's URL bar. A DOM footer laid out below the canvas keeps it fully visible and legible on every device. The "hard to accidentally remove" property above now rests on the contract test plus the architecture review, rather than on a dedicated scene.

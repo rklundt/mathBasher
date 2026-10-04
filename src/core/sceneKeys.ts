@@ -16,8 +16,8 @@ import type { GameId } from '@/services/Settings';
  *
  * The AGPL §7(b) attribution footer used to be a parallel `Attribution`
  * scene rendered on top; sprint 2.5.2 moved it to a DOM element (see
- * `mountAttributionFooter`) so it pins to the visible viewport bottom
- * above the mobile URL bar.
+ * `mountAttributionFooter`) laid out below the canvas, above the mobile
+ * URL bar.
  */
 export const SceneKeys = {
   Boot: 'boot',
@@ -72,8 +72,7 @@ export const SceneKeys = {
   Hud: 'hud',
   GameOver: 'game-over',
   // Attribution scene retired in sprint 2.5.2 — the AGPL §7(b) footer is
-  // now a DOM element (see mountAttributionFooter) pinned to the visible
-  // viewport bottom so it clears the mobile URL bar.
+  // now a DOM element (see mountAttributionFooter) below the canvas.
   PauseOverlay: 'pause-overlay',
   Settings: 'settings',
 } as const;

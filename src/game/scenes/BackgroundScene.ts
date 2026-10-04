@@ -17,9 +17,8 @@ import { Settings } from '@/services/Settings';
  * Lifecycle: launched once from BootScene immediately after preload
  * finishes; runs for the lifetime of the page (never stopped). The scene
  * order in `src/app/boot.ts` places this scene EARLY in the registration
- * list so it renders BELOW Menu / Game / etc. AttributionScene is
- * registered LAST so its footer renders ON TOP of everything (including
- * this background).
+ * list so it renders BELOW Menu / Game / etc. (The §7(b) attribution
+ * footer is a DOM strip below the canvas, not a scene.)
  *
  * Performance: ~60 star sprites updated per frame on the main thread.
  * Each update is just `star.y += dy` + a wrap check — trivial cost,

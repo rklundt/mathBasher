@@ -59,6 +59,10 @@ const CARD_H = 200;
 const CARD_GAP = 24;
 /** Sprite display size inside a card (px, max dim — preserves aspect). Fits the 200px card + label. */
 const CARD_SPRITE_DISPLAY_SIZE = 155;
+/** Sprint 2.5.2 — tap feedback: the picked card scales up to this before the scene changes. */
+const PICK_POP_SCALE = 1.12;
+/** Sprint 2.5.2 — tap feedback: pop duration (ms); well under the 400ms responsiveness ceiling. */
+const PICK_POP_DURATION_MS = 170;
 
 export class HeroChooserScene extends Phaser.Scene {
   static readonly key = SceneKeys.HeroChooser;
@@ -75,7 +79,7 @@ export class HeroChooserScene extends Phaser.Scene {
     super(HeroChooserScene.key);
   }
 
-  // Sprint 2.5 audit (Senior Dev) — default the param so the
+  // Sprint 2.5 — default the param so the
   // "first-run no-data path" reads as such at the type level. Phaser
   // passes `{}` when scene.start is called without data; explicit
   // default makes the contract self-documenting.
@@ -93,7 +97,7 @@ export class HeroChooserScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    // Title + subtitle. Sprint 2.5 audit (Support) — subtitle copy
+    // Title + subtitle. Sprint 2.5 — subtitle copy
     // softened from "no effect on the game" (which reads as "this
     // doesn't matter" to kids) to "pick the one that feels like
     // you" — still honestly cosmetic but frames the pick as personal
@@ -133,13 +137,17 @@ export class HeroChooserScene extends Phaser.Scene {
     // has no escape hatch (deliberate hard gate so the kid commits
     // to a pick).
     //
-    // Sprint 2.5 audit (Support) — Esc is keyboard-only; mobile kids
+    // Sprint 2.5 — Esc is keyboard-only; mobile kids
     // had no way out of the mid-session picker without re-picking.
     // Visible "Back" button (bottom-center) gives them a clear way
     // home. Only rendered on the `fromMenu` path so the first-run
     // hard gate stays a hard gate.
     if (this.fromMenu) {
-      wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+      // Ignored while a pick's pop-and-transition is in flight, so the
+      // only transition after a pick is the one the pop started.
+      wireEscBack(this, () => {
+        if (!this.picking) this.scene.start(SceneKeys.Menu);
+      });
       new PlaceholderButton({
         scene: this,
         x: cx,
@@ -148,6 +156,7 @@ export class HeroChooserScene extends Phaser.Scene {
         height: 56,
         label: 'Back',
         onClick: () => {
+          if (this.picking) return;
           emitButtonClicked('HeroChooser:Back', this.scene.key, 'pointer');
           this.scene.start(SceneKeys.Menu);
         },
@@ -234,8 +243,8 @@ export class HeroChooserScene extends Phaser.Scene {
     this.children.bringToTop(card);
     this.tweens.add({
       targets: card,
-      scale: { from: 1, to: 1.12 },
-      duration: 170,
+      scale: { from: 1, to: PICK_POP_SCALE },
+      duration: PICK_POP_DURATION_MS,
       ease: 'Back.Out',
       onComplete: () => this.scene.start(SceneKeys.Menu),
     });

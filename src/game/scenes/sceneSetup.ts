@@ -20,8 +20,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
  * Scenes launched in PARALLEL (HudScene, PauseOverlay, SettingsScene)
  * do NOT need to call this — they overlay an active scene that already
  * bound AudioManager, and Phaser's per-scene sound proxies cooperate
- * across active siblings. BootScene and AttributionScene also skip it
- * (no audio playback).
+ * across active siblings. BootScene also skips it (no audio playback).
  *
  * `extraProps` is forwarded to the Started log only — useful for
  * GameOverScene which records the just-finished round's score, math

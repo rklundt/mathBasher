@@ -539,10 +539,10 @@ export const config = {
       // Sprint 2.5.2 tweak 3 — +33% larger (56→75, 64→85), then a
       // further +15% (75→86, 85→98) after staging playtest. The sprite
       // path scales to fit max(widthPx,heightPx); the OG-Yellow
-      // procedural rectangle uses these directly. NumberClimbHero.HEIGHT
-      // is otherwise only read for the mulligan-banner offset, so the
-      // bump is layout-safe (rung spacing is independent). heroRestY in
-      // the scene reads heightPx, so the bottom-alignment auto-tracks.
+      // procedural rectangle uses these directly. Rung spacing is
+      // independent of the hero size, so the bump is layout-safe;
+      // heroRestY in the scene reads heightPx, so the bottom-alignment
+      // auto-tracks.
       widthPx: 86,
       heightPx: 98,
       /**
@@ -584,15 +584,19 @@ export const config = {
      */
     hudBarHeightPx: 64,
     /**
-     * Height of the AGPL §7(b) attribution footer (`AttributionScene`) in
-     * design pixels. Load-bearing for legal compliance — the footer must
-     * always be fully visible. `TouchFireButton` reads this to position
-     * itself ABOVE the footer with a clearance gap (so the button never
-     * overlaps the footer's clickable Source URL). Centralized here so a
-     * future footer redesign automatically repositions every dependent
-     * widget. Mirrors the literal in `AttributionScene.create`.
+     * Bottom gutter of the design canvas, in design pixels, kept clear of
+     * gameplay elements. `TouchFireButton` and the playfield bounds read it.
      *
-     * Tuning history:
+     * Sprint 2.5.2: the AGPL §7(b) attribution footer moved OUT of the
+     * canvas into the DOM (`index.html` `#app-footer`, filled by
+     * `mountAttributionFooter`), laid out directly BELOW the canvas — so
+     * the footer can no longer overlap anything in the game, and this value
+     * is no longer the footer's height. It is retained as a plain bottom
+     * gutter so existing gameplay layout (FIRE button, speeder line,
+     * playfield bounds) stays exactly as tuned. The DOM footer's own height
+     * lives in CSS (`--footer-min-h`).
+     *
+     * Tuning history (from when this mirrored the in-canvas footer):
      *   - First pass (sprint 0.5/0.6): 56px. Generous padding around the
      *     12px footer text.
      *   - Sprint 0.7 Story 5 playtest: reduced to 28px (half). With the
@@ -681,6 +685,20 @@ export const config = {
        * to budget for vertically).
        */
       speedSectionLabelOffsetY: 75,
+      /**
+       * Sprint 2.5.2 — Number Climb only. Climb adds a "N floors per
+       * round" line between the section label and the difficulty buttons,
+       * which needs more room than the 75px offset leaves. The section
+       * label lifts by this extra amount on Climb (keeps ~14px clear of the
+       * third Math Type row above).
+       */
+      climbSectionLabelExtraOffsetY: 18,
+      /**
+       * Sprint 2.5.2 — gap between the BOTTOM of the Climb floor-count
+       * line and the TOP edge of the difficulty buttons (the line is
+       * bottom-anchored so its descenders never touch the button stroke).
+       */
+      floorCountLabelGapPx: 8,
     },
     /**
      * On-screen FIRE button (`TouchFireButton`) sizing + positioning.
@@ -692,10 +710,11 @@ export const config = {
      *  - `hitPadPx` — extra radius added to the hit area for thumb
      *    tolerance. Total hit-circle radius = `radiusPx + hitPadPx`.
      *  - `footerClearancePx` — vertical gap between the BOTTOM of the
-     *    button's hit area and the TOP of the AttributionScene footer.
-     *    Bumped to 16 (was 8) to prevent the hit-circle from bleeding
-     *    into the footer's Source-URL click zone (sprint 0.6 wrap-up
-     *    review finding).
+     *    button's hit area and the top of the canvas bottom gutter
+     *    (`attributionFooterHeightPx`). Bumped to 16 (was 8) in sprint 0.6
+     *    when the footer was in-canvas, to keep the hit-circle out of the
+     *    Source-URL click zone. Since sprint 2.5.2 the footer is a DOM strip
+     *    below the canvas, so this is just thumb-room spacing.
      */
     touchFire: {
       radiusPx: 40,

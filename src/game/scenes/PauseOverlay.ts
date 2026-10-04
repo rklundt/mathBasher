@@ -23,10 +23,10 @@ import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
  *    single Esc round-trips the pause without the user needing to click
  *    Resume.
  *
- * Render order note: AttributionScene is registered LAST in main.ts and runs
- * above every other scene, so the §7(b) attribution footer stays visible
- * even while paused. PauseOverlay sits between GameScene/HudScene and the
- * attribution footer in z-order.
+ * Render order note: PauseOverlay is registered after GameScene/HudScene in
+ * `src/app/boot.ts`, so it draws over them. The §7(b) attribution footer is a
+ * DOM strip below the canvas (sprint 2.5.2), so it stays visible while paused
+ * regardless of scene order.
  */
 export interface PauseOverlayInit {
   /** Called when the user picks Resume (or presses Esc again on the overlay). */

@@ -24,41 +24,49 @@
       rel="stylesheet"
     />
     <style>
+      /* Footer strip height — the single CSS source for it. The footer is a
+         MIN height (it grows to two lines on narrow screens rather than
+         truncating the notice). */
+      :root { --footer-min-h: 32px; }
       html, body { margin: 0; padding: 0; height: 100%; background: #0b1020; overflow: hidden; }
-      body { font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2; }
-      /* Sprint 2.5.2 tweak 4 — mobile URL-bar handling. `100vh` (the old
-         value) is the URL-bar-HIDDEN height, so when the bar shows, the
-         bottom of the FIT-centered canvas (the Alien Shoot speeder) hides
-         behind it. Full `100dvh` (visible viewport) fixed that but moved
-         the content too far for the project owner's taste. `calc(50vh +
-         50dvh)` splits the difference: it equals 100vh when the bar is
-         hidden and the midpoint of vh/dvh when it's shown — so the speeder
-         lifts halfway out from under the bar instead of all the way.
-         `100vh` stays as the fallback for browsers without dvh (the calc is
-         dropped there, leaving the prior behavior). */
-      #game { width: 100vw; height: 100vh; height: calc(50vh + 50dvh); display: flex; align-items: center; justify-content: center; }
+      /* Sprint 2.5.2 — page layout is a column the height of the VISIBLE
+         viewport (`100dvh`; `100vh` fallback for browsers without dvh):
+         the game canvas fills the space, the AGPL footer sits in flow
+         directly beneath it. On a phone, `100dvh` shrinks when the URL bar
+         shows, so both the canvas bottom (the Alien Shoot speeder, the FIRE
+         button) and the footer always stay above the bar — and because the
+         footer is BELOW the canvas rather than floating over it, no game
+         element can ever sit underneath the footer or its Source link
+         (the sprint 0.6 "link steals FIRE taps" class of bug). Replaces the
+         earlier "halfway" `calc(50vh + 50dvh)` canvas + fixed-position
+         footer pinned with `calc(100vh - 100dvh)`. */
+      body {
+        font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2;
+        display: flex; flex-direction: column;
+        height: 100vh; height: 100dvh;
+      }
+      #game { flex: 1 1 auto; min-height: 0; width: 100vw; display: flex; align-items: center; justify-content: center; }
 
-      /* Sprint 2.5.2 — AGPL §7(b) footer pinned to the VISIBLE viewport
-         bottom. `bottom: calc(100vh - 100dvh)` resolves to 0 when the
-         mobile URL bar is hidden and to the bar's height when shown, so
-         the notice sits just above the bar instead of behind it (the
-         canvas above can still extend halfway behind the bar for the
-         speeder feel). z-index 5 keeps it above the canvas but below the
-         boot splash (z-index 10). pointer-events:none lets gameplay taps
-         pass through the strip; the Source link opts back in. */
+      /* AGPL §7(b) attribution footer (filled by mountAttributionFooter()
+         from src/core/attribution.ts). In flow under #game, so the canvas
+         is sized to the space above it. Wraps to a second line when it
+         doesn't fit on one — the notice must never be truncated (NOTICE
+         §7(b)(b)); a taller footer simply leaves the canvas a little less
+         room. position:relative + z-index 11 lifts it above the boot
+         splash (z-index 10) so the notice is visible from first paint;
+         the portrait-rotate overlay (z-index 100) still covers it.
+         pointer-events:none on the strip; the Source link opts back in. */
       #app-footer {
-        position: fixed; left: 0; right: 0;
-        bottom: calc(100vh - 100dvh);
-        height: 32px; z-index: 5;
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; padding: 0 16px; box-sizing: border-box;
+        position: relative; z-index: 11;
+        flex: 0 0 auto; min-height: var(--footer-min-h);
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        column-gap: 12px; row-gap: 2px; padding: 4px 16px; box-sizing: border-box;
         background: rgba(0, 0, 0, 0.55);
         font-family: 'Baloo 2', system-ui, -apple-system, sans-serif;
-        font-size: 12px; line-height: 1; color: #eaeaf2;
+        font-size: 12px; line-height: 1.2; color: #eaeaf2;
         pointer-events: none;
       }
-      #app-footer #app-footer-left { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      #app-footer a { color: #60a5fa; text-decoration: none; pointer-events: auto; white-space: nowrap; }
+      #app-footer a { color: #60a5fa; text-decoration: none; pointer-events: auto; overflow-wrap: anywhere; }
       #app-footer a:hover { color: #93c5fd; text-decoration: underline; }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the
@@ -207,16 +215,12 @@
     </div>
     <div id="game"></div>
     <!--
-      Sprint 2.5.2 — AGPL §7(b) attribution footer. Moved OUT of the Phaser
-      canvas (was AttributionScene) into the DOM so it can pin to the TRUE
-      visible bottom via `bottom: calc(100vh - 100dvh)` — that offset is 0
-      when the mobile URL bar is hidden and equals the bar's height when it
-      is shown, so the notice always sits just above the bar. This lets the
-      canvas keep its "halfway" (`calc(50vh + 50dvh)`) viewport for the
-      speeder feel while the license notice stays fully visible. Text is
-      filled by `mountAttributionFooter()` from the single source of truth
-      in `src/core/attribution.ts`. pointer-events:none lets gameplay taps
-      pass through the strip; only the Source link re-enables them.
+      Sprint 2.5.2 — AGPL §7(b) attribution footer, rendered in the DOM
+      (it was a Phaser scene, AttributionScene, before this sprint). It sits
+      in the body's flex column directly under #game, so the canvas is sized
+      to the space above it and nothing in the game can be covered by it.
+      Text is filled by `mountAttributionFooter()` from the single source of
+      truth in `src/core/attribution.ts`. See the #app-footer CSS above.
     -->
     <footer id="app-footer" aria-label="Attribution and license">
       <span id="app-footer-left"></span>

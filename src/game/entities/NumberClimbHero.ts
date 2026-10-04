@@ -48,6 +48,10 @@ const HERO_HEIGHT = config.numberClimb.hero.heightPx;
 const HERO_FILL_COLOR = 0xfbbf24;
 /** Hero's outline color — darker for definition. */
 const HERO_OUTLINE_COLOR = 0x713f12;
+/** Sprint 2.5.2 — resting idle bob: how far the body rises (px, negative = up). */
+const IDLE_BOB_RISE_PX = -5;
+/** Sprint 2.5.2 — resting idle bob: duration of one rise (ms); yoyo doubles the cycle. */
+const IDLE_BOB_DURATION_MS = 950;
 
 export interface NumberClimbHeroOpts {
   scene: Phaser.Scene;
@@ -58,10 +62,6 @@ export interface NumberClimbHeroOpts {
 }
 
 export class NumberClimbHero extends Phaser.GameObjects.Container {
-  /** Rough collision/silhouette dimensions — exposed for FloorSystem layout math. */
-  static readonly WIDTH = HERO_WIDTH;
-  static readonly HEIGHT = HERO_HEIGHT;
-
   /**
    * The visible body. Sprint 2.4.2 hotfix — the Climb hero now has
    * TWO skin paths, chosen at construction time from `Settings.heroSkin`:
@@ -133,14 +133,13 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    */
   private startIdle(): void {
     this.stopIdle();
-    const body: Phaser.GameObjects.GameObject & { y: number } =
-      (this.bodyImage ?? this.bodyGraphics) as Phaser.GameObjects.GameObject & { y: number };
+    const body = this.bodyImage ?? this.bodyGraphics;
     if (!body) return;
     body.y = 0;
     this.idleTween = this.scene.tweens.add({
       targets: body,
-      y: -5, // rise 5px, yoyo back — a slow "breathing" bob
-      duration: 950,
+      y: IDLE_BOB_RISE_PX, // rise, yoyo back — a slow "breathing" bob
+      duration: IDLE_BOB_DURATION_MS,
       ease: 'Sine.InOut',
       yoyo: true,
       repeat: -1,
@@ -149,9 +148,9 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
 
   /** Sprint 2.5.2 — stop the idle bob + snap the body child back to baseline. */
   private stopIdle(): void {
-    this.idleTween?.remove();
+    this.idleTween?.destroy();
     this.idleTween = undefined;
-    const body = (this.bodyImage ?? this.bodyGraphics) as { y: number } | null;
+    const body = this.bodyImage ?? this.bodyGraphics;
     if (body) body.y = 0;
   }
 
@@ -258,9 +257,9 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
 
   /**
    * Round-end fall. Hero accelerates off the bottom of the canvas.
-   * No `killTweensOf` here — by the time this fires, the scene is
-   * shutting down. Plays the same wrong-hit family SFX for audible
-   * "you fell" feedback.
+   * Stops the idle bob and kills any in-flight movement tween first so
+   * the fall owns the hero's y. Plays the same wrong-hit family SFX for
+   * audible "you fell" feedback.
    *
    * Caller passes the canvas bottom + a beat-after onComplete (e.g.
    * 600ms+ so the kid sees the fall before the GameOver scene takes

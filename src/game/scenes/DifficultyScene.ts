@@ -142,7 +142,7 @@ export class DifficultyScene extends Phaser.Scene {
     // Vertical anchors. Sprint 1.5 — with 9 implemented math types
     // (after Phase 1 division + Mixed landed), the math grid wraps to
     // 3 rows of 4-per-row at 220px tile width (row 3 has 1 tile centered).
-    // To fit 3 math rows + Speed + Start/Back + AGPL footer in the
+    // To fit 3 math rows + Speed + Start/Back + the bottom gutter in the
     // 720-tall design canvas, math tiles were SHRUNK 116 → 64 tall AND
     // their subtitles DROPPED — the labels alone ("Add to 10", "Multiply
     // 10×10", "Mixed") are self-descriptive enough at this point in
@@ -158,7 +158,8 @@ export class DifficultyScene extends Phaser.Scene {
     //   Speed label at y=460 (=Speed-row-y - 60 = 0.72*720-60); Speed
     //     row at y=520, tile-top 488, bot 552
     //   Start/Back at y=0.85*720=612, button-top 584, bot 640
-    //   AGPL footer top y=688 → 48-px clearance from Start/Back bottom.
+    //   Canvas bottom gutter top y=688 → 48-px clearance from Start/Back
+    //   bottom. (The AGPL footer is a DOM strip below the canvas.)
     //   Plenty of margin.
     //
     // Subtitle drop is applied via `subtitle: undefined` in
@@ -310,7 +311,10 @@ export class DifficultyScene extends Phaser.Scene {
     // wrap-up lift). See that config block for tuning history.
     const dt = config.layout.difficultyTile;
     const gameId = Settings.round.gameId;
-    text(this, cx, y - dt.speedSectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
+    // Climb lifts the section label to make room for its floor-count line.
+    const sectionLabelOffsetY =
+      dt.speedSectionLabelOffsetY + (gameId === 'number-climb' ? dt.climbSectionLabelExtraOffsetY : 0);
+    text(this, cx, y - sectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
 
     // Sprint 2.4 story 0 — Climb only: shared "N floors per round" line
     // sits between the section label and the three difficulty buttons.
@@ -321,20 +325,19 @@ export class DifficultyScene extends Phaser.Scene {
     // each other at the design canvas width.
     if (gameId === 'number-climb') {
       const floors = config.numberClimb.questionsPerRound;
-      // Sprint 2.5.2 tweak 2 — the floor-count line was at
-      // `y - speedSectionLabelOffsetY/2` (y-37.5), only ~9 px above the
-      // button top edge (y - speedHeightPx/2 = y-28), so its bottom
-      // collided with the buttons ("partially covered by buttons"
-      // playtest). Re-anchored to the button TOP edge with a clear
-      // 16 px gap so it sits cleanly between the section label and the
-      // button row regardless of the section-label offset.
+      // Sprint 2.5.2 tweak 2 — the floor-count line used to sit at
+      // `y - speedSectionLabelOffsetY/2`, only ~9 px above the button top
+      // edge, so the buttons covered its bottom. It is now BOTTOM-anchored
+      // `floorCountLabelGapPx` above the button top edge (descenders can't
+      // touch the stroke), and the section label above lifts by
+      // `climbSectionLabelExtraOffsetY` so the line has clear space above.
       text(
         this,
         cx,
-        y - dt.speedHeightPx / 2 - 16,
+        y - dt.speedHeightPx / 2 - dt.floorCountLabelGapPx,
         `${floors} floors per round`,
         'subtitle',
-      ).setOrigin(0.5);
+      ).setOrigin(0.5, 1);
     }
 
     const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];

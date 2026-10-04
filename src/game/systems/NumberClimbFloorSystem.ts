@@ -152,9 +152,10 @@ export class NumberClimbFloorSystem {
   private escapeFrame: NumberClimbFloorFrame | null = null;
   /**
    * Wrong-rung count for the current floor. Starts at 0 each
-   * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
-   * second wrong increments to 2 (terminal). Reset on every new
-   * floor.
+   * `spawnFloor` call; every wrong pick increments it (each one is a
+   * retry — sprint 2.5.2 removed the per-floor terminal; the
+   * climb-wide life cap in NumberClimbScene is the only round-ender).
+   * Reset on every new floor.
    */
   private wrongsThisFloor = 0;
   private correctAnswer = -1;
@@ -336,8 +337,8 @@ export class NumberClimbFloorSystem {
   }
 
   /**
-   * True if the kid has used the floor's one mulligan. ScoreCalculator
-   * convention: a floor-pass after a mulligan scores half points
+   * True if the kid made at least one wrong pick on this floor.
+   * ScoreCalculator convention: a floor-pass after a wrong pick scores half points
    * (matches the existing `usedWrongShot` flag from other modes).
    */
   hasUsedMulligan(): boolean {

@@ -24,7 +24,7 @@ Portrait orientation on a phone-sized viewport is gated by a fixed-position DOM 
 - `scale.autoCenter: CENTER_BOTH` — center the canvas in its parent
 - `scale.width: 1280, height: 720` — the design canvas
 - `scale.parent: 'game'` — mounts to the `<div id="game">` in `index.html`
-- `scale.expandParent: true` — let Phaser size the parent up to fill its container so FIT has the right viewport to compute against
+- `scale.expandParent: false` — since sprint 2.5.2 `#game` gets a definite height from the page's flex column (visible viewport minus the AGPL footer), so FIT always has a real box to fit into. Left OFF on purpose: with it on, a `#game` that measured 0 at boot would make Phaser write `body.style.height = '100%'`, overriding the `100dvh` column and bringing back the mobile URL-bar overlap.
 
 ## When to revisit
 

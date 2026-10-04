@@ -456,7 +456,7 @@ export class SettingsScene extends Phaser.Scene {
     const rowLabel = text(this, cx - 240, y, 'Hero', 'rowLabel').setOrigin(0, 0.5);
     this.tabContent.push(rowLabel);
 
-    // Sprint 2.4.1 audit fix (Support reviewer) — option buttons are
+    // Sprint 2.4.1 — option buttons are
     // now WIDER (180 px) + TALLER (96 px) to make room for a sprite
     // thumbnail above the text label. "Space Robot" / "OG Yellow"
     // text alone is opaque for the 6-10yo target audience ("OG" is
@@ -496,8 +496,8 @@ export class SettingsScene extends Phaser.Scene {
       y,
       width: buttonW,
       height: buttonH,
-      // Sprint 2.5.2 — label "OG Yellow" → "Classic Yellow" (Support
-      // reviewer: "OG" is slang the 6-10yo target won't parse). The
+      // Sprint 2.5.2 — label "OG Yellow" → "Classic Yellow" ("OG" is
+      // slang the 6-10 target audience won't parse). The
       // persisted `heroSkin` key stays 'og-yellow' for back-compat.
       label: 'Classic Yellow',
       selected: current === 'og-yellow',
