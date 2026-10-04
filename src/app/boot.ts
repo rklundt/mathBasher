@@ -94,17 +94,13 @@ export function bootGame(): void {
       },
     },
     // Order matters: BootScene starts first (auto-starts because it's at index
-    // 0 with no auto-start override). AttributionScene MUST be registered LAST
-    // so it renders on top of every other scene's content. PauseOverlay and
-    // SettingsScene sit just before Attribution so they cover GameScene + HudScene
-    // but the §7(b) attribution footer stays visible even while paused or while
-    // adjusting settings. SettingsScene is registered AFTER PauseOverlay so when
-    // launched from Pause, SettingsScene visually stacks on top of the pause
-    // overlay (its parallel-scene render order respects registration order).
-    // Scene registration order = render order (earlier = renders below
-    // later). BackgroundScene is second so its parallax + nebula renders
-    // BENEATH every gameplay scene. AttributionScene is last so the AGPL
-    // §7(b) footer renders ON TOP of everything else.
+    // 0 with no auto-start override). Scene registration order = render order
+    // (earlier = renders below later). BackgroundScene is second so its
+    // parallax + nebula renders BENEATH every gameplay scene. PauseOverlay and
+    // SettingsScene are last so they cover GameScene + HudScene; SettingsScene
+    // is registered AFTER PauseOverlay so when launched from Pause it stacks on
+    // top of the pause overlay. The AGPL §7(b) attribution footer is not a
+    // scene — it's a DOM strip below the canvas (sprint 2.5.2), always visible.
     scene: [
       BootScene,
       BackgroundScene,
@@ -121,8 +117,7 @@ export function bootGame(): void {
       PauseOverlay,
       SettingsScene,
       // Sprint 2.5.2 — AttributionScene retired; the AGPL §7(b) footer is
-      // now a DOM element (mountAttributionFooter in main.ts) pinned to
-      // the visible viewport bottom so it clears the mobile URL bar.
+      // now a DOM element (mountAttributionFooter in main.ts) below the canvas.
     ],
   });
 

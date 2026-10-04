@@ -158,3 +158,33 @@ export function resolveRungPick(input: {
   // on a wrong pick ONLY when the climb-wide 3-life cap is exhausted.
   return { kind: 'wrong-mulligan', wrongsAfter: wrongsSoFar + 1, consumeRung: true };
 }
+
+/**
+ * Pure result of `resolveStrike` — the climb-wide life budget after one
+ * wrong pick.
+ */
+export interface StrikeDecision {
+  /** Lives spent AFTER this wrong pick. */
+  strikesAfter: number;
+  /** Lives left after this pick (never negative) — drives the lives HUD. */
+  remaining: number;
+  /** True if this pick spent the last life — the round ends. */
+  exhausted: boolean;
+}
+
+/**
+ * Sprint 2.5.2 — the climb-wide life cap, extracted from
+ * `NumberClimbScene` so "the round ends exactly when the last life is
+ * spent, never with a life still showing" is unit-testable without
+ * Phaser (same precedent as `resolveRungPick`). Every wrong pick costs
+ * one life; since sprint 2.5.2 this cap is the ONLY wrong-pick
+ * round-ender. Locked in `NumberClimbFloorSystem.test.ts`.
+ */
+export function resolveStrike(strikesSoFar: number, maxStrikes: number): StrikeDecision {
+  const strikesAfter = strikesSoFar + 1;
+  return {
+    strikesAfter,
+    remaining: Math.max(0, maxStrikes - strikesAfter),
+    exhausted: strikesAfter >= maxStrikes,
+  };
+}

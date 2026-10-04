@@ -27,7 +27,26 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+Visual polish, a simpler Space Escape lives rule, mobile layout fixes, and infrastructure-as-code with custom domains.
+
+**Gameplay + UI**
+- **Space Escape: 3 lives total.** Every wrong rung costs one life, and the round ends exactly when the third is spent; the old "second wrong on a floor ends the round" rule is gone, so the lives display never disagrees with what happens. The first-wrong hint now reads "Lost a life! Try again!" and is centered on screen.
+- **Space Escape hero** is larger (86x98) and stands near the bottom of each floor, with a gentle idle "breathing" bob while resting.
+- **Hero Chooser:** title, subtitle, cards and Back button no longer overlap; tapping a card gives a quick pop before the menu opens.
+- **Your hero in every game:** the hero you picked now shows as a small avatar at the left of the in-game top bar.
+- **Space Escape difficulty screen:** the "floors per round" line has clear space above the buttons.
+- **Alien Shoot:** aliens descend about 15% slower on Slow and Medium (Fast unchanged).
+- Settings: the Climb hero option "OG Yellow" is now "Classic Yellow".
+
+**Mobile layout + license notice**
+- The page now fills the phone's visible screen: the game sits above the browser's URL bar, and the license/attribution footer is a strip directly below the game. Nothing in the game (FIRE button, speeder, Back buttons) can sit underneath the footer, and its Source link can no longer catch a tap meant for FIRE.
+- The attribution footer is shown from the first screen (including the start screen), never truncated (it wraps to two lines on narrow screens), and its Source link points to the exact commit that is running.
+
+**Infrastructure**
+- Hosting captured as Bicep infrastructure-as-code (`/infra/`), with two Free Azure Static Web Apps, one per environment, and custom domains: `mathbasher-dev.mykfam.com` (development) and `mathbasher.mykfam.com` (production). An idempotent script wires each domain's DNS record and managed certificate.
+- The deploy workflow picks the target site per branch and refuses to deploy if that site's token is missing.
+
+**Docs:** setup docs now describe Node 22.13+ / pnpm 11.9.0 via Corepack only, with a warning about global pnpm installs shadowing Corepack. ADR-0004 amended for the new attribution footer.
 
 ## [2.5.0] - 2026-05-23 — Hero Chooser (4 diverse player avatars)
 

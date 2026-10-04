@@ -6,12 +6,12 @@
 //   az deployment group what-if -g rg-games-dev-use2 -f infra/main.bicep -p infra/main.dev.bicepparam
 //   az deployment group create  -g rg-games-dev-use2 -f infra/main.bicep -p infra/main.dev.bicepparam
 //
-// This describes the EXISTING SWA (currently serving prod via `main` + a
-// `development` preview env). In the two-SWA migration it becomes the DEV SWA,
-// fed by the `development` branch; the custom domain below binds to its
-// production env. `stagingEnvironmentPolicy` is left Enabled here so the
-// what-if shows no disruptive change while the preview env is still live during
-// migration; flip to Disabled once the preview env is retired.
+// The DEV SWA: the original hand-created SWA (legacy `mathBlaster` name kept to
+// avoid a recreate), now fed by the `development` branch since the 2026-10-04
+// two-SWA cutover. The custom domain below binds to its production env.
+// `stagingEnvironmentPolicy` stays Enabled until the old `development` preview
+// environment (left over from the single-SWA model) is confirmed unused and
+// deleted; then flip it to Disabled.
 
 using './main.bicep'
 

@@ -17,6 +17,7 @@ import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import { text } from '@/game/ui/typography';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
+import { resolveStrike } from '@/game/systems/numberClimbFloorMath';
 import { SHIP_BLAST_TWEEN_MS } from '@/game/entities/NumberClimbFloorFrame';
 import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
@@ -85,10 +86,19 @@ const HATCH_SFX_DELAY_MS = 150;
 const HERO_JUMP_DELAY_MS = 200;
 
 /**
- * Sprint 2.2.1 story 1 — how long the one-time "One more try!" mulligan
- * banner holds at full opacity before its 300ms fade-out.
+ * Sprint 2.2.1 story 1 — how long the one-time first-wrong ("Lost a
+ * life!") banner holds at full opacity before its 300ms fade-out.
  */
 const MULLIGAN_HINT_HOLD_MS = 1500;
+
+/**
+ * Sprint 2.5.2 — vertical position of the first-wrong banner as a
+ * fraction of screen height. The banner is screen-fixed and horizontally
+ * centered (it used to follow the hero's x, which clipped it off-screen
+ * when the hero stood on an outer rung); 0.3 keeps it in the upper third,
+ * clear of the hero and the rung answers.
+ */
+const MULLIGAN_HINT_Y_FRAC = 0.3;
 
 /**
  * Sprint 2.2.1 story 2 — how long the "Out of time!" banner holds
@@ -448,8 +458,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // is now the SOLE round-ender on a wrong pick — the kid keeps
     // retrying (losing lives) on a floor until they pick correct or run
     // out of lives.
-    this.recordStrike();
-    if (this.strikesUsed >= this.maxStrikes) {
+    if (this.recordStrike()) {
       this.handleStrikeBudgetExhausted();
       return;
     }
@@ -473,13 +482,19 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
    * emit `strikesChanged` so the HUD's lives row repaints. Centralized
    * so both wrong-pick paths share one emit + telemetry surface.
    */
-  private recordStrike(): void {
-    this.strikesUsed += 1;
+  /**
+   * Spend one life (via the pure `resolveStrike`), notify the HUD, and
+   * return true if that was the last life (the caller ends the round).
+   */
+  private recordStrike(): boolean {
+    const decision = resolveStrike(this.strikesUsed, this.maxStrikes);
+    this.strikesUsed = decision.strikesAfter;
     this.events.emit('strikesChanged', {
       strikesUsed: this.strikesUsed,
       maxStrikes: this.maxStrikes,
-      remaining: Math.max(0, this.maxStrikes - this.strikesUsed),
+      remaining: decision.remaining,
     });
+    return decision.exhausted;
   }
 
   /**
@@ -518,14 +533,14 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   /**
-   * Sprint 2.2.1 story 1 — one-time banner above the hero on the kid's
-   * FIRST wrong pick of the session. sessionStorage-gated so it shows
+   * Sprint 2.2.1 story 1 — one-time banner on the kid's FIRST wrong pick
+   * of the session (screen-centered since 2.5.2). sessionStorage-gated so it shows
    * once per session; the try/catch covers browsers that throw on
    * storage access (iOS private mode pre-15) — there the hint just
    * shows on every wrong rather than breaking the scene. Sprint 2.5.2 —
    * copy changed from "One more try!" (which implied a single per-floor
-   * retry) to a lives-accurate message now that 3 cumulative lives is
-   * the only rule.
+   * retry) to the lives-accurate "Lost a life! Try again!" now that 3
+   * cumulative lives is the only rule.
    */
   private maybeShowFirstMulliganHint(): void {
     const FLAG_KEY = 'numberClimb.mulliganHintSeen';
@@ -535,13 +550,16 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     } catch {
       // Storage unavailable — fall through and show the hint anyway.
     }
+    // Screen-fixed + centered so it can never clip off an edge, wherever
+    // the hero stands or the camera has scrolled.
     const banner = text(
       this,
-      this.hero.x,
-      this.hero.y - NumberClimbHero.HEIGHT - 24,
-      'Lost a life — keep going!',
+      this.scale.width / 2,
+      this.scale.height * MULLIGAN_HINT_Y_FRAC,
+      'Lost a life! Try again!',
       'warning',
     ).setOrigin(0.5);
+    banner.setScrollFactor(0);
     banner.setDepth(100);
     this.applyBannerLegibility(banner);
     this.time.delayedCall(MULLIGAN_HINT_HOLD_MS, () => {
@@ -624,9 +642,8 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   /**
-   * Sprint 2.2.1 audit (Support reviewer) — shared legibility treatment
-   * for the scene's centered banners ("One more try!", "Out of time!",
-   * "Escaped Safe!"). These render over per-floor background art that can
+   * Sprint 2.2.1 — shared legibility treatment for the scene's banners
+   * ("Lost a life! Try again!", "Out of time!", "Escaped Safe!"). These render over per-floor background art that can
    * be bright (the fire floor, lit station rooms), where the bare warm-
    * amber / light-grey fill drops below the WCAG-AA 4.5:1 contrast bar.
    * A heavy dark stroke + soft drop shadow makes the copy readable on any

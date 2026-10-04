@@ -20,9 +20,9 @@ import { shouldLoadAtBoot } from '@/game/services/assetLoader';
 import { isBootScope } from '@/core/assetScope';
 
 /**
- * BootScene — entry point. Briefly displays the project name, launches the
- * persistent AttributionScene (AGPL §7(b) requirement), then hands off to
- * MenuScene.
+ * BootScene — entry point. Preloads assets, launches the persistent
+ * BackgroundScene, then hands off to HeroChooserScene (first run) or
+ * MenuScene. (The AGPL §7(b) footer is a DOM element mounted in main.ts.)
  *
  * In a later art-polish revision this scene will gain preload duties and a
  * loading bar; for now it just renders the project name to verify the toolchain
@@ -194,13 +194,10 @@ export class BootScene extends Phaser.Scene {
     // post-preload call does the registration instead.
     createAlienAnims(this);
 
-    // Hand off to the menu. Two parallel scenes get launched alongside:
-    //   - BackgroundScene first → renders BELOW everything else (nebula
-    //     + parallax stars; sprint 0.7 Story 6). Scene-registration order
-    //     in `boot.ts` puts Background early in the array so it draws
-    //     under Menu/Game/etc.
-    //   - AttributionScene last → renders ABOVE everything else (AGPL
-    //     §7(b) footer). Registration order puts it last in the array.
+    // Hand off to the menu. BackgroundScene is launched alongside and
+    // renders BELOW everything else (nebula + parallax stars; sprint 0.7
+    // Story 6) — scene-registration order in `boot.ts` puts Background
+    // early in the array so it draws under Menu/Game/etc.
     //
     // The 250ms `delayedCall` calm-the-flicker beat that lived here in
     // 0.5/0.6 was a workaround for "empty canvas flash" when preload was
@@ -212,8 +209,7 @@ export class BootScene extends Phaser.Scene {
     this.scene.launch(SceneKeys.Background);
     // Sprint 2.5.2 — the AGPL §7(b) attribution footer is no longer a
     // Phaser scene; it's a DOM element (see `mountAttributionFooter` in
-    // main.ts) pinned to the visible viewport bottom so it clears the
-    // mobile URL bar. Nothing to launch here anymore.
+    // main.ts) laid out below the canvas. Nothing to launch here.
 
     // Sprint 2.5 story 4 — first-run hero pick gate. If the kid has
     // never picked one (Settings.getChosenHero() === null) we route

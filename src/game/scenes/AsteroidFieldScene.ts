@@ -107,7 +107,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
    * Sprint 2.4.1 audit fix — TouchFireButton ref captured at create()
    * so AsteroidFieldScene can call `setLocked(true/false)` around the
    * wrong-shot cooldown window. Without this the cooldown was
-   * SILENT — Support reviewer flagged that a kid would conclude
+   * SILENT — playtesting showed a kid would conclude
    * the FIRE button was broken when nothing happened on repeated
    * taps. The visual dim + cooldown-end click SFX teach the rule
    * within the first wrong-shot cycle.

@@ -23,11 +23,11 @@ export interface TouchFireButtonOpts {
 
 /**
  * Layout constants. These are anchored to the bottom-right of the design
- * canvas (1280×720). The AttributionScene footer is `attributionFooterHeightPx`
- * tall; the fire button sits ABOVE the footer with `footerClearancePx`
- * gap so the §7(b) attribution stays visible AND the button's hit-circle
- * doesn't bleed into the footer's Source-URL click zone (load-bearing
- * license constraint + a real bug caught in 0.6 wrap-up review).
+ * canvas (1280×720). The button sits above the canvas bottom gutter
+ * (`attributionFooterHeightPx`) with `footerClearancePx` of thumb room.
+ * The AGPL §7(b) footer itself is a DOM strip laid out BELOW the canvas
+ * (sprint 2.5.2), so the button's hit-circle can never reach the footer's
+ * Source link — the sprint 0.6 wrap-up bug is now ruled out by layout.
  *
  * All values come from `config.layout` so a playtest-driven tweak is a
  * 1-line config edit, not a source change here.

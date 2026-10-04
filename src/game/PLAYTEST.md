@@ -181,7 +181,7 @@ This sprint adds the mobile playability layer: 16:9 letterboxed scaling, a portr
 
 ### Story 5 — Viewport spot-check (Chrome DevTools device toolbar)
 
-For each viewport: confirm no clipping of hero/aliens, no off-canvas text, fire button reachable with thumb in landscape, prompt readable, AttributionScene footer visible and not overlapping the fire button, no JS console errors.
+For each viewport: confirm no clipping of hero/aliens, no off-canvas text, fire button reachable with thumb in landscape, prompt readable, attribution footer fully visible below the game (never truncated, never covering the fire button), no JS console errors.
 
 | ✓ | Viewport | Resolution | Notes |
 |---|---|---|---|
@@ -207,7 +207,7 @@ For each viewport: confirm no clipping of hero/aliens, no off-canvas text, fire 
 
 | ✓ | Check |
 |---|---|
-|   | **Touch fire button visible**: on a touchscreen Chromebook / Surface / phone in landscape, a circular amber FIRE button is anchored bottom-right above the attribution footer with at least 8px clearance. Hit area is generous (a sloppy thumb tap registers). |
+|   | **Touch fire button visible**: on a touchscreen Chromebook / Surface / phone in landscape, a circular amber FIRE button is anchored bottom-right, fully inside the game canvas (the attribution footer is a separate strip below the canvas). Hit area is generous (a sloppy thumb tap registers). |
 |   | **Touch fire button hidden on mouse-only desktop**: opening the page on a mouse-only laptop hides the button by default. If you simulate a touch event in DevTools (Sensors → Touch: Force enabled), the button appears for the rest of the session. |
 |   | **Press visual**: pressing the FIRE button shrinks it slightly + bumps opacity to 100% on `pointerdown`; releasing restores normal. No tween lag. |
 |   | **No double-fire**: tapping the fire button does NOT also trigger the canvas-wide tap-to-fire listener (cooldown wouldn't allow both anyway, but verify the button's own click is the only one that registers — telemetry should show one fire event per tap, not two). |
@@ -216,7 +216,7 @@ For each viewport: confirm no clipping of hero/aliens, no off-canvas text, fire 
 |   | **Portrait overlay on phone**: load the page on a real phone in portrait — the rotate prompt covers everything (above the splash, above the canvas). Rotating to landscape dismisses it within ~1 second. The animated phone-glyph icon visibly suggests the rotation motion. |
 |   | **Orientation flip mid-round**: start a round on a phone in landscape, rotate to portrait — overlay appears (game keeps running underneath but isn't visible). Rotate back to landscape — game resumes visible play; canvas re-fits to the new viewport (no zero-size frame, no clipping). |
 |   | **Letterboxing on off-ratio**: at iPad Mini 4:3 (1024×768), the canvas is centered horizontally with `#0b1020` bands on left + right. On an ultra-wide 21:9, bands appear on top + bottom. Bands match the in-game backdrop color so they read as intentional. |
-|   | **AttributionScene footer always visible**: at every viewport, the four-line attribution footer is visible at the bottom of the canvas. The TouchFireButton sits above it, never overlapping. |
+|   | **Attribution footer always visible**: at every viewport the footer (product, copyright, license, Source link) sits in a strip directly BELOW the game canvas — visible on the splash too, never truncated (it wraps to two lines on narrow screens), and above the phone's URL bar whether the bar is shown or hidden. Nothing in the game (FIRE button, speeder, Back buttons) sits underneath it; tapping the lower edge of FIRE never opens the Source link. |
 |   | **Desktop play unchanged**: on a 1920×1080 desktop, mouse + Space keyboard play feels identical to v0.5.5. No fire button shown (no touch). |
 
 ## Refactor pass + 10% speed bump (sprint 0.5.5)

@@ -92,7 +92,7 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
     // Sprint 2.4 story 5 — fraction display string if provided, else bare number.
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
     this.answerText = opts.scene.add.text(0, 4, answerLabel, textStyle('alienAnswer'));
-    // Sprint 2.4 story 9 (Support reviewer should-fix) — defensive shrink
+    // Sprint 2.4 story 9 — defensive shrink
     // for long fraction labels. The rung is 180px wide (vs Alien's tighter
     // chassis), so this is more about typographic consistency than
     // strict overflow — keeps all three games' fraction-label sizes

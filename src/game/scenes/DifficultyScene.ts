@@ -310,7 +310,10 @@ export class DifficultyScene extends Phaser.Scene {
     // wrap-up lift). See that config block for tuning history.
     const dt = config.layout.difficultyTile;
     const gameId = Settings.round.gameId;
-    text(this, cx, y - dt.speedSectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
+    // Climb lifts the section label to make room for its floor-count line.
+    const sectionLabelOffsetY =
+      dt.speedSectionLabelOffsetY + (gameId === 'number-climb' ? dt.climbSectionLabelExtraOffsetY : 0);
+    text(this, cx, y - sectionLabelOffsetY, speedSectionTitleFor(gameId), 'sectionLabel').setOrigin(0.5);
 
     // Sprint 2.4 story 0 — Climb only: shared "N floors per round" line
     // sits between the section label and the three difficulty buttons.
@@ -321,20 +324,19 @@ export class DifficultyScene extends Phaser.Scene {
     // each other at the design canvas width.
     if (gameId === 'number-climb') {
       const floors = config.numberClimb.questionsPerRound;
-      // Sprint 2.5.2 tweak 2 — the floor-count line was at
-      // `y - speedSectionLabelOffsetY/2` (y-37.5), only ~9 px above the
-      // button top edge (y - speedHeightPx/2 = y-28), so its bottom
-      // collided with the buttons ("partially covered by buttons"
-      // playtest). Re-anchored to the button TOP edge with a clear
-      // 16 px gap so it sits cleanly between the section label and the
-      // button row regardless of the section-label offset.
+      // Sprint 2.5.2 tweak 2 — the floor-count line used to sit at
+      // `y - speedSectionLabelOffsetY/2`, only ~9 px above the button top
+      // edge, so the buttons covered its bottom. It is now BOTTOM-anchored
+      // `floorCountLabelGapPx` above the button top edge (descenders can't
+      // touch the stroke), and the section label above lifts by
+      // `climbSectionLabelExtraOffsetY` so the line has clear space above.
       text(
         this,
         cx,
-        y - dt.speedHeightPx / 2 - 16,
+        y - dt.speedHeightPx / 2 - dt.floorCountLabelGapPx,
         `${floors} floors per round`,
         'subtitle',
-      ).setOrigin(0.5);
+      ).setOrigin(0.5, 1);
     }
 
     const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
