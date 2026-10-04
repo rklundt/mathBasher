@@ -61,7 +61,17 @@ if ([string]::IsNullOrWhiteSpace($defaultHost)) { Fail "Could not read default h
 Write-Host "SWA '$SwaName' default host: $defaultHost" -ForegroundColor Cyan
 
 # --- 2. Ensure the CNAME record (idempotent) ---
+# `cname show` on a missing record exits non-zero + writes to stderr. Under
+# $ErrorActionPreference='Stop' (set above) Windows PowerShell turns that into a
+# terminating NativeCommandError even with 2>$null. "Record not present" is an
+# EXPECTED path here (we create it below), so suppress just this probe and read
+# $LASTEXITCODE instead of letting it throw.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'SilentlyContinue'
 $existing = az network dns record-set cname show -g $DnsZoneResourceGroup -z $DnsZone -n $recordLabel --query cnameRecord.cname -o tsv 2>$null
+if ($LASTEXITCODE -ne 0) { $existing = $null }
+$ErrorActionPreference = $prevEap
+
 if ($existing -eq $defaultHost) {
   Write-Host "CNAME '$recordLabel' already points at '$defaultHost' - skipping." -ForegroundColor Green
 }
