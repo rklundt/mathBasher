@@ -4,10 +4,13 @@
 
 name: Deploy to Azure Static Web Apps
 
-# Push-triggered deploys, two environments:
-#   push to `development` -> the "development" staging environment
-#   push to `main`        -> production
-# No pull_request trigger, so no per-PR preview environments.
+# Push-triggered deploys, two SEPARATE Free Static Web Apps (one per env):
+#   push to `development` -> dev SWA  (AZURE_SWA_TOKEN_DEV),  production env
+#   push to `main`        -> prod SWA (AZURE_SWA_TOKEN_PROD), production env
+# Each SWA serves its own custom domain on its own production environment —
+# the Free tier can't bind a custom domain to a preview/named environment, so
+# there's one Free SWA per environment (see infra/README.md). No pull_request
+# trigger, so no per-PR preview environments.
 on:
   push:
     branches:
@@ -55,7 +58,10 @@ jobs:
         id: deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          # Per-branch token selects the matching SWA: `main` -> prod SWA,
+          # anything else (i.e. `development`) -> dev SWA. Each token is that
+          # SWA's deploy key, stored as a GitHub Actions secret.
+          azure_static_web_apps_api_token: ${{ github.ref_name == 'main' && secrets.AZURE_SWA_TOKEN_PROD || secrets.AZURE_SWA_TOKEN_DEV }}
           action: upload
           # We build with pnpm above; skip_app_build tells the action not to
           # run its own (Oryx) build. With the build skipped, `app_location`
@@ -67,9 +73,9 @@ jobs:
           app_location: "dist"
           api_location: ""
           output_location: ""
-          # `development` branch -> named "development" staging environment;
-          # `main` -> production (empty value = the production environment).
-          deployment_environment: ${{ github.ref_name == 'development' && 'development' || '' }}
+          # No deployment_environment: each branch deploys to ITS OWN SWA's
+          # production environment (the token picks the SWA). The custom domain
+          # for that environment binds to this production env.
 
       # Post-deploy smoke test — `pnpm test` above checks the code; this
       # checks the LIVE site responds. Catches a deploy that uploaded but

@@ -487,14 +487,19 @@ mathBasher deploys to **Azure Static Web Apps**. The game is a 100 % static Vite
 
 ### Two environments, push-triggered
 
-Deploys are automatic — `.github/workflows/deploy.yml` runs on every push:
+mathBasher runs on **two separate Free Static Web Apps, one per environment** —
+not one SWA with a preview environment. (The Free tier only binds a custom domain
+to a SWA's *production* environment, so each environment is its own Free SWA with
+its domain on its production env.) The apps are captured as Bicep IaC in `/infra/`
+(see `infra/README.md`). Deploys are automatic — `.github/workflows/deploy.yml`
+runs on every push, and a per-branch deploy token picks the matching SWA:
 
-| Push to | Deploys to |
-|---|---|
-| `development` | the `development` staging environment |
-| `main` | production |
+| Push to | Deploys to | Custom domain |
+|---|---|---|
+| `development` | dev SWA, production env | `https://mathbasher-dev.mykfam.com` |
+| `main` | prod SWA, production env | `https://mathbasher.mykfam.com` |
 
-Branching model: sprint branches → PR → `development` (verify on the staging URL) → a separate `development → main` PR is the deliberate "ship to production" gate. `main` is only ever updated via that promotion PR. The workflow installs with pnpm, builds, runs the full test suite as a gate, then deploys — a failed typecheck or test blocks the deploy.
+Branching model: sprint branches → PR → `development` (verify on the dev URL) → a separate `development → main` PR is the deliberate "ship to production" gate. `main` is only ever updated via that promotion PR. The workflow installs with pnpm, builds, runs the full test suite as a gate, then deploys — a failed typecheck or test blocks the deploy.
 
 ### Cache model — why a changed asset needs a new filename
 
@@ -538,7 +543,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where do gameplay numbers come from? | `src/core/config.ts` |
 | How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add multiplier to `config.ts` |
 | How do I add a new scene? | `src/game/scenes/<Name>Scene.ts`, register key in `src/core/sceneKeys.ts`, add to scene array in `src/main.ts` |
-| How does deployment work? | The **Deployment** section above — Azure Static Web Apps, push-triggered (`development` → staging, `main` → production). ADR-0007 covered the earlier App Service plan, now superseded by the SWA decision. |
+| How does deployment work? | The **Deployment** section above — two Free Azure Static Web Apps (one per env), push-triggered (`development` → dev SWA, `main` → prod SWA), IaC in `/infra/`. ADR-0007 covered the earlier App Service plan, now superseded by the SWA decision. |
 | Why no React? | `docs/adrs/ADR-0001-tech-stack.md` |
 | Why AGPL+commercial? | `docs/adrs/ADR-0004-agpl-commercial-dual-license.md` |
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
