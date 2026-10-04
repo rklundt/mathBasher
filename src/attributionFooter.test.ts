@@ -11,6 +11,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = readFileSync(resolve(__dirname, '..', 'index.html'), 'utf8');
 const MAIN_SOURCE = readFileSync(resolve(__dirname, 'main.ts'), 'utf8');
 const FOOTER_SOURCE = readFileSync(resolve(__dirname, 'game/ui/domAttributionFooter.ts'), 'utf8');
+const ATTRIBUTION_SOURCE = readFileSync(resolve(__dirname, 'core/attribution.ts'), 'utf8');
+const NOTICE = readFileSync(resolve(__dirname, '..', 'NOTICE'), 'utf8').replace(/\r\n/g, '\n');
 
 /**
  * Static contract test for the AGPL §7(b) attribution footer (sprint 2.5.2).
@@ -48,7 +50,7 @@ describe('AGPL attribution footer contract', () => {
   it('the footer is never truncated or hidden', () => {
     expect(footerCss).not.toBe('');
     expect(footerCss).not.toMatch(/text-overflow/);
-    expect(footerCss).not.toMatch(/white-space:\s*nowrap|overflow:\s*hidden/);
+    expect(footerCss).not.toMatch(/white-space:\s*nowrap|overflow(-[xy])?:\s*(hidden|clip)/);
     expect(footerCss).not.toMatch(/display:\s*none|visibility:\s*hidden|opacity:\s*0(?![.\d])/);
     // It wraps onto a second line instead of clipping.
     expect(rule('#app-footer')).toMatch(/flex-wrap:\s*wrap/);
@@ -64,6 +66,19 @@ describe('AGPL attribution footer contract', () => {
     // The footer element comes after #game in the markup.
     expect(INDEX_HTML.indexOf('id="game"')).toBeGreaterThan(-1);
     expect(INDEX_HTML.indexOf('id="app-footer"')).toBeGreaterThan(INDEX_HTML.indexOf('id="game"'));
+  });
+
+  it('attribution.ts carries the exact notice text NOTICE §7(b) prescribes', () => {
+    // NOTICE's indented notice block: product, copyright, license, then
+    // "Source: <URL of the corresponding source>". The first three lines are
+    // literal and must match attribution.ts verbatim; drift in either file
+    // would desync the in-app notice from the license term.
+    const block = NOTICE.match(/^\s+mathBasher\n\s+(Copyright[^\n]*)\n\s+(Licensed[^\n]*)\n\s+Source:/m);
+    expect(block).not.toBeNull();
+    const [, copyrightLine, licenseLine] = block ?? [];
+    expect(ATTRIBUTION_SOURCE).toContain(`productName: 'mathBasher'`);
+    expect(ATTRIBUTION_SOURCE).toContain(`copyrightLine: '${copyrightLine?.trim()}'`);
+    expect(ATTRIBUTION_SOURCE).toContain(`licenseLine: '${licenseLine?.trim()}'`);
   });
 
   it('main.ts mounts the footer at page load', () => {

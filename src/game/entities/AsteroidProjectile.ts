@@ -42,8 +42,8 @@ export class AsteroidProjectile extends Phaser.GameObjects.Container {
     super(scene, x, y);
     scene.add.existing(this);
 
-    // Capsule dimensions live in config (sprint 2.1 wrap-up — Architect
-    // review lift). Stored per-instance for the collision-radius getter.
+    // Capsule dimensions live in config (lifted there in sprint 2.1).
+    // Stored per-instance for the collision-radius getter.
     this.lengthPx = config.asteroidField.projectile.lengthPx;
     const thicknessPx = config.asteroidField.projectile.thicknessPx;
 
