@@ -27,6 +27,12 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [2.5.2] - 2026-10-04 — Visual polish, 3-lives Space Escape, phone layout + custom domains
+
+> **Hosting change (operational, no player-facing migration):** the site now runs on two Free Azure Static Web Apps, one per environment, with custom domains. Production moves to `https://mathbasher.mykfam.com`, served by a NEW Static Web App; the original Static Web App (`brave-river-…azurestaticapps.net`) now serves the development build at `https://mathbasher-dev.mykfam.com`. Anyone using the old `*.azurestaticapps.net` production address should switch to the new domain. Saved progress and settings live in browser storage per address, so they don't carry over between addresses.
+
 Visual polish, a simpler Space Escape lives rule, mobile layout fixes, and infrastructure-as-code with custom domains.
 
 **Gameplay + UI**
