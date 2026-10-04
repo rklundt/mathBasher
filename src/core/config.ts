@@ -539,10 +539,10 @@ export const config = {
       // Sprint 2.5.2 tweak 3 — +33% larger (56→75, 64→85), then a
       // further +15% (75→86, 85→98) after staging playtest. The sprite
       // path scales to fit max(widthPx,heightPx); the OG-Yellow
-      // procedural rectangle uses these directly. NumberClimbHero.HEIGHT
-      // is otherwise only read for the mulligan-banner offset, so the
-      // bump is layout-safe (rung spacing is independent). heroRestY in
-      // the scene reads heightPx, so the bottom-alignment auto-tracks.
+      // procedural rectangle uses these directly. Rung spacing is
+      // independent of the hero size, so the bump is layout-safe;
+      // heroRestY in the scene reads heightPx, so the bottom-alignment
+      // auto-tracks.
       widthPx: 86,
       heightPx: 98,
       /**

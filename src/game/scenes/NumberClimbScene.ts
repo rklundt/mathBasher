@@ -95,10 +95,10 @@ const MULLIGAN_HINT_HOLD_MS = 1500;
  * Sprint 2.5.2 — vertical position of the first-wrong banner as a
  * fraction of screen height. The banner is screen-fixed and horizontally
  * centered (it used to follow the hero's x, which clipped it off-screen
- * when the hero stood on an outer rung); 0.3 keeps it in the upper third,
- * clear of the hero and the rung answers.
+ * when the hero stood on an outer rung); 0.34 centers it in the gap between
+ * the next floor's rungs and the settled hero's head.
  */
-const MULLIGAN_HINT_Y_FRAC = 0.3;
+const MULLIGAN_HINT_Y_FRAC = 0.34;
 
 /**
  * Sprint 2.2.1 story 2 — how long the "Out of time!" banner holds
@@ -225,7 +225,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.roundController = new RoundController(this.mathId, this.speed, this.totalFloors);
 
     // Playfield bounds. Same general approach as AsteroidFieldScene:
-    // top margin for the HUD, bottom margin for the AGPL footer.
+    // top margin for the HUD, bottom margin = the canvas bottom gutter.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
     const footerHeight = config.layout.attributionFooterHeightPx;
@@ -375,6 +375,12 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   // ----- Pick dispatch -----------------------------------------------------
 
   private handlePick(rung: NumberClimbRung): void {
+    // Ignore picks while a round-level transition owns the hero (a
+    // correct-pick climb, the "Out of time!" beat, or the last-life
+    // fall). Without this, a tap during the 600 ms "Out of time!" banner
+    // could start a climb that cancels the fall and awards a floor after
+    // the timer ran out.
+    if (this.transitioning) return;
     const outcome = this.floorSystem.pickRung(rung);
     switch (outcome.kind) {
       case 'correct':
@@ -478,13 +484,9 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   /**
-   * Sprint 2.4.1 story 1 — increment the cumulative strike counter and
-   * emit `strikesChanged` so the HUD's lives row repaints. Centralized
-   * so both wrong-pick paths share one emit + telemetry surface.
-   */
-  /**
-   * Spend one life (via the pure `resolveStrike`), notify the HUD, and
-   * return true if that was the last life (the caller ends the round).
+   * Sprint 2.4.1 story 1 — spend one life (via the pure `resolveStrike`),
+   * emit `strikesChanged` so the HUD's lives row repaints, and return true
+   * if that was the last life (the caller ends the round).
    */
   private recordStrike(): boolean {
     const decision = resolveStrike(this.strikesUsed, this.maxStrikes);

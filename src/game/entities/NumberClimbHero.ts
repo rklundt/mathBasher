@@ -62,10 +62,6 @@ export interface NumberClimbHeroOpts {
 }
 
 export class NumberClimbHero extends Phaser.GameObjects.Container {
-  /** Rough collision/silhouette dimensions — exposed for FloorSystem layout math. */
-  static readonly WIDTH = HERO_WIDTH;
-  static readonly HEIGHT = HERO_HEIGHT;
-
   /**
    * The visible body. Sprint 2.4.2 hotfix — the Climb hero now has
    * TWO skin paths, chosen at construction time from `Settings.heroSkin`:

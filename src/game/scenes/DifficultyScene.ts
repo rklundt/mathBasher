@@ -142,7 +142,7 @@ export class DifficultyScene extends Phaser.Scene {
     // Vertical anchors. Sprint 1.5 — with 9 implemented math types
     // (after Phase 1 division + Mixed landed), the math grid wraps to
     // 3 rows of 4-per-row at 220px tile width (row 3 has 1 tile centered).
-    // To fit 3 math rows + Speed + Start/Back + AGPL footer in the
+    // To fit 3 math rows + Speed + Start/Back + the bottom gutter in the
     // 720-tall design canvas, math tiles were SHRUNK 116 → 64 tall AND
     // their subtitles DROPPED — the labels alone ("Add to 10", "Multiply
     // 10×10", "Mixed") are self-descriptive enough at this point in
@@ -158,7 +158,8 @@ export class DifficultyScene extends Phaser.Scene {
     //   Speed label at y=460 (=Speed-row-y - 60 = 0.72*720-60); Speed
     //     row at y=520, tile-top 488, bot 552
     //   Start/Back at y=0.85*720=612, button-top 584, bot 640
-    //   AGPL footer top y=688 → 48-px clearance from Start/Back bottom.
+    //   Canvas bottom gutter top y=688 → 48-px clearance from Start/Back
+    //   bottom. (The AGPL footer is a DOM strip below the canvas.)
     //   Plenty of margin.
     //
     // Subtitle drop is applied via `subtitle: undefined` in

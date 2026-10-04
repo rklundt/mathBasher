@@ -37,13 +37,6 @@ export const attribution = {
   copyrightLine: 'Copyright 2026 Ray Klundt',
   licenseLine: 'Licensed under AGPL-3.0-or-later',
   sourceUrl,
-  /** The full four-line block as displayed in the UI footer. */
-  block: [
-    'mathBasher',
-    'Copyright 2026 Ray Klundt',
-    'Licensed under AGPL-3.0-or-later',
-    `Source: ${sourceUrl}`,
-  ] as const,
 } as const;
 
 export type Attribution = typeof attribution;

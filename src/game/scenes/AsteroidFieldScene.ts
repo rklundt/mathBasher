@@ -487,7 +487,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       // so a queued tap during the asteroid's explode anim can't slip
       // a second wrong shot through. Cache the cooldown ms once so
       // the log, the gate, AND the delayed unlock all read the same
-      // value (Senior Dev audit — protects against a hypothetical
+      // value (protects against a hypothetical
       // mid-round config hot-reload observing inconsistent state).
       const cooldownMs = config.asteroidField.fireCooldownAfterWrongShotMs;
       const cap = config.asteroidField.maxWrongShotsPerQuestion;

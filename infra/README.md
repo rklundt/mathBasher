@@ -92,7 +92,7 @@ az deployment group what-if -g rg-games-prod-use2 -f infra/main.bicep -p infra/m
 az deployment group create  -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 # then pipe the deploy token straight into the prod GitHub Actions secret
 # (never print it — terminal scrollback and session logs keep it):
-az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv   | gh secret set AZURE_SWA_TOKEN_PROD --repo rklundt/mathBasher
+az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv | gh secret set AZURE_SWA_TOKEN_PROD --repo rklundt/mathBasher
 ```
 
 ### Wire a custom domain (dev first, then prod)
@@ -139,5 +139,7 @@ through to the dev SWA. It also sets `VITE_SOURCE_URL` to the exact commit being
 built (`.../tree/<short-sha>`) for the footer's AGPL §13 source link.
 
 **Rollback:** prefer reverting the bad commit (the push redeploys). Re-running an
-older Actions run is only valid for runs from after the two-SWA cutover
-(2026-10-04); an earlier run would use the retired single-SWA workflow.
+older Actions run is only safe for runs from the sprint 2.5.2 release onward:
+earlier `main` runs either used the retired single-SWA workflow or built the
+footer's source link without a commit pin (the #61 run even shipped the
+placeholder link).

@@ -518,7 +518,7 @@ Branching model: sprint branches → PR → `development` (verify on the dev URL
 
 ### Rollback
 
-A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only valid for runs from after the two-SWA cutover (2026-10-04); an older run would use the retired single-SWA workflow.
+A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.5.2 release onward; older runs used the retired single-SWA workflow or built the footer's source link without a commit pin.
 
 ---
 

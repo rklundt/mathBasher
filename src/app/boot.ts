@@ -77,14 +77,15 @@ export function bootGame(): void {
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: 1280,
       height: 720,
-      // Parent the Phaser canvas to `#game` (matches the index.html DOM)
-      // and let Phaser expand the parent to fill its container so the FIT
-      // calculation has the right viewport to fit INTO. Without
-      // expandParent, Phaser sometimes computes against the parent's
-      // intrinsic content size (zero before render) and renders at 0×0 on
-      // first paint until a resize event fires.
+      // Parent the Phaser canvas to `#game` (matches the index.html DOM).
+      // Since sprint 2.5.2 `#game` gets a definite height from the page's
+      // flex column (visible viewport minus the AGPL footer), so FIT always
+      // has a real box to fit into. `expandParent` is OFF on purpose: if
+      // `#game` ever measured 0 at boot, Phaser would write an inline
+      // `document.body.style.height = '100%'`, silently overriding the
+      // `100dvh` column and bringing back the mobile URL-bar overlap.
       parent: 'game',
-      expandParent: true,
+      expandParent: false,
     },
     physics: {
       default: 'arcade',

@@ -638,7 +638,7 @@ export class HudScene extends Phaser.Scene {
       this.onQuestionStarted(inFlight);
     }
 
-    // Sprint 2.4.1 audit fix (Senior Dev) — mirror the question-payload
+    // Sprint 2.4.1 — mirror the question-payload
     // catch-up for the lives row. If the HUD re-binds mid-round (a
     // future pause/resume rebind path noted above), the lives dots
     // must repaint from the current scene state rather than stay
@@ -681,8 +681,8 @@ export class HudScene extends Phaser.Scene {
     // dedicated total-changed event. Mid-round reads are idempotent
     // re-paints. The repositionTotalLabel below handles the round
     // label growing wider so the two labels never visually overlap
-    // (sprint 2.1.5 wrap-up — Architect + Senior Dev both flagged
-    // the create-time-only position as fragile to 5+ digit scores).
+    // (sprint 2.1.5 — the create-time-only position was fragile to
+    // 5+ digit scores).
     this.totalScoreText.setText(`This visit: ${String(SessionTotalScore.get())}`);
     this.repositionTotalLabel();
     // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score

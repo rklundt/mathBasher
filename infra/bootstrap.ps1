@@ -134,7 +134,16 @@ elseif (-not [string]::IsNullOrWhiteSpace($existing)) {
   Fail "CNAME '$recordLabel' exists but points at '$existing', not '$defaultHost'. Refusing to overwrite - resolve by hand."
 }
 elseif ($recordSetExists) {
-  # The record set exists but has no target (e.g. a half-finished earlier run).
+  # The record set exists but the query read no target (e.g. a half-finished
+  # earlier run). Before writing, re-read the RAW record: if az's JSON key
+  # casing ever changed again, the JMESPath query could miss a real target,
+  # and set-record would then overwrite a record we must not touch.
+  $rawRecord = Invoke-AzOrFail "Re-reading CNAME record set '$recordLabel'" @(
+    'network', 'dns', 'record-set', 'cname', 'show',
+    '-g', $DnsZoneResourceGroup, '-z', $DnsZone, '-n', $recordLabel, '-o', 'json')
+  if ($rawRecord -match '"cname"\s*:\s*"[^"]+"') {
+    Fail "CNAME record set '$recordLabel' has a target the status query did not read. Refusing to overwrite - inspect it by hand:`n$rawRecord"
+  }
   # Only add the target -- `record-set ... create` would replace the whole set.
   Write-Host "CNAME record set '$recordLabel' exists with no target; setting -> '$defaultHost'..." -ForegroundColor Yellow
   Invoke-AzOrFail "Setting CNAME '$recordLabel' target" $setRecordArgs | Out-Null

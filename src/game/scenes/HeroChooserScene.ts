@@ -79,7 +79,7 @@ export class HeroChooserScene extends Phaser.Scene {
     super(HeroChooserScene.key);
   }
 
-  // Sprint 2.5 audit (Senior Dev) — default the param so the
+  // Sprint 2.5 — default the param so the
   // "first-run no-data path" reads as such at the type level. Phaser
   // passes `{}` when scene.start is called without data; explicit
   // default makes the contract self-documenting.
@@ -97,7 +97,7 @@ export class HeroChooserScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    // Title + subtitle. Sprint 2.5 audit (Support) — subtitle copy
+    // Title + subtitle. Sprint 2.5 — subtitle copy
     // softened from "no effect on the game" (which reads as "this
     // doesn't matter" to kids) to "pick the one that feels like
     // you" — still honestly cosmetic but frames the pick as personal
@@ -137,7 +137,7 @@ export class HeroChooserScene extends Phaser.Scene {
     // has no escape hatch (deliberate hard gate so the kid commits
     // to a pick).
     //
-    // Sprint 2.5 audit (Support) — Esc is keyboard-only; mobile kids
+    // Sprint 2.5 — Esc is keyboard-only; mobile kids
     // had no way out of the mid-session picker without re-picking.
     // Visible "Back" button (bottom-center) gives them a clear way
     // home. Only rendered on the `fromMenu` path so the first-run

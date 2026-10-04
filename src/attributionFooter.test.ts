@@ -35,11 +35,35 @@ describe('AGPL attribution footer contract', () => {
     expect(link).toContain('rel="noopener noreferrer"');
   });
 
-  it('the footer is never truncated — no text-overflow/ellipsis on it', () => {
-    const footerCss = INDEX_HTML.match(/#app-footer[^{]*\{[^}]*\}/g)?.join('\n') ?? '';
+  // All CSS rules whose selector mentions #app-footer.
+  const footerCss = INDEX_HTML.match(/#app-footer[^{]*\{[^}]*\}/g)?.join('\n') ?? '';
+  // Declarations of every rule whose selector list ends in `selector`
+  // (e.g. both `html, body { … }` and `body { … }` for 'body'), joined.
+  const rule = (selector: string): string => {
+    const esc = selector.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&');
+    const re = new RegExp(`(^|[\\s,}])${esc}\\s*\\{([^}]*)\\}`, 'gm');
+    return [...INDEX_HTML.matchAll(re)].map((m) => m[2]).join('\n');
+  };
+
+  it('the footer is never truncated or hidden', () => {
     expect(footerCss).not.toBe('');
     expect(footerCss).not.toMatch(/text-overflow/);
-    expect(footerCss).not.toMatch(/display:\s*none|visibility:\s*hidden|opacity:\s*0[;\s]/);
+    expect(footerCss).not.toMatch(/white-space:\s*nowrap|overflow:\s*hidden/);
+    expect(footerCss).not.toMatch(/display:\s*none|visibility:\s*hidden|opacity:\s*0(?![.\d])/);
+    // It wraps onto a second line instead of clipping.
+    expect(rule('#app-footer')).toMatch(/flex-wrap:\s*wrap/);
+  });
+
+  it('the footer sits in flow BELOW the canvas, never floating over it', () => {
+    // Page = visible-viewport-height flex column: #game fills, footer follows.
+    expect(rule('body')).toMatch(/flex-direction:\s*column/);
+    expect(rule('body')).toMatch(/height:\s*100dvh/);
+    expect(rule('#game')).toMatch(/flex:\s*1/);
+    expect(rule('#game')).toMatch(/min-height:\s*0/);
+    expect(rule('#app-footer')).not.toMatch(/position:\s*(fixed|absolute|sticky)/);
+    // The footer element comes after #game in the markup.
+    expect(INDEX_HTML.indexOf('id="game"')).toBeGreaterThan(-1);
+    expect(INDEX_HTML.indexOf('id="app-footer"')).toBeGreaterThan(INDEX_HTML.indexOf('id="game"'));
   });
 
   it('main.ts mounts the footer at page load', () => {
