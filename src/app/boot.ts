@@ -20,7 +20,7 @@ import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
 import { SettingsScene } from '@/game/scenes/SettingsScene';
-import { requestMobileFullscreen } from '@/app/fullscreen';
+import { mountFullscreenButton, requestMobileFullscreen } from '@/app/fullscreen';
 
 /**
  * Bootstrap the actual game (Phaser + service singletons). Called from
@@ -52,8 +52,11 @@ export function bootGame(): void {
 
   // Phones/tablets: go fullscreen on the "Tap to play" tap. Must run FIRST,
   // synchronously inside the click — browsers reject fullscreen requests
-  // made outside a user gesture. See src/app/fullscreen.ts.
+  // made outside a user gesture. Then wire the footer's "Full screen"
+  // button so a kid who leaves fullscreen can get back in (touch devices
+  // only; hidden while fullscreen). See src/app/fullscreen.ts.
   requestMobileFullscreen();
+  mountFullscreenButton();
 
   // Eagerly initialize the score store. Same memoized instance is
   // shared across every round in the page lifetime. GameOverScene
