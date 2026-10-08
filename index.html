@@ -68,6 +68,21 @@
       }
       #app-footer a { color: #60a5fa; text-decoration: none; pointer-events: auto; overflow-wrap: anywhere; }
       #app-footer a:hover { color: #93c5fd; text-decoration: underline; }
+      /* Sprint 2.5.2 — "Full screen" button (phones/tablets only, and only
+         while NOT fullscreen; src/app/fullscreen.ts toggles the `hidden`
+         attribute). Deliberately NO `display` rule here: the `hidden`
+         attribute relies on the browser default `display: none`, which any
+         author `display` would override. Amber to match FIRE / the loading
+         bar so kids read it as a control. */
+      #app-footer-fullscreen {
+        pointer-events: auto; cursor: pointer;
+        font: inherit; font-size: 13px; font-weight: 700; line-height: 1;
+        color: #0b1020; background: #fbbf24;
+        border: 0; border-radius: 6px; padding: 6px 12px; min-height: 26px;
+        vertical-align: middle;
+      }
+      #app-footer-fullscreen svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 6px; }
+      #app-footer-fullscreen:active { background: #f59e0b; transform: translateY(1px); }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the
          AudioContext is created inside a user-gesture context
@@ -223,6 +238,7 @@
       truth in `src/core/attribution.ts`. See the #app-footer CSS above.
     -->
     <footer id="app-footer" aria-label="Attribution and license">
+      <button id="app-footer-fullscreen" type="button" hidden><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4"/></svg>Full screen</button>
       <span id="app-footer-left"></span>
       <a id="app-footer-src" target="_blank" rel="noopener noreferrer"></a>
     </footer>

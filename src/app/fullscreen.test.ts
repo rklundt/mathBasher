@@ -6,11 +6,12 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { decideFullscreen, type FullscreenEnv } from '@/app/fullscreen';
+import { decideFullscreen, shouldShowFullscreenButton, type FullscreenEnv } from '@/app/fullscreen';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BOOT_SOURCE = readFileSync(resolve(__dirname, 'boot.ts'), 'utf8');
 const FULLSCREEN_SOURCE = readFileSync(resolve(__dirname, 'fullscreen.ts'), 'utf8');
+const INDEX_HTML = readFileSync(resolve(__dirname, '..', '..', 'index.html'), 'utf8');
 
 const phone: FullscreenEnv = {
   touchPrimary: true,
@@ -41,7 +42,51 @@ describe('decideFullscreen', () => {
   });
 });
 
+describe('shouldShowFullscreenButton', () => {
+  const env = { touchPrimary: true, alreadyFullscreen: false, canRequest: true };
+
+  it('shows on a touch device that has left fullscreen', () => {
+    expect(shouldShowFullscreenButton(env, false)).toBe(true);
+  });
+
+  it('hides while fullscreen', () => {
+    expect(shouldShowFullscreenButton({ ...env, alreadyFullscreen: true }, false)).toBe(false);
+  });
+
+  it('hides while a request is still settling (no flash after Tap to play)', () => {
+    expect(shouldShowFullscreenButton(env, true)).toBe(false);
+  });
+
+  it('never on desktop', () => {
+    expect(shouldShowFullscreenButton({ ...env, touchPrimary: false }, false)).toBe(false);
+  });
+
+  it('never where fullscreen is unsupported (iPhone Safari)', () => {
+    expect(shouldShowFullscreenButton({ ...env, canRequest: false }, false)).toBe(false);
+  });
+});
+
 describe('boot wiring (static contract)', () => {
+  it('the footer button exists, starts hidden, and is a real button', () => {
+    const tag = INDEX_HTML.match(/<button[^>]*id="app-footer-fullscreen"[^>]*>/)?.[0] ?? '';
+    expect(tag).toContain('type="button"');
+    expect(tag).toMatch(/\shidden[\s>]/);
+  });
+
+  it("the button's CSS sets no display (the hidden attribute must keep working)", () => {
+    const css = INDEX_HTML.match(/#app-footer-fullscreen\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(css).not.toBe('');
+    expect(css).not.toMatch(/display\s*:/);
+  });
+
+  it('bootGame mounts the button after requesting fullscreen', () => {
+    const body = BOOT_SOURCE.slice(BOOT_SOURCE.indexOf('export function bootGame'));
+    const fsAt = body.indexOf('requestMobileFullscreen();');
+    const mountAt = body.indexOf('mountFullscreenButton();');
+    expect(mountAt).toBeGreaterThan(fsAt);
+    expect(fsAt).toBeGreaterThan(-1);
+  });
+
   it('bootGame requests fullscreen before constructing Phaser (still inside the tap)', () => {
     const body = BOOT_SOURCE.slice(BOOT_SOURCE.indexOf('export function bootGame'));
     const fsAt = body.indexOf('requestMobileFullscreen();');
