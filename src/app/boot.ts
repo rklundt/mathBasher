@@ -20,6 +20,7 @@ import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
 import { SettingsScene } from '@/game/scenes/SettingsScene';
+import { requestMobileFullscreen } from '@/app/fullscreen';
 
 /**
  * Bootstrap the actual game (Phaser + service singletons). Called from
@@ -49,6 +50,11 @@ import { SettingsScene } from '@/game/scenes/SettingsScene';
 export function bootGame(): void {
   _th.logToAi('SplashStarted', SeverityLevel.Information);
 
+  // Phones/tablets: go fullscreen on the "Tap to play" tap. Must run FIRST,
+  // synchronously inside the click — browsers reject fullscreen requests
+  // made outside a user gesture. See src/app/fullscreen.ts.
+  requestMobileFullscreen();
+
   // Eagerly initialize the score store. Same memoized instance is
   // shared across every round in the page lifetime. GameOverScene
   // calls getScoreStore() and gets this same one.
@@ -74,7 +80,12 @@ export function bootGame(): void {
       // and a fixed-aspect arcade game gains nothing from it. Full rationale
       // in `src/core/SCALE.md`.
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // NO_CENTER on purpose: `#game` (index.html) already centers the
+      // canvas with flexbox. Phaser's CENTER_BOTH added its own margins on
+      // top of that, double-centering the canvas — it sat 3/4 of the way
+      // into the spare space (left letterbox bar 3x the right one on
+      // phones). One centering mechanism: the CSS.
+      autoCenter: Phaser.Scale.NO_CENTER,
       width: 1280,
       height: 720,
       // Parent the Phaser canvas to `#game` (matches the index.html DOM).
