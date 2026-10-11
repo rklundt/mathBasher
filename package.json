@@ -30,7 +30,8 @@
     "sprite:probe": "node scripts/sprites/probe.mjs",
     "sprite:extract": "node scripts/sprites/extract-from-video.mjs",
     "sprite:axolotl": "node scripts/sprites/axolotl.mjs",
-    "sprite:reef": "node scripts/sprites/reef.mjs"
+    "sprite:reef": "node scripts/sprites/reef.mjs",
+    "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {
     "node": ">=22.13.0",
