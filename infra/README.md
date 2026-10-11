@@ -34,20 +34,49 @@ cost). East US 2.
 | `main.bicep` | One parameterized Static Web App (Free). Deployed once per env. |
 | `main.dev.bicepparam` | Dev params (existing SWA, `rg-games-dev-use2`, `mathbasher-dev.mykfam.com`). |
 | `main.prod.bicepparam` | Prod params (new SWA, `rg-games-prod-use2`, `mathbasher.mykfam.com`). |
-| `bootstrap.ps1` | Idempotent domain wiring: CNAME in the mykfam.com zone + bind + wait for cert. |
+| `bootstrap.ps1` | Idempotent domain binding: prints the CNAME target, read-only DNS check, bind + wait for cert. |
+
+## DNS: Cloudflare
+
+DNS for `mykfam.com` is hosted on **Cloudflare** (free plan); the domain
+registration itself is an **Azure App Service Domain**. The old Azure DNS zone
+(`mykfam.com` in `rg-GlobalNetwork-use2`) is **not** the live zone any more —
+edits there have no effect. DNS records for mathBasher are managed in the
+Cloudflare dashboard:
+
+| Name | Type | Target | Proxy |
+|---|---|---|---|
+| `mathbasher-dev` | CNAME | `brave-river-0f2e36c0f.7.azurestaticapps.net` (dev SWA) | Proxied |
+| `mathbasher` | CNAME | `polite-desert-0af64970f.5.azurestaticapps.net` (prod SWA) | Proxied |
+
+What the Cloudflare proxy means for the SWAs:
+
+- **Certificate validation sees the CNAME only when the record is "DNS only".**
+  Azure validates a custom domain (first bind, and managed-certificate renewal)
+  by resolving the CNAME to the SWA host; a proxied record hides it. For a first
+  bind, or if Azure reports a renewal/validation failure, switch the record to
+  **DNS only** (grey cloud), run `bootstrap.ps1`, then switch back to Proxied.
+- **SSL/TLS mode must be Full (strict).** The SWA serves a valid certificate for
+  the custom domain, so strict works; "Flexible" causes redirect loops.
+- **Edge cache.** Cloudflare honours the `cache-control` headers from
+  `public/staticwebapp.config.json`. If a shipped asset is ever overwritten in
+  place (the rename-don't-overwrite rule exists to avoid this), purge it in
+  Cloudflare as well.
+- **Security headers** such as HSTS now come from Cloudflare; future headers
+  (e.g. a Content-Security-Policy) can be added either there or in
+  `staticwebapp.config.json` — pick one place per header.
 
 ## What Bicep manages — and deliberately does NOT
 
 **Manages:** the Static Web App resource (SKU Free, region, staging-env policy).
 
 **Does NOT manage:**
-- **The custom domain + its DNS record.** The `mykfam.com` DNS zone lives in a
-  *different* resource group (`rg-GlobalNetwork-use2`). Keeping the domain out of
-  Bicep means any future pipeline deploy identity scoped to the app's RG never
-  needs write rights on the shared DNS zone (least privilege). The domain is
-  wired by `bootstrap.ps1`, run interactively by an operator who already has
-  rights there. The `customDomain` param in the bicepparam is the single source
-  of the domain name (fed to the script + docs); it is a recorded output, not
+- **The custom domain + its DNS record.** DNS lives in Cloudflare (see above),
+  outside Azure entirely, and the hostname binding is done by `bootstrap.ps1`,
+  run interactively by an operator. Keeping both out of Bicep means a future
+  pipeline deploy identity scoped to the app's RG never needs DNS rights (least
+  privilege). The `customDomain` param in the bicepparam is the single source of
+  the domain name (fed to the script + docs); it is a recorded output, not
   applied to the resource.
 - **The GitHub repo/branch binding + deploy token.** We deploy via a
   bring-your-own GitHub Actions workflow (`.github/workflows/deploy.yml`) + the
@@ -97,6 +126,10 @@ az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-
 
 ### Wire a custom domain (dev first, then prod)
 
+1. In Cloudflare, add `CNAME <label> -> <SWA default host>` (the script prints
+   the exact target) and set it to **DNS only** for the first bind.
+2. Run the script:
+
 ```powershell
 # Dev
 ./infra/bootstrap.ps1 -SwaName swa-games-mathBlaster-dev-use2 -SwaResourceGroup rg-games-dev-use2 -CustomDomain mathbasher-dev.mykfam.com
@@ -104,21 +137,24 @@ az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-
 ./infra/bootstrap.ps1 -SwaName swa-games-mathBasher-prod-use2 -SwaResourceGroup rg-games-prod-use2 -CustomDomain mathbasher.mykfam.com
 ```
 
+3. Once it reports `Ready`, set the Cloudflare record back to **Proxied**.
+
 The **first** bind of a new domain blocks for a few minutes while Azure validates
-the CNAME and issues the managed certificate; right after `Ready`, some edge
-locations can serve the old certificate for under a minute. Re-runs are instant
-(the script detects the matching CNAME + `Ready` binding and skips). It exits 1
-with a message on any failure, including a binding that isn't `Ready` yet.
+the CNAME and issues the managed certificate. Re-runs are instant (the script
+sees a `Ready` binding and exits without changing anything). The script never
+writes DNS. It exits 1 with a message on any failure, including a CNAME that
+points somewhere else or a binding that isn't `Ready` yet.
 
 ### Tear down an environment
 
-Delete the custom domain's CNAME **before** (or along with) deleting the SWA or
-its resource group — `az group delete` does not touch the `mykfam.com` zone, and
-a CNAME left pointing at a deleted `*.azurestaticapps.net` host is a dangling
-record:
+Delete the custom domain's CNAME in **Cloudflare** before (or along with)
+deleting the SWA or its resource group — `az group delete` cannot touch
+Cloudflare, and a CNAME left pointing at a deleted `*.azurestaticapps.net` host
+is a dangling record (subdomain-takeover risk):
 
 ```bash
-az network dns record-set cname delete -g rg-GlobalNetwork-use2 -z mykfam.com -n <label> --yes
+# 1. Cloudflare dashboard: delete the <label> CNAME record
+# 2. then:
 az group delete -n <resource-group>
 ```
 

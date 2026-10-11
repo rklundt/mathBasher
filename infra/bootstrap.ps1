@@ -4,30 +4,36 @@
 
 <#
 .SYNOPSIS
-  Idempotently wires a custom domain to a mathBasher Static Web App:
-  1. ensures a CNAME in the mykfam.com DNS zone -> the SWA's default hostname
-  2. binds the custom domain to the SWA and waits for validation + the free
-     managed TLS certificate (status goes Validating -> Ready)
+  Idempotently binds a custom domain to a mathBasher Static Web App and waits
+  for validation + the free managed TLS certificate (Validating -> Ready).
 
 .DESCRIPTION
-  The mykfam.com DNS zone lives in a SEPARATE resource group
-  (rg-GlobalNetwork-use2). This script is run interactively by an operator who
-  already has rights there (your az login) - it is deliberately NOT part of the
-  app-deploy pipeline, so the pipeline's deploy identity never needs write
-  access to the shared DNS zone (least privilege).
+  DNS for mykfam.com is hosted on Cloudflare (the domain registration is an
+  Azure App Service Domain; the old Azure DNS zone is no longer the live zone).
+  This script does NOT create DNS records - add the record in the Cloudflare
+  dashboard first:
 
-  Idempotent: re-running is safe. It checks what exists first and skips the
-  CNAME create if the record already points at the right target, and skips the
-  binding if the hostname is already Ready. Other mykfam.com records (e.g.
-  cosmos-dev, cosmos) are never touched - only the one label is managed.
+      Type CNAME   Name <label>   Target <the SWA default hostname>
+
+  The script prints the exact target. For the FIRST bind of a domain (and if a
+  certificate renewal ever fails), set that record to "DNS only" (grey cloud):
+  Azure validates by seeing the CNAME, which the Cloudflare proxy hides. Once
+  the binding is Ready the record can go back to "Proxied" (orange cloud) with
+  Cloudflare SSL mode "Full (strict)".
+
+  Steps:
+  1. read the SWA's default hostname (the CNAME target)
+  2. read-only DNS check: is the CNAME visible (DNS only) or proxied?
+  3. bind the custom domain (cname-delegation) and wait for Ready
+
+  Idempotent: if the hostname is already bound and Ready, nothing changes.
+  Run interactively by an operator; it is not part of the app-deploy pipeline.
 
 .EXAMPLE
-  # Dev first
   ./infra/bootstrap.ps1 -SwaName swa-games-mathBlaster-dev-use2 `
                         -SwaResourceGroup rg-games-dev-use2 `
                         -CustomDomain mathbasher-dev.mykfam.com
 
-  # Prod (after dev is validated and you say "go")
   ./infra/bootstrap.ps1 -SwaName swa-games-mathBasher-prod-use2 `
                         -SwaResourceGroup rg-games-prod-use2 `
                         -CustomDomain mathbasher.mykfam.com
@@ -37,11 +43,7 @@
 param(
   [Parameter(Mandatory = $true)] [string] $SwaName,
   [Parameter(Mandatory = $true)] [string] $SwaResourceGroup,
-  [Parameter(Mandatory = $true)] [string] $CustomDomain,
-  [string] $DnsZone = 'mykfam.com',
-  [string] $DnsZoneResourceGroup = 'rg-GlobalNetwork-use2',
-  # CNAME TTL in seconds; 1 hour is plenty for a rarely-changing apex label.
-  [int]    $TtlSeconds = 3600
+  [Parameter(Mandatory = $true)] [string] $CustomDomain
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,7 +57,7 @@ function Fail([string] $msg) {
 
 # Run `az` and judge success ONLY by its exit code. Windows PowerShell 5.1
 # turns any native-command stderr output (az warnings, the "newer version
-# available" notice, or a NotFound) into a terminating error under
+# available" notice) into a terminating error under
 # $ErrorActionPreference='Stop' -- even with 2>$null -- while a genuine
 # non-zero exit does NOT stop the script. So: relax the preference for the
 # call, capture stdout and stderr separately, and return the exit code.
@@ -82,106 +84,69 @@ function Invoke-AzOrFail([string] $What, [string[]] $AzArgs) {
   return $r.Out
 }
 
-# --- Derive + validate the record label (the part of the domain under the zone) ---
 $CustomDomain = $CustomDomain.Trim().ToLowerInvariant()
-$DnsZone = $DnsZone.Trim().ToLowerInvariant()
-if (-not $CustomDomain.EndsWith(".$DnsZone")) {
-  Fail "CustomDomain '$CustomDomain' is not under the zone '$DnsZone'."
+if ($CustomDomain -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') {
+  Fail "CustomDomain '$CustomDomain' is not a valid hostname."
 }
-$recordLabel = $CustomDomain.Substring(0, $CustomDomain.Length - ".$DnsZone".Length)
-# Reject an empty/apex/odd label before anything touches the shared zone.
-if ($recordLabel -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$') {
-  Fail "Derived record label '$recordLabel' is not a valid DNS label (apex/@ is not supported)."
-}
-Write-Host "Zone '$DnsZone' (RG $DnsZoneResourceGroup); managing ONLY label '$recordLabel'." -ForegroundColor Cyan
 
 # --- 1. Resolve the SWA default hostname (the CNAME target) ---
 $defaultHost = Invoke-AzOrFail "Reading SWA '$SwaName'" @(
   'staticwebapp', 'show', '-n', $SwaName, '-g', $SwaResourceGroup, '--query', 'defaultHostname', '-o', 'tsv')
 if ([string]::IsNullOrWhiteSpace($defaultHost)) { Fail "SWA '$SwaName' in '$SwaResourceGroup' returned no default hostname." }
 Write-Host "SWA '$SwaName' default host: $defaultHost" -ForegroundColor Cyan
+Write-Host "Cloudflare record needed: CNAME  $CustomDomain  ->  $defaultHost" -ForegroundColor Cyan
 
-# --- 2. Ensure the CNAME record (idempotent) ---
-# Only a NotFound means "record absent, create it". Any other failure (expired
-# login, no rights on the zone's RG, wrong zone) stops the script instead of
-# being mistaken for a missing record.
-# The query accepts both key casings: current az returns `CNAMERecord`, older
-# versions `cnameRecord` (JMESPath is case-sensitive).
-$probe = Invoke-Az -AzArgs @(
-  'network', 'dns', 'record-set', 'cname', 'show',
-  '-g', $DnsZoneResourceGroup, '-z', $DnsZone, '-n', $recordLabel,
-  '--query', 'CNAMERecord.cname || cnameRecord.cname', '-o', 'tsv')
-if ($probe.ExitCode -eq 0) {
-  $recordSetExists = $true
-  $existing = $probe.Out
-}
-elseif ($probe.Err -match '\(NotFound\)|resource record .* does not exist') {
-  $recordSetExists = $false
-  $existing = $null
-}
-else {
-  Fail "Could not check CNAME '$recordLabel' in '$DnsZone' (az exit $($probe.ExitCode)). $($probe.Err)"
-}
-
-$setRecordArgs = @(
-  'network', 'dns', 'record-set', 'cname', 'set-record',
-  '-g', $DnsZoneResourceGroup, '-z', $DnsZone, '-n', $recordLabel, '-c', $defaultHost)
-
-if ($existing -eq $defaultHost) {
-  Write-Host "CNAME '$recordLabel' already points at '$defaultHost' - skipping." -ForegroundColor Green
-}
-elseif (-not [string]::IsNullOrWhiteSpace($existing)) {
-  Fail "CNAME '$recordLabel' exists but points at '$existing', not '$defaultHost'. Refusing to overwrite - resolve by hand."
-}
-elseif ($recordSetExists) {
-  # The record set exists but the query read no target (e.g. a half-finished
-  # earlier run). Before writing, re-read the RAW record: if az's JSON key
-  # casing ever changed again, the JMESPath query could miss a real target,
-  # and set-record would then overwrite a record we must not touch.
-  $rawRecord = Invoke-AzOrFail "Re-reading CNAME record set '$recordLabel'" @(
-    'network', 'dns', 'record-set', 'cname', 'show',
-    '-g', $DnsZoneResourceGroup, '-z', $DnsZone, '-n', $recordLabel, '-o', 'json')
-  if ($rawRecord -match '"cname"\s*:\s*"[^"]+"') {
-    Fail "CNAME record set '$recordLabel' has a target the status query did not read. Refusing to overwrite - inspect it by hand:`n$rawRecord"
-  }
-  # Only add the target -- `record-set ... create` would replace the whole set.
-  Write-Host "CNAME record set '$recordLabel' exists with no target; setting -> '$defaultHost'..." -ForegroundColor Yellow
-  Invoke-AzOrFail "Setting CNAME '$recordLabel' target" $setRecordArgs | Out-Null
-  Write-Host "CNAME target set." -ForegroundColor Green
-}
-else {
-  Write-Host "Creating CNAME '$recordLabel' -> '$defaultHost' (TTL $TtlSeconds)..." -ForegroundColor Yellow
-  Invoke-AzOrFail "Creating CNAME record set '$recordLabel'" @(
-    'network', 'dns', 'record-set', 'cname', 'create',
-    '-g', $DnsZoneResourceGroup, '-z', $DnsZone, '-n', $recordLabel, '--ttl', "$TtlSeconds") | Out-Null
-  Invoke-AzOrFail "Setting CNAME '$recordLabel' target" $setRecordArgs | Out-Null
-  Write-Host "CNAME created." -ForegroundColor Green
-}
-
-# --- 3. Bind the custom domain to the SWA (idempotent) ---
+# --- 2. Current binding status (skip everything if already Ready) ---
 $statusArgs = @('staticwebapp', 'hostname', 'list', '-n', $SwaName, '-g', $SwaResourceGroup,
   '--query', "[?name=='$CustomDomain'].status | [0]", '-o', 'tsv')
 $status = Invoke-AzOrFail "Listing custom domains on '$SwaName'" $statusArgs
 if ($status -eq 'Ready') {
   Write-Host "Custom domain '$CustomDomain' already bound and Ready - nothing to do." -ForegroundColor Green
+  Write-Host "Done. Verify: https://$CustomDomain" -ForegroundColor Cyan
+  exit 0
+}
+
+# --- 3. Read-only DNS check (public resolution; never writes DNS) ---
+# DNS only (grey cloud): the CNAME resolves to the SWA host - Azure can validate.
+# Proxied (orange cloud): the name resolves to Cloudflare addresses and the
+# CNAME is hidden - Azure validation will not see it.
+$cname = $null
+try {
+  $answer = Resolve-DnsName -Name $CustomDomain -Type CNAME -DnsOnly -ErrorAction Stop
+  $cname = ($answer | Where-Object { $_.Type -eq 'CNAME' } | Select-Object -First 1).NameHost
+}
+catch {
+  $cname = $null
+}
+if ($cname -and $cname.TrimEnd('.').ToLowerInvariant() -eq $defaultHost.ToLowerInvariant()) {
+  Write-Host "DNS check: CNAME is visible and points at $defaultHost (DNS only) - good." -ForegroundColor Green
+}
+elseif ($cname) {
+  Fail "DNS check: '$CustomDomain' is a CNAME to '$cname', not '$defaultHost'. Fix the record in Cloudflare, then re-run."
 }
 else {
-  if ([string]::IsNullOrWhiteSpace($status)) {
-    Write-Host "Binding '$CustomDomain' (cname-delegation); this blocks until validation + cert finish." -ForegroundColor Yellow
-    Write-Host "(The FIRST bind of a new domain can take several minutes; re-runs are instant.)" -ForegroundColor Yellow
-  }
-  else {
-    Write-Host "Custom domain '$CustomDomain' present but status '$status'; waiting for it to finish..." -ForegroundColor Yellow
-  }
-  Invoke-AzOrFail "Binding '$CustomDomain' to '$SwaName'" @(
-    'staticwebapp', 'hostname', 'set', '-n', $SwaName, '-g', $SwaResourceGroup,
-    '--hostname', $CustomDomain, '--validation-method', 'cname-delegation') | Out-Null
-  $status = Invoke-AzOrFail "Re-reading '$CustomDomain' status" $statusArgs
-  if ($status -ne 'Ready') {
-    Fail "Custom domain '$CustomDomain' status is '$status', not 'Ready'. Validation may still be in progress - re-run this script in a few minutes."
-  }
-  Write-Host "Custom domain '$CustomDomain' status: Ready" -ForegroundColor Green
+  Write-Host "DNS check: no CNAME visible for '$CustomDomain' (missing, or proxied through Cloudflare)." -ForegroundColor Yellow
+  Write-Host "  Add/confirm the CNAME above in Cloudflare and set it to 'DNS only' until this binding is Ready." -ForegroundColor Yellow
+  Write-Host "  Continuing - Azure validation will fail (and this script will say so) if it can't see the CNAME." -ForegroundColor Yellow
 }
+
+# --- 4. Bind the custom domain to the SWA and wait for Ready ---
+if ([string]::IsNullOrWhiteSpace($status)) {
+  Write-Host "Binding '$CustomDomain' (cname-delegation); this blocks until validation + cert finish." -ForegroundColor Yellow
+  Write-Host "(The FIRST bind of a new domain can take several minutes; re-runs are instant.)" -ForegroundColor Yellow
+}
+else {
+  Write-Host "Custom domain '$CustomDomain' present but status '$status'; waiting for it to finish..." -ForegroundColor Yellow
+}
+Invoke-AzOrFail "Binding '$CustomDomain' to '$SwaName'" @(
+  'staticwebapp', 'hostname', 'set', '-n', $SwaName, '-g', $SwaResourceGroup,
+  '--hostname', $CustomDomain, '--validation-method', 'cname-delegation') | Out-Null
+$status = Invoke-AzOrFail "Re-reading '$CustomDomain' status" $statusArgs
+if ($status -ne 'Ready') {
+  Fail "Custom domain '$CustomDomain' status is '$status', not 'Ready'. If the Cloudflare record is Proxied, switch it to 'DNS only' and re-run."
+}
+Write-Host "Custom domain '$CustomDomain' status: Ready" -ForegroundColor Green
+Write-Host "You can now set the Cloudflare record back to 'Proxied' (SSL mode: Full (strict))." -ForegroundColor Cyan
 
 Write-Host ""
 Write-Host "Done. Verify: https://$CustomDomain" -ForegroundColor Cyan
