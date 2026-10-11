@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**Math-a-lotl fixes** (sprint 2.5.5, in progress)
+_Nothing yet._
+
+## [2.5.5] - 2026-10-11 — Math-a-lotl fixes
+
+**Math-a-lotl fixes**
 - Answer numbers on the bubbles have a dark outline, so they stay readable near the light surface water; the "+points" popup gets one too (all games).
 - The bubble the axolotl is swimming to waits just under the surface, so a right choice is never lost to a slow swim. Taps only reach bubbles that are on screen.
 - Clearer messages: "Oops! Try again!" on a wrong catch, "Out of lives!" (matching the Lives row), "Floated away! Try again!".
