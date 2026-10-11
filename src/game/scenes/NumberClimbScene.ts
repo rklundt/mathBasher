@@ -17,7 +17,7 @@ import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import { text } from '@/game/ui/typography';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
-import { resolveStrike } from '@/game/systems/numberClimbFloorMath';
+import { resolveStrike } from '@/game/systems/roundRules';
 import { SHIP_BLAST_TWEEN_MS } from '@/game/entities/NumberClimbFloorFrame';
 import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';

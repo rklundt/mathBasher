@@ -43,6 +43,7 @@
     "X-Frame-Options": "SAMEORIGIN"
   },
   "mimeTypes": {
-    ".webp": "image/webp"
+    ".webp": "image/webp",
+    ".md": "text/markdown; charset=utf-8"
   }
 }

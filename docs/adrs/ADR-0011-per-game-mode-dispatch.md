@@ -36,7 +36,7 @@ The dispatch axes today (sprint 2.1.9):
 | Space-only background layers | `GAME_BG_SPACE_LAYERS: Record<GameId, { stars; bottomFade }>` (sprint 2.5.4) | `src/core/spriteKeys.ts` | `BackgroundScene.applySpaceLayers` (reactive, same observer as the bg image) |
 | Asset bundle scope | per-entry `scope: 'game:<gameId>'` field on each `SpriteManifestEntry` / `AudioManifestEntry` | `src/core/spriteKeys.ts`, `src/core/audioKeys.ts` | `loadGameBundle(scene, gameId)` filters by scope predicate |
 | Audio scope dispatch | `audioScopeFor(key): AssetScope` | `src/core/audioKeys.ts` | `AUDIO_MANIFEST` builder calls per key |
-| Scene-key route | inline `gameId === 'asteroid-field' ? Keys.AsteroidField : Keys.Game` switch | `src/game/scenes/DifficultyScene.ts`, `GameOverScene.ts` (Play Again) | `scene.start(SceneKeys.Loading, { targetSceneKey, gameId })` |
+| Scene-key route | `gameSceneKeyFor(gameId)` — exhaustive switch, a missing arm is a compile error (since sprint 2.2) | `src/core/sceneKeys.ts` | `DifficultyScene` (via `LoadingScene`) and `GameOverScene` (Play Again) |
 | LoadingScene caption | inline switch | `src/game/scenes/LoadingScene.ts` | rendered by `attachLoadingOverlay` |
 
 The `GameSceneLifecycle` helper (`src/game/services/GameSceneLifecycle.ts`) abstracts the scene-mount-time work that uses these maps — telemetry, HUD launch, audio loop start/stop. Game scenes construct one in `create()` and call `.enter()` / `.exit()` / `.endRound()` / `.pause()` / `.resume()` / `.quitToMenu()` instead of duplicating the bookkeeping per scene.
@@ -140,13 +140,17 @@ When sprint 2.X adds game mode `<id>`:
      pause(): void { /* subsystem pause */ this.lifecycle.pause(); }
      resume(): void { /* subsystem resume */ this.lifecycle.resume(); }
      quitToMenu(): void { this.lifecycle.quitToMenu(); }
-     private endRound(): void { this.lifecycle.endRound(); }
+     // Lock the scene first: `scene.start(GameOver)` is queued, so this
+     // scene still gets one more update() — nothing may tick or time out
+     // (sprint 2.5.5: a last-question timeout fired twice without this).
+     private endRound(): void { this.roundOver = true; this.lifecycle.endRound(); }
    }
    ```
 
 8. **Register the scene** in `src/app/boot.ts` `scene: [...]` array. Order matters (render order = registration order); put it adjacent to other game scenes.
 
-9. **Update `DifficultyScene`** scene-key route — the inline switch where `gameId === 'asteroid-field'` returns `SceneKeys.AsteroidField` gets a `<id>` arm.
+9. **Add a `gameSceneKeyFor` arm** (`src/core/sceneKeys.ts`) returning the new scene key. It's an exhaustive switch, so step 1 already makes a missing arm a compile error; DifficultyScene and GameOverScene's Play Again both route through it.
+   Also add a row to `GAME_BG_SPACE_LAYERS` (`src/core/spriteKeys.ts`) — whether BackgroundScene's parallax stars and bottom darkening band show over the new backdrop (TypeScript flags a missing row).
 
 10. **Update `LoadingScene` caption** switch — same one-line addition.
 
@@ -154,7 +158,7 @@ When sprint 2.X adds game mode `<id>`:
 
 12. **(Optional)** If the new game has its own `Settings` toggle (image asteroids style), add it via `createObservable<T>` (`src/services/observable.ts`) — don't hand-roll the listener Set + try/catch pattern.
 
-If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-11, the game won't START — DifficultyScene's switch will fall through to a stale case.
+If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.
 
 ## References
 

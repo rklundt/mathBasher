@@ -15,11 +15,8 @@ import {
 } from '@/core/spriteKeys';
 import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
-import {
-  pickSubsetWithCorrect,
-  resolveRungPick,
-  RUNGS_PER_DIFFICULTY,
-} from '@/game/systems/numberClimbFloorMath';
+import { resolveRungPick, RUNGS_PER_DIFFICULTY } from '@/game/systems/numberClimbFloorMath';
+import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
 
 /**
  * Owns the per-floor lifecycle for Number Climb: spawning rungs at

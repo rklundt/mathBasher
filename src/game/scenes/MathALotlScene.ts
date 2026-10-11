@@ -215,7 +215,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
         this.handleCorrectEscaped();
         return;
       }
-      if (this.chasing === b) this.stopChase();
+      // (A chased bubble never gets here — it's held below the escape line.)
       b.popQuiet();
     }
     this.bubbles = this.bubbles.filter((b) => b.alive);
@@ -247,7 +247,9 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   /** Keyboard: 1–4 pick the VISIBLE live bubbles left to right. */
   private pickByIndex(index: number): void {
     if (this.paused || this.transitioning) return;
-    const live = visibleBubbles(this.bubbles, this.scale.height).sort((a, b) => a.x - b.x);
+    // Keys need the LABEL on screen (centre above the floor), not just a sliver of bubble.
+    const r = this.cfg.bubble.diameterPx / 2;
+    const live = visibleBubbles(this.bubbles, this.scale.height - r).sort((a, b) => a.x - b.x);
     const b = live[index];
     if (b) {
       this.hideTapHint();
@@ -320,7 +322,10 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     }
     // A wrong catch needs words too — a sound + a dot turning red in the
     // corner is easy for a 6-year-old to miss.
-    const oops = text(this, b.x, b.y - b.radius, 'Oops! Try again!', 'rowLabel').setOrigin(0.5).setDepth(100);
+    // Below the bubble (it rises), so near the surface it stays in the water, clear of the HUD.
+    const oops = text(this, b.x, b.y + b.radius + this.cfg.wrongNote.risePx, 'Oops! Try again!', 'rowLabel')
+      .setOrigin(0.5)
+      .setDepth(100);
     oops.setStroke('#0b1020', 6);
     const { durationMs, risePx } = this.cfg.wrongNote;
     this.tweens.add({
@@ -338,7 +343,9 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.transitioning = true;
     this.stopChase();
     _th.logToAi('BubbleEscaped', SeverityLevel.Information, this.questionProps());
-    this.hideTapHint();
+    // Keep the Q1 tap hint (if still up): a kid who let the right bubble
+    // float away untouched is exactly the one who needs it. The note sits
+    // below the hint, so they don't overlap.
     for (const b of this.bubbles) b.popQuiet();
     const { holdMs, fadeMs, belowWaterlinePx } = this.cfg.escapeNote;
     const note = text(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', 'rowLabel')

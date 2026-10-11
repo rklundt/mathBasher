@@ -4,11 +4,6 @@
 
 import type { SpeedKey } from '@/core/config';
 
-// Sprint 2.5.5 — `pickSubsetWithCorrect` + `resolveStrike` moved to the
-// game-neutral `roundRules.ts` (Math-a-lotl uses them too). Re-exported
-// here so existing Number Climb callers and tests keep their imports.
-export { pickSubsetWithCorrect, resolveStrike, type StrikeDecision } from '@/game/systems/roundRules';
-
 /**
  * Sprint 2.2 — pure math helpers for `NumberClimbFloorSystem`. Lives
  * in its own file (separate from the Phaser-coupled FloorSystem class)
@@ -33,7 +28,6 @@ export const RUNGS_PER_DIFFICULTY: Readonly<Record<SpeedKey, number>> = {
   medium: 3,
   fast: 4,
 };
-
 
 /**
  * Sprint 2.2.1 story 8 — the discrete outcomes resolving a rung pick

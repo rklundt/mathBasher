@@ -34,12 +34,12 @@ export const SfxKeys = {
   HitWrong1: 'hit-wrong-1',
   HitWrong2: 'hit-wrong-2',
   HitWrong3: 'hit-wrong-3',
-  // Sprint 2.1 playtest — Asteroid Field timeout SFX. Plays when the
-  // per-question countdown reaches zero before the player hits the
-  // correct asteroid. Audible "you ran out of time" cue lets the
-  // player register the failure before the next question's wave
-  // spawns. Not used by Alien Shoot (which has the alien-reaches-hero
-  // death animation as its own failure cue).
+  // Sprint 2.1 playtest — timeout SFX. Plays when the per-question
+  // countdown reaches zero before the player gets the right answer
+  // (Asteroid Field; Math-a-lotl since sprint 2.5.4). Audible "you ran
+  // out of time" cue so the player registers the miss before the next
+  // question spawns. Not used by Alien Shoot (the alien-reaches-hero
+  // death animation is its failure cue).
   TimeoutFail1: 'timeout-fail-1',
   /**
    * Sprint 2.2 — Number Climb floor-advance cue. Plays ~150 ms after
