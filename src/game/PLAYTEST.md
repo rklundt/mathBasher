@@ -296,10 +296,14 @@ Phone in landscape, then desktop.
 - [ ] The swim cycle (tail, gills, legs) plays while moving and slows when resting; the axolotl faces the way it swims and tilts its nose up / down.
 - [ ] Q1 shows "👆 Tap a bubble!"; the hint disappears on the first tap.
 - [ ] Tap the right bubble → the axolotl swims to it, pop sound + sparkle + happy face, next problem.
-- [ ] Tap a wrong bubble → it wobble-pops, wrong sound, one Lives dot turns red, the problem stays. Solving it afterwards scores half points.
+- [ ] Tap a wrong bubble → it wobble-pops, wrong sound, "Oops! Try again!", one Lives dot turns red, the problem stays. Solving it afterwards scores half points.
+- [ ] The answer numbers are easy to read everywhere, including right under the surface (dark outline); fractions too.
+- [ ] Tap a bubble high up, far from the axolotl → it waits just under the surface until she arrives (it does not float away mid-chase).
+- [ ] Taps near the bottom edge never pick a bubble you can't see yet.
 - [ ] Swimming PAST a wrong bubble on the way to the right one does not pop it.
-- [ ] Let the right bubble float to the surface → "It floated away! Here it comes again", no heart lost, fresh bubbles for the same problem.
-- [ ] Third wrong catch of the round → "Out of hearts!" → Game Over.
+- [ ] Let the right bubble float to the surface (without tapping it) → "Floated away! Try again!", no life lost, fresh bubbles for the same problem.
+- [ ] Third wrong catch of the round → "Out of lives!" → Game Over.
+- [ ] Let Q12 time out → "Out of time!" → Game Over, with the timeout sound playing once.
 - [ ] Tap open water → the axolotl swims there and never leaves the water (not into the sky band, not below the floor).
 - [ ] Keys 1–4 pick the visible bubbles left to right.
 - [ ] Fractions (Add Fractions on Medium) fit inside the bubbles.

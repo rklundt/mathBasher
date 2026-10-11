@@ -17,6 +17,7 @@
  * Usage:
  *   pnpm sprite:axolotl                 # writes public/assets/sprites/hero/axolotl-*.webp
  *   pnpm sprite:axolotl --preview <png> # also writes a review sheet (all colorways on water)
+ *   pnpm sprite:axolotl --force         # re-render over existing shipped sheets
  *
  * Sheet layout (per colorway): SWIM_FRAMES swim-cycle frames, then 1 happy
  * frame. Every frame is FRAME_W × FRAME_H, facing RIGHT; the game flips /
@@ -24,7 +25,7 @@
  */
 
 import sharp from 'sharp';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -287,6 +288,22 @@ function axolotlSvg(c, phase, happy) {
 
 // ---------- render ----------
 
+/**
+ * Shipped game assets are cached for a week under stable names, so a
+ * re-render that silently overwrites one can serve stale art (see
+ * DeveloperGuide "Cache model"). Refuse unless `--force` is passed —
+ * a visible change should ship under a NEW filename instead.
+ */
+function refuseOverwrite(paths, force) {
+  const existing = paths.filter((p) => existsSync(p));
+  if (existing.length === 0 || force) return;
+  console.error('Refusing to overwrite shipped assets (pass --force to re-render in place):');
+  for (const p of existing) console.error(`  ${p}`);
+  console.error('A visible change should ship under a new filename (week-long cache).');
+  process.exit(1);
+}
+
+
 async function renderSheet(c) {
   const frames = [];
   for (let i = 0; i < SWIM_FRAMES; i++) frames.push(axolotlSvg(c, i / SWIM_FRAMES, false));
@@ -303,6 +320,10 @@ async function main() {
   const previewPath = previewIdx >= 0 ? args[previewIdx + 1] : null;
 
   mkdirSync(OUT_DIR, { recursive: true });
+  refuseOverwrite(
+    Object.keys(COLORWAYS).map((name) => resolve(OUT_DIR, `axolotl-${name}.webp`)),
+    args.includes('--force'),
+  );
   const rows = [];
   for (const [name, c] of Object.entries(COLORWAYS)) {
     const sheet = await renderSheet(c);

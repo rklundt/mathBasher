@@ -604,6 +604,10 @@ export const config = {
       entryRisePxPerSec: 260,
       /** Horizontal jitter inside each bubble's lane. */
       laneJitterPx: 30,
+      /** Taps within radius × this still hit a bubble (bigger targets for small fingers). */
+      tapSlop: 1.25,
+      /** A CHASED bubble stops this far under the waterline, so it can't float away mid-chase. */
+      chaseHoldMarginPx: 8,
     },
     axolotl: {
       displayWidthPx: 190,
@@ -638,6 +642,12 @@ export const config = {
     respawnDelayMs: 500,
     /** How long the "Out of time!" banner holds before the next question. */
     timeoutBannerMs: 800,
+    /** How long the "Out of lives!" banner holds before Game Over. */
+    outOfLivesBannerMs: 1200,
+    /** "Floated away! Try again!" note: fully visible for `holdMs`, then fades. */
+    escapeNote: { holdMs: 1500, fadeMs: 400, belowWaterlinePx: 120 },
+    /** "Oops! Try again!" floater on a wrong catch: rises `risePx` while fading. */
+    wrongNote: { durationMs: 1100, risePx: 50 },
   },
   layout: {
     /** number of answer lanes across the screen */
@@ -772,6 +782,17 @@ export const config = {
       floorCountLabelGapPx: 8,
     },
     /**
+     * Floating "+N" points popup on a correct answer (HudScene, every
+     * game). Sprint 2.5.4 playtest: 0.7 s was too quick to read, so it
+     * now holds fully visible for `holdMs`, then fades over `fadeMs`
+     * while drifting up `risePx` the whole time.
+     */
+    scorePopup: {
+      holdMs: 550,
+      fadeMs: 800,
+      risePx: 60,
+    },
+    /**
      * On-screen FIRE button (`TouchFireButton`) sizing + positioning.
      * Tunable from config so a playtest tweak (button bigger / smaller /
      * higher / left-handed) is a 1-line change instead of an edit to
@@ -787,17 +808,6 @@ export const config = {
      *    Source-URL click zone. Since sprint 2.5.2 the footer is a DOM strip
      *    below the canvas, so this is just thumb-room spacing.
      */
-    /**
-     * Floating "+N" points popup on a correct answer (HudScene, every
-     * game). Sprint 2.5.4 playtest: 0.7 s was too quick to read, so it
-     * now holds fully visible for `holdMs`, then fades over `fadeMs`
-     * while drifting up `risePx` the whole time.
-     */
-    scorePopup: {
-      holdMs: 550,
-      fadeMs: 800,
-      risePx: 60,
-    },
     touchFire: {
       radiusPx: 40,
       hitPadPx: 14,
