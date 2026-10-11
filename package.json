@@ -28,7 +28,9 @@
     "audio:probe": "node scripts/audio/probe.mjs",
     "sprite:process": "node scripts/sprites/process.mjs",
     "sprite:probe": "node scripts/sprites/probe.mjs",
-    "sprite:extract": "node scripts/sprites/extract-from-video.mjs"
+    "sprite:extract": "node scripts/sprites/extract-from-video.mjs",
+    "sprite:axolotl": "node scripts/sprites/axolotl.mjs",
+    "sprite:reef": "node scripts/sprites/reef.mjs"
   },
   "engines": {
     "node": ">=22.13.0",

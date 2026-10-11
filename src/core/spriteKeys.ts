@@ -493,7 +493,64 @@ export const BgSpriteKeys = {
   AsteroidBelt: 'asteroid-belt',
   // StarsFar: 'stars-far',     // (planned — parallax stars, Story 6)
   // StarsNear: 'stars-near',   // (planned — parallax stars, Story 6)
+  /**
+   * Math-a-lotl backdrop (sprint 2.5.4) — code-drawn by
+   * `scripts/sprites/reef.mjs`: galaxy sky across the top quarter,
+   * water with light rays and a sandy floor below. 1280×720. Eager like
+   * the other backdrops: BackgroundScene swaps to it the moment the kid
+   * picks the game, before the per-game bundle loads.
+   */
+  MathALotl: 'math-a-lotl',
 } as const;
+
+/**
+ * Sprint 2.5.4 — Math-a-lotl axolotl sprite sheets, one per colorway.
+ * Code-drawn by `scripts/sprites/axolotl.mjs` (the source of truth for
+ * the frame geometry below). Each sheet is a horizontal row:
+ * `AXOLOTL_SHEET.swimFrames` swim-cycle frames, then one happy frame.
+ * Every frame faces RIGHT; the game flips / tilts for other directions.
+ */
+export const AxolotlSpriteKeys = {
+  Pink: 'axolotl-pink',
+  Gold: 'axolotl-gold',
+  Lilac: 'axolotl-lilac',
+} as const;
+export type AxolotlSpriteKey = (typeof AxolotlSpriteKeys)[keyof typeof AxolotlSpriteKeys];
+
+/** Frame geometry of the axolotl sheets — must match `scripts/sprites/axolotl.mjs`. */
+export const AXOLOTL_SHEET = {
+  frameWidth: 340,
+  frameHeight: 224,
+  swimFrames: 6,
+  /** Index of the happy (catch) frame — right after the swim cycle. */
+  happyFrame: 6,
+} as const;
+
+/** Pick one colorway at random (one axolotl per round). */
+export function pickRandomAxolotlSpriteKey(rng: () => number = Math.random): AxolotlSpriteKey {
+  const keys = Object.values(AxolotlSpriteKeys);
+  return keys[Math.floor(rng() * keys.length)]!;
+}
+
+/**
+ * Sprint 2.5.4 — Math-a-lotl single-image reef pieces (answer bubble +
+ * coral), drawn by `scripts/sprites/reef.mjs`. Shipped in the `bg/`
+ * folder; deferred to the game's own bundle.
+ */
+export const ReefSpriteKeys = {
+  Bubble: 'reef-bubble',
+  Coral1: 'reef-coral-1',
+  Coral2: 'reef-coral-2',
+  Coral3: 'reef-coral-3',
+} as const;
+export type ReefSpriteKey = (typeof ReefSpriteKeys)[keyof typeof ReefSpriteKeys];
+
+/** Sprint 2.5.4 — animated reef sheets: key → frame geometry (must match `reef.mjs`). */
+export const REEF_SHEETS = {
+  'reef-seaweed': { frameWidth: 110, frameHeight: 260, frames: 4 },
+  'reef-fish': { frameWidth: 120, frameHeight: 70, frames: 2 },
+} as const;
+export type ReefSheetKey = keyof typeof REEF_SHEETS;
 
 /**
  * Number Climb — per-floor "room" images framed inside each floor band.
@@ -607,6 +664,21 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   // Swap to `BgSpriteKeys.NumberClimbTower` (or whatever the final key
   // is named) when art lands.
   'number-climb': BgSpriteKeys.Nebula,
+  'math-a-lotl': BgSpriteKeys.MathALotl,
+};
+
+/**
+ * Sprint 2.5.4 — which of BackgroundScene's SPACE-only layers show for
+ * each game: the parallax star field and the bottom darkening band
+ * (added to tame the nebula's bright lower glow). Math-a-lotl's
+ * backdrop is water with its own painted stars, so both are off.
+ * Number Climb keeps its pre-2.5.4 look (no stars, band on).
+ */
+export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bottomFade: boolean }>> = {
+  'alien-shoot': { stars: true, bottomFade: true },
+  'asteroid-field': { stars: true, bottomFade: true },
+  'number-climb': { stars: false, bottomFade: true },
+  'math-a-lotl': { stars: false, bottomFade: false },
 };
 
 /**
@@ -832,6 +904,30 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', key),
     scope: 'game:number-climb',
   })),
+  // Sprint 2.5.4 — Math-a-lotl axolotl sheets (hero folder) + reef
+  // pieces (bg folder). All deferred to the game's own bundle.
+  ...(Object.values(AxolotlSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth: AXOLOTL_SHEET.frameWidth,
+    frameHeight: AXOLOTL_SHEET.frameHeight,
+    scope: 'game:math-a-lotl',
+  })),
+  ...(Object.values(ReefSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:math-a-lotl',
+  })),
+  ...(Object.keys(REEF_SHEETS) as ReefSheetKey[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    frameWidth: REEF_SHEETS[key].frameWidth,
+    frameHeight: REEF_SHEETS[key].frameHeight,
+    scope: 'game:math-a-lotl',
+  })),
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -914,4 +1010,7 @@ export type NonAlienSpriteKey =
   | ParticleSpriteKey
   | BgSpriteKey
   | ClimbFloorBgKey
-  | ClimbEscapeShipKey;
+  | ClimbEscapeShipKey
+  | AxolotlSpriteKey
+  | ReefSpriteKey
+  | ReefSheetKey;

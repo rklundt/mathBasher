@@ -122,6 +122,9 @@ export class LoadingScene extends Phaser.Scene {
       case 'number-climb':
         caption = 'Loading Space Escape!…';
         break;
+      case 'math-a-lotl':
+        caption = 'Loading Math-a-lotl…';
+        break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }
