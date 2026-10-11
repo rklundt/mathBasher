@@ -15,20 +15,21 @@ import { Axolotl } from '@/game/entities/Axolotl';
 import { AnswerBubble } from '@/game/entities/AnswerBubble';
 import { ReefDecor } from '@/game/systems/ReefDecor';
 import {
+  QuestionClock,
   buildBubbleWave,
+  chaseHoldY,
   clampToWater,
   hasEscaped,
   isWithinCatch,
   pickTappedBubble,
+  visibleBubbles,
 } from '@/game/systems/mathALotlMath';
-import { resolveStrike } from '@/game/systems/numberClimbFloorMath';
+import { resolveStrike } from '@/game/systems/roundRules';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { pickRandomBubblePopSfx, pickRandomBubbleWrongSfx, SfxKeys } from '@/core/audioKeys';
 import { ParticleSpriteKeys, pickRandomAxolotlSpriteKey } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
 
-/** Taps this far outside a bubble's drawn edge (as a radius multiple) still count as hitting it. */
-const TAP_SLOP = 1.25;
 const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
 
 /**
@@ -42,8 +43,11 @@ const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
  *      to it and catches it with its mouth. Tap open water → it swims
  *      there.
  *   4. Right bubble → pop + happy face → next problem.
- *      Wrong bubble → wobble-pop, one of the round's 3 hearts is lost,
- *      the problem stays (half points once solved). Last heart → round over.
+ *      Wrong bubble → wobble-pop + "Oops! Try again!", one of the round's
+ *      3 lives is lost, the problem stays (half points once solved).
+ *      Last life → "Out of lives!" → round over.
+ *      The bubble the axolotl is chasing waits just under the surface, so
+ *      a right choice is never lost to a slow swim.
  *      Right bubble reaches the surface uncaught → no penalty; the wave
  *      pops and the same problem re-spawns.
  *      Countdown hits zero (per question, NOT reset by a re-spawn) →
@@ -68,8 +72,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private currentQuestion: Question | null = null;
   private livesUsed = 0;
   private usedWrongCatch = false;
-  /** Per-question countdown remaining (ms); ticks only while the question is in play. */
-  private countdownMs = 0;
+  /** Per-question countdown; ticks only while a question is in play, expires at most once. */
+  private readonly clock = new QuestionClock();
+  /** Set once the round has ended — nothing ticks after this (GameOver mounts next frame). */
+  private roundOver = false;
+  /** Number-key handlers, kept so cleanup removes exactly these. */
+  private keyHandlers: Array<{ event: string; fn: () => void }> = [];
   private transitioning = false;
   private paused = false;
   private tapHint?: Phaser.GameObjects.Container;
@@ -110,8 +118,8 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
   /** GameSceneContract — seconds left on this question's countdown (HUD timer). */
   getCountdownSec(): number | undefined {
-    if (!this.currentQuestion) return undefined;
-    return Math.max(0, this.countdownMs / 1000);
+    if (!this.currentQuestion || this.roundOver) return undefined;
+    return this.clock.remainingSec;
   }
 
   // ----- Lifecycle ---------------------------------------------------------
@@ -123,10 +131,15 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.currentQuestion = null;
     this.livesUsed = 0;
     this.usedWrongCatch = false;
-    this.countdownMs = 0;
+    this.clock.stop();
+    this.roundOver = false;
     this.transitioning = false;
     this.paused = false;
+    // Phaser's Clock keeps `paused` across scene restarts; every exit path
+    // resumes first today, but don't depend on it.
+    this.time.paused = false;
     this.tapHint = undefined;
+    this.keyHandlers = [];
 
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
@@ -138,7 +151,13 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.water = { left: m, right: width - m, top: this.waterlineY + m, bottom: height - m };
 
     this.decor = new ReefDecor(this, { width, waterlineY: this.waterlineY, floorY: height });
-    this.axolotl = new Axolotl(this, width / 2, (this.water.top + this.water.bottom) / 2, pickRandomAxolotlSpriteKey());
+    this.axolotl = new Axolotl(
+      this,
+      width / 2,
+      (this.water.top + this.water.bottom) / 2,
+      pickRandomAxolotlSpriteKey(),
+      this.water,
+    );
     this.axolotl.sprite.setDepth(20);
 
     this.roundController = new RoundController(this.mathId, this.speed);
@@ -153,7 +172,9 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointer, this);
     NUMBER_KEYS.forEach((name, i) => {
-      this.input.keyboard?.on(`keydown-${name}`, () => this.pickByIndex(i));
+      const handler = { event: `keydown-${name}`, fn: () => this.pickByIndex(i) };
+      this.input.keyboard?.on(handler.event, handler.fn);
+      this.keyHandlers.push(handler);
     });
 
     this.buildTapHint();
@@ -162,7 +183,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   }
 
   override update(_time: number, dt: number): void {
-    if (this.paused) return;
+    if (this.paused || this.roundOver) return;
     this.decor.update(dt);
     for (const b of this.bubbles) b.update(dt);
     this.axolotl.update(dt);
@@ -173,8 +194,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.axolotl.sprite.setPosition(p.x, p.y);
     if (this.transitioning) return;
 
-    this.countdownMs -= dt;
-    if (this.countdownMs <= 0) {
+    if (this.clock.tick(dt)) {
       this.handleTimeout();
       return;
     }
@@ -195,7 +215,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
         this.handleCorrectEscaped();
         return;
       }
-      if (this.chasing === b) this.stopChase();
+      // (A chased bubble never gets here — it's held below the escape line.)
       b.popQuiet();
     }
     this.bubbles = this.bubbles.filter((b) => b.alive);
@@ -206,8 +226,14 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private handlePointer(pointer: Phaser.Input.Pointer): void {
     if (this.paused || this.transitioning) return;
     this.hideTapHint();
-    const live = this.bubbles.filter((b) => b.alive);
-    const i = pickTappedBubble({ x: pointer.worldX, y: pointer.worldY }, live, this.cfg.bubble.diameterPx / 2, TAP_SLOP);
+    // Only bubbles the kid can see — waves spawn below the floor.
+    const live = visibleBubbles(this.bubbles, this.scale.height);
+    const i = pickTappedBubble(
+      { x: pointer.worldX, y: pointer.worldY },
+      live,
+      this.cfg.bubble.diameterPx / 2,
+      this.cfg.bubble.tapSlop,
+    );
     if (i >= 0) {
       this.chaseBubble(live[i]!);
       return;
@@ -221,8 +247,9 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   /** Keyboard: 1–4 pick the VISIBLE live bubbles left to right. */
   private pickByIndex(index: number): void {
     if (this.paused || this.transitioning) return;
-    const height = this.scale.height;
-    const live = this.bubbles.filter((b) => b.alive && b.y < height).sort((a, b) => a.x - b.x);
+    // Keys need the LABEL on screen (centre above the floor), not just a sliver of bubble.
+    const r = this.cfg.bubble.diameterPx / 2;
+    const live = visibleBubbles(this.bubbles, this.scale.height - r).sort((a, b) => a.x - b.x);
     const b = live[index];
     if (b) {
       this.hideTapHint();
@@ -231,11 +258,16 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   }
 
   private chaseBubble(b: AnswerBubble): void {
+    this.chasing?.setHoldY(null);
     this.chasing = b;
+    // The chosen bubble waits just under the surface until it's caught,
+    // whatever its answer — a right choice is never lost to a slow swim.
+    b.setHoldY(chaseHoldY(this.waterlineY, b.radius, this.cfg.bubble.chaseHoldMarginPx));
     this.axolotl.chase(() => (b.alive ? { x: b.x, y: b.y } : null));
   }
 
   private stopChase(): void {
+    this.chasing?.setHoldY(null);
     this.chasing = null;
     this.axolotl.stop();
   }
@@ -253,6 +285,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
   private handleCorrectCatch(b: AnswerBubble): void {
     this.transitioning = true;
+    this.clock.stop();
     const { scoreDelta } = this.roundController.recordOutcome({
       wasCorrect: true,
       usedWrongShot: this.usedWrongCatch,
@@ -283,7 +316,28 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
       strikesUsed: String(this.livesUsed),
       maxStrikes: String(this.cfg.maxLives),
     });
-    if (strike.exhausted) this.handleOutOfHearts();
+    if (strike.exhausted) {
+      this.handleOutOfLives();
+      return;
+    }
+    // A wrong catch needs words too — a sound + a dot turning red in the
+    // corner is easy for a 6-year-old to miss.
+    // Below the bubble when it fits (so a catch near the surface stays in the
+    // water, clear of the HUD); above it for a catch near the floor, where
+    // "below" would start off screen.
+    const below = b.y + b.radius + this.cfg.wrongNote.risePx;
+    const y0 = below <= this.scale.height - this.cfg.wrongNote.floorMarginPx ? below : b.y - b.radius;
+    const oops = text(this, b.x, y0, 'Oops! Try again!', 'rowLabel').setOrigin(0.5).setDepth(100);
+    oops.setStroke('#0b1020', 6);
+    const { durationMs, risePx } = this.cfg.wrongNote;
+    this.tweens.add({
+      targets: oops,
+      y: oops.y - risePx,
+      alpha: { from: 1, to: 0 },
+      duration: durationMs,
+      ease: 'Quad.In',
+      onComplete: () => oops.destroy(),
+    });
   }
 
   /** The right answer floated to the surface: no penalty, same problem again. */
@@ -291,12 +345,16 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.transitioning = true;
     this.stopChase();
     _th.logToAi('BubbleEscaped', SeverityLevel.Information, this.questionProps());
+    // Keep the Q1 tap hint (if still up): a kid who let the right bubble
+    // float away untouched is exactly the one who needs it. The note sits
+    // below the hint, so they don't overlap.
     for (const b of this.bubbles) b.popQuiet();
-    const note = text(this, this.scale.width / 2, this.waterlineY + 70, 'It floated away! Here it comes again', 'rowLabel')
+    const { holdMs, fadeMs, belowWaterlinePx } = this.cfg.escapeNote;
+    const note = text(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', 'rowLabel')
       .setOrigin(0.5)
       .setDepth(100);
     note.setStroke('#0b1020', 6);
-    this.tweens.add({ targets: note, alpha: 0, delay: 900, duration: 400, onComplete: () => note.destroy() });
+    this.tweens.add({ targets: note, alpha: 0, delay: holdMs, duration: fadeMs, onComplete: () => note.destroy() });
     this.time.delayedCall(this.cfg.respawnDelayMs, () => {
       this.spawnWave();
       this.transitioning = false;
@@ -306,7 +364,6 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   /** Countdown hit zero: the question is missed (no heart lost), next problem. */
   private handleTimeout(): void {
     this.transitioning = true;
-    this.countdownMs = 0;
     this.stopChase();
     this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: this.usedWrongCatch });
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
@@ -322,25 +379,27 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     });
   }
 
-  private handleOutOfHearts(): void {
+  private handleOutOfLives(): void {
     this.transitioning = true;
+    this.clock.stop();
     this.stopChase();
-    _th.logToAi('MathALotl.outOfHearts', SeverityLevel.Information, this.questionProps());
+    _th.logToAi('MathALotl.outOfLives', SeverityLevel.Information, this.questionProps());
     this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
     this.events.emit('questionEnded', {
       wasCorrect: false,
       score: this.roundController.score,
       correctCount: this.roundController.correctCount,
     });
-    // No extra end cue: the wrong-catch sound that spent the last heart
-    // just played. (TimeoutFail1 is scoped to Asteroid Field's bundle.)
+    // No extra end cue: the wrong-catch sound that spent the last life
+    // just played; stacking the timeout sound on it would be noise.
     for (const b of this.bubbles) b.popQuiet();
-    const banner = text(this, this.scale.width / 2, this.scale.height / 2, 'Out of hearts!', 'warning')
+    // "lives" (not "hearts") to match the HUD's "Lives:" row.
+    const banner = text(this, this.scale.width / 2, this.scale.height / 2, 'Out of lives!', 'warning')
       .setOrigin(0.5)
       .setDepth(100);
     banner.setStroke('#0b1020', 8);
     banner.setShadow(0, 3, '#0b1020', 6, true, true);
-    this.time.delayedCall(1200, () => this.endRound());
+    this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound());
   }
 
   private playSparkle(x: number, y: number): void {
@@ -384,7 +443,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     }
     this.currentQuestion = question;
     this.usedWrongCatch = false;
-    this.countdownMs = this.cfg.speed[this.speed].countdownSec * 1000;
+    this.clock.start(this.cfg.speed[this.speed].countdownSec * 1000);
     this.spawnWave();
     if (this.roundController.questionIndex === 0) this.showTapHint();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());
@@ -447,19 +506,29 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.tapHint?.setVisible(true);
   }
 
+  /** Q1-only, so hiding it is final: stop its pulse tween and free it. */
   private hideTapHint(): void {
-    this.tapHint?.setVisible(false);
+    if (!this.tapHint) return;
+    this.tweens.killTweensOf(this.tapHint);
+    this.tapHint.destroy();
+    this.tapHint = undefined;
   }
 
   // ----- End / cleanup -----------------------------------------------------
 
   private endRound(): void {
+    // Lock the scene: `scene.start(GameOver)` is queued, so this scene
+    // still gets one more update — nothing may tick, time out or catch.
+    this.roundOver = true;
+    this.transitioning = true;
+    this.clock.stop();
     this.lifecycle.endRound();
   }
 
   private cleanup(): void {
     this.input.off(Phaser.Input.Events.POINTER_DOWN, this.handlePointer, this);
-    for (const name of NUMBER_KEYS) this.input.keyboard?.off(`keydown-${name}`);
+    for (const h of this.keyHandlers) this.input.keyboard?.off(h.event, h.fn);
+    this.keyHandlers = [];
     for (const b of this.bubbles) b.destroy();
     this.bubbles = [];
     this.chasing = null;

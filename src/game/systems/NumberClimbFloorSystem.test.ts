@@ -4,12 +4,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { config } from '@/core/config';
-import {
-  pickSubsetWithCorrect,
-  resolveRungPick,
-  resolveStrike,
-  RUNGS_PER_DIFFICULTY,
-} from '@/game/systems/numberClimbFloorMath';
+import { resolveRungPick, RUNGS_PER_DIFFICULTY } from '@/game/systems/numberClimbFloorMath';
+import { pickSubsetWithCorrect, resolveStrike } from '@/game/systems/roundRules';
 
 /**
  * Sprint 2.2 — `pickSubsetWithCorrect` is the pure helper that

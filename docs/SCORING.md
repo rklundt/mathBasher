@@ -58,7 +58,7 @@ Source: `config.scoring.speed[*].multiplier`.
 
 ## Max score per (math type × difficulty)
 
-**Cross-game parity:** scoring has no game-mode axis. A perfect 12-question round of `(mathId, speedKey)` produces the same max score regardless of which game mode was played (Alien Shoot, Asteroid Field, Number Climb). Locked by `ScoreCalculator.test.ts` parity tests (sprint 2.2.1 story 11, sprint 2.4 story 7).
+**Cross-game parity:** scoring has no game-mode axis. A perfect 12-question round of `(mathId, speedKey)` produces the same max score regardless of which game mode was played (Alien Shoot, Asteroid Field, Number Climb, Math-a-lotl). Locked by `ScoreCalculator.test.ts` parity tests (sprint 2.2.1 story 11, sprint 2.4 story 7).
 
 Formula: `max = 12 × 100 × mathMult × speedMult = 1200 × mathMult × speedMult`. Assumes a clean round (no wrong shot taken).
 
@@ -80,7 +80,7 @@ Formula: `max = 12 × 100 × mathMult × speedMult = 1200 × mathMult × speedMu
 
 Stars are awarded at round end. The two game families use different ladders.
 
-### Arcade modes (Alien Shoot, Asteroid Field) — by correct count
+### Arcade modes (Alien Shoot, Asteroid Field, Math-a-lotl) — by correct count
 
 Source: `config.round.starThresholds` (currently `[8, 10, 11]`).
 
