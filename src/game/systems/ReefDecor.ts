@@ -3,7 +3,10 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
-import { REEF_SHEETS, ReefSpriteKeys } from '@/core/spriteKeys';
+import { REEF_SHEETS, ReefSpriteKeys, type ReefSheetKey, type ReefSpriteKey } from '@/core/spriteKeys';
+
+const SEAWEED: ReefSheetKey = 'reef-seaweed';
+const FISH: ReefSheetKey = 'reef-fish';
 
 /**
  * Math-a-lotl background life (sprint 2.5.4): coral on the sea floor,
@@ -15,13 +18,13 @@ import { REEF_SHEETS, ReefSpriteKeys } from '@/core/spriteKeys';
  */
 
 /** Coral + seaweed placement along the floor: x as a fraction of width, display height in px. */
-const FLOOR_PIECES: ReadonlyArray<{ key: string; xFrac: number; heightPx: number; sway?: boolean }> = [
+const FLOOR_PIECES: ReadonlyArray<{ key: ReefSpriteKey | ReefSheetKey; xFrac: number; heightPx: number; sway?: boolean }> = [
   { key: ReefSpriteKeys.Coral2, xFrac: 0.09, heightPx: 120 },
   { key: ReefSpriteKeys.Coral1, xFrac: 0.22, heightPx: 150 },
-  { key: 'reef-seaweed', xFrac: 0.36, heightPx: 210, sway: true },
-  { key: 'reef-seaweed', xFrac: 0.42, heightPx: 170, sway: true },
+  { key: SEAWEED, xFrac: 0.36, heightPx: 210, sway: true },
+  { key: SEAWEED, xFrac: 0.42, heightPx: 170, sway: true },
   { key: ReefSpriteKeys.Coral3, xFrac: 0.8, heightPx: 92 },
-  { key: 'reef-seaweed', xFrac: 0.93, heightPx: 200, sway: true },
+  { key: SEAWEED, xFrac: 0.93, heightPx: 200, sway: true },
 ];
 
 /** Soft pastel tints for the background fish (the sheet is white). */
@@ -89,7 +92,7 @@ export class ReefDecor {
 
   private ensureAnims(): void {
     const anims = this.scene.anims;
-    const make = (key: 'reef-seaweed' | 'reef-fish', frameRate: number, yoyo: boolean): void => {
+    const make = (key: ReefSheetKey, frameRate: number, yoyo: boolean): void => {
       const animKey = `${key}/loop`;
       if (anims.exists(animKey)) return;
       anims.create({
@@ -100,15 +103,17 @@ export class ReefDecor {
         yoyo,
       });
     };
-    make('reef-seaweed', 3, true);
-    make('reef-fish', 4, false);
+    make(SEAWEED, 3, true);
+    make(FISH, 4, false);
   }
 
   private buildFloor(): void {
     const { width, floorY } = this.bounds;
     for (const p of FLOOR_PIECES) {
       const obj = p.sway
-        ? this.scene.add.sprite(width * p.xFrac, floorY, p.key, 0).play({ key: 'reef-seaweed/loop', startFrame: Phaser.Math.Between(0, 3) })
+        ? this.scene.add
+            .sprite(width * p.xFrac, floorY, p.key, 0)
+            .play({ key: `${SEAWEED}/loop`, startFrame: Phaser.Math.Between(0, REEF_SHEETS[SEAWEED].frames - 1) })
         : this.scene.add.image(width * p.xFrac, floorY, p.key);
       obj.setOrigin(0.5, 1);
       obj.setScale(p.heightPx / obj.height);
@@ -120,8 +125,8 @@ export class ReefDecor {
   private buildFish(): void {
     const { width } = this.bounds;
     for (let i = 0; i < FISH_COUNT; i++) {
-      const obj = this.scene.add.sprite(Phaser.Math.Between(0, width), 0, 'reef-fish', 0).play('reef-fish/loop');
-      obj.setScale(FISH_HEIGHT_PX / REEF_SHEETS['reef-fish'].frameHeight);
+      const obj = this.scene.add.sprite(Phaser.Math.Between(0, width), 0, FISH, 0).play(`${FISH}/loop`);
+      obj.setScale(FISH_HEIGHT_PX / REEF_SHEETS[FISH].frameHeight);
       obj.setAlpha(FISH_ALPHA);
       obj.setDepth(1);
       const f: Drifter = { obj, speed: 0 };

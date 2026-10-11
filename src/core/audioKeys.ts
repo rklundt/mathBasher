@@ -34,12 +34,12 @@ export const SfxKeys = {
   HitWrong1: 'hit-wrong-1',
   HitWrong2: 'hit-wrong-2',
   HitWrong3: 'hit-wrong-3',
-  // Sprint 2.1 playtest — Asteroid Field timeout SFX. Plays when the
-  // per-question countdown reaches zero before the player hits the
-  // correct asteroid. Audible "you ran out of time" cue lets the
-  // player register the failure before the next question's wave
-  // spawns. Not used by Alien Shoot (which has the alien-reaches-hero
-  // death animation as its own failure cue).
+  // Sprint 2.1 playtest — timeout SFX. Plays when the per-question
+  // countdown reaches zero before the player gets the right answer
+  // (Asteroid Field; Math-a-lotl since sprint 2.5.4). Audible "you ran
+  // out of time" cue so the player registers the miss before the next
+  // question spawns. Not used by Alien Shoot (the alien-reaches-hero
+  // death animation is its failure cue).
   TimeoutFail1: 'timeout-fail-1',
   /**
    * Sprint 2.2 — Number Climb floor-advance cue. Plays ~150 ms after
@@ -304,9 +304,8 @@ export interface AudioManifestEntry {
    * Sprint 2.1.6 — when this asset should be loaded. See
    * `src/core/assetScope.ts` for the taxonomy. Story 1 tags every
    * existing entry as `'eager'` (no behavior change vs. pre-sprint);
-   * story 5 re-scopes Asteroid-Field-only audio (`loop-3`,
-   * `timeout-fail-1`) to `'game:asteroid-field'` so it defers until
-   * the matching game is picked.
+   * story 5 re-scopes per-game audio (e.g. Asteroid Field's `loop-3`)
+   * to `'game:<id>'` so it defers until the matching game is picked.
    */
   readonly scope: AssetScope;
 }
@@ -315,7 +314,7 @@ export interface AudioManifestEntry {
  * Per-key audio scope resolver. Sprint 2.1.6 — most audio is shared
  * across games (button-click, hit/wrong SFX, the Alien Shoot loop)
  * and stays `'eager'`. A small allowlist of per-game audio
- * (`timeout-fail-1` is Asteroid-Field-only; `loop-3` is the AF
+ * (`loop-3` is the AF
  * music) defers to `'game:asteroid-field'`. Default keeps the
  * shared-audio behavior unchanged.
  *

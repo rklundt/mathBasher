@@ -524,6 +524,12 @@ export const AXOLOTL_SHEET = {
   swimFrames: 6,
   /** Index of the happy (catch) frame — right after the swim cycle. */
   happyFrame: 6,
+  /**
+   * Mouth position relative to the frame centre, facing right, untilted
+   * (sheet px) — the point that catches bubbles. Mirrors the head/mouth
+   * placement in `axolotl.mjs` (head centre + mouth offset + frame padding).
+   */
+  mouthOffset: { x: 90, y: 12 },
 } as const;
 
 /** Pick one colorway at random (one axolotl per round). */

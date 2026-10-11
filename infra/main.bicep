@@ -18,11 +18,11 @@
 //   - main.prod.bicepparam → swa-games-mathBasher-prod-use2  (rg-games-prod-use2)
 //
 // WHAT THIS DOES NOT MANAGE (deliberately):
-//   - The custom domain + its DNS record. The mykfam.com DNS zone lives in a
-//     DIFFERENT resource group (rg-GlobalNetwork-use2); keeping the domain out
-//     of Bicep means a future pipeline deploy identity scoped to this RG never
-//     needs write rights on the shared DNS zone (least privilege). The domain
-//     is wired by `infra/bootstrap.ps1` instead. The `customDomain` param here
+//   - The custom domain + its DNS record. DNS for mykfam.com is hosted on
+//     Cloudflare (outside Azure); keeping the domain out of Bicep means a
+//     future pipeline deploy identity scoped to this RG never needs DNS rights
+//     (least privilege). The hostname is bound by `infra/bootstrap.ps1`
+//     instead (see infra/README.md "DNS: Cloudflare"). The `customDomain` param here
 //     is declared ONLY so the name lives in one place (the bicepparam) and can
 //     be fed to the bootstrap script + docs — it is recorded as an output, not
 //     applied to the resource.
@@ -47,7 +47,7 @@ param location string = 'eastus2'
 
 @description('''
 The custom domain this environment serves, e.g. mathbasher.mykfam.com. NOT
-applied here — wired by infra/bootstrap.ps1 (the DNS zone is in another RG).
+applied here — bound by infra/bootstrap.ps1 (DNS lives in Cloudflare).
 Declared so the name lives in one place and flows to the bootstrap script + docs.
 ''')
 param customDomain string
