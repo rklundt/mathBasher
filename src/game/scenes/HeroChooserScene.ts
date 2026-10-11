@@ -46,23 +46,40 @@ export interface HeroChooserSceneInit {
   fromMenu?: boolean;
 }
 
-/** Card visual dimensions (px). Tuned to fit 2x2 inside the 1280x720 design canvas. */
+/**
+ * Card visual dimensions (px). Sprint 2.5.2 (2nd pass) — shrunk from
+ * 280x240 to 280x200 (gap 32→24) so the full stack fits the 1280x720
+ * design canvas WITHOUT overlap: the 58px h2 title + 22px subtitle at
+ * the top AND the 56px "Back" button at the bottom (shown on the
+ * mid-session re-open path). The old 240px cards made a 512px-tall grid
+ * that collided with both. See the layout math in `create()`.
+ */
 const CARD_W = 280;
-const CARD_H = 240;
-const CARD_GAP = 32;
-/** Sprite display size inside a card (px, max dim — preserves aspect). */
-const CARD_SPRITE_DISPLAY_SIZE = 180;
+const CARD_H = 200;
+const CARD_GAP = 24;
+/** Sprite display size inside a card (px, max dim — preserves aspect). Fits the 200px card + label. */
+const CARD_SPRITE_DISPLAY_SIZE = 155;
+/** Sprint 2.5.2 — tap feedback: the picked card scales up to this before the scene changes. */
+const PICK_POP_SCALE = 1.12;
+/** Sprint 2.5.2 — tap feedback: pop duration (ms); well under the 400ms responsiveness ceiling. */
+const PICK_POP_DURATION_MS = 170;
 
 export class HeroChooserScene extends Phaser.Scene {
   static readonly key = SceneKeys.HeroChooser;
 
   private fromMenu = false;
+  /**
+   * Sprint 2.5.2 — guards the pick→transition so a kid mashing two
+   * cards can't fire two `scene.start` calls (and so the pop-feedback
+   * tween runs exactly once). Reset at every scene mount.
+   */
+  private picking = false;
 
   constructor() {
     super(HeroChooserScene.key);
   }
 
-  // Sprint 2.5 audit (Senior Dev) — default the param so the
+  // Sprint 2.5 — default the param so the
   // "first-run no-data path" reads as such at the type level. Phaser
   // passes `{}` when scene.start is called without data; explicit
   // default makes the contract self-documenting.
@@ -72,6 +89,7 @@ export class HeroChooserScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    this.picking = false; // reset across Phaser scene-instance reuse
     _th.logToAi('HeroChooser.entered', SeverityLevel.Information, {
       reason: this.fromMenu ? 'menu-reopen' : 'first-run',
     });
@@ -79,18 +97,28 @@ export class HeroChooserScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    // Title + subtitle. Sprint 2.5 audit (Support) — subtitle copy
+    // Title + subtitle. Sprint 2.5 — subtitle copy
     // softened from "no effect on the game" (which reads as "this
     // doesn't matter" to kids) to "pick the one that feels like
     // you" — still honestly cosmetic but frames the pick as personal
     // ownership rather than inert.
-    text(this, cx, height * 0.10, 'Pick Your Hero', 'h2').setOrigin(0.5);
-    text(this, cx, height * 0.17, 'Just for looks — pick the one that feels like you.', 'body')
+    // Sprint 2.5.2 (2nd pass) — full-stack layout that clears the 58px
+    // h2 title, the 22px subtitle, the 2×2 grid, AND the bottom "Back"
+    // button (re-open path), on the 1280×720 FIT canvas. Vertical map
+    // (center y, with rendered half-heights):
+    //   title  h2  @ 0.08·720 = 58   → block ~23..93
+    //   subtitle  @ 0.16·720 = 115   → block ~102..128  (clears title)
+    //   grid center @ 0.53·720 = 382, CARD_H 200 / GAP 24 → halfY 112:
+    //     top card top edge    = 382 − 112 − 100 = 170  (37px below subtitle)
+    //     bottom card bot edge = 382 + 112 + 100 = 594
+    //   Back button @ 0.92·720 = 662 → top edge 634  (40px below grid)
+    text(this, cx, height * 0.08, 'Pick Your Hero', 'h2').setOrigin(0.5);
+    text(this, cx, height * 0.16, 'Just for looks — pick the one that feels like you.', 'body')
       .setOrigin(0.5);
 
     // 2×2 grid centered horizontally + vertically.
     // Centers at (cx - half, cy - half) → (cx + half, cy + half).
-    const gridCenterY = height * 0.52;
+    const gridCenterY = height * 0.53;
     const halfX = (CARD_W + CARD_GAP) / 2;
     const halfY = (CARD_H + CARD_GAP) / 2;
     const positions: ReadonlyArray<{ key: ChosenHero; x: number; y: number }> = [
@@ -109,13 +137,17 @@ export class HeroChooserScene extends Phaser.Scene {
     // has no escape hatch (deliberate hard gate so the kid commits
     // to a pick).
     //
-    // Sprint 2.5 audit (Support) — Esc is keyboard-only; mobile kids
+    // Sprint 2.5 — Esc is keyboard-only; mobile kids
     // had no way out of the mid-session picker without re-picking.
     // Visible "Back" button (bottom-center) gives them a clear way
     // home. Only rendered on the `fromMenu` path so the first-run
     // hard gate stays a hard gate.
     if (this.fromMenu) {
-      wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+      // Ignored while a pick's pop-and-transition is in flight, so the
+      // only transition after a pick is the one the pop started.
+      wireEscBack(this, () => {
+        if (!this.picking) this.scene.start(SceneKeys.Menu);
+      });
       new PlaceholderButton({
         scene: this,
         x: cx,
@@ -124,6 +156,7 @@ export class HeroChooserScene extends Phaser.Scene {
         height: 56,
         label: 'Back',
         onClick: () => {
+          if (this.picking) return;
           emitButtonClicked('HeroChooser:Back', this.scene.key, 'pointer');
           this.scene.start(SceneKeys.Menu);
         },
@@ -141,55 +174,79 @@ export class HeroChooserScene extends Phaser.Scene {
    * picked last time.
    */
   private buildHeroCard(x: number, y: number, heroKey: ChosenHero, isSelected: boolean): void {
+    // Sprint 2.5.2 — card visuals live in a Container positioned at
+    // (x, y) so the pick "pop" (handlePick) scales the whole card
+    // around its center cleanly. Children use card-local coords.
+    const card = this.add.container(x, y);
+
     // Card backdrop — dark slate, rounded, with an accent border on
     // the currently-selected hero (carries the amber accent from the
     // rest of the UI; matches PlaceholderButton's selected chrome).
-    const bg = this.add.rectangle(x, y, CARD_W, CARD_H, 0x1f2740, 0.85);
+    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, 0x1f2740, 0.85);
     bg.setStrokeStyle(
       isSelected ? 4 : 2,
       isSelected ? 0xfbbf24 : 0x475569,
       1,
     );
+    card.add(bg);
 
     // Hero sprite — centered in the upper portion of the card so the
     // label sits below without overlapping. Defensive textures.exists
     // guard in case a future asset-load refactor leaves the texture
     // unloaded; renders an empty card rather than crashing.
     if (this.textures.exists(heroKey)) {
-      const sprite = this.add.image(x, y - 18, heroKey).setOrigin(0.5);
+      const sprite = this.add.image(0, -18, heroKey).setOrigin(0.5);
       const tex = this.textures.get(heroKey).getSourceImage();
       const maxDim = Math.max(tex.width, tex.height) || 1;
       sprite.setScale(CARD_SPRITE_DISPLAY_SIZE / maxDim);
+      card.add(sprite);
     }
 
-    // "Pick me!" label (or "Selected" if this IS the current choice).
-    text(this, x, y + CARD_H / 2 - 28, isSelected ? '★ Your hero ★' : 'Pick me!', 'rowLabel')
+    // "Pick me!" label (or the selected marker if this IS the current choice).
+    const label = text(this, 0, CARD_H / 2 - 28, isSelected ? '★ Your hero ★' : 'Pick me!', 'rowLabel')
       .setOrigin(0.5)
       .setColor(isSelected ? '#fbbf24' : '#eaeaf2');
+    card.add(label);
 
-    // Make the whole card a tap target.
+    // Make the whole card a tap target. Hit area is the bg rect in the
+    // container's local space; Phaser applies the container transform.
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
-      this.handlePick(heroKey);
+      this.handlePick(heroKey, card);
     });
-    bg.on('pointerover', () => bg.setStrokeStyle(4, 0xfbbf24, 1));
-    bg.on('pointerout', () =>
-      bg.setStrokeStyle(isSelected ? 4 : 2, isSelected ? 0xfbbf24 : 0x475569, 1),
-    );
+    bg.on('pointerover', () => {
+      if (!this.picking) bg.setStrokeStyle(4, 0xfbbf24, 1);
+    });
+    bg.on('pointerout', () => {
+      if (!this.picking) bg.setStrokeStyle(isSelected ? 4 : 2, isSelected ? 0xfbbf24 : 0x475569, 1);
+    });
   }
 
   /**
-   * Lock the kid's choice + transition. Telemetry-tagged so we can
-   * see which hero is picked at what rate — useful representation-
-   * engagement signal.
+   * Lock the kid's choice + transition. Sprint 2.5.2 — a quick "pop"
+   * on the picked card (scale 1 → 1.12, Back.Out) gives satisfying
+   * confirmation of their choice before the scene changes, instead of
+   * the instant cut. Guarded by `picking` so a double-tap can't fire
+   * two transitions. Telemetry-tagged (representation-engagement signal).
    */
-  private handlePick(heroKey: ChosenHero): void {
+  private handlePick(heroKey: ChosenHero, card: Phaser.GameObjects.Container): void {
+    if (this.picking) return;
+    this.picking = true;
     emitButtonClicked(`HeroChooser:${heroKey}`, this.scene.key, 'pointer');
     Settings.setChosenHero(heroKey);
     _th.logToAi('HeroChooser.picked', SeverityLevel.Information, {
       reason: heroKey,
     });
-    this.scene.start(SceneKeys.Menu);
+    // Raise the picked card above its siblings so the pop isn't clipped
+    // by neighbors, then scale-pop and transition on completion.
+    this.children.bringToTop(card);
+    this.tweens.add({
+      targets: card,
+      scale: { from: 1, to: PICK_POP_SCALE },
+      duration: PICK_POP_DURATION_MS,
+      ease: 'Back.Out',
+      onComplete: () => this.scene.start(SceneKeys.Menu),
+    });
   }
 }

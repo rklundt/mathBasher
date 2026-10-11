@@ -20,7 +20,7 @@ import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
 import { SettingsScene } from '@/game/scenes/SettingsScene';
-import { AttributionScene } from '@/game/scenes/AttributionScene';
+import { mountFullscreenButton, requestMobileFullscreen } from '@/app/fullscreen';
 
 /**
  * Bootstrap the actual game (Phaser + service singletons). Called from
@@ -50,6 +50,14 @@ import { AttributionScene } from '@/game/scenes/AttributionScene';
 export function bootGame(): void {
   _th.logToAi('SplashStarted', SeverityLevel.Information);
 
+  // Phones/tablets: go fullscreen on the "Tap to play" tap. Must run FIRST,
+  // synchronously inside the click — browsers reject fullscreen requests
+  // made outside a user gesture. Then wire the footer's "Full screen"
+  // button so a kid who leaves fullscreen can get back in (touch devices
+  // only; hidden while fullscreen). See src/app/fullscreen.ts.
+  requestMobileFullscreen();
+  mountFullscreenButton();
+
   // Eagerly initialize the score store. Same memoized instance is
   // shared across every round in the page lifetime. GameOverScene
   // calls getScoreStore() and gets this same one.
@@ -75,17 +83,23 @@ export function bootGame(): void {
       // and a fixed-aspect arcade game gains nothing from it. Full rationale
       // in `src/core/SCALE.md`.
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // NO_CENTER on purpose: `#game` (index.html) already centers the
+      // canvas with flexbox. Phaser's CENTER_BOTH added its own margins on
+      // top of that, double-centering the canvas — it sat 3/4 of the way
+      // into the spare space (left letterbox bar 3x the right one on
+      // phones). One centering mechanism: the CSS.
+      autoCenter: Phaser.Scale.NO_CENTER,
       width: 1280,
       height: 720,
-      // Parent the Phaser canvas to `#game` (matches the index.html DOM)
-      // and let Phaser expand the parent to fill its container so the FIT
-      // calculation has the right viewport to fit INTO. Without
-      // expandParent, Phaser sometimes computes against the parent's
-      // intrinsic content size (zero before render) and renders at 0×0 on
-      // first paint until a resize event fires.
+      // Parent the Phaser canvas to `#game` (matches the index.html DOM).
+      // Since sprint 2.5.2 `#game` gets a definite height from the page's
+      // flex column (visible viewport minus the AGPL footer), so FIT always
+      // has a real box to fit into. `expandParent` is OFF on purpose: if
+      // `#game` ever measured 0 at boot, Phaser would write an inline
+      // `document.body.style.height = '100%'`, silently overriding the
+      // `100dvh` column and bringing back the mobile URL-bar overlap.
       parent: 'game',
-      expandParent: true,
+      expandParent: false,
     },
     physics: {
       default: 'arcade',
@@ -95,17 +109,13 @@ export function bootGame(): void {
       },
     },
     // Order matters: BootScene starts first (auto-starts because it's at index
-    // 0 with no auto-start override). AttributionScene MUST be registered LAST
-    // so it renders on top of every other scene's content. PauseOverlay and
-    // SettingsScene sit just before Attribution so they cover GameScene + HudScene
-    // but the §7(b) attribution footer stays visible even while paused or while
-    // adjusting settings. SettingsScene is registered AFTER PauseOverlay so when
-    // launched from Pause, SettingsScene visually stacks on top of the pause
-    // overlay (its parallel-scene render order respects registration order).
-    // Scene registration order = render order (earlier = renders below
-    // later). BackgroundScene is second so its parallax + nebula renders
-    // BENEATH every gameplay scene. AttributionScene is last so the AGPL
-    // §7(b) footer renders ON TOP of everything else.
+    // 0 with no auto-start override). Scene registration order = render order
+    // (earlier = renders below later). BackgroundScene is second so its
+    // parallax + nebula renders BENEATH every gameplay scene. PauseOverlay and
+    // SettingsScene are last so they cover GameScene + HudScene; SettingsScene
+    // is registered AFTER PauseOverlay so when launched from Pause it stacks on
+    // top of the pause overlay. The AGPL §7(b) attribution footer is not a
+    // scene — it's a DOM strip below the canvas (sprint 2.5.2), always visible.
     scene: [
       BootScene,
       BackgroundScene,
@@ -121,7 +131,8 @@ export function bootGame(): void {
       GameOverScene,
       PauseOverlay,
       SettingsScene,
-      AttributionScene,
+      // Sprint 2.5.2 — AttributionScene retired; the AGPL §7(b) footer is
+      // now a DOM element (mountAttributionFooter in main.ts) below the canvas.
     ],
   });
 

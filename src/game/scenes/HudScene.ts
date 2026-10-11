@@ -11,9 +11,18 @@ import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneCon
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { Settings } from '@/services/Settings';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
 import { text } from '@/game/ui/typography';
+import { SLATE_BG } from '@/game/ui/uiPalette';
+
+/** Sprint 2.5.2 — HUD hero avatar: total vertical padding inside the bar (half above, half below). */
+const HUD_AVATAR_VERTICAL_PAD_PX = 12;
+/** Sprint 2.5.2 — HUD hero avatar: left margin from the screen edge. */
+const HUD_AVATAR_LEFT_MARGIN_PX = 16;
+/** Sprint 2.5.2 — HUD hero avatar: gap between the avatar and the score text. */
+const HUD_AVATAR_SCORE_GAP_PX = 12;
 
 interface QuestionStartedPayload {
   question: Question;
@@ -224,7 +233,12 @@ export class HudScene extends Phaser.Scene {
     // x-position is recomputed after every round-score update (see
     // `repositionTotalLabel`) so growing round scores don't crowd
     // the total label.
-    this.roundScoreText = text(this, 16, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
+    // Sprint 2.5.2 — chosen-hero avatar at the far left of the HUD bar
+    // so the kid's picked hero (Hero Chooser) is present during play.
+    // Cosmetic only; the in-game gameplay sprite stays mode-bound. The
+    // score text starts to its right by the width the avatar consumed.
+    const heroAvatarInset = this.buildHudHeroAvatar(barHeight);
+    this.roundScoreText = text(this, 16 + heroAvatarInset, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
     this.totalScoreText = text(
       this,
       0, // placeholder; repositioned by repositionTotalLabel below
@@ -462,6 +476,33 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
+   * Sprint 2.5.2 — small chosen-hero avatar at the far left of the HUD
+   * bar, so the kid's picked hero (from the Hero Chooser) is visible
+   * during play. Purely cosmetic — the in-game gameplay sprite stays
+   * mode-bound (speeder / asteroid-hero / climber). Returns the
+   * horizontal space consumed (avatar diameter + a gap) so the score
+   * text starts to its right; returns 0 when no hero is persisted or
+   * its texture isn't loaded (defensive — BootScene gates the first-run
+   * pick, so a hero is normally always set). Non-interactive: it's a
+   * presence indicator, not a mid-round re-pick control.
+   */
+  private buildHudHeroAvatar(barHeight: number): number {
+    const hero = Settings.getChosenHero();
+    if (hero === null || !this.textures.exists(hero)) return 0;
+    const diameter = barHeight - HUD_AVATAR_VERTICAL_PAD_PX;
+    const r = diameter / 2;
+    const cx = HUD_AVATAR_LEFT_MARGIN_PX + r;
+    const cy = barHeight / 2;
+    const bg = this.add.circle(cx, cy, r + 2, SLATE_BG, 0.85);
+    bg.setStrokeStyle(2, 0x475569);
+    const sprite = this.add.image(cx, cy, hero).setOrigin(0.5);
+    const tex = this.textures.get(hero).getSourceImage();
+    const maxDim = Math.max(tex.width, tex.height) || 1;
+    sprite.setScale(diameter / maxDim);
+    return diameter + HUD_AVATAR_SCORE_GAP_PX; // avatar + gap before the score text
+  }
+
+  /**
    * Sprint 2.4.1 story 1 — build the lives row for game scenes that
    * expose `getMaxStrikes`. Currently Number Climb only; other modes
    * return undefined / don't implement the contract method, in which
@@ -484,7 +525,7 @@ export class HudScene extends Phaser.Scene {
     const maxStrikes = gameScene?.getMaxStrikes?.();
     if (!maxStrikes || maxStrikes <= 0) return;
 
-    // Sprint 2.4.1 audit fix (Support reviewer) — add a "Lives" text
+    // Sprint 2.4.1 — add a "Lives" text
     // label to the LEFT of the dots so a first-time player connects
     // "row of green circles" → "lives." Without the label, kids
     // mistook the dots for decoration on the first round. The label
@@ -597,7 +638,7 @@ export class HudScene extends Phaser.Scene {
       this.onQuestionStarted(inFlight);
     }
 
-    // Sprint 2.4.1 audit fix (Senior Dev) — mirror the question-payload
+    // Sprint 2.4.1 — mirror the question-payload
     // catch-up for the lives row. If the HUD re-binds mid-round (a
     // future pause/resume rebind path noted above), the lives dots
     // must repaint from the current scene state rather than stay
@@ -640,8 +681,8 @@ export class HudScene extends Phaser.Scene {
     // dedicated total-changed event. Mid-round reads are idempotent
     // re-paints. The repositionTotalLabel below handles the round
     // label growing wider so the two labels never visually overlap
-    // (sprint 2.1.5 wrap-up — Architect + Senior Dev both flagged
-    // the create-time-only position as fragile to 5+ digit scores).
+    // (sprint 2.1.5 — the create-time-only position was fragile to
+    // 5+ digit scores).
     this.totalScoreText.setText(`This visit: ${String(SessionTotalScore.get())}`);
     this.repositionTotalLabel();
     // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score

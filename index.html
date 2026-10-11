@@ -24,9 +24,65 @@
       rel="stylesheet"
     />
     <style>
+      /* Footer strip height — the single CSS source for it. The footer is a
+         MIN height (it grows to two lines on narrow screens rather than
+         truncating the notice). */
+      :root { --footer-min-h: 32px; }
       html, body { margin: 0; padding: 0; height: 100%; background: #0b1020; overflow: hidden; }
-      body { font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2; }
-      #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+      /* Sprint 2.5.2 — page layout is a column the height of the VISIBLE
+         viewport (`100dvh`; `100vh` fallback for browsers without dvh):
+         the game canvas fills the space, the AGPL footer sits in flow
+         directly beneath it. On a phone, `100dvh` shrinks when the URL bar
+         shows, so both the canvas bottom (the Alien Shoot speeder, the FIRE
+         button) and the footer always stay above the bar — and because the
+         footer is BELOW the canvas rather than floating over it, no game
+         element can ever sit underneath the footer or its Source link
+         (the sprint 0.6 "link steals FIRE taps" class of bug). Replaces the
+         earlier "halfway" `calc(50vh + 50dvh)` canvas + fixed-position
+         footer pinned with `calc(100vh - 100dvh)`. */
+      body {
+        font-family: 'Baloo 2', system-ui, -apple-system, sans-serif; color: #eaeaf2;
+        display: flex; flex-direction: column;
+        height: 100vh; height: 100dvh;
+      }
+      #game { flex: 1 1 auto; min-height: 0; width: 100vw; display: flex; align-items: center; justify-content: center; }
+
+      /* AGPL §7(b) attribution footer (filled by mountAttributionFooter()
+         from src/core/attribution.ts). In flow under #game, so the canvas
+         is sized to the space above it. Wraps to a second line when it
+         doesn't fit on one — the notice must never be truncated (NOTICE
+         §7(b)(b)); a taller footer simply leaves the canvas a little less
+         room. position:relative + z-index 11 lifts it above the boot
+         splash (z-index 10) so the notice is visible from first paint;
+         the portrait-rotate overlay (z-index 100) still covers it.
+         pointer-events:none on the strip; the Source link opts back in. */
+      #app-footer {
+        position: relative; z-index: 11;
+        flex: 0 0 auto; min-height: var(--footer-min-h);
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        column-gap: 12px; row-gap: 2px; padding: 4px 16px; box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.55);
+        font-family: 'Baloo 2', system-ui, -apple-system, sans-serif;
+        font-size: 12px; line-height: 1.2; color: #eaeaf2;
+        pointer-events: none;
+      }
+      #app-footer a { color: #60a5fa; text-decoration: none; pointer-events: auto; overflow-wrap: anywhere; }
+      #app-footer a:hover { color: #93c5fd; text-decoration: underline; }
+      /* Sprint 2.5.2 — "Full screen" button (phones/tablets only, and only
+         while NOT fullscreen; src/app/fullscreen.ts toggles the `hidden`
+         attribute). Deliberately NO `display` rule here: the `hidden`
+         attribute relies on the browser default `display: none`, which any
+         author `display` would override. Amber to match FIRE / the loading
+         bar so kids read it as a control. */
+      #app-footer-fullscreen {
+        pointer-events: auto; cursor: pointer;
+        font: inherit; font-size: 13px; font-weight: 700; line-height: 1;
+        color: #0b1020; background: #fbbf24;
+        border: 0; border-radius: 6px; padding: 6px 12px; min-height: 26px;
+        vertical-align: middle;
+      }
+      #app-footer-fullscreen svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 6px; }
+      #app-footer-fullscreen:active { background: #f59e0b; transform: translateY(1px); }
       /* Splash overlay — shown until the user clicks "Tap to play".
          Constructing Phaser inside the click handler ensures the
          AudioContext is created inside a user-gesture context
@@ -173,6 +229,19 @@
       <p>mathBasher plays better wide.</p>
     </div>
     <div id="game"></div>
+    <!--
+      Sprint 2.5.2 — AGPL §7(b) attribution footer, rendered in the DOM
+      (it was a Phaser scene, AttributionScene, before this sprint). It sits
+      in the body's flex column directly under #game, so the canvas is sized
+      to the space above it and nothing in the game can be covered by it.
+      Text is filled by `mountAttributionFooter()` from the single source of
+      truth in `src/core/attribution.ts`. See the #app-footer CSS above.
+    -->
+    <footer id="app-footer" aria-label="Attribution and license">
+      <button id="app-footer-fullscreen" type="button" hidden><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4"/></svg>Full screen</button>
+      <span id="app-footer-left"></span>
+      <a id="app-footer-src" target="_blank" rel="noopener noreferrer"></a>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -3,9 +3,11 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, expect, it } from 'vitest';
+import { config } from '@/core/config';
 import {
   pickSubsetWithCorrect,
   resolveRungPick,
+  resolveStrike,
   RUNGS_PER_DIFFICULTY,
 } from '@/game/systems/numberClimbFloorMath';
 
@@ -154,7 +156,7 @@ describe('resolveRungPick', () => {
   });
 
   it('correct pick AFTER a mulligan → still "correct", counter stays at 1', () => {
-    // The kid used their one mulligan, then picked the right rung.
+    // The kid made one wrong pick, then picked the right rung.
     const d = resolveRungPick({
       paused: false,
       rungInFloor: true,
@@ -180,7 +182,7 @@ describe('resolveRungPick', () => {
     expect(d.consumeRung).toBe(true);
   });
 
-  it('second wrong pick on the same floor → "wrong-terminal", counter 1 → 2', () => {
+  it('second wrong pick on the same floor → still "wrong-mulligan" (sprint 2.5.2: no per-floor terminal), counter 1 → 2', () => {
     const d = resolveRungPick({
       paused: false,
       rungInFloor: true,
@@ -188,7 +190,10 @@ describe('resolveRungPick', () => {
       correctAnswer: CORRECT,
       wrongsSoFar: 1,
     });
-    expect(d.kind).toBe('wrong-terminal');
+    // Sprint 2.5.2 removed the per-floor terminal — every wrong pick is
+    // a retry (mulligan) that costs one cumulative life; the round ends
+    // only when the scene's climb-wide 3-life cap is exhausted.
+    expect(d.kind).toBe('wrong-mulligan');
     expect(d.wrongsAfter).toBe(2);
     expect(d.consumeRung).toBe(true);
   });
@@ -219,11 +224,13 @@ describe('resolveRungPick', () => {
     expect(d.consumeRung).toBe(false);
   });
 
-  it('a wrong pick while already at the terminal count stays terminal (defensive)', () => {
-    // Shouldn't happen — the scene ends the round on the first
-    // wrong-terminal — but the state machine must not crash or produce
-    // a nonsense kind if pickRung is somehow called again. `wrongsAfter`
-    // caps at 2 rather than ticking up to a meaningless 3.
+  it('a third wrong pick on the same floor → still "wrong-mulligan", counter keeps incrementing (sprint 2.5.2)', () => {
+    // Reachable now: on a 4-rung (hard) floor a kid can pick 3 wrong
+    // rungs before the only remaining rung is correct. Each is a
+    // mulligan that spends a life; the scene's cumulative cap (3) ends
+    // the round when the last life is spent. The per-floor counter just
+    // keeps ticking (it only feeds the `hasUsedMulligan` half-points
+    // flag, which needs > 0 — no ceiling required).
     const d = resolveRungPick({
       paused: false,
       rungInFloor: true,
@@ -231,7 +238,51 @@ describe('resolveRungPick', () => {
       correctAnswer: CORRECT,
       wrongsSoFar: 2,
     });
-    expect(d.kind).toBe('wrong-terminal');
-    expect(d.wrongsAfter).toBe(2);
+    expect(d.kind).toBe('wrong-mulligan');
+    expect(d.wrongsAfter).toBe(3);
+    expect(d.consumeRung).toBe(true);
+  });
+});
+
+/**
+ * Sprint 2.5.2 — climb-wide life cap. Story 6 acceptance: the round ends
+ * precisely when the last life is spent (HUD shows 0), never with a life
+ * still showing — whether the wrongs land on one floor or across floors
+ * (the cap is climb-wide, so `resolveStrike` has no notion of floors).
+ */
+describe('resolveStrike — climb-wide 3-life cap', () => {
+  const MAX = 3;
+
+  it('1st wrong → 1 life spent, 2 left, round continues', () => {
+    expect(resolveStrike(0, MAX)).toEqual({ strikesAfter: 1, remaining: 2, exhausted: false });
+  });
+
+  it('2nd wrong → 2 spent, 1 left, round STILL continues (no per-floor terminal)', () => {
+    expect(resolveStrike(1, MAX)).toEqual({ strikesAfter: 2, remaining: 1, exhausted: false });
+  });
+
+  it('3rd wrong → last life spent, 0 left, round ends', () => {
+    expect(resolveStrike(2, MAX)).toEqual({ strikesAfter: 3, remaining: 0, exhausted: true });
+  });
+
+  it('a full climb: exhausted fires on exactly the 3rd wrong, never earlier', () => {
+    let used = 0;
+    const exhaustedAt: number[] = [];
+    for (let wrong = 1; wrong <= MAX; wrong++) {
+      const d = resolveStrike(used, MAX);
+      used = d.strikesAfter;
+      if (d.exhausted) exhaustedAt.push(wrong);
+      // Whenever the round continues, at least one life is still showing.
+      if (!d.exhausted) expect(d.remaining).toBeGreaterThan(0);
+    }
+    expect(exhaustedAt).toEqual([MAX]);
+  });
+
+  it('remaining never goes negative', () => {
+    expect(resolveStrike(5, MAX).remaining).toBe(0);
+  });
+
+  it('the shipped config cap is 3 lives', () => {
+    expect(config.numberClimb.maxStrikesPerClimb).toBe(3);
   });
 });
