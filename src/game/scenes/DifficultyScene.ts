@@ -38,7 +38,7 @@ interface SpeedDisplay {
  * "Speed" since they're really controlling enemy descent / drift rate.
  */
 function speedSectionTitleFor(gameId: GameId): string {
-  return gameId === 'number-climb' ? 'Difficulty' : 'Speed';
+  return gameId === 'number-climb' || gameId === 'math-a-lotl' ? 'Difficulty' : 'Speed';
 }
 
 function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
@@ -74,6 +74,13 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
         label: labels[key],
         subtitle: `${rungs} rungs · ${totalSec}s timer`,
       };
+    }
+    case 'math-a-lotl': {
+      // Sprint 2.5.4 — difficulty = bubble count + rise speed.
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const pace: Record<SpeedKey, string> = { slow: 'slow', medium: 'medium', fast: 'fast' };
+      const { bubbleCount } = config.mathALotl.speed[key];
+      return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${pace[key]}` };
     }
   }
 }

@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
-import { GAME_BG_MAP, ParticleSpriteKeys } from '@/core/spriteKeys';
+import { GAME_BG_MAP, GAME_BG_SPACE_LAYERS, ParticleSpriteKeys } from '@/core/spriteKeys';
 import { Settings } from '@/services/Settings';
 
 /**
@@ -63,6 +63,8 @@ export class BackgroundScene extends Phaser.Scene {
    * to `GAME_BG_MAP` in `spriteKeys.ts`.
    */
   private backdrop?: Phaser.GameObjects.Image;
+  /** Bottom darkening band (space backdrops only — see `applySpaceLayers`). */
+  private bottomFade?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super(BackgroundScene.key);
@@ -101,7 +103,7 @@ export class BackgroundScene extends Phaser.Scene {
       // resets `displayWidth/Height` to the new texture's native size
       // on texture swap, undoing the original setDisplaySize call.
       this.backdrop?.setDisplaySize(this.cachedWidth, this.cachedHeight);
-      this.applyStarVisibility();
+      this.applySpaceLayers();
     });
 
     // === Layer 2: Three parallax star layers (back → front) ===
@@ -117,8 +119,6 @@ export class BackgroundScene extends Phaser.Scene {
       // Near: a handful of bigger, brighter stars at higher speed.
       this.createStarLayer(ParticleSpriteKeys.Star07, 10, 36, 0.85, 0.5, 0.9),
     ];
-    this.applyStarVisibility();
-
     // === Layer 3: Bottom darkening overlay (vertical alpha gradient) ===
     // Soft fade from transparent (top of band) to `#0b1020` at
     // FADE_BAND_BOTTOM_ALPHA (bottom of band). Built via Phaser's
@@ -142,6 +142,8 @@ export class BackgroundScene extends Phaser.Scene {
       FADE_BAND_BOTTOM_ALPHA,
     );
     fade.fillRect(0, fadeStartY, W, fadeHeight);
+    this.bottomFade = fade;
+    this.applySpaceLayers();
 
     _th.logToAi('BackgroundScene Completed', SeverityLevel.Information);
 
@@ -200,19 +202,20 @@ export class BackgroundScene extends Phaser.Scene {
   }
 
   /**
-   * Sprint 2.2 story 13a — Number Climb plays inside framed floor "rooms",
-   * not an outdoor space. The falling-star overlay implies an overhead
-   * sky/space that isn't there during the climb, so we hide the stars
-   * (nebula still shows through the framed-floor side-bars for visual
-   * interest). Other game modes keep stars visible. Called from `create`
+   * Show / hide the space-only layers for the current game, per
+   * `GAME_BG_SPACE_LAYERS`. Sprint 2.2 story 13a hid the stars for
+   * Number Climb (it plays inside framed floor "rooms", not open space);
+   * sprint 2.5.4 also hides the stars and the bottom darkening band for
+   * Math-a-lotl, whose backdrop is bright water. Called from `create`
    * (initial state) and from the `onGameIdChange` listener (live swap).
    */
-  private applyStarVisibility(): void {
-    const visible = Settings.round.gameId !== 'number-climb';
+  private applySpaceLayers(): void {
+    const layers = GAME_BG_SPACE_LAYERS[Settings.round.gameId];
     for (const layer of this.starLayers) {
       for (const star of layer.stars) {
-        star.setVisible(visible);
+        star.setVisible(layers.stars);
       }
     }
+    this.bottomFade?.setVisible(layers.bottomFade);
   }
 }

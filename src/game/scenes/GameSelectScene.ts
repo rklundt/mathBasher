@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { SceneKeys } from '@/core/sceneKeys';
-import { Settings } from '@/services/Settings';
+import { Settings, type GameId } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
@@ -13,11 +13,10 @@ import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
- * Game-mode selection. Three tiles as of sprint 2.2 (Alien Shoot,
- * Asteroid Field, Number Climb). The layout scales with game-mode
- * count — a 4th tile arriving would either bump tile widths down or
- * shift to a 2×2 grid. For now a single horizontal row at the
- * canonical tile dimensions reads cleanly with 20px gaps.
+ * Game-mode selection. Four tiles as of sprint 2.5.4 (Alien Shoot,
+ * Asteroid Field, Space Escape!, Math-a-lotl) in a 2×2 grid — a single
+ * row stopped fitting at four. A fifth game would add a third row or
+ * shrink the tiles.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
@@ -38,58 +37,45 @@ export class GameSelectScene extends Phaser.Scene {
     // the affordance is in the same spot every screen.
     createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
-    // Three tiles in a row: cx - 340, cx, cx + 340.
-    // tileW (320) + 20 gap = 340 center-spacing keeps the gap visible.
-    const TILE_W = 320;
-    const TILE_H = 200;
+    // Sprint 2.5.4 — four games in a 2×2 grid (three 320-wide tiles in
+    // a row no longer fit a fourth on the 1280 canvas). Columns at
+    // cx ± (TILE_W + TILE_GAP) / 2, rows at tileY ± (TILE_H + TILE_GAP) / 2;
+    // the grid stays clear of the title above and Back below.
+    const TILE_W = 440;
+    const TILE_H = 150;
     const TILE_GAP = 20;
-    const tileCenterSpacing = TILE_W + TILE_GAP;
+    const colOffset = (TILE_W + TILE_GAP) / 2;
+    const rowOffset = (TILE_H + TILE_GAP) / 2;
     const tileY = height * 0.5;
 
-    // Tile 1: Alien Shoot — the original lane-drop gameplay.
-    const alienShoot = new PlaceholderButton({
-      scene: this,
-      x: cx - tileCenterSpacing,
-      y: tileY,
-      width: TILE_W,
-      height: TILE_H,
-      label: 'Alien Shoot',
-      subtitle: 'Aliens carry answers. Shoot the right one.',
-      onClick: () => {
-        Settings.setGameId('alien-shoot');
-        this.scene.start(SceneKeys.Difficulty);
-      },
-    });
+    const tile = (
+      col: -1 | 1,
+      row: -1 | 1,
+      label: string,
+      subtitle: string,
+      gameId: GameId,
+    ): PlaceholderButton =>
+      new PlaceholderButton({
+        scene: this,
+        x: cx + col * colOffset,
+        y: tileY + row * rowOffset,
+        width: TILE_W,
+        height: TILE_H,
+        label,
+        subtitle,
+        onClick: () => {
+          Settings.setGameId(gameId);
+          this.scene.start(SceneKeys.Difficulty);
+        },
+      });
 
-    // Tile 2: Asteroid Field — sprint 2.1's free-aim mode.
-    const asteroidField = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: tileY,
-      width: TILE_W,
-      height: TILE_H,
-      label: 'Asteroid Field',
-      subtitle: 'Aim at floating asteroids. Beat the timer.',
-      onClick: () => {
-        Settings.setGameId('asteroid-field');
-        this.scene.start(SceneKeys.Difficulty);
-      },
-    });
-
-    // Tile 3: Number Climb — sprint 2.2 vertical climbing mode.
-    const numberClimb = new PlaceholderButton({
-      scene: this,
-      x: cx + tileCenterSpacing,
-      y: tileY,
-      width: TILE_W,
-      height: TILE_H,
-      label: 'Space Escape!',
-      subtitle: 'Climb to escape the burning station.',
-      onClick: () => {
-        Settings.setGameId('number-climb');
-        this.scene.start(SceneKeys.Difficulty);
-      },
-    });
+    // Alien Shoot (the original lane-drop gameplay), Asteroid Field
+    // (sprint 2.1 free-aim), Space Escape! (sprint 2.2 climb), and
+    // Math-a-lotl (sprint 2.5.4 underwater bubbles).
+    const alienShoot = tile(-1, -1, 'Alien Shoot', 'Aliens carry answers. Shoot the right one.', 'alien-shoot');
+    const asteroidField = tile(1, -1, 'Asteroid Field', 'Aim at floating asteroids. Beat the timer.', 'asteroid-field');
+    const numberClimb = tile(-1, 1, 'Space Escape!', 'Climb to escape the burning station.', 'number-climb');
+    const mathALotl = tile(1, 1, 'Math-a-lotl', 'Help the axolotl catch the right bubble.', 'math-a-lotl');
 
     const back = new PlaceholderButton({
       scene: this,
@@ -101,7 +87,7 @@ export class GameSelectScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    new KeyboardNavigator(this, [alienShoot, asteroidField, numberClimb, back]);
+    new KeyboardNavigator(this, [alienShoot, asteroidField, numberClimb, mathALotl, back]);
 
     // Esc returns to the previous step in the menu stack.
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
