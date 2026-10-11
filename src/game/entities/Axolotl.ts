@@ -28,6 +28,10 @@ export class Axolotl {
   private targetMoves = false;
   private facing: Facing = { flipX: false, tilt: 0 };
   private happyTimer: Phaser.Time.TimerEvent | null = null;
+  private readonly baseScale: number;
+  /** Tweened multipliers on top of `baseScale`: `squash` (turning around) and `pop` (happy bounce). */
+  private readonly look = { squash: 1, pop: 1 };
+  private lastTurnMs = -Infinity;
 
   /**
    * Head offset from the sprite centre in SHEET pixels (facing right,
@@ -51,7 +55,8 @@ export class Axolotl {
       });
     }
     this.sprite = scene.add.sprite(x, y, textureKey, 0);
-    this.sprite.setScale(this.cfg.displayWidthPx / AXOLOTL_SHEET.frameWidth);
+    this.baseScale = this.cfg.displayWidthPx / AXOLOTL_SHEET.frameWidth;
+    this.sprite.setScale(this.baseScale);
     this.sprite.play(this.animKey);
     this.sprite.anims.timeScale = this.cfg.idleFps / this.cfg.swimFps;
   }
@@ -82,8 +87,8 @@ export class Axolotl {
 
   /** Mouth position in world space — the point that catches bubbles. */
   headPoint(): { x: number; y: number } {
-    const s = this.sprite.scaleX;
-    const ox = Axolotl.HEAD_OFFSET.x * s * (this.facing.flipX ? -1 : 1);
+    const s = this.baseScale;
+    const ox = Axolotl.HEAD_OFFSET.x * s * (this.sprite.flipX ? -1 : 1);
     const oy = Axolotl.HEAD_OFFSET.y * s;
     const r = this.sprite.rotation;
     return {
@@ -96,8 +101,28 @@ export class Axolotl {
     const dt = dtMs / 1000;
     const t = this.target?.() ?? null;
     let moving = false;
+    let wantTilt = 0;
     if (t) {
-      // Steer so the HEAD (not the sprite centre) reaches the target.
+      // Facing comes from where the target is relative to the CENTRE
+      // (with a deadzone + cooldown — see `facingFor`), never from the
+      // per-frame step: steering toward the mouth makes the step's
+      // direction depend on the facing itself, which flickered.
+      const next = facingFor(
+        t.x - this.sprite.x,
+        t.y - this.sprite.y,
+        this.facing.flipX,
+        this.maxTiltRad,
+        this.cfg.turnDeadzonePx,
+      );
+      const now = this.scene.time.now;
+      if (next.flipX !== this.facing.flipX && now - this.lastTurnMs >= this.cfg.turnCooldownMs) {
+        this.lastTurnMs = now;
+        this.facing = next;
+        this.playTurn(next.flipX);
+      } else {
+        this.facing = { flipX: this.facing.flipX, tilt: next.tilt };
+      }
+      // Steer so the MOUTH (not the sprite centre) reaches the target.
       const head = this.headPoint();
       const goalX = t.x - (head.x - this.sprite.x);
       const goalY = t.y - (head.y - this.sprite.y);
@@ -105,22 +130,39 @@ export class Axolotl {
       this.sprite.setPosition(step.x, step.y);
       if (!step.arrived) {
         moving = true;
-        this.facing = facingFor(step.dx, step.dy, this.facing.flipX, this.maxTiltRad);
+        wantTilt = this.facing.tilt;
       } else if (!this.targetMoves) {
         this.target = null;
       }
     }
-    // Ease the nose back to level when resting; toward the target tilt when moving.
-    const wantTilt = moving ? this.facing.tilt : 0;
+    // Ease the nose toward the target tilt while swimming, back to level at rest.
     const k = Math.min(1, this.cfg.tiltEasePerSec * dt);
-    const current = this.facing.flipX ? -this.sprite.rotation : this.sprite.rotation;
-    const eased = current + (wantTilt - current) * k;
-    this.sprite.setFlipX(this.facing.flipX);
-    this.sprite.setRotation(rotationFor({ flipX: this.facing.flipX, tilt: eased }));
+    const shownFlip = this.sprite.flipX;
+    const current = shownFlip ? -this.sprite.rotation : this.sprite.rotation;
+    this.sprite.setRotation(rotationFor({ flipX: shownFlip, tilt: current + (wantTilt - current) * k }));
+    this.sprite.setScale(this.baseScale * this.look.pop * this.look.squash, this.baseScale * this.look.pop);
     // Paddle at full speed while swimming, lazily while resting.
     if (!this.happyTimer) {
       this.sprite.anims.timeScale = moving ? 1 : this.cfg.idleFps / this.cfg.swimFps;
     }
+  }
+
+  /** Squash-and-turn: narrow to a sliver, mirror at the thinnest point, widen back. */
+  private playTurn(toFlipX: boolean): void {
+    this.scene.tweens.killTweensOf(this.look);
+    this.look.squash = 1;
+    this.scene.tweens.add({
+      targets: this.look,
+      squash: 0.12,
+      duration: this.cfg.turnMs / 2,
+      ease: 'Sine.In',
+      yoyo: true,
+      onYoyo: () => this.sprite.setFlipX(toFlipX),
+      onComplete: () => {
+        this.sprite.setFlipX(toFlipX);
+        this.look.squash = 1;
+      },
+    });
   }
 
   /** Closed-eye happy face for a beat, then back to swimming. */
@@ -129,12 +171,14 @@ export class Axolotl {
     this.sprite.anims.stop();
     this.sprite.setFrame(AXOLOTL_SHEET.happyFrame);
     this.scene.tweens.add({
-      targets: this.sprite,
-      scaleX: this.sprite.scaleX * 1.12,
-      scaleY: this.sprite.scaleY * 1.12,
+      targets: this.look,
+      pop: { from: 1, to: 1.12 },
       duration: 140,
       yoyo: true,
       ease: 'Quad.Out',
+      onComplete: () => {
+        this.look.pop = 1;
+      },
     });
     this.happyTimer = this.scene.time.delayedCall(this.cfg.happyHoldMs, () => {
       this.happyTimer = null;
@@ -153,6 +197,7 @@ export class Axolotl {
   destroy(): void {
     this.happyTimer?.remove();
     this.happyTimer = null;
+    this.scene.tweens.killTweensOf(this.look);
     this.sprite.destroy();
   }
 }

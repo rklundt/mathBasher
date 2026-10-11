@@ -609,6 +609,15 @@ export const config = {
       maxTiltDeg: 70,
       /** How fast the tilt eases toward its target (per second). */
       tiltEasePerSec: 6,
+      /**
+       * Turn left/right only when the target is this far past the
+       * axolotl's centre on the other side, and at most once per
+       * `turnCooldownMs` — stops the flicker on up/down swims.
+       */
+      turnDeadzonePx: 40,
+      turnCooldownMs: 300,
+      /** Squash-and-turn animation length when it does turn around. */
+      turnMs: 160,
       /** Keep-out margin from the canvas edges, waterline and floor. */
       edgeMarginPx: 60,
       /** How long the happy face holds after a catch. */
