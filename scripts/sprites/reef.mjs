@@ -12,6 +12,7 @@
  * Usage:
  *   pnpm sprite:reef                  # writes the shipped WebPs
  *   pnpm sprite:reef --preview <png>  # also writes a review sheet
+ *   pnpm sprite:reef --force          # re-render over existing shipped files
  *
  * Outputs:
  *   public/assets/sprites/bg/math-a-lotl.webp       1280×720 backdrop
@@ -22,7 +23,7 @@
  */
 
 import sharp from 'sharp';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -236,6 +237,22 @@ function fishSvg(phase) {
 
 // ---------- render ----------
 
+/**
+ * Shipped game assets are cached for a week under stable names, so a
+ * re-render that silently overwrites one can serve stale art (see
+ * DeveloperGuide "Cache model"). Refuse unless `--force` is passed —
+ * a visible change should ship under a NEW filename instead.
+ */
+function refuseOverwrite(paths, force) {
+  const existing = paths.filter((p) => existsSync(p));
+  if (existing.length === 0 || force) return;
+  console.error('Refusing to overwrite shipped assets (pass --force to re-render in place):');
+  for (const p of existing) console.error(`  ${p}`);
+  console.error('A visible change should ship under a new filename (week-long cache).');
+  process.exit(1);
+}
+
+
 const png = (s) => sharp(Buffer.from(s)).png().toBuffer();
 
 async function sheet(frames, w, h) {
@@ -269,6 +286,10 @@ async function main() {
       resolve(BG_DIR, 'reef-fish.webp'),
     ],
   };
+  refuseOverwrite(
+    Object.values(outputs).map(([, out]) => out),
+    args.includes('--force'),
+  );
   for (const [buf, out] of Object.values(outputs)) {
     await webp(buf, out);
     console.log(`wrote ${out}`);

@@ -27,7 +27,7 @@ import type { GameId } from '@/services/Settings';
  *                   per session per game. Examples (sprint 2.1.6
  *                   stories 5 + 7): alien spritesheets are
  *                   `game:alien-shoot`; asteroid rocks + asteroid-
- *                   hero ships + `loop-3` + `timeout-fail-1` are
+ *                   hero ships + `loop-3` are
  *                   `game:asteroid-field`.
  *
  * Adding a new game mode = TypeScript exhaustiveness will flag any

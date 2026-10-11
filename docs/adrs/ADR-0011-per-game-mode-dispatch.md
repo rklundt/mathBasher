@@ -32,7 +32,8 @@ The dispatch axes today (sprint 2.1.9):
 |---|---|---|---|
 | Background image | `GAME_BG_MAP: Record<GameId, BgSpriteKey>` | `src/core/spriteKeys.ts` | `BackgroundScene` (reactive via `Settings.onGameIdChange` observer) |
 | Music loop | `GAME_MUSIC_MAP: Record<GameId, MusicKey>` | `src/core/audioKeys.ts` | `GameSceneLifecycle.enter()` / `.exit()` (read at scene mount) |
-| Midground loop | `GAME_MIDGROUND_MAP: Record<GameId, MidgroundKey>` | `src/core/audioKeys.ts` | Same as music |
+| Midground loop(s) | `GAME_MIDGROUND_MAP: Record<GameId, readonly MidgroundKey[]>` (a list since sprint 2.5.4 — layered loops) | `src/core/audioKeys.ts` | Same as music |
+| Space-only background layers | `GAME_BG_SPACE_LAYERS: Record<GameId, { stars; bottomFade }>` (sprint 2.5.4) | `src/core/spriteKeys.ts` | `BackgroundScene.applySpaceLayers` (reactive, same observer as the bg image) |
 | Asset bundle scope | per-entry `scope: 'game:<gameId>'` field on each `SpriteManifestEntry` / `AudioManifestEntry` | `src/core/spriteKeys.ts`, `src/core/audioKeys.ts` | `loadGameBundle(scene, gameId)` filters by scope predicate |
 | Audio scope dispatch | `audioScopeFor(key): AssetScope` | `src/core/audioKeys.ts` | `AUDIO_MANIFEST` builder calls per key |
 | Scene-key route | inline `gameId === 'asteroid-field' ? Keys.AsteroidField : Keys.Game` switch | `src/game/scenes/DifficultyScene.ts`, `GameOverScene.ts` (Play Again) | `scene.start(SceneKeys.Loading, { targetSceneKey, gameId })` |

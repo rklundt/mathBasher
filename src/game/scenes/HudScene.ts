@@ -800,6 +800,9 @@ export class HudScene extends Phaser.Scene {
   private popupScoreDelta(delta: number, x: number, y: number): void {
     // TextKind 'scorePopup' — 29px green bold (Sprint 0.7.5 Story 3).
     const popup = text(this, x, y, `+${delta}`, 'scorePopup').setOrigin(0.5);
+    // Dark outline so the green reads on any backdrop (it was ~1.3:1 on
+    // Math-a-lotl's blue water — sprint 2.5.5).
+    popup.setStroke('#0b1020', 6);
     const { holdMs, fadeMs, risePx } = config.layout.scorePopup;
     this.tweens.add({
       targets: popup,

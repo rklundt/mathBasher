@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickSubsetWithCorrect } from '@/game/systems/numberClimbFloorMath';
+import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
 
 /**
  * Pure helpers for Math-a-lotl (sprint 2.5.4) — no Phaser, so the wave
@@ -165,6 +165,62 @@ export function pickTappedBubble(
     }
   });
   return best;
+}
+
+/**
+ * Bubbles a kid can actually see: any part above the canvas bottom.
+ * Waves spawn below the floor, so taps and number keys must ignore the
+ * still-hidden ones — otherwise a tap near the bottom edge could pick an
+ * unseen (possibly wrong) bubble and cost a life.
+ */
+export function visibleBubbles<T extends { y: number; radius: number; alive: boolean }>(
+  bubbles: readonly T[],
+  floorY: number,
+): T[] {
+  return bubbles.filter((b) => b.alive && b.y - b.radius < floorY);
+}
+
+/**
+ * Highest point (smallest y) a CHASED bubble may rise to: just under the
+ * waterline, so a bubble the axolotl is already swimming to can't float
+ * away mid-chase. Unchased bubbles rise and escape as normal.
+ */
+export function chaseHoldY(waterlineY: number, radius: number, marginPx: number): number {
+  return waterlineY + radius + marginPx;
+}
+
+/**
+ * Per-question countdown that can EXPIRE ONLY ONCE per `start()` and
+ * stops ticking after `stop()` — so the timeout path can't run twice
+ * (the last-question case: the round has ended but the scene still gets
+ * one more update before GameOver mounts).
+ */
+export class QuestionClock {
+  private remainingMs = 0;
+  private running = false;
+
+  start(ms: number): void {
+    this.remainingMs = ms;
+    this.running = true;
+  }
+
+  stop(): void {
+    this.running = false;
+  }
+
+  /** Advance; returns true exactly once — on the tick that reaches zero. */
+  tick(dtMs: number): boolean {
+    if (!this.running) return false;
+    this.remainingMs = Math.max(0, this.remainingMs - dtMs);
+    if (this.remainingMs > 0) return false;
+    this.running = false;
+    return true;
+  }
+
+  /** Seconds left (0 once expired or stopped at zero). */
+  get remainingSec(): number {
+    return this.remainingMs / 1000;
+  }
 }
 
 /** Clamp a point into the swimmable water rectangle. */

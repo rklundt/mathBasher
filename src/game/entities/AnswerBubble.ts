@@ -29,6 +29,8 @@ export class AnswerBubble {
   /** Random sway phase so neighbouring bubbles don't sway in lockstep. */
   private readonly phase: number;
   private elapsed = 0;
+  /** While set, the bubble stops rising at this y (it's being chased). */
+  private holdY: number | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -45,7 +47,10 @@ export class AnswerBubble {
     const img = scene.add.image(0, 0, ReefSpriteKeys.Bubble);
     img.setDisplaySize(cfg.diameterPx, cfg.diameterPx);
     const label = scene.add.text(0, 0, opts.display, textStyle('alienAnswer')).setOrigin(0.5);
-    label.setShadow(0, 2, '#1d4f8a', 4, true, true);
+    // Dark outline: the bubble is nearly clear, so without it white text
+    // on the light upper water reads at ~1.8:1 (sprint 2.5.5).
+    label.setStroke('#0b3a6b', 7);
+    label.setShadow(0, 2, '#0b1020', 4, true, true);
     // Same long-label shrink as the other games' answer carriers so
     // fraction strings ("1 2/3") fit inside the bubble.
     if (opts.display.length >= 5) label.setScale(0.7);
@@ -71,10 +76,16 @@ export class AnswerBubble {
     const entering = this.container.y + this.radius > this.floorY;
     const speed = entering ? Math.max(this.rise, config.mathALotl.bubble.entryRisePxPerSec) : this.rise;
     this.container.y -= speed * dt;
+    if (this.holdY !== null && this.container.y < this.holdY) this.container.y = this.holdY;
     this.container.x = this.baseX + swayPx * Math.sin(Math.PI * 2 * swayHz * this.elapsed + this.phase);
   }
 
-  popCorrect(onDone?: () => void): void {
+  /** Pause the rise at `y` (the axolotl is swimming to this bubble), or `null` to release. */
+  setHoldY(y: number | null): void {
+    this.holdY = y;
+  }
+
+  popCorrect(): void {
     if (!this.alive) return;
     this.alive = false;
     this.scene.tweens.add({
@@ -83,14 +94,11 @@ export class AnswerBubble {
       alpha: 0,
       duration: 220,
       ease: 'Quad.Out',
-      onComplete: () => {
-        this.container.destroy();
-        onDone?.();
-      },
+      onComplete: () => this.container.destroy(),
     });
   }
 
-  popWrong(onDone?: () => void): void {
+  popWrong(): void {
     if (!this.alive) return;
     this.alive = false;
     // Squish-wobble (reads as "oops", not as an explosion), then burst.
@@ -102,14 +110,11 @@ export class AnswerBubble {
         { scaleX: 1.1, scaleY: 0.92, duration: 80, ease: 'Sine.InOut' },
         { scale: 1.3, alpha: 0, duration: 160, ease: 'Quad.Out' },
       ],
-      onComplete: () => {
-        this.container.destroy();
-        onDone?.();
-      },
+      onComplete: () => this.container.destroy(),
     });
   }
 
-  popQuiet(onDone?: () => void): void {
+  popQuiet(): void {
     if (!this.alive) return;
     this.alive = false;
     this.scene.tweens.add({
@@ -117,10 +122,7 @@ export class AnswerBubble {
       scale: 1.15,
       alpha: 0,
       duration: 200,
-      onComplete: () => {
-        this.container.destroy();
-        onDone?.();
-      },
+      onComplete: () => this.container.destroy(),
     });
   }
 

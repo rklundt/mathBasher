@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { AXOLOTL_SHEET, type AxolotlSpriteKey } from '@/core/spriteKeys';
-import { facingFor, rotationFor, stepToward, type Facing } from '@/game/systems/mathALotlMath';
+import { clampToWater, facingFor, rotationFor, stepToward, type Facing } from '@/game/systems/mathALotlMath';
 
 /**
  * The Math-a-lotl hero (sprint 2.5.4): a code-drawn axolotl sprite that
@@ -33,17 +33,13 @@ export class Axolotl {
   private readonly look = { squash: 1, pop: 1 };
   private lastTurnMs = -Infinity;
 
-  /**
-   * Head offset from the sprite centre in SHEET pixels (facing right,
-   * untilted) — where the mouth sits in `scripts/sprites/axolotl.mjs`.
-   */
-  private static readonly HEAD_OFFSET = { x: 90, y: 12 };
-
   constructor(
     private readonly scene: Phaser.Scene,
     x: number,
     y: number,
     textureKey: AxolotlSpriteKey,
+    /** Swimmable area for the sprite centre; steering goals are clamped into it. */
+    private readonly bounds: { left: number; right: number; top: number; bottom: number },
   ) {
     this.animKey = `${textureKey}/swim`;
     if (!scene.anims.exists(this.animKey)) {
@@ -88,8 +84,8 @@ export class Axolotl {
   /** Mouth position in world space — the point that catches bubbles. */
   headPoint(): { x: number; y: number } {
     const s = this.baseScale;
-    const ox = Axolotl.HEAD_OFFSET.x * s * (this.sprite.flipX ? -1 : 1);
-    const oy = Axolotl.HEAD_OFFSET.y * s;
+    const ox = AXOLOTL_SHEET.mouthOffset.x * s * (this.sprite.flipX ? -1 : 1);
+    const oy = AXOLOTL_SHEET.mouthOffset.y * s;
     const r = this.sprite.rotation;
     return {
       x: this.sprite.x + ox * Math.cos(r) - oy * Math.sin(r),
@@ -124,9 +120,10 @@ export class Axolotl {
       }
       // Steer so the MOUTH (not the sprite centre) reaches the target.
       const head = this.headPoint();
-      const goalX = t.x - (head.x - this.sprite.x);
-      const goalY = t.y - (head.y - this.sprite.y);
-      const step = stepToward(this.sprite.x, this.sprite.y, goalX, goalY, this.cfg.swimPxPerSec * dt);
+      // Clamp the goal so a target at the edge (behind the axolotl, inside
+      // the turn deadzone) can't park it paddling against the wall forever.
+      const goal = clampToWater(t.x - (head.x - this.sprite.x), t.y - (head.y - this.sprite.y), this.bounds);
+      const step = stepToward(this.sprite.x, this.sprite.y, goal.x, goal.y, this.cfg.swimPxPerSec * dt);
       this.sprite.setPosition(step.x, step.y);
       if (!step.arrived) {
         moving = true;
@@ -157,12 +154,23 @@ export class Axolotl {
       duration: this.cfg.turnMs / 2,
       ease: 'Sine.In',
       yoyo: true,
-      onYoyo: () => this.sprite.setFlipX(toFlipX),
+      onYoyo: () => this.applyFlip(toFlipX),
       onComplete: () => {
-        this.sprite.setFlipX(toFlipX);
+        this.applyFlip(toFlipX);
         this.look.squash = 1;
       },
     });
+  }
+
+  /**
+   * Mirror the sprite, keeping the nose tilt's sense: a flipped texture
+   * rotates the other way, so the rotation flips sign with it (otherwise a
+   * nose-down axolotl turning around would briefly point nose-up).
+   */
+  private applyFlip(flipX: boolean): void {
+    if (this.sprite.flipX === flipX) return;
+    this.sprite.setFlipX(flipX);
+    this.sprite.setRotation(-this.sprite.rotation);
   }
 
   /** Closed-eye happy face for a beat, then back to swimming. */

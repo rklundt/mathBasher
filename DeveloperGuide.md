@@ -483,7 +483,7 @@ Two per-game knobs added in 2.5.4:
 
 ### Code-drawn art (Math-a-lotl)
 
-The axolotl, the underwater backdrop and the reef pieces are drawn in code: `pnpm sprite:axolotl` and `pnpm sprite:reef` render the shipped WebPs from `scripts/sprites/axolotl.mjs` / `reef.mjs`. Those scripts are the source of truth. Change the shapes or colors there and re-run; don't hand-edit the WebPs. The sprite-sheet frame sizes are mirrored in `AXOLOTL_SHEET` / `REEF_SHEETS` (`src/core/spriteKeys.ts`), and `src/core/mathALotlAssets.test.ts` fails if a sheet and its declared geometry drift apart. Because shipped assets are cached for a week, a visible change to a sheet needs a new filename (see "Cache model" below).
+The axolotl, the underwater backdrop and the reef pieces are drawn in code: `pnpm sprite:axolotl` and `pnpm sprite:reef` render the shipped WebPs from `scripts/sprites/axolotl.mjs` / `reef.mjs`. Those scripts are the source of truth. Change the shapes or colors there and re-run; don't hand-edit the WebPs. The sprite-sheet frame sizes are mirrored in `AXOLOTL_SHEET` / `REEF_SHEETS` (`src/core/spriteKeys.ts`), and `src/core/mathALotlAssets.test.ts` fails if a sheet and its declared geometry drift apart. Because shipped assets are cached for a week, a visible change to a sheet needs a new filename (see "Cache model" below); the generators refuse to overwrite an existing file unless you pass `--force`. The tab icon (`public/favicon.svg`, rendered to PNGs by `pnpm icon:favicon`) lives at the site root, outside the week-long `/assets/` cache rules, so an icon change reaches players on their next visit. `/assets/CREDITS.md` is served `no-cache` so attribution edits show up immediately.
 
 ### Loader-error handling
 
