@@ -92,28 +92,75 @@ describe('buildBubbleWave', () => {
 
 describe('facing + rotation', () => {
   const max = (70 * Math.PI) / 180;
+  const dz = 40;
 
-  it('faces right swimming right and left swimming left', () => {
-    expect(facingFor(10, 0, true, max).flipX).toBe(false);
-    expect(facingFor(-10, 0, false, max).flipX).toBe(true);
+  it('turns to face a target clearly on the other side', () => {
+    expect(facingFor(100, 0, true, max, dz).flipX).toBe(false);
+    expect(facingFor(-100, 0, false, max, dz).flipX).toBe(true);
   });
 
-  it('keeps the previous facing on a straight-up / straight-down swim', () => {
-    expect(facingFor(0, -50, true, max).flipX).toBe(true);
-    expect(facingFor(0.5, 50, false, max).flipX).toBe(false);
+  it('holds its facing while the target is inside the turn deadzone', () => {
+    expect(facingFor(-39, 200, false, max, dz).flipX).toBe(false);
+    expect(facingFor(39, -200, true, max, dz).flipX).toBe(true);
+    expect(facingFor(0, -50, true, max, dz).flipX).toBe(true);
   });
 
-  it('clamps the nose tilt to ±max', () => {
-    expect(facingFor(0, 100, false, max).tilt).toBeCloseTo(max);
-    expect(facingFor(0, -100, false, max).tilt).toBeCloseTo(-max);
-    expect(facingFor(10, 10, false, max).tilt).toBeCloseTo(Math.PI / 4);
+  it('tilts toward the target, clamped to ±max', () => {
+    expect(facingFor(0, 100, false, max, dz).tilt).toBeCloseTo(max);
+    expect(facingFor(0, -100, false, max, dz).tilt).toBeCloseTo(-max);
+    expect(facingFor(10, 10, false, max, dz).tilt).toBeCloseTo(Math.PI / 4);
   });
 
   it('mirrors the rotation when facing left, so the nose still points down a dive', () => {
-    const right = facingFor(10, 10, false, max);
-    const left = facingFor(-10, 10, false, max);
+    const right = facingFor(100, 100, false, max, dz);
+    const left = facingFor(-100, 100, false, max, dz);
     expect(rotationFor(right)).toBeCloseTo(Math.PI / 4);
     expect(rotationFor(left)).toBeCloseTo(-Math.PI / 4);
+  });
+
+  it('does not flicker left/right on a straight-down swim (playtest regression)', () => {
+    // Replay the steering loop: the axolotl steers its MOUTH (50 px
+    // ahead of its centre in the facing direction) onto a target almost
+    // directly below, swaying side to side like a bubble.
+    const headOffset = 50;
+    let x = 600;
+    let y = 250;
+    let flipX = false;
+    let turns = 0;
+    for (let frame = 0; frame < 120; frame++) {
+      const tx = 600 + 14 * Math.sin(frame / 6);
+      const ty = 600;
+      const f = facingFor(tx - x, ty - y, flipX, max, dz);
+      if (f.flipX !== flipX) turns += 1;
+      flipX = f.flipX;
+      const goalX = tx - (flipX ? -headOffset : headOffset);
+      const step = stepToward(x, y, goalX, ty, 8);
+      x = step.x;
+      y = step.y;
+    }
+    expect(turns).toBe(0);
+  });
+
+  it('the scenario above DID flicker under the old per-step facing rule', () => {
+    // Sanity check that the regression test reproduces the bug: facing
+    // from the sign of each step's dx (the pre-fix rule) flips back and
+    // forth because each flip moves the mouth to the other side.
+    const headOffset = 50;
+    let x = 600;
+    let y = 250;
+    let flipX = false;
+    let turns = 0;
+    for (let frame = 0; frame < 120; frame++) {
+      const tx = 600 + 14 * Math.sin(frame / 6);
+      const goalX = tx - (flipX ? -headOffset : headOffset);
+      const step = stepToward(x, y, goalX, 600, 8);
+      const next: boolean = Math.abs(step.dx) > 1 ? step.dx < 0 : flipX;
+      if (next !== flipX) turns += 1;
+      flipX = next;
+      x = step.x;
+      y = step.y;
+    }
+    expect(turns).toBeGreaterThan(5);
   });
 });
 

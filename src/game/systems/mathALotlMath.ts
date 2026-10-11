@@ -75,12 +75,31 @@ export interface Facing {
 }
 
 /**
- * Facing for a swim step (dx, dy). Nearly-vertical moves keep the
- * previous left/right facing so the axolotl doesn't flicker while
- * swimming straight up or down.
+ * Facing toward a target `(dx, dy)` away from the axolotl's CENTRE.
+ *
+ * Left/right only changes when the target is clearly on the OTHER side
+ * — more than `turnDeadzonePx` past the centre. Inside that band the
+ * previous facing holds, so swimming straight up or down (or toward a
+ * bubble swaying side to side right above) never flickers. The nose
+ * tilts toward the target instead, clamped to ±maxTiltRad.
+ *
+ * The deadzone must be measured from the centre, not the mouth: the
+ * mouth's position depends on the facing, so a mouth-relative test
+ * flips the facing, moves the mouth to the other side, and flips back
+ * (the sprint 2.5.4 playtest flicker).
  */
-export function facingFor(dx: number, dy: number, prevFlipX: boolean, maxTiltRad: number): Facing {
-  const flipX = Math.abs(dx) > 1 ? dx < 0 : prevFlipX;
+export function facingFor(
+  dx: number,
+  dy: number,
+  prevFlipX: boolean,
+  maxTiltRad: number,
+  turnDeadzonePx: number,
+): Facing {
+  let flipX = prevFlipX;
+  if (prevFlipX && dx > turnDeadzonePx) flipX = false;
+  else if (!prevFlipX && dx < -turnDeadzonePx) flipX = true;
+  // Tilt is measured along the facing direction: a target behind the
+  // axolotl (inside the deadzone) still tilts by its up/down angle.
   const raw = Math.atan2(dy, Math.max(Math.abs(dx), 1e-6));
   return { flipX, tilt: Math.max(-maxTiltRad, Math.min(maxTiltRad, raw)) };
 }
