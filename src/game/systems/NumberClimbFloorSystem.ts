@@ -476,5 +476,5 @@ export class NumberClimbFloorSystem {
   }
 }
 
-// `pickSubsetWithCorrect` + helpers live in `numberClimbFloorMath.ts`
+// `pickSubsetWithCorrect` lives in `roundRules.ts`, the other helpers in `numberClimbFloorMath.ts`
 // (separate file so the test imports skip Phaser).

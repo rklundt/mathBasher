@@ -322,10 +322,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     }
     // A wrong catch needs words too — a sound + a dot turning red in the
     // corner is easy for a 6-year-old to miss.
-    // Below the bubble (it rises), so near the surface it stays in the water, clear of the HUD.
-    const oops = text(this, b.x, b.y + b.radius + this.cfg.wrongNote.risePx, 'Oops! Try again!', 'rowLabel')
-      .setOrigin(0.5)
-      .setDepth(100);
+    // Below the bubble when it fits (so a catch near the surface stays in the
+    // water, clear of the HUD); above it for a catch near the floor, where
+    // "below" would start off screen.
+    const below = b.y + b.radius + this.cfg.wrongNote.risePx;
+    const y0 = below <= this.scale.height - this.cfg.wrongNote.floorMarginPx ? below : b.y - b.radius;
+    const oops = text(this, b.x, y0, 'Oops! Try again!', 'rowLabel').setOrigin(0.5).setDepth(100);
     oops.setStroke('#0b1020', 6);
     const { durationMs, risePx } = this.cfg.wrongNote;
     this.tweens.add({

@@ -645,9 +645,9 @@ export const config = {
     /** How long the "Out of lives!" banner holds before Game Over. */
     outOfLivesBannerMs: 1200,
     /** "Floated away! Try again!" note: fully visible for `holdMs`, then fades. */
-    escapeNote: { holdMs: 1500, fadeMs: 400, belowWaterlinePx: 120 },
+    escapeNote: { holdMs: 1500, fadeMs: 400, belowWaterlinePx: 132 },
     /** "Oops! Try again!" floater on a wrong catch: rises `risePx` while fading. */
-    wrongNote: { durationMs: 1100, risePx: 50 },
+    wrongNote: { durationMs: 1100, risePx: 50, floorMarginPx: 24 },
   },
   layout: {
     /** number of answer lanes across the screen */
