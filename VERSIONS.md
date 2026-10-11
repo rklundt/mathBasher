@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**Math-a-lotl — a fourth game mode** (sprint 2.5.4, in progress)
+_Nothing yet._
+
+## [2.5.4] - 2026-10-11 — Math-a-lotl, a fourth game mode
+
+**Math-a-lotl — a fourth game mode**
 - A cute underwater game: answer bubbles rise from the sea floor and the kid taps the right one; a cartoon axolotl (pink, gold or lilac, picked at random each round) swims over and catches it.
 - Rules: a wrong bubble costs one of 3 hearts for the round (the problem stays up); a right bubble that floats away uncaught just comes back with a fresh set; 12 problems, all math types, same scoring and stars as the other modes.
 - Easy / Medium / Hard sets how many bubbles rise (3 / 4 / 4), how fast they drift once in view, and a per-question countdown (25 / 18 / 12 s). When the countdown runs out the question is missed (no heart lost); a re-spawned wave doesn't reset it. Bubbles zip up into view quickly at the start of each wave. Number keys 1–4 also pick bubbles, left to right.
