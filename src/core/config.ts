@@ -592,7 +592,14 @@ export const config = {
       swayPx: 14,
       swayHz: 0.45,
       /** Bubbles start this far apart vertically below the floor so they surface one at a time. */
-      spawnStaggerPx: 140,
+      spawnStaggerPx: 70,
+      /**
+       * Rise speed until a bubble is fully on screen (playtest: waiting
+       * for bubbles to crawl up from below the floor was boring). Once
+       * in view it slows to the difficulty's `risePxPerSec`, so the
+       * difficulty pacing is unchanged where it matters.
+       */
+      entryRisePxPerSec: 260,
       /** Horizontal jitter inside each bubble's lane. */
       laneJitterPx: 30,
     },
