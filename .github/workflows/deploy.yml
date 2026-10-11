@@ -48,18 +48,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # AGPL §13 "Corresponding Source" link shown in the UI footer
+      # (attribution.ts reads VITE_SOURCE_URL; Vite inlines it at build).
+      # Pinned to the EXACT commit being built (short SHA), so the link always
+      # matches the running version — on either environment, and even when an
+      # older run is re-run as a rollback (a branch link would point at the
+      # branch's current tip instead).
+      - name: Resolve source URL
+        run: echo "VITE_SOURCE_URL=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
       - name: Build
         run: pnpm build:client
-        env:
-          # AGPL §13 "Corresponding Source" link shown in the UI footer
-          # (attribution.ts reads VITE_SOURCE_URL; Vite inlines it at build).
-          # Point each deployment at the branch it was built from, so the link
-          # matches the running version: main -> repo root (default branch),
-          # development -> the development tree.
-          VITE_SOURCE_URL: ${{ github.ref_name == 'main' && 'https://github.com/rklundt/mathBasher' || 'https://github.com/rklundt/mathBasher/tree/development' }}
 
       - name: Run tests
         run: pnpm test
+
+      # Fail closed: the deploy step's `main && PROD || DEV` expression would
+      # silently fall through to the DEV token if the PROD secret were ever
+      # empty or missing — deploying prod content to the dev site and still
+      # going green. Refuse to deploy instead.
+      - name: Check deploy token
+        env:
+          PROD_TOKEN: ${{ secrets.AZURE_SWA_TOKEN_PROD }}
+          DEV_TOKEN: ${{ secrets.AZURE_SWA_TOKEN_DEV }}
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then name=AZURE_SWA_TOKEN_PROD; tok="$PROD_TOKEN"; target=prod
+          else name=AZURE_SWA_TOKEN_DEV; tok="$DEV_TOKEN"; target=dev; fi
+          if [ -z "$tok" ]; then
+            echo "::error::Secret $name is empty or missing — refusing to deploy branch '$GITHUB_REF_NAME'."
+            exit 1
+          fi
+          echo "Deploying '$GITHUB_REF_NAME' to the $target SWA ($name)."
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
@@ -67,7 +86,8 @@ jobs:
         with:
           # Per-branch token selects the matching SWA: `main` -> prod SWA,
           # anything else (i.e. `development`) -> dev SWA. Each token is that
-          # SWA's deploy key, stored as a GitHub Actions secret.
+          # SWA's deploy key, stored as a GitHub Actions secret. The "Check
+          # deploy token" step above guarantees the selected one is non-empty.
           azure_static_web_apps_api_token: ${{ github.ref_name == 'main' && secrets.AZURE_SWA_TOKEN_PROD || secrets.AZURE_SWA_TOKEN_DEV }}
           action: upload
           # We build with pnpm above; skip_app_build tells the action not to
@@ -89,8 +109,11 @@ jobs:
       # serves a broken entry point. Uses the URL the deploy step reports;
       # if the action exposes none, it warns rather than red-failing.
       - name: Smoke-test the deployment
+        # Action output passed via env (not interpolated into the script).
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.static_web_app_url }}
         run: |
-          URL="${{ steps.deploy.outputs.static_web_app_url }}"
+          URL="$DEPLOY_URL"
           if [ -z "$URL" ]; then
             echo "::warning::Deploy step exposed no URL — skipping smoke test."
             exit 0

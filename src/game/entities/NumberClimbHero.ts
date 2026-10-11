@@ -48,6 +48,10 @@ const HERO_HEIGHT = config.numberClimb.hero.heightPx;
 const HERO_FILL_COLOR = 0xfbbf24;
 /** Hero's outline color — darker for definition. */
 const HERO_OUTLINE_COLOR = 0x713f12;
+/** Sprint 2.5.2 — resting idle bob: how far the body rises (px, negative = up). */
+const IDLE_BOB_RISE_PX = -5;
+/** Sprint 2.5.2 — resting idle bob: duration of one rise (ms); yoyo doubles the cycle. */
+const IDLE_BOB_DURATION_MS = 950;
 
 export interface NumberClimbHeroOpts {
   scene: Phaser.Scene;
@@ -58,10 +62,6 @@ export interface NumberClimbHeroOpts {
 }
 
 export class NumberClimbHero extends Phaser.GameObjects.Container {
-  /** Rough collision/silhouette dimensions — exposed for FloorSystem layout math. */
-  static readonly WIDTH = HERO_WIDTH;
-  static readonly HEIGHT = HERO_HEIGHT;
-
   /**
    * The visible body. Sprint 2.4.2 hotfix — the Climb hero now has
    * TWO skin paths, chosen at construction time from `Settings.heroSkin`:
@@ -83,6 +83,15 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    */
   private readonly bodyGraphics: Phaser.GameObjects.Graphics | null;
   private readonly bodyImage: Phaser.GameObjects.Image | null;
+  /**
+   * Sprint 2.5.2 — gentle idle bob so the resting hero reads as alive.
+   * It tweens the BODY CHILD's local y (not the container), so the
+   * camera-follow (which tracks the container) stays perfectly still
+   * and the bob doesn't fight the resting-position math. Stopped at the
+   * start of every movement tween (jump / fall-back / fall-off) and
+   * restarted when the hero settles.
+   */
+  private idleTween?: Phaser.Tweens.Tween;
 
   constructor(opts: NumberClimbHeroOpts) {
     super(opts.scene, opts.x, opts.y);
@@ -114,6 +123,35 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
     }
 
     this.setSize(HERO_WIDTH, HERO_HEIGHT);
+    this.startIdle();
+  }
+
+  /**
+   * Sprint 2.5.2 — start (or restart) the resting idle bob on the body
+   * child. Resets the child to its baseline (y=0) first so a restart
+   * after a movement tween doesn't inherit a stale offset.
+   */
+  private startIdle(): void {
+    this.stopIdle();
+    const body = this.bodyImage ?? this.bodyGraphics;
+    if (!body) return;
+    body.y = 0;
+    this.idleTween = this.scene.tweens.add({
+      targets: body,
+      y: IDLE_BOB_RISE_PX, // rise, yoyo back — a slow "breathing" bob
+      duration: IDLE_BOB_DURATION_MS,
+      ease: 'Sine.InOut',
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  /** Sprint 2.5.2 — stop the idle bob + snap the body child back to baseline. */
+  private stopIdle(): void {
+    this.idleTween?.destroy();
+    this.idleTween = undefined;
+    const body = this.bodyImage ?? this.bodyGraphics;
+    if (body) body.y = 0;
   }
 
   /**
@@ -149,6 +187,7 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    * cuts it off cleanly so rapid taps don't compound.
    */
   jumpTo(targetX: number, targetY: number, onComplete: () => void, opts?: { skipClickSfx?: boolean }): void {
+    this.stopIdle(); // sprint 2.5.2 — pause the bob while moving
     this.scene.tweens.killTweensOf(this);
     if (opts?.skipClickSfx !== true) {
       void getAudioManager().play(SfxKeys.ButtonClick1, 'sfx');
@@ -172,7 +211,10 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
           ease: 'Quad.In',
         },
       ],
-      onComplete,
+      onComplete: () => {
+        this.startIdle(); // resume the bob once settled on the new floor
+        onComplete();
+      },
     });
   }
 
@@ -186,6 +228,7 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    * dip below the floor before settling.
    */
   fallBackToFloor(floorY: number, onComplete: () => void): void {
+    this.stopIdle(); // sprint 2.5.2 — pause the bob while moving
     this.scene.tweens.killTweensOf(this);
     void getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
     _th.logToAi('NumberClimbHero.fallBackToFloor', SeverityLevel.Verbose, {
@@ -205,15 +248,18 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
           ease: 'Quad.Out',
         },
       ],
-      onComplete,
+      onComplete: () => {
+        this.startIdle(); // resume the bob once settled back on the floor
+        onComplete();
+      },
     });
   }
 
   /**
    * Round-end fall. Hero accelerates off the bottom of the canvas.
-   * No `killTweensOf` here — by the time this fires, the scene is
-   * shutting down. Plays the same wrong-hit family SFX for audible
-   * "you fell" feedback.
+   * Stops the idle bob and kills any in-flight movement tween first so
+   * the fall owns the hero's y. Plays the same wrong-hit family SFX for
+   * audible "you fell" feedback.
    *
    * Caller passes the canvas bottom + a beat-after onComplete (e.g.
    * 600ms+ so the kid sees the fall before the GameOver scene takes
@@ -221,6 +267,7 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
    * acceleration — feels like a fall, not a tween.
    */
   fallOffScreen(canvasBottomY: number, onComplete: () => void): void {
+    this.stopIdle(); // sprint 2.5.2 — round over; bob stays off
     this.scene.tweens.killTweensOf(this);
     void getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
     this.scene.tweens.add({
@@ -242,5 +289,6 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
     this.scene.tweens.killTweensOf(this);
     this.x = x;
     this.y = y;
+    this.startIdle(); // sprint 2.5.2 — resume the bob at the new position
   }
 }

@@ -24,7 +24,7 @@ import type { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSyst
  *
  * Touch-cooldown gate: post-pick, ignore further input for ~500ms
  * so a kid mashing taps doesn't accidentally double-pick (and
- * burn through the floor's one mulligan on a fat-finger sequence).
+ * burn through lives on a fat-finger sequence).
  * Scene calls `acceptInput()` after the floor advance / mulligan
  * fall-back animations settle to re-enable input.
  */

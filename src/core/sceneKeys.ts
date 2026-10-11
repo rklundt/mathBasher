@@ -9,12 +9,15 @@ import type { GameId } from '@/services/Settings';
  * everywhere — never hand-write the string `'menu'` in a `scene.start(...)`
  * call, because a typo silently sends you nowhere.
  *
- * Two scenes run in PARALLEL with every other non-Boot scene:
- *  - `Background` (sprint 0.7 Story 6) — renders the nebula + parallax stars
- *    BEHIND everything else, providing the visual atmosphere
- *  - `Attribution` — renders the AGPL §7(b) footer ON TOP of everything
+ * `Background` (sprint 0.7 Story 6) runs in PARALLEL with every other
+ * non-Boot scene — it renders the nebula + parallax stars BEHIND
+ * everything else, providing the visual atmosphere. The rest are
+ * mutually exclusive (one active at a time).
  *
- * The rest are mutually exclusive (one active at a time).
+ * The AGPL §7(b) attribution footer used to be a parallel `Attribution`
+ * scene rendered on top; sprint 2.5.2 moved it to a DOM element (see
+ * `mountAttributionFooter`) laid out below the canvas, above the mobile
+ * URL bar.
  */
 export const SceneKeys = {
   Boot: 'boot',
@@ -47,12 +50,12 @@ export const SceneKeys = {
    */
   AsteroidField: 'asteroid-field',
   /**
-   * Number Climb — sprint 2.2 third game mode. Vertical climb; 10
+   * Number Climb — sprint 2.2 third game mode. Vertical climb; 12
    * floors; kid taps the correct rung at each floor. Difficulty
    * controls rung count (2/3/4); Speed controls cumulative timer
-   * budget (250s/180s/120s). One mulligan per floor; second wrong
-   * on same floor ends the round. Timer hitting 0 also ends the
-   * round. Stars height-based (4/7/10).
+   * budget (250s/180s/120s). 3 cumulative lives (sprint 2.5.2 — every
+   * wrong pick costs a life; round ends when all 3 are spent or the
+   * timer hits 0). Stars height-based.
    */
   NumberClimb: 'number-climb',
   /**
@@ -68,7 +71,8 @@ export const SceneKeys = {
   Loading: 'loading',
   Hud: 'hud',
   GameOver: 'game-over',
-  Attribution: 'attribution',
+  // Attribution scene retired in sprint 2.5.2 — the AGPL §7(b) footer is
+  // now a DOM element (see mountAttributionFooter) below the canvas.
   PauseOverlay: 'pause-overlay',
   Settings: 'settings',
 } as const;

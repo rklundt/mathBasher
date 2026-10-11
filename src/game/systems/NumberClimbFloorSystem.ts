@@ -30,11 +30,12 @@ import {
  *   - **correctPicked(rung)** — kid picked the right rung; scene
  *     should award score, animate the hero up, scroll camera,
  *     advance to the next floor.
- *   - **wrongPickedMulligan(rung)** — first wrong pick on this floor;
- *     scene should deduct timer + play wrong SFX + fall hero back to
- *     this floor's base, then keep this floor up for the second try.
- *   - **wrongPickedTerminal(rung)** — second wrong on this floor;
- *     scene should end the round (fall hero off screen, GameOver).
+ *   - **wrongPickedMulligan(rung)** — a wrong pick; scene deducts
+ *     timer + plays wrong SFX + spends one cumulative life + falls the
+ *     hero back to this floor's base, then keeps this floor up for
+ *     another try (as long as lives remain). Sprint 2.5.2 removed the
+ *     per-floor "2nd wrong ends the round" terminal — the scene's
+ *     climb-wide 3-life cap is now the sole wrong-pick round-ender.
  *
  * Difficulty controls rung count:
  *   - Easy → 2 rungs
@@ -90,11 +91,13 @@ export interface NumberClimbFloorSystemOpts {
 }
 
 /**
- * Three discrete outcomes a `pickRung` call can produce. The scene
+ * The discrete outcomes a `pickRung` call can produce. The scene
  * dispatches on the outcome:
  *   - 'correct'           → award score, advance floor
- *   - 'wrong-mulligan'    → first wrong; time penalty + fall back
- *   - 'wrong-terminal'    → second wrong on same floor; end round
+ *   - 'wrong-mulligan'    → a wrong pick; time penalty + spend a life +
+ *                           fall back to retry (round ends only when the
+ *                           scene's cumulative 3-life cap is exhausted —
+ *                           sprint 2.5.2 removed the per-floor terminal)
  *   - 'rung-consumed'     → defensive — the picked rung was already
  *                           tried this floor (e.g. double-tap of the
  *                           same wrong rung). Scene should ignore.
@@ -102,7 +105,6 @@ export interface NumberClimbFloorSystemOpts {
 export type RungPickOutcome =
   | { kind: 'correct'; rung: NumberClimbRung }
   | { kind: 'wrong-mulligan'; rung: NumberClimbRung }
-  | { kind: 'wrong-terminal'; rung: NumberClimbRung }
   | { kind: 'rung-consumed' };
 
 export class NumberClimbFloorSystem {
@@ -150,9 +152,10 @@ export class NumberClimbFloorSystem {
   private escapeFrame: NumberClimbFloorFrame | null = null;
   /**
    * Wrong-rung count for the current floor. Starts at 0 each
-   * `spawnFloor` call. A first wrong increments to 1 (mulligan); a
-   * second wrong increments to 2 (terminal). Reset on every new
-   * floor.
+   * `spawnFloor` call; every wrong pick increments it (each one is a
+   * retry — sprint 2.5.2 removed the per-floor terminal; the
+   * climb-wide life cap in NumberClimbScene is the only round-ender).
+   * Reset on every new floor.
    */
   private wrongsThisFloor = 0;
   private correctAnswer = -1;
@@ -330,17 +333,12 @@ export class NumberClimbFloorSystem {
           reason: `wrongAnswer=${String(rung.answer)}`,
         });
         return { kind: 'wrong-mulligan', rung };
-      case 'wrong-terminal':
-        _th.logToAi('NumberClimb.wrongTerminal', SeverityLevel.Information, {
-          reason: `wrongAnswer=${String(rung.answer)}`,
-        });
-        return { kind: 'wrong-terminal', rung };
     }
   }
 
   /**
-   * True if the kid has used the floor's one mulligan. ScoreCalculator
-   * convention: a floor-pass after a mulligan scores half points
+   * True if the kid made at least one wrong pick on this floor.
+   * ScoreCalculator convention: a floor-pass after a wrong pick scores half points
    * (matches the existing `usedWrongShot` flag from other modes).
    */
   hasUsedMulligan(): boolean {

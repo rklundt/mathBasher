@@ -98,8 +98,6 @@ export type TextKind =
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
   | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)
-  | 'footer' // primary — AGPL §7(b) footer text (left side)
-  | 'footerLink' // blue — AGPL §7(b) footer source URL (right side)
   // --- Container-anchored kinds (used via `textStyle(kind)` spread, see below) ---
   | 'alienAnswer' // white bold — number on the falling block (geometrically linked to plateLayers in Alien.ts)
   | 'buttonLabel' // primary — main label inside PlaceholderButton
@@ -118,7 +116,8 @@ interface TextStyle {
 //   v0.7.5 Story 3: every inline `fontSize:` literal across the 11 scene/
 //     entity/UI files was collapsed into this STYLES table. New kinds added
 //     for the previously-inline sites: headline, summary, scorePopup, badge,
-//     rowLabel, iconGlyph, footer, footerLink, alienAnswer, buttonLabel,
+//     rowLabel, iconGlyph, footer, footerLink (both retired in 2.5.2 when
+//     the AGPL footer moved to the DOM), alienAnswer, buttonLabel,
 //     buttonSubtitle, fireLabel, bodyLarge, bodyAccent. Any future "make
 //     all text 10% bigger" pass is a 1-file edit here, not 18 hand-bumps
 //     across 11 files.
@@ -160,8 +159,6 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
   rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },
   iconGlyph: { fontSize: '26px', color: TEXT_PRIMARY }, // color is irrelevant for emoji glyphs but required by TextStyle
-  footer: { fontSize: '14px', color: TEXT_PRIMARY },
-  footerLink: { fontSize: '14px', color: TEXT_BLUE },
   // Story 3 additions — container-anchored (consumed via `textStyle(kind)`)
   alienAnswer: { fontSize: '38px', color: TEXT_WHITE, fontStyle: 'bold' },
   buttonLabel: { fontSize: '24px', color: TEXT_PRIMARY },

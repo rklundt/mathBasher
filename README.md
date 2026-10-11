@@ -8,21 +8,23 @@ Mobile-friendly (landscape on phones), zero-install. New game modes and new math
 
 ## Prerequisites
 
-- **Node.js 20+** (see `package.json#engines`)
-- **pnpm 9+** (the project pins `pnpm@9.15.0` via `package.json#packageManager`)
+- **Node.js 22.13+** (see `package.json#engines`)
+- **pnpm 11** (the project pins `pnpm@11.9.0` via `package.json#packageManager`)
 
-The fastest way to get pnpm is via Corepack (bundled with Node 20):
+**Use Corepack, not a global pnpm install.** Corepack ships with Node and reads the `packageManager` field, so it runs the project-pinned pnpm (11.9.0) automatically — per project, no manual switching:
 
 ```bash
 corepack enable
-corepack prepare pnpm@9.15.0 --activate
+pnpm --version          # should print 11.9.0
 ```
 
-Or install globally with npm:
-
-```bash
-npm install -g pnpm@9.15.0
-```
+> **Do NOT `npm install -g pnpm`.** A global pnpm install lands on your PATH ahead of Corepack's shim and shadows it, pinning you to one (likely older) pnpm for every project. This repo's settings live in `pnpm-workspace.yaml`, which **requires pnpm 10+** — an older global pnpm fails with `ERROR packages field missing or empty`.
+>
+> **If `pnpm --version` does not print 11.9.0** after `corepack enable`, a global install is shadowing Corepack. Remove it, then re-check:
+> ```bash
+> npm uninstall -g pnpm
+> pnpm --version          # now resolves via Corepack → 11.9.0
+> ```
 
 ## Run locally
 
