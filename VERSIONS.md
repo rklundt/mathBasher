@@ -47,6 +47,8 @@ Visual polish, a simpler Space Escape lives rule, mobile layout fixes, and infra
 **Mobile layout + license notice**
 - The page now fills the phone's visible screen: the game sits above the browser's URL bar, and the license/attribution footer is a strip directly below the game. Nothing in the game (FIRE button, speeder, Back buttons) can sit underneath the footer, and its Source link can no longer catch a tap meant for FIRE.
 - The attribution footer is shown from the first screen (including the start screen), never truncated (it wraps to two lines on narrow screens), and its Source link points to the exact commit that is running.
+- **Fullscreen on phones and tablets:** "Tap to play" now switches the page to fullscreen (hiding the browser and status bars), so the game is roughly a quarter larger on Android. If you leave fullscreen, an amber "Full screen" button in the footer gets you back in. iPhone Safari doesn't support web fullscreen, so there the game stays windowed.
+- Fixed the game sitting off-centre in its space (it was being centred twice).
 
 **Infrastructure**
 - Hosting captured as Bicep infrastructure-as-code (`/infra/`), with two Free Azure Static Web Apps, one per environment, and custom domains: `mathbasher-dev.mykfam.com` (development) and `mathbasher.mykfam.com` (production). An idempotent script wires each domain's DNS record and managed certificate.
