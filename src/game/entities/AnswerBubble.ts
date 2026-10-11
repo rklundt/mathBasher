@@ -49,7 +49,7 @@ export class AnswerBubble {
     const label = scene.add.text(0, 0, opts.display, textStyle('alienAnswer')).setOrigin(0.5);
     // Dark outline: the bubble is nearly clear, so without it white text
     // on the light upper water reads at ~1.8:1 (sprint 2.5.5).
-    label.setStroke('#0b3a6b', 7);
+    label.setStroke('#0b1020', 7);
     label.setShadow(0, 2, '#0b1020', 4, true, true);
     // Same long-label shrink as the other games' answer carriers so
     // fraction strings ("1 2/3") fit inside the bubble.

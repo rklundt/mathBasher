@@ -6,8 +6,8 @@
  * Game-neutral round rules shared by more than one game mode (sprint
  * 2.5.5 — lifted out of `numberClimbFloorMath.ts` once Math-a-lotl
  * needed them too). Pure, no Phaser. Locked in
- * `NumberClimbFloorSystem.test.ts` (via the re-export) and
- * `mathALotlMath.test.ts`.
+ * `NumberClimbFloorSystem.test.ts`; Math-a-lotl's wave builder on top of
+ * `pickSubsetWithCorrect` is covered in `mathALotlMath.test.ts`.
  */
 
 /**
@@ -78,12 +78,10 @@ export interface StrikeDecision {
 }
 
 /**
- * Sprint 2.5.2 — the climb-wide life cap, extracted from
- * `NumberClimbScene` so "the round ends exactly when the last life is
- * spent, never with a life still showing" is unit-testable without
- * Phaser (same precedent as `resolveRungPick`). Every wrong pick costs
- * one life; since sprint 2.5.2 this cap is the ONLY wrong-pick
- * round-ender. Locked in `NumberClimbFloorSystem.test.ts`.
+ * Spend one life from a round-wide budget. Every wrong pick / catch
+ * costs one; the round ends exactly when the last life is spent, never
+ * with a life still showing. First written for Number Climb (sprint
+ * 2.5.2), shared with Math-a-lotl since 2.5.4.
  */
 export function resolveStrike(strikesSoFar: number, maxStrikes: number): StrikeDecision {
   const strikesAfter = strikesSoFar + 1;
