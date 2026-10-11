@@ -378,7 +378,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
       rng: Math.random,
     });
     this.bubbles = specs.map(
-      (s) => new AnswerBubble(this, { ...s, risePxPerSec: speedCfg.risePxPerSec }),
+      (s) => new AnswerBubble(this, { ...s, risePxPerSec: speedCfg.risePxPerSec, floorY: height }),
     );
   }
 

@@ -208,6 +208,12 @@ describe('Math-a-lotl config', () => {
     }
   });
 
+  it('bubbles enter faster than any difficulty drifts once in view', () => {
+    for (const s of Object.values(config.mathALotl.speed)) {
+      expect(config.mathALotl.bubble.entryRisePxPerSec).toBeGreaterThan(s.risePxPerSec);
+    }
+  });
+
   it('gets harder going Easy → Medium → Hard (more or equal bubbles, strictly faster)', () => {
     const { slow, medium, fast } = config.mathALotl.speed;
     expect(medium.bubbleCount).toBeGreaterThanOrEqual(slow.bubbleCount);

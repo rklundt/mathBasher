@@ -24,19 +24,22 @@ export class AnswerBubble {
   alive = true;
   private readonly baseX: number;
   private readonly rise: number;
+  /** Bottom of the visible water — below this the bubble rises at the fast entry speed. */
+  private readonly floorY: number;
   /** Random sway phase so neighbouring bubbles don't sway in lockstep. */
   private readonly phase: number;
   private elapsed = 0;
 
   constructor(
     private readonly scene: Phaser.Scene,
-    opts: { x: number; y: number; answer: number; display: string; risePxPerSec: number },
+    opts: { x: number; y: number; answer: number; display: string; risePxPerSec: number; floorY: number },
   ) {
     const cfg = config.mathALotl.bubble;
     this.answer = opts.answer;
     this.radius = cfg.diameterPx / 2;
     this.baseX = opts.x;
     this.rise = opts.risePxPerSec;
+    this.floorY = opts.floorY;
     this.phase = Math.random() * Math.PI * 2;
 
     const img = scene.add.image(0, 0, ReefSpriteKeys.Bubble);
@@ -64,7 +67,10 @@ export class AnswerBubble {
     const dt = dtMs / 1000;
     const { swayPx, swayHz } = config.mathALotl.bubble;
     this.elapsed += dt;
-    this.container.y -= this.rise * dt;
+    // Zip up into view, then drift at the difficulty's pace.
+    const entering = this.container.y + this.radius > this.floorY;
+    const speed = entering ? Math.max(this.rise, config.mathALotl.bubble.entryRisePxPerSec) : this.rise;
+    this.container.y -= speed * dt;
     this.container.x = this.baseX + swayPx * Math.sin(Math.PI * 2 * swayHz * this.elapsed + this.phase);
   }
 
