@@ -76,11 +76,10 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
       };
     }
     case 'math-a-lotl': {
-      // Sprint 2.5.4 — difficulty = bubble count + rise speed.
+      // Sprint 2.5.4 — difficulty = bubble count + rise speed + countdown.
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
-      const pace: Record<SpeedKey, string> = { slow: 'slow', medium: 'medium', fast: 'fast' };
-      const { bubbleCount } = config.mathALotl.speed[key];
-      return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${pace[key]}` };
+      const { bubbleCount, countdownSec } = config.mathALotl.speed[key];
+      return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${countdownSec}s` };
     }
   }
 }

@@ -300,7 +300,9 @@ export interface AudioManifestEntry {
  * dispatch on something other than the key (e.g. file size).
  */
 function audioScopeFor(key: AudioKey): AssetScope {
-  if (key === SfxKeys.TimeoutFail1) return 'game:asteroid-field';
+  // Sprint 2.5.4 — TimeoutFail1 is shared by Asteroid Field and
+  // Math-a-lotl (a scope names one game), so it moved to eager (~7 KB).
+  if (key === SfxKeys.TimeoutFail1) return 'eager';
   if (key === MusicKeys.Loop3) return 'game:asteroid-field';
   if (key === MidgroundKeys.SpaceNoises1) return 'game:asteroid-field';
   // Sprint 2.2 — Number Climb-only ambient + music + SFX assets.

@@ -23,7 +23,7 @@ import {
 } from '@/game/systems/mathALotlMath';
 import { resolveStrike } from '@/game/systems/numberClimbFloorMath';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { pickRandomBubblePopSfx, pickRandomHitWrongSfx } from '@/core/audioKeys';
+import { pickRandomBubblePopSfx, pickRandomHitWrongSfx, SfxKeys } from '@/core/audioKeys';
 import { ParticleSpriteKeys, pickRandomAxolotlSpriteKey } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
 
@@ -46,6 +46,8 @@ const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
  *      the problem stays (half points once solved). Last heart → round over.
  *      Right bubble reaches the surface uncaught → no penalty; the wave
  *      pops and the same problem re-spawns.
+ *      Countdown hits zero (per question, NOT reset by a re-spawn) →
+ *      "Out of time!", the question is missed, next problem. No heart lost.
  *   5. 12 problems → GameOverScene (shared scoring / stars).
  */
 export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
@@ -66,6 +68,8 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private currentQuestion: Question | null = null;
   private livesUsed = 0;
   private usedWrongCatch = false;
+  /** Per-question countdown remaining (ms); ticks only while the question is in play. */
+  private countdownMs = 0;
   private transitioning = false;
   private paused = false;
   private tapHint?: Phaser.GameObjects.Container;
@@ -104,6 +108,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     return this.paused;
   }
 
+  /** GameSceneContract — seconds left on this question's countdown (HUD timer). */
+  getCountdownSec(): number | undefined {
+    if (!this.currentQuestion) return undefined;
+    return Math.max(0, this.countdownMs / 1000);
+  }
+
   // ----- Lifecycle ---------------------------------------------------------
 
   create(): void {
@@ -113,6 +123,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.currentQuestion = null;
     this.livesUsed = 0;
     this.usedWrongCatch = false;
+    this.countdownMs = 0;
     this.transitioning = false;
     this.paused = false;
     this.tapHint = undefined;
@@ -161,6 +172,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     const p = clampToWater(this.axolotl.x, this.axolotl.y, this.water);
     this.axolotl.sprite.setPosition(p.x, p.y);
     if (this.transitioning) return;
+
+    this.countdownMs -= dt;
+    if (this.countdownMs <= 0) {
+      this.handleTimeout();
+      return;
+    }
 
     // Catch: the axolotl only catches the bubble it was sent after, so
     // swimming past a wrong bubble on the way never costs a heart.
@@ -286,6 +303,25 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     });
   }
 
+  /** Countdown hit zero: the question is missed (no heart lost), next problem. */
+  private handleTimeout(): void {
+    this.transitioning = true;
+    this.countdownMs = 0;
+    this.stopChase();
+    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: this.usedWrongCatch });
+    getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
+    for (const b of this.bubbles) b.popQuiet();
+    const banner = text(this, this.scale.width / 2, this.scale.height / 2, 'Out of time!', 'warning')
+      .setOrigin(0.5)
+      .setDepth(100);
+    banner.setStroke('#0b1020', 8);
+    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+    this.time.delayedCall(this.cfg.timeoutBannerMs, () => {
+      banner.destroy();
+      this.afterQuestion(false);
+    });
+  }
+
   private handleOutOfHearts(): void {
     this.transitioning = true;
     this.stopChase();
@@ -348,6 +384,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     }
     this.currentQuestion = question;
     this.usedWrongCatch = false;
+    this.countdownMs = this.cfg.speed[this.speed].countdownSec * 1000;
     this.spawnWave();
     if (this.roundController.questionIndex === 0) this.showTapHint();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());

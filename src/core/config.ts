@@ -574,7 +574,9 @@ export const config = {
    * over to catch it. Speed key doubles as the difficulty (Easy /
    * Medium / Hard) — it sets how many bubbles rise and how fast. The
    * generators always return 4 choices, so 4 is the bubble ceiling;
-   * Hard differs from Medium by rise speed.
+   * Hard differs from Medium by rise speed. Each question also has a
+   * countdown (same values as Asteroid Field): at zero the question is
+   * missed and the next one starts — a re-spawned wave does NOT reset it.
    */
   mathALotl: {
     /** Round-wide hearts; every wrong catch spends one, the last ends the round. */
@@ -582,9 +584,9 @@ export const config = {
     /** Waterline as a fraction of canvas height — must match `SKY_FRAC` in `scripts/sprites/reef.mjs`. */
     waterlineFrac: 0.25,
     speed: {
-      slow: { bubbleCount: 3, risePxPerSec: 42 },
-      medium: { bubbleCount: 4, risePxPerSec: 58 },
-      fast: { bubbleCount: 4, risePxPerSec: 80 },
+      slow: { bubbleCount: 3, risePxPerSec: 42, countdownSec: 25 },
+      medium: { bubbleCount: 4, risePxPerSec: 58, countdownSec: 18 },
+      fast: { bubbleCount: 4, risePxPerSec: 80, countdownSec: 12 },
     },
     bubble: {
       diameterPx: 104,
@@ -634,6 +636,8 @@ export const config = {
     nextQuestionDelayMs: 600,
     /** Pause before a wave re-spawns after the right bubble floated away. */
     respawnDelayMs: 500,
+    /** How long the "Out of time!" banner holds before the next question. */
+    timeoutBannerMs: 800,
   },
   layout: {
     /** number of answer lanes across the screen */

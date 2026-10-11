@@ -289,7 +289,9 @@ This sprint is **internal-only refactor + a one-knob tuning change** — no new 
 Phone in landscape, then desktop.
 
 - [ ] Game Select shows four tiles in a 2×2 grid; Math-a-lotl is bottom-right and opens the Difficulty screen with the underwater backdrop already showing.
-- [ ] Difficulty reads **Easy / Medium / Hard** with "3 bubbles · slow", "4 bubbles · medium", "4 bubbles · fast".
+- [ ] Difficulty reads **Easy / Medium / Hard** with "3 bubbles · 25s", "4 bubbles · 18s", "4 bubbles · 12s".
+- [ ] Each wave's bubbles zip into view within about a second, then drift up at the difficulty's pace.
+- [ ] The HUD countdown (⏱) shows under the problem; at zero "Out of time!" → the question is marked missed, no heart lost, next problem. A re-spawned wave (right bubble floated away) does not reset the countdown. Pause stops it.
 - [ ] One axolotl per round; over several rounds you see all three colorways (pink, gold, lilac). No parallax stars over the water.
 - [ ] The swim cycle (tail, gills, legs) plays while moving and slows when resting; the axolotl faces the way it swims and tilts its nose up / down.
 - [ ] Q1 shows "👆 Tap a bubble!"; the hint disappears on the first tap.
