@@ -788,8 +788,9 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * Brief floating "+N" text rising from the hit alien's position for
-   * positive feedback. Rises 50px upward over 700ms with fade-out;
-   * auto-destroys after the tween completes.
+   * positive feedback. Holds fully visible, then fades while drifting
+   * up (timings in `config.layout.scorePopup` — sprint 2.5.4 lengthened
+   * it from 0.7 s so kids can read it); auto-destroys when done.
    *
    * Sprint 0.7 Story 8 update: was at fixed `(80, 60)` (top-left near
    * the score counter). Now spawns at the alien's hit position so the
@@ -799,12 +800,19 @@ export class HudScene extends Phaser.Scene {
   private popupScoreDelta(delta: number, x: number, y: number): void {
     // TextKind 'scorePopup' — 29px green bold (Sprint 0.7.5 Story 3).
     const popup = text(this, x, y, `+${delta}`, 'scorePopup').setOrigin(0.5);
+    const { holdMs, fadeMs, risePx } = config.layout.scorePopup;
     this.tweens.add({
       targets: popup,
-      y: y - 50,
-      alpha: 0,
-      duration: 700,
+      y: y - risePx,
+      duration: holdMs + fadeMs,
       ease: 'Quad.Out',
+    });
+    this.tweens.add({
+      targets: popup,
+      alpha: 0,
+      delay: holdMs,
+      duration: fadeMs,
+      ease: 'Quad.In',
       onComplete: () => popup.destroy(),
     });
   }

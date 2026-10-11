@@ -284,6 +284,28 @@ This sprint is **internal-only refactor + a one-knob tuning change** — no new 
 
 ---
 
+## Math-a-lotl (sprint 2.5.4)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows four tiles in a 2×2 grid; Math-a-lotl is bottom-right and opens the Difficulty screen with the underwater backdrop already showing.
+- [ ] Difficulty reads **Easy / Medium / Hard** with "3 bubbles · 25s", "4 bubbles · 18s", "4 bubbles · 12s".
+- [ ] Each wave's bubbles zip into view within about a second, then drift up at the difficulty's pace.
+- [ ] The HUD countdown (⏱) shows under the problem; at zero "Out of time!" → the question is marked missed, no heart lost, next problem. A re-spawned wave (right bubble floated away) does not reset the countdown. Pause stops it.
+- [ ] One axolotl per round; over several rounds you see all three colorways (pink, gold, lilac). No parallax stars over the water.
+- [ ] The swim cycle (tail, gills, legs) plays while moving and slows when resting; the axolotl faces the way it swims and tilts its nose up / down.
+- [ ] Q1 shows "👆 Tap a bubble!"; the hint disappears on the first tap.
+- [ ] Tap the right bubble → the axolotl swims to it, pop sound + sparkle + happy face, next problem.
+- [ ] Tap a wrong bubble → it wobble-pops, wrong sound, one Lives dot turns red, the problem stays. Solving it afterwards scores half points.
+- [ ] Swimming PAST a wrong bubble on the way to the right one does not pop it.
+- [ ] Let the right bubble float to the surface → "It floated away! Here it comes again", no heart lost, fresh bubbles for the same problem.
+- [ ] Third wrong catch of the round → "Out of hearts!" → Game Over.
+- [ ] Tap open water → the axolotl swims there and never leaves the water (not into the sky band, not below the floor).
+- [ ] Keys 1–4 pick the visible bubbles left to right.
+- [ ] Fractions (Add Fractions on Medium) fit inside the bubbles.
+- [ ] Audio: music is quieter than the water ambience; a wrong catch plays an underwater "bloop" (one of three) a little louder than the right-catch pop. Mute and the volume sliders still work. Pause freezes the bubbles, the axolotl and the reef.
+- [ ] Play Again replays Math-a-lotl (not another mode).
+
 ## Logging the run
 
 ```

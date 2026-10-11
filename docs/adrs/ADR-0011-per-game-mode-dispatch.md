@@ -107,7 +107,7 @@ When sprint 2.X adds game mode `<id>`:
 
 3. **Add `MusicKeys.<NewMusic>`** + a row in `GAME_MUSIC_MAP` (`src/core/audioKeys.ts`). Ship the music asset under `public/assets/audio/music/` via `pnpm audio:encode --kind music --no-trim` (loops should be `--no-trim`).
 
-4. **Add `MidgroundKeys.<NewMidground>`** + a row in `GAME_MIDGROUND_MAP` (`src/core/audioKeys.ts`). Ship the midground asset.
+4. **Add `MidgroundKeys.<NewMidground>`** + a row in `GAME_MIDGROUND_MAP` (`src/core/audioKeys.ts`). Ship the midground asset. (Since sprint 2.5.4 the row is a *list* of keys, so a game can layer several ambience loops; most games list one.)
 
 5. **Add a row to `audioScopeFor`** (`src/core/audioKeys.ts`) for the new music + midground keys → `'game:<id>'`. Per-entry sprite-manifest entries should also tag `scope: 'game:<id>'`.
 

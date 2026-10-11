@@ -21,7 +21,7 @@ import { createObservable } from '@/services/observable';
  * subscribers, no Zustand. Scenes read on `create`. If we ever need reactive
  * updates across scenes, we'll add that intentionally.
  */
-export type GameId = 'alien-shoot' | 'asteroid-field' | 'number-climb';
+export type GameId = 'alien-shoot' | 'asteroid-field' | 'number-climb' | 'math-a-lotl';
 
 /**
  * Sprint 2.4.1 story 3 — Alien Shoot hero skin selector. First time
