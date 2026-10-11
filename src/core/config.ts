@@ -787,6 +787,17 @@ export const config = {
      *    Source-URL click zone. Since sprint 2.5.2 the footer is a DOM strip
      *    below the canvas, so this is just thumb-room spacing.
      */
+    /**
+     * Floating "+N" points popup on a correct answer (HudScene, every
+     * game). Sprint 2.5.4 playtest: 0.7 s was too quick to read, so it
+     * now holds fully visible for `holdMs`, then fades over `fadeMs`
+     * while drifting up `risePx` the whole time.
+     */
+    scorePopup: {
+      holdMs: 550,
+      fadeMs: 800,
+      risePx: 60,
+    },
     touchFire: {
       radiusPx: 40,
       hitPadPx: 14,
