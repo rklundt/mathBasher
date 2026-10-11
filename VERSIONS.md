@@ -29,6 +29,18 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.5.4] - 2026-10-11 — Math-a-lotl, a fourth game mode
+
+**Math-a-lotl — a fourth game mode**
+- A cute underwater game: answer bubbles rise from the sea floor and the kid taps the right one; a cartoon axolotl (pink, gold or lilac, picked at random each round) swims over and catches it.
+- Rules: a wrong bubble costs one of 3 hearts for the round (the problem stays up); a right bubble that floats away uncaught just comes back with a fresh set; 12 problems, all math types, same scoring and stars as the other modes.
+- Easy / Medium / Hard sets how many bubbles rise (3 / 4 / 4), how fast they drift once in view, and a per-question countdown (25 / 18 / 12 s). When the countdown runs out the question is missed (no heart lost); a re-spawned wave doesn't reset it. Bubbles zip up into view quickly at the start of each wave. Number keys 1–4 also pick bubbles, left to right.
+- Galaxy-over-water backdrop, coral, swaying seaweed, faint background fish; all of the art is drawn in code (`scripts/sprites/axolotl.mjs`, `scripts/sprites/reef.mjs`).
+- Its own music, two layered water-ambience loops, three bubble-pop sounds and three underwater wrong-catch sounds; the music is mixed below the ambience, and a wrong catch sounds a little louder than a right one.
+- Game Select is now a 2×2 grid.
+- New tab icon: a green toy blaster (`public/favicon.svg`, with PNG fallbacks and an iOS home-screen icon rendered by `pnpm icon:favicon`).
+- The "+points" popup on a correct answer now stays readable longer in every game (holds ~0.5 s, then fades; ~1.35 s total, was 0.7 s).
+
 ## [2.5.2] - 2026-10-04 — Visual polish, 3-lives Space Escape, phone layout + custom domains
 
 > **Hosting change (operational, no player-facing migration):** the site now runs on two Free Azure Static Web Apps, one per environment, with custom domains. Production moves to `https://mathbasher.mykfam.com`, served by a NEW Static Web App; the original Static Web App (`brave-river-…azurestaticapps.net`) now serves the development build at `https://mathbasher-dev.mykfam.com`. Anyone using the old `*.azurestaticapps.net` production address should switch to the new domain. Saved progress and settings live in browser storage per address, so they don't carry over between addresses.

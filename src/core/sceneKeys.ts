@@ -59,6 +59,13 @@ export const SceneKeys = {
    */
   NumberClimb: 'number-climb',
   /**
+   * Math-a-lotl — sprint 2.5.4 fourth game mode. Underwater: answer
+   * bubbles rise from the sea floor; the kid taps the right one and
+   * the axolotl swims over to catch it. 3 round-wide hearts; a right
+   * bubble that escapes to the surface just re-spawns the wave.
+   */
+  MathALotl: 'math-a-lotl',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -98,5 +105,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.AsteroidField;
     case 'number-climb':
       return SceneKeys.NumberClimb;
+    case 'math-a-lotl':
+      return SceneKeys.MathALotl;
   }
 }

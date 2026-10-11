@@ -131,7 +131,7 @@ export class GameSceneLifecycle {
     // skittering loop).
     const audio = getAudioManager();
     audio.playLoop(GAME_MUSIC_MAP[gameId], 'music');
-    audio.playLoop(GAME_MIDGROUND_MAP[gameId], 'midground');
+    for (const key of GAME_MIDGROUND_MAP[gameId]) audio.playLoop(key, 'midground');
   }
 
   /**
@@ -143,7 +143,7 @@ export class GameSceneLifecycle {
     const { scene, gameId } = this.opts;
     const audio = getAudioManager();
     audio.stopLoop(GAME_MUSIC_MAP[gameId]);
-    audio.stopLoop(GAME_MIDGROUND_MAP[gameId]);
+    for (const key of GAME_MIDGROUND_MAP[gameId]) audio.stopLoop(key);
     if (scene.scene.isActive(SceneKeys.Hud)) scene.scene.stop(SceneKeys.Hud);
     if (scene.scene.isActive(SceneKeys.PauseOverlay)) scene.scene.stop(SceneKeys.PauseOverlay);
     if (scene.scene.isActive(SceneKeys.Settings)) scene.scene.stop(SceneKeys.Settings);

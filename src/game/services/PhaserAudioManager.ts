@@ -4,6 +4,7 @@
 
 import type Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
+import { audioGainFor } from '@/core/audioKeys';
 import {
   AudioManager,
   type AudioKind,
@@ -83,12 +84,13 @@ export class PhaserAudioManager extends AudioManager {
 
   /**
    * Play a loaded sound. Volume is determined by the kind's slider value
-   * combined with the master mute (see `effectiveVolume01`). Missing keys
+   * combined with the master mute (see `effectiveVolume01`), times the
+   * asset's own mix gain (`audioGainFor`, sprint 2.5.4). Missing keys
    * log Warning and return silently.
    */
   override play(key: string, kind: AudioKind = 'sfx'): void {
     if (!this.ensureReady(key)) return;
-    const volume = this.effectiveVolume01(kind);
+    const volume = this.effectiveVolume01(kind) * audioGainFor(key);
     if (volume === 0) return; // silent — nothing to play
     this.scene!.sound.play(key, { volume });
   }
@@ -105,7 +107,7 @@ export class PhaserAudioManager extends AudioManager {
     if (!this.ensureReady(key)) return key;
     const sound = this.scene!.sound.add(key, {
       loop: true,
-      volume: this.effectiveVolume01(kind),
+      volume: this.effectiveVolume01(kind) * audioGainFor(key),
     });
     sound.play();
     this.loops.set(key, { kind, sound });
@@ -203,10 +205,10 @@ export class PhaserAudioManager extends AudioManager {
   /**
    * Apply the current effective volume for a kind to a single sound.
    * Used by both onMuteChanged and onVolumeChanged so the rule is in one
-   * place: "volume = effectiveVolume01(kind)".
+   * place: "volume = effectiveVolume01(kind) × the asset's mix gain".
    */
   private applyVolume(sound: Phaser.Sound.BaseSound, kind: AudioKind): void {
-    setSoundVolume(sound, this.effectiveVolume01(kind));
+    setSoundVolume(sound, this.effectiveVolume01(kind) * audioGainFor(sound.key));
   }
 }
 

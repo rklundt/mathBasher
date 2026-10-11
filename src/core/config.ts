@@ -568,6 +568,77 @@ export const config = {
       separatorThicknessPx: 12,
     },
   },
+  /**
+   * Sprint 2.5.4 — Math-a-lotl (underwater mode). Answer bubbles rise
+   * from below the sea floor; the kid taps one and the axolotl swims
+   * over to catch it. Speed key doubles as the difficulty (Easy /
+   * Medium / Hard) — it sets how many bubbles rise and how fast. The
+   * generators always return 4 choices, so 4 is the bubble ceiling;
+   * Hard differs from Medium by rise speed. Each question also has a
+   * countdown (same values as Asteroid Field): at zero the question is
+   * missed and the next one starts — a re-spawned wave does NOT reset it.
+   */
+  mathALotl: {
+    /** Round-wide hearts; every wrong catch spends one, the last ends the round. */
+    maxLives: 3,
+    /** Waterline as a fraction of canvas height — must match `SKY_FRAC` in `scripts/sprites/reef.mjs`. */
+    waterlineFrac: 0.25,
+    speed: {
+      slow: { bubbleCount: 3, risePxPerSec: 42, countdownSec: 25 },
+      medium: { bubbleCount: 4, risePxPerSec: 58, countdownSec: 18 },
+      fast: { bubbleCount: 4, risePxPerSec: 80, countdownSec: 12 },
+    },
+    bubble: {
+      diameterPx: 104,
+      /** Side-to-side sway amplitude + frequency while rising. */
+      swayPx: 14,
+      swayHz: 0.45,
+      /** Bubbles start this far apart vertically below the floor so they surface one at a time. */
+      spawnStaggerPx: 70,
+      /**
+       * Rise speed until a bubble is fully on screen (playtest: waiting
+       * for bubbles to crawl up from below the floor was boring). Once
+       * in view it slows to the difficulty's `risePxPerSec`, so the
+       * difficulty pacing is unchanged where it matters.
+       */
+      entryRisePxPerSec: 260,
+      /** Horizontal jitter inside each bubble's lane. */
+      laneJitterPx: 30,
+    },
+    axolotl: {
+      displayWidthPx: 190,
+      /** Swim speed while chasing a tapped bubble / spot. */
+      swimPxPerSec: 460,
+      /** Distance (design px) at which the axolotl's head catches a bubble. */
+      catchRadiusPx: 56,
+      /** Swim-cycle frame rate while moving (0.6 s per stroke at 6 frames) and while idling. */
+      swimFps: 10,
+      idleFps: 4,
+      /** Nose tilt toward the swim direction is clamped to ±this. */
+      maxTiltDeg: 70,
+      /** How fast the tilt eases toward its target (per second). */
+      tiltEasePerSec: 6,
+      /**
+       * Turn left/right only when the target is this far past the
+       * axolotl's centre on the other side, and at most once per
+       * `turnCooldownMs` — stops the flicker on up/down swims.
+       */
+      turnDeadzonePx: 40,
+      turnCooldownMs: 300,
+      /** Squash-and-turn animation length when it does turn around. */
+      turnMs: 160,
+      /** Keep-out margin from the canvas edges, waterline and floor. */
+      edgeMarginPx: 60,
+      /** How long the happy face holds after a catch. */
+      happyHoldMs: 700,
+    },
+    /** Pause before the next problem's bubbles start rising. */
+    nextQuestionDelayMs: 600,
+    /** Pause before a wave re-spawns after the right bubble floated away. */
+    respawnDelayMs: 500,
+    /** How long the "Out of time!" banner holds before the next question. */
+    timeoutBannerMs: 800,
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
@@ -716,6 +787,17 @@ export const config = {
      *    Source-URL click zone. Since sprint 2.5.2 the footer is a DOM strip
      *    below the canvas, so this is just thumb-room spacing.
      */
+    /**
+     * Floating "+N" points popup on a correct answer (HudScene, every
+     * game). Sprint 2.5.4 playtest: 0.7 s was too quick to read, so it
+     * now holds fully visible for `holdMs`, then fades over `fadeMs`
+     * while drifting up `risePx` the whole time.
+     */
+    scorePopup: {
+      holdMs: 550,
+      fadeMs: 800,
+      risePx: 60,
+    },
     touchFire: {
       radiusPx: 40,
       hitPadPx: 14,

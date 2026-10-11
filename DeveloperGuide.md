@@ -473,7 +473,17 @@ The canonical reference is `docs/adrs/ADR-0011-per-game-mode-dispatch.md` (12-st
 4. Add the new game's preload assets with `'game:<id>'` scope in the sprite/audio manifests so `loadGameBundle` defers them until first play.
 5. `LoadingScene` caption switch + `GameSelectScene` tile gets a one-line addition each.
 
-Sprint 2.2 shipped Number Climb (display name "Space Escape!") through this exact checklist; boot load stays at ~2 MB regardless of how many game modes ship.
+Sprint 2.2 shipped Number Climb (display name "Space Escape!") through this exact checklist; boot load stays at ~2 MB regardless of how many game modes ship. Sprint 2.5.4 shipped Math-a-lotl the same way (plus a Game Select move to a 2×2 grid).
+
+Two per-game knobs added in 2.5.4:
+
+- **Several ambience loops.** `GAME_MIDGROUND_MAP` maps a game to a *list* of midground keys; they all start and stop together (Math-a-lotl layers two water loops).
+- **Per-asset mix gain.** `AUDIO_GAIN` in `src/core/audioKeys.ts` multiplies an asset's playback volume (0–1) on top of the kind's slider, so a game can balance its own mix without re-encoding. Unlisted keys play at 1.
+- **Space-only background layers.** `GAME_BG_SPACE_LAYERS` in `src/core/spriteKeys.ts` turns BackgroundScene's parallax stars and bottom darkening band on or off per game.
+
+### Code-drawn art (Math-a-lotl)
+
+The axolotl, the underwater backdrop and the reef pieces are drawn in code: `pnpm sprite:axolotl` and `pnpm sprite:reef` render the shipped WebPs from `scripts/sprites/axolotl.mjs` / `reef.mjs`. Those scripts are the source of truth. Change the shapes or colors there and re-run; don't hand-edit the WebPs. The sprite-sheet frame sizes are mirrored in `AXOLOTL_SHEET` / `REEF_SHEETS` (`src/core/spriteKeys.ts`), and `src/core/mathALotlAssets.test.ts` fails if a sheet and its declared geometry drift apart. Because shipped assets are cached for a week, a visible change to a sheet needs a new filename (see "Cache model" below).
 
 ### Loader-error handling
 

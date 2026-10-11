@@ -421,7 +421,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // read via GAME_MIDGROUND_MAP so a future game mode's per-mode
     // midground also stops correctly during its own death-equivalent
     // anim (though the hero-death pattern is currently Alien-Shoot-only).
-    getAudioManager().stopLoop(GAME_MIDGROUND_MAP[this.gameId]);
+    for (const key of GAME_MIDGROUND_MAP[this.gameId]) getAudioManager().stopLoop(key);
     this.hero.playDeathAnim(() => {
       this.afterQuestion(false);
     });
@@ -449,7 +449,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // the death anim. playLoop is a no-op if the loop is already
     // active (correct hits never stop it), so this is safe to call
     // unconditionally on every wave transition.
-    getAudioManager().playLoop(GAME_MIDGROUND_MAP[this.gameId], 'midground');
+    for (const key of GAME_MIDGROUND_MAP[this.gameId]) getAudioManager().playLoop(key, 'midground');
     this.startNextQuestion();
   }
 
