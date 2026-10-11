@@ -34,6 +34,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - Galaxy-over-water backdrop, coral, swaying seaweed, faint background fish; all of the art is drawn in code (`scripts/sprites/axolotl.mjs`, `scripts/sprites/reef.mjs`).
 - Its own music, two layered water-ambience loops, three bubble-pop sounds and three underwater wrong-catch sounds; the music is mixed below the ambience, and a wrong catch sounds a little louder than a right one.
 - Game Select is now a 2×2 grid.
+- New tab icon: a green toy blaster (`public/favicon.svg`, with PNG fallbacks and an iOS home-screen icon rendered by `pnpm icon:favicon`).
 - The "+points" popup on a correct answer now stays readable longer in every game (holds ~0.5 s, then fades; ~1.35 s total, was 0.7 s).
 
 ## [2.5.2] - 2026-10-04 — Visual polish, 3-lives Space Escape, phone layout + custom domains
