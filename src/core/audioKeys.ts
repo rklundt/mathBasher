@@ -58,6 +58,14 @@ export const SfxKeys = {
   BubblePop1: 'bubble-pop-1',
   BubblePop2: 'bubble-pop-2',
   BubblePop3: 'bubble-pop-3',
+  /**
+   * Sprint 2.5.4 — Math-a-lotl wrong-catch sounds (underwater "bloop"
+   * style; the shared hit-wrong set didn't fit the aquatic world).
+   * Picked at random per wrong catch via `pickRandomBubbleWrongSfx`.
+   */
+  BubbleWrong1: 'bubble-wrong-1',
+  BubbleWrong2: 'bubble-wrong-2',
+  BubbleWrong3: 'bubble-wrong-3',
 } as const;
 
 /**
@@ -92,6 +100,15 @@ export function pickRandomBubblePopSfx(
   rng: () => number = Math.random,
 ): (typeof BUBBLE_POP_KEYS)[number] {
   return BUBBLE_POP_KEYS[Math.floor(rng() * BUBBLE_POP_KEYS.length)];
+}
+
+const BUBBLE_WRONG_KEYS = ['bubble-wrong-1', 'bubble-wrong-2', 'bubble-wrong-3'] as const;
+
+/** Sprint 2.5.4 — random Math-a-lotl wrong-catch sound. */
+export function pickRandomBubbleWrongSfx(
+  rng: () => number = Math.random,
+): (typeof BUBBLE_WRONG_KEYS)[number] {
+  return BUBBLE_WRONG_KEYS[Math.floor(rng() * BUBBLE_WRONG_KEYS.length)];
 }
 
 /** Atmospheric loop keys (midground kind — see encoder profile). */
@@ -230,6 +247,14 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [MusicKeys.ReefLoop1]: 0.45,
   [MidgroundKeys.Underwater1]: 0.7,
   [MidgroundKeys.Underwater2]: 0.7,
+  // Playtest: a wrong catch should sound a bit LOUDER than a right one.
+  // Both sets are normalized to the sfx target, but sub-second clips
+  // drift: the pops measure ~4 dB hotter (mean ≈ -12 dB vs -16 dB for
+  // the wrong set). Halving the pops (-6 dB) leaves the wrong sounds
+  // ~2 dB on top. The wrong set plays at the default 1.
+  [SfxKeys.BubblePop1]: 0.5,
+  [SfxKeys.BubblePop2]: 0.5,
+  [SfxKeys.BubblePop3]: 0.5,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
@@ -314,6 +339,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === MidgroundKeys.Underwater1) return 'game:math-a-lotl';
   if (key === MidgroundKeys.Underwater2) return 'game:math-a-lotl';
   if (key === SfxKeys.BubblePop1 || key === SfxKeys.BubblePop2 || key === SfxKeys.BubblePop3) {
+    return 'game:math-a-lotl';
+  }
+  if (key === SfxKeys.BubbleWrong1 || key === SfxKeys.BubbleWrong2 || key === SfxKeys.BubbleWrong3) {
     return 'game:math-a-lotl';
   }
   return 'eager';

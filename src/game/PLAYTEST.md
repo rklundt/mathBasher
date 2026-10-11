@@ -303,7 +303,7 @@ Phone in landscape, then desktop.
 - [ ] Tap open water → the axolotl swims there and never leaves the water (not into the sky band, not below the floor).
 - [ ] Keys 1–4 pick the visible bubbles left to right.
 - [ ] Fractions (Add Fractions on Medium) fit inside the bubbles.
-- [ ] Audio: music is quieter than the water ambience; pops sit on top. Mute and the volume sliders still work. Pause freezes the bubbles, the axolotl and the reef.
+- [ ] Audio: music is quieter than the water ambience; a wrong catch plays an underwater "bloop" (one of three) a little louder than the right-catch pop. Mute and the volume sliders still work. Pause freezes the bubbles, the axolotl and the reef.
 - [ ] Play Again replays Math-a-lotl (not another mode).
 
 ## Logging the run

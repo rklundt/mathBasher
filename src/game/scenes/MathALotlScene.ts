@@ -23,7 +23,7 @@ import {
 } from '@/game/systems/mathALotlMath';
 import { resolveStrike } from '@/game/systems/numberClimbFloorMath';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { pickRandomBubblePopSfx, pickRandomHitWrongSfx, SfxKeys } from '@/core/audioKeys';
+import { pickRandomBubblePopSfx, pickRandomBubbleWrongSfx, SfxKeys } from '@/core/audioKeys';
 import { ParticleSpriteKeys, pickRandomAxolotlSpriteKey } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
 
@@ -268,7 +268,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
   private handleWrongCatch(b: AnswerBubble): void {
     this.usedWrongCatch = true;
-    getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
+    getAudioManager().play(pickRandomBubbleWrongSfx(), 'sfx');
     b.popWrong();
     this.cameras.main.shake(120, 0.004);
     const strike = resolveStrike(this.livesUsed, this.cfg.maxLives);

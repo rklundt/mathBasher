@@ -46,14 +46,20 @@ describe('Math-a-lotl assets', () => {
     for (const e of [...sprites, ...audio]) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('mixes the music below the water ambience, which sits below the pops', () => {
+  it('mixes the music below the water ambience', () => {
     const music = audioGainFor(GAME_MUSIC_MAP['math-a-lotl']);
     const ambience = GAME_MIDGROUND_MAP['math-a-lotl'].map(audioGainFor);
     expect(ambience).toHaveLength(2);
-    for (const g of ambience) {
-      expect(music).toBeLessThan(g);
-      expect(g).toBeLessThan(audioGainFor('bubble-pop-1'));
-    }
+    for (const g of ambience) expect(music).toBeLessThan(g);
+  });
+
+  it('plays a wrong catch louder than a right one', () => {
+    // Both sets are sfx normalized to the same target, but the pops
+    // measure ~4 dB hotter; the gain must more than cancel that.
+    const popDb = 20 * Math.log10(audioGainFor('bubble-pop-1'));
+    const wrongDb = 20 * Math.log10(audioGainFor('bubble-wrong-1'));
+    const MEASURED_POP_HEADROOM_DB = 4;
+    expect(wrongDb - (popDb + MEASURED_POP_HEADROOM_DB)).toBeGreaterThan(0);
   });
 
   it('unlisted keys play at full gain', () => {
