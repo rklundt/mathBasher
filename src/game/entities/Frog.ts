@@ -75,6 +75,10 @@ export class Frog {
    */
   hop(getTarget: () => { x: number; y: number }, onLand: () => void, onLeap?: () => void): void {
     this.scene.tweens.killTweensOf(this.sprite);
+    // A hop can cut short the pop-up after a splash (fade-in from alpha 0)
+    // or the timeout wobble — start from a fully visible, upright frog.
+    this.sprite.setAlpha(1).setAngle(0).setScale(this.baseScale);
+    this.shadow.setVisible(true);
     this.setPose('crouch');
     const from = { x: this.sprite.x, y: this.sprite.y };
     this.scene.time.delayedCall(this.cfg.crouchMs, () => {

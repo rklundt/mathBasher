@@ -669,8 +669,15 @@ export const config = {
     rowSpacingPx: 150,
     /** Gap between the shoreline and the first / last row. */
     shoreGapPx: 95,
-    /** Height of each bank image (must match BANK_H in scripts/sprites/pond.mjs). */
+    /** Height of each bank image (must match BANK_H in scripts/sprites/pond.mjs; tested). */
     bankHeightPx: 240,
+    /** Shorelines sit this far inside each bank image (SHORE_INSET in pond.mjs). */
+    shoreInsetPx: 30,
+    /** Frog start / finish spots: this fraction of the bank height in from the shoreline. */
+    startBankFrac: 0.4,
+    finishBankFrac: 0.25,
+    /** Slow sideways drift of the water texture — reads as the river's current. */
+    currentPxPerSec: 14,
     /** Where the frog sits on screen as the camera follows (fraction of canvas height). */
     cameraFrogYFrac: 0.7,
     cameraScrollMs: 450,
@@ -707,12 +714,18 @@ export const config = {
       /** Delay before the frog hops from the last row onto the far bank. */
       ashoreDelayMs: 350,
       flyOrbitPx: 46,
+      /** One lap of the fly's figure-eight, and how far it bobs up and down. */
+      flyOrbitMs: 1600,
+      flyBobPx: 14,
       /** Where the fly hovers relative to the frog's finish spot (beside it, in view). */
       flyOffsetX: 170,
       flyOffsetY: -10,
       tongueMs: 140,
       celebrateMs: 1800,
     },
+    anim: { splashFps: 12, flyFps: 18 },
+    /** "Splash!" note floating up from a pad; kept this far in from the screen edges. */
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
   },
   layout: {
     /** number of answer lanes across the screen */

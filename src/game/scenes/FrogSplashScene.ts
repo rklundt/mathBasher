@@ -17,7 +17,6 @@ import { LilyPadRow } from '@/game/entities/LilyPadRow';
 import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
 import {
   cameraScrollY,
-  isPadOnScreen,
   pickTappedPad,
   riverLayout,
   rowAnswers,
@@ -41,8 +40,6 @@ import {
 } from '@/core/audioKeys';
 
 const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
-/** Slow sideways drift of the water texture — reads as the river's current. */
-const CURRENT_PX_PER_SEC = 14;
 
 /**
  * Frog Splash — sprint 2.5.6's fifth game mode.
@@ -75,6 +72,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   private water!: Phaser.GameObjects.TileSprite;
   private frog!: Frog;
   private fly: Phaser.GameObjects.Sprite | null = null;
+  /** Splash sprites still playing — paused with the scene. */
+  private readonly splashes = new Set<Phaser.GameObjects.Sprite>();
   private flyOrbit: Phaser.Tweens.Tween | null = null;
   private rows: LilyPadRow[] = [];
 
@@ -150,6 +149,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.time.paused = false;
     this.keyHandlers = [];
     this.tapHint = undefined;
+    this.splashes.clear();
 
     const { mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
@@ -187,6 +187,9 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       rowSpacingPx: this.cfg.rowSpacingPx,
       shoreGapPx: this.cfg.shoreGapPx,
       bankHeightPx: this.cfg.bankHeightPx,
+      shoreInsetPx: this.cfg.shoreInsetPx,
+      startBankFrac: this.cfg.startBankFrac,
+      finishBankFrac: this.cfg.finishBankFrac,
     });
     const L = this.layout;
     this.cameras.main.setBounds(0, 0, width, L.worldHeight);
@@ -206,14 +209,14 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       this.anims.create({
         key: `${SPLASH_SHEET.key}/play`,
         frames: this.anims.generateFrameNumbers(SPLASH_SHEET.key, { start: 0, end: SPLASH_SHEET.frames - 1 }),
-        frameRate: 12,
+        frameRate: this.cfg.anim.splashFps,
       });
     }
     if (!this.anims.exists(`${FLY_SHEET.key}/buzz`)) {
       this.anims.create({
         key: `${FLY_SHEET.key}/buzz`,
         frames: this.anims.generateFrameNumbers(FLY_SHEET.key, { start: 0, end: FLY_SHEET.frames - 1 }),
-        frameRate: 18,
+        frameRate: this.cfg.anim.flyFps,
         repeat: -1,
       });
     }
@@ -225,10 +228,10 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.flyOrbit = this.tweens.add({
       targets: orbit,
       a: Math.PI * 2,
-      duration: 1600,
+      duration: this.cfg.finish.flyOrbitMs,
       repeat: -1,
       onUpdate: () => {
-        this.fly?.setPosition(fx + Math.cos(orbit.a) * this.cfg.finish.flyOrbitPx, fy + Math.sin(orbit.a * 2) * 14);
+        this.fly?.setPosition(fx + Math.cos(orbit.a) * this.cfg.finish.flyOrbitPx, fy + Math.sin(orbit.a * 2) * this.cfg.finish.flyBobPx);
       },
     });
 
@@ -238,7 +241,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
 
   override update(_time: number, dt: number): void {
     if (this.paused || this.roundOver) return;
-    this.water.tilePositionX += CURRENT_PX_PER_SEC * (dt / 1000);
+    this.water.tilePositionX += this.cfg.currentPxPerSec * (dt / 1000);
     for (const r of this.rows) r.update(dt);
     if (this.busy) return;
     if (this.clock.tick(dt)) this.handleTimeout();
@@ -267,22 +270,20 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     if (this.paused || this.busy || this.roundOver) return;
     const row = this.rows[this.activeRow];
     if (!row) return;
-    const r = this.cfg.pad.displayPx / 2;
-    const visible = row
+    // Every pad's main copy is on screen (rows wrap at the edge).
+    const ordered = row
       .positions()
       .map((p, i) => ({ ...p, i }))
-      .filter((p) => isPadOnScreen(p.x, r, this.scale.width))
       .sort((a, b) => a.x - b.x);
-    const pick = visible[index];
+    const pick = ordered[index];
     if (pick) this.hopTo(pick.i);
   }
 
   private hopTo(padIndex: number): void {
-    const target = this.rows[this.activeRow];
-    if (!target || padIndex < 0 || padIndex >= target.count) return;
+    const row = this.rows[this.activeRow];
+    if (!row || padIndex < 0 || padIndex >= row.count) return;
     this.busy = true;
     this.hideTapHint();
-    const row = this.rows[this.activeRow]!;
     // The row holds still once the frog commits, so it lands exactly
     // where the kid aimed — sliding a pad split across the edge whole first.
     row.hold(padIndex);
@@ -352,12 +353,18 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     getAudioManager().play(pickRandomFrogSplashSfx(), 'sfx');
     const splash = this.add.sprite(at.x, at.y + 10, SPLASH_SHEET.key, 0).setDepth(12).setScale(1.2);
     splash.play(`${SPLASH_SHEET.key}/play`);
-    splash.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => splash.destroy());
+    this.splashes.add(splash);
+    splash.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.splashes.delete(splash);
+      splash.destroy();
+    });
     this.cameras.main.shake(140, 0.004);
-    this.floatNote(at.x, at.y - 60, 'Splash! Try again!');
     _th.logToAi('WrongPad', SeverityLevel.Information, this.questionProps());
-    if (this.loseLife()) return;
-    this.time.delayedCall(this.cfg.splashRecoverMs, () => this.retryQuestion());
+    const outOfLives = this.loseLife();
+    // No "Try again!" when that was the last life — "Out of lives!" follows.
+    this.floatNote(at.x, at.y - 60, outOfLives ? 'Splash!' : 'Splash! Try again!');
+    if (outOfLives) return;
+    this.time.delayedCall(this.cfg.splashRecoverMs, () => this.retryQuestion(true));
   }
 
   /** Time ran out: a life is lost (no splash — the frog never jumped), same question again. */
@@ -366,11 +373,13 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.usedWrongThisQuestion = true;
     this.frog.wobble();
     _th.logToAi('FrogSplash.timeout', SeverityLevel.Information, this.questionProps());
-    if (this.loseLife()) return;
+    // "Out of time!" shows even on the last life, so the kid knows why
+    // the round is ending.
     const banner = this.screenBanner('Out of time!');
     this.time.delayedCall(this.cfg.timeoutBannerMs, () => {
       banner.destroy();
-      this.retryQuestion();
+      if (this.loseLife()) return;
+      this.retryQuestion(false);
     });
   }
 
@@ -388,15 +397,18 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     return true;
   }
 
-  private retryQuestion(): void {
+  /** Same question, fresh pads. After a splash the frog pops back up where it last sat. */
+  private retryQuestion(afterSplash: boolean): void {
     const q = this.currentQuestion;
     if (!q || this.roundOver) return;
-    // Back to where the frog last sat: its pad on the last row, or the bank.
-    const back =
-      this.sitRow >= 0
-        ? this.rows[this.sitRow]!.padPosition(this.sitPad)
-        : { x: this.scale.width / 2, y: this.layout.startY };
-    this.frog.reappear(back.x, back.y);
+    if (afterSplash) {
+      // Back to where the frog last sat: its pad on the last row, or the bank.
+      const back =
+        this.sitRow >= 0
+          ? this.rows[this.sitRow]!.padPosition(this.sitPad)
+          : { x: this.scale.width / 2, y: this.layout.startY };
+      this.frog.reappear(back.x, back.y);
+    }
     const row = this.rows[this.activeRow]!;
     row.restore();
     row.release();
@@ -581,15 +593,15 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
 
   /** Short message floating up from a world point. */
   private floatNote(x: number, y: number, msg: string): void {
-    const margin = 150; // half the note's width, roughly — keeps it fully on screen
+    const { edgeMarginPx: margin, risePx, durationMs } = this.cfg.note;
     const cx = Math.max(margin, Math.min(this.scale.width - margin, x));
     const note = text(this, cx, y, msg, 'rowLabel').setOrigin(0.5).setDepth(100);
     note.setStroke('#0b1020', 6);
     this.tweens.add({
       targets: note,
-      y: y - 50,
+      y: y - risePx,
       alpha: { from: 1, to: 0 },
-      duration: 1200,
+      duration: durationMs,
       ease: 'Quad.In',
       onComplete: () => note.destroy(),
     });
@@ -608,11 +620,11 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
 
   /** "Tap the right lily pad!" pill on Q1 only; freed on the first hop. */
   private buildTapHint(): void {
-    const W = 330;
     const H = 60;
     const container = this.add.container(this.scale.width / 2, 150).setScrollFactor(0);
-    const bg = this.add.rectangle(0, 0, W, H, 0x0b1020, 0.55).setStrokeStyle(2, 0xffffff, 0.7);
     const label = text(this, 0, 0, '👆 Tap the right lily pad!', 'rowLabel').setOrigin(0.5);
+    // Pill sized to the text, so it never spills past the box.
+    const bg = this.add.rectangle(0, 0, label.width + 48, H, 0x0b1020, 0.55).setStrokeStyle(2, 0xffffff, 0.7);
     container.add([bg, label]);
     container.setDepth(50).setVisible(false);
     this.tweens.add({ targets: container, alpha: { from: 1, to: 0.6 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -651,6 +663,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.frog?.destroy();
     this.fly?.destroy();
     this.fly = null;
+    for (const s of this.splashes) s.destroy();
+    this.splashes.clear();
     this.lifecycle.exit();
   }
 
@@ -660,7 +674,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     if (this.paused) return;
     this.paused = true;
     this.time.paused = true;
-    this.anims.pauseAll();
+    for (const s of this.animatedSprites()) s.anims.pause();
     this.lifecycle.pause();
   }
 
@@ -668,13 +682,17 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     if (!this.paused) return;
     this.paused = false;
     this.time.paused = false;
-    this.anims.resumeAll();
+    for (const s of this.animatedSprites()) s.anims.resume();
     this.lifecycle.resume();
+  }
+
+  /** Sprites playing an animation (the fly, any splashes) — frozen on pause. */
+  private animatedSprites(): Phaser.GameObjects.Sprite[] {
+    return [...(this.fly ? [this.fly] : []), ...this.splashes];
   }
 
   quitToMenu(): void {
     this.time.paused = false;
-    this.anims.resumeAll();
     this.lifecycle.quitToMenu();
   }
 }

@@ -12,10 +12,12 @@ import {
   FROG_POSE_COUNT,
   FROG_SHEET,
   FrogSpriteKeys,
+  PondSpriteKeys,
   SPLASH_SHEET,
   SPRITE_MANIFEST,
   spritePath,
 } from '@/core/spriteKeys';
+import { config } from '@/core/config';
 import { AUDIO_MANIFEST, GAME_MIDGROUND_MAP, GAME_MUSIC_MAP, audioGainFor } from '@/core/audioKeys';
 
 /**
@@ -33,6 +35,14 @@ describe('Frog Splash assets', () => {
       const meta = await sharp(onDisk(spritePath('hero', key))).metadata();
       expect(meta.height).toBe(FROG_SHEET.frame);
       expect(meta.width).toBe(FROG_SHEET.frame * FROG_POSE_COUNT);
+    }
+  });
+
+  it('bank images are as tall as the river layout expects', async () => {
+    for (const key of [PondSpriteKeys.BankNear, PondSpriteKeys.BankFar]) {
+      const meta = await sharp(onDisk(spritePath('bg', key))).metadata();
+      expect(meta.height, key).toBe(config.frogSplash.bankHeightPx);
+      expect(meta.width, key).toBe(1280);
     }
   });
 

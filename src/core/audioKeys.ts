@@ -128,6 +128,7 @@ const FROG_HOP_KEYS = ['frog-hop-1', 'frog-hop-2', 'frog-hop-3', 'frog-hop-4'] a
 const FROG_SLURP_KEYS = ['frog-slurp-1', 'frog-slurp-2'] as const;
 const FROG_SPLASH_KEYS = ['frog-splash-1', 'frog-splash-2', 'frog-splash-3'] as const;
 const FROG_RIBBIT_KEYS = ['frog-ribbit-1', 'frog-ribbit-2', 'frog-ribbit-3', 'frog-ribbit-4'] as const;
+const FROG_SFX_KEYS: ReadonlySet<string> = new Set([...FROG_HOP_KEYS, ...FROG_SLURP_KEYS, ...FROG_SPLASH_KEYS, ...FROG_RIBBIT_KEYS]);
 
 /** Sprint 2.5.6 — random Frog Splash right-pad ribbit. */
 export function pickRandomFrogRibbitSfx(rng: () => number = Math.random): (typeof FROG_RIBBIT_KEYS)[number] {
@@ -264,15 +265,13 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
  * gameId, so no observer pattern is needed — they just read the map
  * directly.
  */
-export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey | null>> = {
+export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
   // Sprint 2.2 — escape-tower climb music. Replaced the Loop1
   // placeholder once the real Climb track arrived.
   'number-climb': MusicKeys.EscapeLoop1,
   'math-a-lotl': MusicKeys.ReefLoop1,
-  // Sprint 2.5.6. (The map allows `null` = no music, for a game whose
-  // track hasn't landed yet.)
   'frog-splash': MusicKeys.PondLoop1,
 };
 
@@ -414,9 +413,7 @@ function audioScopeFor(key: AudioKey): AssetScope {
   // Sprint 2.5.6 — Frog Splash-only sounds.
   if (key === MidgroundKeys.RiverBrook1 || key === MidgroundKeys.RiverCrickets1) return 'game:frog-splash';
   if (key === MusicKeys.PondLoop1) return 'game:frog-splash';
-  if ([...FROG_HOP_KEYS, ...FROG_SLURP_KEYS, ...FROG_SPLASH_KEYS, ...FROG_RIBBIT_KEYS].includes(key as never)) {
-    return 'game:frog-splash';
-  }
+  if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   return 'eager';
 }
 
