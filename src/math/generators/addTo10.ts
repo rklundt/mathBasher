@@ -4,32 +4,25 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
 /**
  * Add-to-10 generator.
  *
- * Two addends `a, b` chosen from [0, 10] with the constraint `a + b <= 10`,
- * and the SUM (correct answer) is drawn uniformly. Algorithm:
- *   1. correctAnswer = uniform [0, 10]
- *   2. a = uniform [0, correctAnswer]
- *   3. b = correctAnswer - a
+ * Two addends `a, b` from [0, 10] with `a + b <= 10`, drawn from a weighted
+ * table of every such problem (sprint 2.5.7, `src/math/questionMix.ts`):
  *
- * This produces an equal-exposure distribution over the answer values — sum=0
- * (the unique pair 0+0) appears as often as sum=10 (any of 11 pairs that
- * sum to 10). Pedagogically correct for "see every answer value" learning.
- *
- * Note: the addends individually are NOT uniformly distributed over [0, 10]
- * — `a=0` has a higher marginal probability than `a=10` because every sum
- * has a valid `a=0` pairing but only sum=10 has a valid `a=10` pairing.
- * That's the right trade-off for the answer-uniformity goal.
+ *  - answers 2–10 come up equally often; 0 and 1 (0 + 0, 1 + 0) rarely;
+ *  - "+ 0" problems are rare — recognising 0 + 5 = 5 is still worth
+ *    seeing at this level, but not a quarter of the time.
  *
  * Tuning history:
- *   v0.6.3 (sprint 0.6.3 Story 7): switched from uniform-`a`-then-`b` to
- *     uniform-sum-then-`a`. Previous algorithm gave sum=10 ~27% of the
- *     time and sum=0 ~0.8% of the time. Surfaced during 0.6.3 playtest
- *     ("answers feel weighted toward 7-10").
+ *   v0.6.3 (sprint 0.6.3 Story 7): uniform-`a`-then-`b` → uniform-sum, after
+ *     answers felt weighted toward 7–10.
+ *   v2.5.7: weighted table. Uniform-sum-then-uniform-`a` made "+ 0" about a
+ *     third of all questions (every sum has two "+ 0" forms).
  *
  * Distractors are 3 distinct integers from [0, 10] not equal to the correct
  * sum, then shuffled with the correct answer to length 4 (matches
@@ -39,13 +32,23 @@ const MAX_SUM = 10;
 const ADDEND_MIN = 0;
 const ADDEND_MAX = 10;
 
+const mix = config.questionMix.addTo10;
+const problems: Operands[] = [];
+for (let a = ADDEND_MIN; a <= ADDEND_MAX; a++) {
+  for (let b = ADDEND_MIN; a + b <= MAX_SUM; b++) problems.push({ a, b, answer: a + b });
+}
+const TABLE = answerWeightedTable(
+  problems,
+  (p) => p.answer,
+  (sum) => (sum <= 1 ? mix.tinyAnswerWeight : 1),
+  (p) => (p.answer > 0 && (p.a === 0 || p.b === 0) ? mix.plusZeroWeight : 1),
+);
+
 const addTo10: QuestionGenerator = {
   id: 'add-to-10',
   label: 'Add to 10',
   generate(rng = defaultRng): Question {
-    const correctAnswer = Math.floor(rng() * (MAX_SUM + 1)); // [0, 10] uniform
-    const a = Math.floor(rng() * (correctAnswer + 1));        // [0, correctAnswer]
-    const b = correctAnswer - a;
+    const { a, b, answer: correctAnswer } = pickWeighted(TABLE, rng);
 
     const distractorCount = config.layout.targetLanes - 1;
     const distractors = pickDistractors(correctAnswer, {

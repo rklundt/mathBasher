@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, isTouchPrimary, type MathId, type SpeedKey } from '@/core/config';
+import { config, isTouchPrimary, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -245,7 +245,8 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       topBound: this.topBound,
       bottomBound: this.bottomBound,
       driftPxPerSec: speedCfg.driftPxPerSec,
-      countdownSec: speedCfg.countdownSec,
+      // Sprint 2.5.7 — harder math gets more time per question.
+      countdownSec: scaledSeconds(speedCfg.countdownSec, this.mathId),
     });
 
     // Round controller: anti-repeat + question loop + score (same as GameScene).

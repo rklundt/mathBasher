@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
-import { config, type MathId, type SpeedKey } from '@/core/config';
+import { config, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
 import { Settings, type GameId } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
@@ -41,7 +41,12 @@ function speedSectionTitleFor(gameId: GameId): string {
   return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' ? 'Difficulty' : 'Speed';
 }
 
-function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
+/**
+ * Label + subtitle for a difficulty tile. Time limits shown are the real
+ * ones for the selected math type (sprint 2.5.7 — harder math gets more
+ * time), so the subtitles refresh when the math type changes.
+ */
+function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): SpeedDisplay {
   switch (gameId) {
     case 'alien-shoot': {
       const map: Record<SpeedKey, SpeedDisplay> = {
@@ -52,14 +57,14 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
       return map[key];
     }
     case 'asteroid-field': {
-      const countdownSec = config.asteroidField.speed[key].countdownSec;
+      const countdownSec = scaledSeconds(config.asteroidField.speed[key].countdownSec, mathId);
       const labels: Record<SpeedKey, string> = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
       return { label: labels[key], subtitle: `${countdownSec}s per question` };
     }
     case 'number-climb': {
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const rungs = RUNGS_PER_DIFFICULTY[key];
-      const totalSec = config.numberClimb.speed[key].totalTimeSec;
+      const totalSec = scaledSeconds(config.numberClimb.speed[key].totalTimeSec, mathId);
       // Sprint 2.4 story 0 — "N floors" lifted OUT of the per-difficulty
       // subtitle (it was constant across all three difficulties and
       // pushed each subtitle wider than its tile, causing visual overlap
@@ -78,13 +83,15 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
     case 'math-a-lotl': {
       // Sprint 2.5.4 — difficulty = bubble count + rise speed + countdown.
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
-      const { bubbleCount, countdownSec } = config.mathALotl.speed[key];
+      const { bubbleCount } = config.mathALotl.speed[key];
+      const countdownSec = scaledSeconds(config.mathALotl.speed[key].countdownSec, mathId);
       return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${countdownSec}s` };
     }
     case 'frog-splash': {
       // Sprint 2.5.6 — difficulty = pads per row + time per hop (+ drift speed).
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
-      const { padCount, countdownSec } = config.frogSplash.speed[key];
+      const { padCount } = config.frogSplash.speed[key];
+      const countdownSec = scaledSeconds(config.frogSplash.speed[key].countdownSec, mathId);
       return { label: labels[key], subtitle: `${padCount} lily pads · ${countdownSec}s` };
     }
   }
@@ -220,6 +227,7 @@ export class DifficultyScene extends Phaser.Scene {
   }
 
   private backButton?: PlaceholderButton;
+  private readonly speedSubtitles = new Map<SpeedKey, Phaser.GameObjects.Text>();
 
   private renderEmptyState(cx: number, height: number): void {
     const msg = text(
@@ -365,7 +373,7 @@ export class DifficultyScene extends Phaser.Scene {
     const subtitleY = y + dt.speedHeightPx / 2 + 16;
 
     speedKeys.forEach((key, i) => {
-      const display = speedDisplayFor(gameId, key);
+      const display = speedDisplayFor(gameId, key, Settings.round.mathId);
       const buttonX = startX + i * (tileWidth + gap);
       const button = new PlaceholderButton({
         scene: this,
@@ -385,7 +393,7 @@ export class DifficultyScene extends Phaser.Scene {
       // button. Not interactive; purely descriptive. Phaser destroys
       // these automatically on scene shutdown alongside the rest of
       // the scene's display list.
-      text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0);
+      this.speedSubtitles.set(key, text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0));
     });
   }
 
@@ -431,6 +439,10 @@ export class DifficultyScene extends Phaser.Scene {
 
   private refreshSelection(): void {
     const { mathId, speed } = Settings.round;
+    // Time limits follow the math type (sprint 2.5.7).
+    for (const [key, subtitle] of this.speedSubtitles) {
+      subtitle.setText(speedDisplayFor(Settings.round.gameId, key, mathId).subtitle);
+    }
     for (const [id, btn] of this.mathButtons) {
       btn.setSelected(id === mathId);
     }

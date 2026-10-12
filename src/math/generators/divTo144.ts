@@ -4,6 +4,7 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -12,7 +13,7 @@ import type { Question, QuestionGenerator } from '@/math/types';
  *
  * Same shape as `divTo100` with the factor range widened to [2, 12]:
  * divisor + quotient in [2, 12], dividend in [4, 144]. Factor-uniform
- * sampling, Unicode `÷` operator — see `divTo100.ts` for the full
+ * sampling (10s / 11s less often since sprint 2.5.7), Unicode `÷` operator — see `divTo100.ts` for the full
  * pedagogical rationale (one source-of-truth comment to avoid drift).
  *
  * **Why a separate tile from `div-to-100`**: mirrors the mult-to-100 /
@@ -25,14 +26,15 @@ import type { Question, QuestionGenerator } from '@/math/types';
  */
 const FACTOR_MIN = 2;
 const FACTOR_MAX = 12;
+const FACTORS = factorTable(FACTOR_MIN, FACTOR_MAX);
 
 const divTo144: QuestionGenerator = {
   id: 'div-to-144',
   label: 'Divide 12×12',
   generate(rng = defaultRng): Question {
-    const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 11
-    const divisor = FACTOR_MIN + Math.floor(rng() * factorRange);
-    const quotient = FACTOR_MIN + Math.floor(rng() * factorRange);
+    // Divisor and quotient from [2, 12], 10s and 11s less often (sprint 2.5.7).
+    const divisor = pickWeighted(FACTORS, rng);
+    const quotient = pickWeighted(FACTORS, rng);
     const dividend = divisor * quotient;
     const correctAnswer = quotient;
 

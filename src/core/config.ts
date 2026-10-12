@@ -29,6 +29,26 @@ export const config = {
      */
     starThresholds: [8, 10, 11] as const,
     /**
+     * Sprint 2.5.7 — harder math gets more time, in every game mode. Each
+     * game's time limit for the chosen difficulty (per-question countdown,
+     * Space Escape's round timer) is multiplied by this, and Alien Shoot's
+     * descent slows by the same factor. Read through `mathTimeScale()`;
+     * scaled seconds are whole numbers (`scaledSeconds()`).
+     */
+    mathTimeScale: {
+      'add-to-10': 1.0,
+      'sub-to-10': 1.0,
+      'add-to-20': 1.25,
+      'sub-to-20': 1.25,
+      'mult-to-100': 1.5,
+      'mult-to-144': 1.5,
+      'div-to-100': 1.5,
+      'div-to-144': 1.5,
+      mixed: 1.5,
+      'add-fractions': 2.0,
+      'subtract-fractions': 2.0,
+    },
+    /**
      * Anti-repeat sliding window — GameScene tracks the last N prompt
      * strings of the current round and re-rolls the generator (up to
      * `recentPromptMaxRerolls` attempts) if the next draw would
@@ -727,6 +747,57 @@ export const config = {
     /** "Splash!" note floating up from a pad; kept this far in from the screen edges. */
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
   },
+  /**
+   * Sprint 2.5.7 — the question mix for the whole-number math types (see
+   * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
+   * = rarer, above 1 = more often. "Answer" weights set how often each
+   * answer comes up; the others pick among problems with the same answer.
+   * The resulting shares are locked by `src/math/questionMix.test.ts`.
+   */
+  questionMix: {
+    addTo10: {
+      /** Answers 0 and 1 (0 + 0, 1 + 0). */
+      tinyAnswerWeight: 0.3,
+      /** "+ 0" problems. */
+      plusZeroWeight: 0.15,
+    },
+    addTo20: {
+      /** Single-digit sums (2 + 2, 2 + 5): rare at this level. */
+      singleDigitAnswerWeight: 0.2,
+      /** Both numbers single digits, so the sum crosses ten (8 + 7). */
+      crossTenWeight: 2,
+      /** "+ 1" and "+ 10" problems. */
+      plusOneWeight: 0.2,
+      plusTenWeight: 0.2,
+    },
+    subTo10: {
+      /** Answers 0 (x − x) and 10 (10 − 0). */
+      edgeAnswerWeight: 0.3,
+      /** "− 0" and "− 1" problems. */
+      minusZeroWeight: 0.15,
+      minusOneWeight: 0.6,
+    },
+    subTo20: {
+      /** Answer 0 (x − x) and answers 19–20 (only "− 0" / "− 1" can make them). */
+      edgeAnswerWeight: 0.1,
+      /** Answers 10–18. Answers 1–9 are 1. */
+      teenAnswerWeight: 0.6,
+      /** Starting from a teen number and crossing back over ten (13 − 5). */
+      crossTenWeight: 2,
+      /** Starting from 10 or less (that's Subtract within 10's job). */
+      smallStartWeight: 0.3,
+      minusZeroWeight: 0.05,
+      minusOneWeight: 0.4,
+      minusTenWeight: 0.3,
+    },
+    multDiv: {
+      /** Factors 10 and 11 (× 10, × 11) are easy patterns: less often. */
+      tenWeight: 0.5,
+      elevenWeight: 0.6,
+    },
+    /** Add / Subtract to 20: wrong answers are drawn within ± this of the right one. */
+    nearDistractorSpread: 6,
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
@@ -896,6 +967,16 @@ export const config = {
 
 export type SpeedKey = keyof typeof config.scoring.speed;
 export type MathId = keyof typeof config.scoring.mathDifficulty;
+
+/** Sprint 2.5.7 — time-limit multiplier for a math type (1 = as configured per difficulty). */
+export function mathTimeScale(mathId: MathId | null): number {
+  return mathId === null ? 1 : config.round.mathTimeScale[mathId];
+}
+
+/** A difficulty's time limit stretched for the math type, in whole seconds. */
+export function scaledSeconds(sec: number, mathId: MathId | null): number {
+  return Math.round(sec * mathTimeScale(mathId));
+}
 
 /**
  * Mobile-vs-desktop threshold for picking between two-value config

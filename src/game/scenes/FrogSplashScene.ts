@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, type MathId, type SpeedKey } from '@/core/config';
+import { config, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { computeClimbStars } from '@/services/ScoreCalculator';
@@ -397,6 +397,11 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     return true;
   }
 
+  /** Time per hop: the difficulty's countdown, stretched for harder math (sprint 2.5.7). */
+  private countdownMs(): number {
+    return scaledSeconds(this.cfg.speed[this.speed].countdownSec, this.mathId) * 1000;
+  }
+
   /** Same question, fresh pads. After a splash the frog pops back up where it last sat. */
   private retryQuestion(afterSplash: boolean): void {
     const q = this.currentQuestion;
@@ -413,7 +418,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     row.restore();
     row.release();
     row.setAnswers(this.answersFor(q));
-    this.clock.start(this.cfg.speed[this.speed].countdownSec * 1000);
+    this.clock.start(this.countdownMs());
     this.busy = false;
   }
 
@@ -528,7 +533,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.currentQuestion = question;
     this.usedWrongThisQuestion = false;
     this.rows[this.activeRow]!.setAnswers(this.answersFor(question));
-    this.clock.start(this.cfg.speed[this.speed].countdownSec * 1000);
+    this.clock.start(this.countdownMs());
     this.busy = false;
     if (this.roundController.questionIndex === 0) this.tapHint?.setVisible(true);
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());

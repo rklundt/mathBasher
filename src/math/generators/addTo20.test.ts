@@ -18,7 +18,7 @@ describe('addTo20 generator', () => {
     const rng = mulberry32(2026);
     const samples = Array.from({ length: 1000 }, () => addTo20.generate(rng));
 
-    it('every prompt parses to two integers in [1, 10] summing to [2, 20]', () => {
+    it('every prompt parses to two integers ≥ 1 summing to [2, 20]', () => {
       const re = /^(\d+) \+ (\d+) = \?$/;
       for (const q of samples) {
         const match = re.exec(q.prompt);
@@ -28,9 +28,7 @@ describe('addTo20 generator', () => {
         expect(Number.isInteger(a)).toBe(true);
         expect(Number.isInteger(b)).toBe(true);
         expect(a).toBeGreaterThanOrEqual(1);
-        expect(a).toBeLessThanOrEqual(10);
         expect(b).toBeGreaterThanOrEqual(1);
-        expect(b).toBeLessThanOrEqual(10);
         expect(a + b).toBeGreaterThanOrEqual(2);
         expect(a + b).toBeLessThanOrEqual(20);
         expect(q.correctAnswer).toBe(a + b);
@@ -67,28 +65,6 @@ describe('addTo20 generator', () => {
     expect(a).toEqual(b);
   });
 
-  // Mirrors the addTo10 distribution test — uniform-over-sums is the
-  // documented contract; protect it from algorithmic regressions.
-  describe('answer distribution (uniform over sums)', () => {
-    it('every sum 2-20 appears within ±25% of the expected 1/19 share', () => {
-      // 19 possible sums (2 through 20); 1500 per sum at perfect uniformity.
-      const ITERATIONS = 19_000;
-      const EXPECTED_PER_SUM = ITERATIONS / 19;
-      const TOLERANCE = 0.25;
-      const rng = mulberry32(42);
-      const counts = new Array(21).fill(0); // index 2..20 used; 0,1 ignored
-      for (let i = 0; i < ITERATIONS; i++) {
-        const q = addTo20.generate(rng);
-        counts[q.correctAnswer]++;
-      }
-      for (let sum = 2; sum <= 20; sum++) {
-        const ratio = counts[sum] / EXPECTED_PER_SUM;
-        expect(
-          ratio,
-          `sum=${sum} appeared ${counts[sum]} times (${(ratio * 100).toFixed(0)}% of expected)`,
-        ).toBeGreaterThan(1 - TOLERANCE);
-        expect(ratio).toBeLessThan(1 + TOLERANCE);
-      }
-    });
-  });
+  // The answer / factor mix (sprint 2.5.7 weights) is locked for every
+  // whole-number generator in `src/math/questionMix.test.ts`.
 });

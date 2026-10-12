@@ -4,13 +4,15 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
 /**
  * Divide-to-100 generator (inverse of mult-to-100 — "tables up to 10×10").
  *
- * Sampling: divisor `d` + quotient `q` BOTH sampled uniformly from [2, 10],
+ * Sampling: divisor `d` + quotient `q` BOTH sampled from [2, 10] (uniform,
+ * except 10 about half as often since sprint 2.5.7 — `factorTable`),
  * then dividend computed as `d × q ∈ [4, 100]`. Question is
  * `"{dividend} ÷ {divisor} = ?"`, correct answer is `q`. This guarantees
  * integer results without rejection sampling and gives every multiplication
@@ -39,14 +41,15 @@ import type { Question, QuestionGenerator } from '@/math/types';
  */
 const FACTOR_MIN = 2;
 const FACTOR_MAX = 10;
+const FACTORS = factorTable(FACTOR_MIN, FACTOR_MAX);
 
 const divTo100: QuestionGenerator = {
   id: 'div-to-100',
   label: 'Divide 10×10',
   generate(rng = defaultRng): Question {
-    const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 9
-    const divisor = FACTOR_MIN + Math.floor(rng() * factorRange);
-    const quotient = FACTOR_MIN + Math.floor(rng() * factorRange);
+    // Divisor and quotient from [2, 10], ÷ 10 / answer 10 less often (sprint 2.5.7).
+    const divisor = pickWeighted(FACTORS, rng);
+    const quotient = pickWeighted(FACTORS, rng);
     const dividend = divisor * quotient;
     const correctAnswer = quotient;
 

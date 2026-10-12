@@ -68,25 +68,6 @@ describe('subTo10 generator', () => {
     expect(a).toEqual(b);
   });
 
-  describe('answer distribution (uniform over results)', () => {
-    it('every result 0-10 appears within ±25% of the expected 1/11 share', () => {
-      const ITERATIONS = 11_000;
-      const EXPECTED_PER_RESULT = ITERATIONS / 11;
-      const TOLERANCE = 0.25;
-      const rng = mulberry32(42);
-      const counts = new Array(11).fill(0);
-      for (let i = 0; i < ITERATIONS; i++) {
-        const q = subTo10.generate(rng);
-        counts[q.correctAnswer]++;
-      }
-      for (let result = 0; result <= 10; result++) {
-        const ratio = counts[result] / EXPECTED_PER_RESULT;
-        expect(
-          ratio,
-          `result=${result} appeared ${counts[result]} times (${(ratio * 100).toFixed(0)}% of expected)`,
-        ).toBeGreaterThan(1 - TOLERANCE);
-        expect(ratio).toBeLessThan(1 + TOLERANCE);
-      }
-    });
-  });
+  // The answer / factor mix (sprint 2.5.7 weights) is locked for every
+  // whole-number generator in `src/math/questionMix.test.ts`.
 });

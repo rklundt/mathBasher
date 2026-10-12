@@ -4,6 +4,7 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -11,40 +12,43 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * Subtract-within-10 generator.
  *
  * Minuend `a ∈ [0, 10]`, subtrahend `b ∈ [0, a]` (no negative results — kid-
- * friendly per the project's audience). The RESULT is sampled FIRST uniformly
- * from [0, 10], then `a` is sampled uniformly from [result, 10], then
- * `b = a - result`. Algorithm:
- *   1. correctAnswer = uniform [0, 10]
- *   2. a = uniform [correctAnswer, 10]
- *   3. b = a - correctAnswer
+ * friendly per the project's audience), drawn from a weighted table of
+ * every such problem (sprint 2.5.7, `src/math/questionMix.ts`):
  *
- * Like the add-to-N generators, this produces an answer-uniform distribution —
- * every result value 0-10 gets equal exposure, which matters pedagogically more
- * than uniform-over-minuends (where the "easy" results 0 and N would dominate).
+ *  - answers 1–9 come up equally often; 0 (x − x) and 10 (10 − 0) rarely;
+ *  - "− 0" problems are rare and "− 1" a little less common.
+ *
+ * Tuning history:
+ *   v2.5.7: was uniform over results, then uniform minuend — about half of
+ *     all questions were "− 0" or "x − x".
  *
  * Distractors are 3 distinct integers from [0, 10] not equal to the result.
  */
-const RESULT_MIN = 0;
 const RESULT_MAX = 10;
 const MINUEND_MAX = 10;
+
+const mix = config.questionMix.subTo10;
+const problems: Operands[] = [];
+for (let a = 0; a <= MINUEND_MAX; a++) {
+  for (let b = 0; b <= a; b++) problems.push({ a, b, answer: a - b });
+}
+const TABLE = answerWeightedTable(
+  problems,
+  (p) => p.answer,
+  (r) => (r === 0 || r === RESULT_MAX ? mix.edgeAnswerWeight : 1),
+  (p) => (p.b === 0 ? mix.minusZeroWeight : p.b === 1 ? mix.minusOneWeight : 1),
+);
 
 const subTo10: QuestionGenerator = {
   id: 'sub-to-10',
   label: 'Subtract within 10',
   generate(rng = defaultRng): Question {
-    // Uniform-over-results: correctAnswer ∈ [0, 10]
-    const resultRange = RESULT_MAX - RESULT_MIN + 1; // 11
-    const correctAnswer = RESULT_MIN + Math.floor(rng() * resultRange);
-
-    // a ∈ [correctAnswer, 10] so b = a - correctAnswer ∈ [0, 10-correctAnswer]
-    const aRange = MINUEND_MAX - correctAnswer + 1;
-    const a = correctAnswer + Math.floor(rng() * aRange);
-    const b = a - correctAnswer;
+    const { a, b, answer: correctAnswer } = pickWeighted(TABLE, rng);
 
     const distractorCount = config.layout.targetLanes - 1;
     const distractors = pickDistractors(correctAnswer, {
       count: distractorCount,
-      min: RESULT_MIN,
+      min: 0,
       max: RESULT_MAX,
       rng,
     });
