@@ -206,13 +206,16 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
  * gameId, so no observer pattern is needed — they just read the map
  * directly.
  */
-export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
+export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey | null>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
   // Sprint 2.2 — escape-tower climb music. Replaced the Loop1
   // placeholder once the real Climb track arrived.
   'number-climb': MusicKeys.EscapeLoop1,
   'math-a-lotl': MusicKeys.ReefLoop1,
+  // Sprint 2.5.6 — no Frog Splash music yet (null = silent); its own
+  // track lands with the game's audio.
+  'frog-splash': null,
 };
 
 /**
@@ -234,6 +237,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   // Sprint 2.5.4 — two water loops layered (the map value became a
   // list so a game can play more than one ambience loop at once).
   'math-a-lotl': [MidgroundKeys.Underwater1, MidgroundKeys.Underwater2],
+  // Sprint 2.5.6 — river ambience lands with the game's audio.
+  'frog-splash': [],
 };
 
 /**

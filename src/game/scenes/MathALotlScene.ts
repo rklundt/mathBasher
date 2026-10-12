@@ -15,7 +15,6 @@ import { Axolotl } from '@/game/entities/Axolotl';
 import { AnswerBubble } from '@/game/entities/AnswerBubble';
 import { ReefDecor } from '@/game/systems/ReefDecor';
 import {
-  QuestionClock,
   buildBubbleWave,
   chaseHoldY,
   clampToWater,
@@ -24,7 +23,7 @@ import {
   pickTappedBubble,
   visibleBubbles,
 } from '@/game/systems/mathALotlMath';
-import { resolveStrike } from '@/game/systems/roundRules';
+import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { pickRandomBubblePopSfx, pickRandomBubbleWrongSfx, SfxKeys } from '@/core/audioKeys';
 import { ParticleSpriteKeys, pickRandomAxolotlSpriteKey } from '@/core/spriteKeys';

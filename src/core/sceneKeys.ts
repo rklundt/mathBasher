@@ -66,6 +66,13 @@ export const SceneKeys = {
    */
   MathALotl: 'math-a-lotl',
   /**
+   * Frog Splash — sprint 2.5.6 fifth game mode. A frog hops up a river
+   * one row of drifting lily pads per question (12 rows); a wrong pad
+   * sinks, a timeout or splash costs one of 3 lives, the same question
+   * comes back with fresh pads.
+   */
+  FrogSplash: 'frog-splash',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -107,5 +114,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.NumberClimb;
     case 'math-a-lotl':
       return SceneKeys.MathALotl;
+    case 'frog-splash':
+      return SceneKeys.FrogSplash;
   }
 }
