@@ -32,6 +32,13 @@ import {
   pickRandomFrogSpriteKey,
 } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
+import { getAudioManager } from '@/services/audioManagerFactory';
+import {
+  pickRandomFrogHopSfx,
+  pickRandomFrogRibbitSfx,
+  pickRandomFrogSlurpSfx,
+  pickRandomFrogSplashSfx,
+} from '@/core/audioKeys';
 
 const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
 /** Slow sideways drift of the water texture — reads as the river's current. */
@@ -280,6 +287,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.frog.hop(
       () => row.padPosition(padIndex),
       () => this.onLand(padIndex),
+      () => this.playHop(),
     );
   }
 
@@ -308,6 +316,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     });
     // HUD draws in screen space; the river scrolls.
     this.events.emit('correctHit', { x: this.frog.x, y: this.frog.y - this.cameras.main.scrollY, scoreDelta });
+    getAudioManager().play(pickRandomFrogRibbitSfx(), 'sfx');
     this.playSparkle(this.frog.x, this.frog.y);
     _th.logToAi('QuestionEnded', SeverityLevel.Information, {
       ...this.questionProps(),
@@ -338,6 +347,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     const at = row.padPosition(padIndex);
     row.sink(padIndex);
     this.frog.splashDown();
+    getAudioManager().play(pickRandomFrogSplashSfx(), 'sfx');
     const splash = this.add.sprite(at.x, at.y + 10, SPLASH_SHEET.key, 0).setDepth(12).setScale(1.2);
     splash.play(`${SPLASH_SHEET.key}/play`);
     splash.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => splash.destroy());
@@ -416,6 +426,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.frog.hop(
       () => target,
       () => this.catchFly(),
+      () => this.playHop(),
     );
   }
 
@@ -451,6 +462,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       onUpdate: draw,
       onComplete: () => {
         fly.anims.stop();
+        getAudioManager().play(pickRandomFrogSlurpSfx(), 'sfx');
         this.tweens.add({
           targets: tip,
           x: mouth.x,
@@ -545,6 +557,10 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   }
 
   // ----- Feedback ----------------------------------------------------------
+
+  private playHop(): void {
+    getAudioManager().play(pickRandomFrogHopSfx(), 'sfx');
+  }
 
   private playSparkle(x: number, y: number): void {
     const burst = this.add.particles(x, y, ParticleSpriteKeys.Star05, {

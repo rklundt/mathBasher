@@ -326,6 +326,7 @@ Phone in landscape, then desktop.
 - [ ] Row 12 → the frog hops onto the far bank, its tongue catches the fly, a happy bounce, "You made it!" → Game Over with 3 stars.
 - [ ] Keys 1–4 pick the active row's visible pads left to right.
 - [ ] Fractions fit on the pads; numbers are readable on every pad.
+- [ ] Sounds: a hop on every leap (four variants), a ribbit on a right pad, a splash on a wrong one, a rib-bit slurp when the fly is caught. Music sits under the brook; the crickets are faint.
 - [ ] Pause freezes the drift, the frog mid-hop, the timer and the fly.
 - [ ] Play Again replays Frog Splash.
 

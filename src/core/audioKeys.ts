@@ -66,6 +66,26 @@ export const SfxKeys = {
   BubbleWrong1: 'bubble-wrong-1',
   BubbleWrong2: 'bubble-wrong-2',
   BubbleWrong3: 'bubble-wrong-3',
+  /**
+   * Sprint 2.5.6 — Frog Splash: four hop sounds (two springy boings, two
+   * cartoon hops) picked at random per hop, and two "rib-bit + slurp"
+   * sounds for catching the fly at the far bank.
+   */
+  FrogHop1: 'frog-hop-1',
+  FrogHop2: 'frog-hop-2',
+  FrogHop3: 'frog-hop-3',
+  FrogHop4: 'frog-hop-4',
+  FrogSlurp1: 'frog-slurp-1',
+  FrogSlurp2: 'frog-slurp-2',
+  /** Sprint 2.5.6 — Frog Splash wrong-pad SPLASH, one of three at random. */
+  FrogSplash1: 'frog-splash-1',
+  FrogSplash2: 'frog-splash-2',
+  FrogSplash3: 'frog-splash-3',
+  /** Sprint 2.5.6 — Frog Splash right-pad ribbit, one of four at random. */
+  FrogRibbit1: 'frog-ribbit-1',
+  FrogRibbit2: 'frog-ribbit-2',
+  FrogRibbit3: 'frog-ribbit-3',
+  FrogRibbit4: 'frog-ribbit-4',
 } as const;
 
 /**
@@ -103,6 +123,31 @@ export function pickRandomBubblePopSfx(
 }
 
 const BUBBLE_WRONG_KEYS = ['bubble-wrong-1', 'bubble-wrong-2', 'bubble-wrong-3'] as const;
+
+const FROG_HOP_KEYS = ['frog-hop-1', 'frog-hop-2', 'frog-hop-3', 'frog-hop-4'] as const;
+const FROG_SLURP_KEYS = ['frog-slurp-1', 'frog-slurp-2'] as const;
+const FROG_SPLASH_KEYS = ['frog-splash-1', 'frog-splash-2', 'frog-splash-3'] as const;
+const FROG_RIBBIT_KEYS = ['frog-ribbit-1', 'frog-ribbit-2', 'frog-ribbit-3', 'frog-ribbit-4'] as const;
+
+/** Sprint 2.5.6 — random Frog Splash right-pad ribbit. */
+export function pickRandomFrogRibbitSfx(rng: () => number = Math.random): (typeof FROG_RIBBIT_KEYS)[number] {
+  return FROG_RIBBIT_KEYS[Math.floor(rng() * FROG_RIBBIT_KEYS.length)];
+}
+
+/** Sprint 2.5.6 — random Frog Splash wrong-pad splash. */
+export function pickRandomFrogSplashSfx(rng: () => number = Math.random): (typeof FROG_SPLASH_KEYS)[number] {
+  return FROG_SPLASH_KEYS[Math.floor(rng() * FROG_SPLASH_KEYS.length)];
+}
+
+/** Sprint 2.5.6 — random Frog Splash hop sound. */
+export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof FROG_HOP_KEYS)[number] {
+  return FROG_HOP_KEYS[Math.floor(rng() * FROG_HOP_KEYS.length)];
+}
+
+/** Sprint 2.5.6 — random Frog Splash fly-catch sound. */
+export function pickRandomFrogSlurpSfx(rng: () => number = Math.random): (typeof FROG_SLURP_KEYS)[number] {
+  return FROG_SLURP_KEYS[Math.floor(rng() * FROG_SLURP_KEYS.length)];
+}
 
 /** Sprint 2.5.4 — random Math-a-lotl wrong-catch sound. */
 export function pickRandomBubbleWrongSfx(
@@ -146,6 +191,13 @@ export const MidgroundKeys = {
    */
   Underwater1: 'underwater-1',
   Underwater2: 'underwater-2',
+  /**
+   * Frog Splash's river ambience (sprint 2.5.6): a babbling brook and a
+   * crickets-and-bugs bed, both 10 s seamless loops, played together. The
+   * crickets sit well under the brook via `AUDIO_GAIN`.
+   */
+  RiverBrook1: 'river-brook-1',
+  RiverCrickets1: 'river-crickets-1',
 } as const;
 
 /** Music loop keys. */
@@ -183,6 +235,12 @@ export const MusicKeys = {
    * than the water ambience via `AUDIO_GAIN` below.
    */
   ReefLoop1: 'loop-5',
+  /**
+   * Frog Splash gameplay loop (sprint 2.5.6). ~20 s upbeat stereo track,
+   * encoded `--kind music --no-trim` for a clean loop seam; mixed under
+   * the river ambience via `AUDIO_GAIN`.
+   */
+  PondLoop1: 'loop-6',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -213,9 +271,9 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey | null>> = {
   // placeholder once the real Climb track arrived.
   'number-climb': MusicKeys.EscapeLoop1,
   'math-a-lotl': MusicKeys.ReefLoop1,
-  // Sprint 2.5.6 — no Frog Splash music yet (null = silent); its own
-  // track lands with the game's audio.
-  'frog-splash': null,
+  // Sprint 2.5.6. (The map allows `null` = no music, for a game whose
+  // track hasn't landed yet.)
+  'frog-splash': MusicKeys.PondLoop1,
 };
 
 /**
@@ -237,8 +295,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   // Sprint 2.5.4 — two water loops layered (the map value became a
   // list so a game can play more than one ambience loop at once).
   'math-a-lotl': [MidgroundKeys.Underwater1, MidgroundKeys.Underwater2],
-  // Sprint 2.5.6 — river ambience lands with the game's audio.
-  'frog-splash': [],
+  // Sprint 2.5.6 — brook + crickets, layered.
+  'frog-splash': [MidgroundKeys.RiverBrook1, MidgroundKeys.RiverCrickets1],
 };
 
 /**
@@ -260,6 +318,11 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [SfxKeys.BubblePop1]: 0.5,
   [SfxKeys.BubblePop2]: 0.5,
   [SfxKeys.BubblePop3]: 0.5,
+  // Frog Splash river bed: the brook a little under full, the crickets
+  // well below it (owner's mix note: crickets "significantly lower").
+  [MidgroundKeys.RiverBrook1]: 0.6,
+  [MidgroundKeys.RiverCrickets1]: 0.25,
+  [MusicKeys.PondLoop1]: 0.5,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
@@ -347,6 +410,12 @@ function audioScopeFor(key: AudioKey): AssetScope {
   }
   if (key === SfxKeys.BubbleWrong1 || key === SfxKeys.BubbleWrong2 || key === SfxKeys.BubbleWrong3) {
     return 'game:math-a-lotl';
+  }
+  // Sprint 2.5.6 — Frog Splash-only sounds.
+  if (key === MidgroundKeys.RiverBrook1 || key === MidgroundKeys.RiverCrickets1) return 'game:frog-splash';
+  if (key === MusicKeys.PondLoop1) return 'game:frog-splash';
+  if ([...FROG_HOP_KEYS, ...FROG_SLURP_KEYS, ...FROG_SPLASH_KEYS, ...FROG_RIBBIT_KEYS].includes(key as never)) {
+    return 'game:frog-splash';
   }
   return 'eager';
 }

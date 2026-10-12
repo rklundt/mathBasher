@@ -73,12 +73,13 @@ export class Frog {
    * Crouch, then leap along an arc to a (possibly moving) target, landing
    * exactly on it. `onLand` fires once, at the landing point.
    */
-  hop(getTarget: () => { x: number; y: number }, onLand: () => void): void {
+  hop(getTarget: () => { x: number; y: number }, onLand: () => void, onLeap?: () => void): void {
     this.scene.tweens.killTweensOf(this.sprite);
     this.setPose('crouch');
     const from = { x: this.sprite.x, y: this.sprite.y };
     this.scene.time.delayedCall(this.cfg.crouchMs, () => {
       this.setPose('leap');
+      onLeap?.();
       const prog = { t: 0 };
       this.scene.tweens.add({
         targets: prog,
