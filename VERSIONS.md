@@ -30,6 +30,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 **Frog Splash — a fifth game mode** (sprint 2.5.6, in progress)
 - A cartoon frog hops up a river, one row of drifting lily pads per question (12 rows). Tap the pad with the right answer; a wrong pad sinks — SPLASH — and the frog swims back to the last row to try the same question again. Running out of time also costs a life; 3 lives per round. After the last row the frog reaches the far bank and catches a fly.
 - Easy / Medium / Hard: 2 / 3 / 4 pads per row, 20 / 15 / 10 s per hop, faster drift. Stars by rows crossed, like Space Escape.
+- Pad rows wrap seamlessly: a pad drifting off one edge is already coming back in on the other, so the right answer is never hidden off screen. Jump onto a pad that is split across the edge and the row slides it whole onto the screen before the frog lands.
 - Eight lily pad looks mixed in every row (flowers, a bud, a ladybug, water drops, an old nibbled pad), in slightly different sizes.
 - Three random frog colorways; all of the art is drawn in code (`scripts/sprites/frog.mjs`, `scripts/sprites/pond.mjs`).
 - Sounds: springy hops, ribbits on a right pad, splashes on a wrong one, a rib-bit slurp for the fly, an upbeat music loop over a babbling-brook-and-crickets river bed.

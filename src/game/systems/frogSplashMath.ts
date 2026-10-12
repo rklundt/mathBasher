@@ -57,19 +57,41 @@ export function rowDirection(rowIndex: number): 1 | -1 {
 }
 
 /**
- * x of each pad in a drifting row at a given drift offset. Pads are evenly
- * spaced across a span wider than the screen and wrap, so a row never runs
- * out of pads; `offsetPx` is the accumulated drift (any sign).
+ * x of each pad in a drifting row at a given drift offset (any sign), in
+ * [0, screenWidth). Pads are evenly spaced around a loop exactly one screen
+ * wide: a pad sliding off one edge is already sliding back in on the other
+ * (drawn a second time at `wrapPeerX`), so no pad — and no right answer —
+ * is ever hidden off screen.
  */
-export function padXs(count: number, screenWidth: number, wrapExtraPx: number, offsetPx: number): number[] {
-  const span = screenWidth + wrapExtraPx;
-  const period = span / count;
-  const start = -wrapExtraPx / 2;
+export function padXs(count: number, screenWidth: number, offsetPx: number): number[] {
+  const period = screenWidth / count;
   return Array.from({ length: count }, (_, i) => {
     const raw = i * period + offsetPx;
-    const wrapped = ((raw % span) + span) % span;
-    return start + wrapped;
+    return ((raw % screenWidth) + screenWidth) % screenWidth;
   });
+}
+
+/**
+ * Where the wrap copy of a pad at `x` (from `padXs`) is drawn: one screen
+ * width away, on the other side. Only visible while the pad straddles an
+ * edge. The pad at `x` itself is always the bigger visible part.
+ */
+export function wrapPeerX(x: number, screenWidth: number): number {
+  return x < screenWidth / 2 ? x + screenWidth : x - screenWidth;
+}
+
+/**
+ * How far to slide a row so the pad at `x` sits whole on screen, at least
+ * `marginPx` in from the edge — used when the frog commits to a pad that
+ * is split across an edge, so it never lands half on each side. 0 if the
+ * pad is already whole.
+ */
+export function nudgeIntoView(x: number, radius: number, screenWidth: number, marginPx: number): number {
+  const lo = radius + marginPx;
+  const hi = screenWidth - radius - marginPx;
+  if (x < lo) return lo - x;
+  if (x > hi) return hi - x;
+  return 0;
 }
 
 /**

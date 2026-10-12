@@ -250,14 +250,16 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     if (this.paused || this.busy || this.roundOver) return;
     const row = this.rows[this.activeRow];
     if (!row) return;
-    const i = pickTappedPad(
+    // Both halves of a pad split across the screen edge count as that pad.
+    const targets = row.tapTargets();
+    const hit = pickTappedPad(
       { x: pointer.worldX, y: pointer.worldY },
-      row.positions(),
+      targets,
       this.cfg.pad.displayPx / 2,
       this.cfg.pad.tapSlop,
       this.scale.width,
     );
-    if (i >= 0) this.hopTo(i);
+    if (hit >= 0) this.hopTo(targets[hit]!.i);
   }
 
   /** Keyboard: 1–4 pick the active row's on-screen pads, left to right. */
@@ -282,8 +284,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.hideTapHint();
     const row = this.rows[this.activeRow]!;
     // The row holds still once the frog commits, so it lands exactly
-    // where the kid aimed (and a pad can't wrap away mid-hop).
-    row.hold();
+    // where the kid aimed — sliding a pad split across the edge whole first.
+    row.hold(padIndex);
     this.frog.hop(
       () => row.padPosition(padIndex),
       () => this.onLand(padIndex),

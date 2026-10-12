@@ -6,18 +6,23 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { POND_PAD_KEYS } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
-import { padXs, pickPadLooks } from '@/game/systems/frogSplashMath';
+import { nudgeIntoView, padXs, pickPadLooks, wrapPeerX } from '@/game/systems/frogSplashMath';
 
 interface Pad {
   readonly container: Phaser.GameObjects.Container;
   readonly label: Phaser.GameObjects.Text;
+  /** The same pad drawn one screen width away, seen while it straddles an edge. */
+  readonly peer: Phaser.GameObjects.Container;
+  readonly peerLabel: Phaser.GameObjects.Text;
+  readonly radius: number;
   answer: number | null;
 }
 
 /**
  * One drifting row of lily pads (sprint 2.5.6). Pads are evenly spaced
- * and wrap across a span a little wider than the screen, drifting in the
- * row's direction. The active row carries answer labels; other rows are
+ * and wrap around a loop one screen wide, drifting in the row's
+ * direction: a pad leaving one edge is already coming back in on the
+ * other (drawn twice while it straddles the edge), so no answer hides. The active row carries answer labels; other rows are
  * plain scenery. A row can hold still (the frog committed to a hop, or
  * the row is done) and a single pad can sink after a wrong landing.
  */
@@ -38,17 +43,21 @@ export class LilyPadRow {
     private readonly screenWidth: number,
     rng: () => number,
   ) {
-    this.offset = rng() * (screenWidth + this.cfg.wrapExtraPx);
+    this.offset = rng() * screenWidth;
     const looks = pickPadLooks(count, POND_PAD_KEYS.length, rng);
     for (let i = 0; i < count; i++) {
       const size = this.cfg.displayPx * (1 + (rng() * 2 - 1) * this.cfg.sizeJitter);
-      const img = scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size);
-      img.setAngle(rng() * 360);
-      const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
-      // Same dark outline as the other games' answer labels (readable on any pad shade).
-      label.setStroke('#0b1020', 7);
-      const container = scene.add.container(0, y, [img, label]).setDepth(2);
-      this.pads.push({ container, label, answer: null });
+      const angle = rng() * 360;
+      const make = (): [Phaser.GameObjects.Container, Phaser.GameObjects.Text] => {
+        const img = scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size).setAngle(angle);
+        const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
+        // Same dark outline as the other games' answer labels (readable on any pad shade).
+        label.setStroke('#0b1020', 7);
+        return [scene.add.container(0, y, [img, label]).setDepth(2), label];
+      };
+      const [container, label] = make();
+      const [peer, peerLabel] = make();
+      this.pads.push({ container, label, peer, peerLabel, radius: size / 2, answer: null });
     }
     this.layout();
   }
@@ -63,6 +72,7 @@ export class LilyPadRow {
     this.layout();
   }
 
+  /** Centre of pad `i` — the copy showing more of it (always the main one). */
   padPosition(i: number): { x: number; y: number } {
     const c = this.pads[i]!.container;
     return { x: c.x, y: c.y };
@@ -70,6 +80,14 @@ export class LilyPadRow {
 
   positions(): Array<{ x: number; y: number }> {
     return this.pads.map((p) => ({ x: p.container.x, y: p.container.y }));
+  }
+
+  /** Every drawn copy of every pad (main + wrap copy), for tap hit-testing. */
+  tapTargets(): Array<{ x: number; y: number; i: number }> {
+    return this.pads.flatMap((p, i) => [
+      { x: p.container.x, y: this.y, i },
+      { x: p.peer.x, y: this.y, i },
+    ]);
   }
 
   answerAt(i: number): number | null {
@@ -81,15 +99,34 @@ export class LilyPadRow {
     this.pads.forEach((p, i) => {
       const a = answers?.[i];
       p.answer = a ? a.answer : null;
-      p.label.setText(a ? a.display : '');
-      p.label.setScale(a && a.display.length >= 5 ? 0.7 : a && a.display.length === 4 ? 0.85 : 1);
+      const scale = a && a.display.length >= 5 ? 0.7 : a && a.display.length === 4 ? 0.85 : 1;
+      for (const label of [p.label, p.peerLabel]) label.setText(a ? a.display : '').setScale(scale);
     });
   }
 
-  /** Hold still right away (the frog has committed to a hop onto this row). */
-  hold(): void {
+  /**
+   * Hold still right away (the frog has committed to a hop onto pad `i`).
+   * If that pad is split across a screen edge, the row slides it whole
+   * onto the screen during the hop, so the frog never lands half on each side.
+   */
+  hold(i: number): void {
     this.scene.tweens.killTweensOf(this.drift);
     this.drift.factor = 0;
+    const p = this.pads[i];
+    if (!p) return;
+    const shift = nudgeIntoView(p.container.x, p.radius, this.screenWidth, this.cfg.edgeMarginPx);
+    if (shift === 0) return;
+    const nudge = { v: this.offset };
+    this.scene.tweens.add({
+      targets: nudge,
+      v: this.offset + shift,
+      duration: this.cfg.nudgeMs,
+      ease: 'Sine.Out',
+      onUpdate: () => {
+        this.offset = nudge.v;
+        this.layout();
+      },
+    });
   }
 
   /** Start drifting again (after a splash). */
@@ -114,9 +151,9 @@ export class LilyPadRow {
 
   /** The pad under a wrong landing sinks out of sight. */
   sink(i: number): void {
-    const c = this.pads[i]!.container;
+    const p = this.pads[i]!;
     this.scene.tweens.add({
-      targets: c,
+      targets: [p.container, p.peer],
       scale: 0.55,
       alpha: 0,
       duration: this.cfg.sinkMs,
@@ -127,23 +164,28 @@ export class LilyPadRow {
   /** Bring every pad back (after a splash, before the retry). */
   restore(): void {
     for (const p of this.pads) {
-      this.scene.tweens.killTweensOf(p.container);
-      p.container.setAlpha(0).setScale(0.8);
-      this.scene.tweens.add({ targets: p.container, alpha: 1, scale: 1, duration: 260, ease: 'Back.Out' });
+      const both = [p.container, p.peer];
+      this.scene.tweens.killTweensOf(both);
+      for (const c of both) c.setAlpha(0).setScale(0.8);
+      this.scene.tweens.add({ targets: both, alpha: 1, scale: 1, duration: 260, ease: 'Back.Out' });
     }
   }
 
   destroy(): void {
     this.scene.tweens.killTweensOf(this.drift);
     for (const p of this.pads) {
-      this.scene.tweens.killTweensOf(p.container);
+      this.scene.tweens.killTweensOf([p.container, p.peer]);
       p.container.destroy();
+      p.peer.destroy();
     }
     this.pads.length = 0;
   }
 
   private layout(): void {
-    const xs = padXs(this.pads.length, this.screenWidth, this.cfg.wrapExtraPx, this.offset);
-    this.pads.forEach((p, i) => p.container.setX(xs[i]!));
+    const xs = padXs(this.pads.length, this.screenWidth, this.offset);
+    this.pads.forEach((p, i) => {
+      p.container.setX(xs[i]!);
+      p.peer.setX(wrapPeerX(xs[i]!, this.screenWidth));
+    });
   }
 }
