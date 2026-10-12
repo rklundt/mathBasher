@@ -58,7 +58,7 @@ Source: `config.scoring.speed[*].multiplier`.
 
 ## Max score per (math type × difficulty)
 
-**Cross-game parity:** scoring has no game-mode axis. A perfect 12-question round of `(mathId, speedKey)` produces the same max score regardless of which game mode was played (Alien Shoot, Asteroid Field, Number Climb, Math-a-lotl). Locked by `ScoreCalculator.test.ts` parity tests (sprint 2.2.1 story 11, sprint 2.4 story 7).
+**Cross-game parity:** scoring has no game-mode axis. A perfect 12-question round of `(mathId, speedKey)` produces the same max score regardless of which game mode was played (Alien Shoot, Asteroid Field, Number Climb, Math-a-lotl, Frog Splash). Locked by `ScoreCalculator.test.ts` parity tests (sprint 2.2.1 story 11, sprint 2.4 story 7).
 
 Formula: `max = 12 × 100 × mathMult × speedMult = 1200 × mathMult × speedMult`. Assumes a clean round (no wrong shot taken).
 
@@ -91,7 +91,9 @@ Source: `config.round.starThresholds` (currently `[8, 10, 11]`).
 | 10 | 2 ★★ |
 | 11–12 | 3 ★★★ |
 
-### Number Climb (ships as "Space Escape!") — by floor reached
+### Number Climb (ships as "Space Escape!") and Frog Splash — by floor / row reached
+
+Frog Splash uses the same ladder with rows crossed in place of floors (`computeClimbStars(rowsCrossed, 12)`); reaching the far bank is 12 of 12.
 
 Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCalculator.ts`. Thresholds derive from `totalFloors` via `floor(totalFloors × 0.4 / 0.7 / 1.0)`, so a future round-size change auto-scales.
 
