@@ -37,6 +37,8 @@ export const SPLASH_H = 150;
 export const SPLASH_FRAMES = 4;
 export const BANK_W = 1280;
 export const BANK_H = 240;
+/** Shoreline distance in from the bank's water-side edge (config.frogSplash.shoreInsetPx). */
+export const SHORE_INSET = 30;
 
 const f = (n) => n.toFixed(1);
 const svg = (w, h, body, defs = '') =>
@@ -256,19 +258,15 @@ function bankSvg(far) {
   const H = BANK_H;
   const rng = mulberry32(far ? 21 : 13);
   // Shoreline wave along the water-side edge.
-  const edgeY = far ? H - 30 : 30;
+  const edgeY = far ? H - SHORE_INSET : SHORE_INSET;
   let shore = `M0,${edgeY}`;
   for (let x = 0; x <= W; x += 64) shore += ` Q${x + 32},${f(edgeY + (far ? 1 : -1) * (6 + rng() * 8))} ${x + 64},${edgeY}`;
   const grass = far ? `${shore} V0 H0 Z` : `${shore} V${H} H0 Z`;
   // Sand strip just inside the shoreline.
-  let sand = '';
-  {
-    const inset = far ? -18 : 18;
-    let d = `M0,${edgeY + inset}`;
-    for (let x = 0; x <= W; x += 64) d += ` Q${x + 32},${f(edgeY + inset + (rng() - 0.5) * 10)} ${x + 64},${edgeY + inset}`;
-    sand = far ? `${shore} L${W},${edgeY + inset} ${d.replace('M0', 'L0')} Z` : '';
-    sand = `<path d="${shore} V${edgeY + inset} H0 Z" fill="#e7cf98" opacity="0.95"/>`;
-  }
+  const sand = `<path d="${shore} V${edgeY + (far ? -18 : 18)} H0 Z" fill="#e7cf98" opacity="0.95"/>`;
+  // Advance the RNG as an earlier draft of the sand edge did, so the
+  // shipped banks re-render byte-identical.
+  for (let x = 0; x <= W; x += 64) rng();
   const blades = Array.from({ length: 140 }, () => {
     const x = rng() * W;
     const y = far ? 10 + rng() * (edgeY - 40) : edgeY + 30 + rng() * (H - edgeY - 40);

@@ -6,7 +6,10 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { POND_PAD_KEYS } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
-import { nudgeIntoView, padXs, pickPadLooks, wrapPeerX } from '@/game/systems/frogSplashMath';
+import { labelShiftX, nudgeIntoView, padXs, pickPadLooks, wrapPeerX } from '@/game/systems/frogSplashMath';
+
+/** Gap kept between a pad's number and the screen edge. */
+const LABEL_EDGE_PX = 4;
 
 interface Pad {
   readonly container: Phaser.GameObjects.Container;
@@ -100,8 +103,11 @@ export class LilyPadRow {
       const a = answers?.[i];
       p.answer = a ? a.answer : null;
       const scale = a && a.display.length >= 5 ? 0.7 : a && a.display.length === 4 ? 0.85 : 1;
-      for (const label of [p.label, p.peerLabel]) label.setText(a ? a.display : '').setScale(scale);
+      // Only the main copy carries the number (the wrap copy is the smaller
+      // half): a "15" split across the edge must never read as "1" and "5".
+      p.label.setText(a ? a.display : '').setScale(scale);
     });
+    this.layout();
   }
 
   /**
@@ -184,8 +190,11 @@ export class LilyPadRow {
   private layout(): void {
     const xs = padXs(this.pads.length, this.screenWidth, this.offset);
     this.pads.forEach((p, i) => {
-      p.container.setX(xs[i]!);
-      p.peer.setX(wrapPeerX(xs[i]!, this.screenWidth));
+      const x = xs[i]!;
+      p.container.setX(x);
+      p.peer.setX(wrapPeerX(x, this.screenWidth));
+      // Keep the whole number on screen while its pad straddles an edge.
+      p.label.setX(labelShiftX(x, p.label.displayWidth / 2, this.screenWidth, LABEL_EDGE_PX));
     });
   }
 }

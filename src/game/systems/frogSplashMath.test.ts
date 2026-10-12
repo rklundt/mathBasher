@@ -12,6 +12,7 @@ import {
   cameraScrollY,
   hopPoint,
   isPadOnScreen,
+  labelShiftX,
   nudgeIntoView,
   padXs,
   pickPadLooks,
@@ -29,6 +30,9 @@ const layout = riverLayout({
   rowSpacingPx: cfg.rowSpacingPx,
   shoreGapPx: cfg.shoreGapPx,
   bankHeightPx: cfg.bankHeightPx,
+  shoreInsetPx: cfg.shoreInsetPx,
+  startBankFrac: cfg.startBankFrac,
+  finishBankFrac: cfg.finishBankFrac,
 });
 
 describe('riverLayout', () => {
@@ -52,7 +56,7 @@ describe('rows + pads', () => {
     expect([0, 1, 2, 3].map(rowDirection)).toEqual([1, -1, 1, -1]);
   });
 
-  it('spaces pads evenly and wraps them across the extended span', () => {
+  it('spaces pads evenly and wraps them across the screen-wide loop', () => {
     const xs = padXs(4, 1280, 0);
     expect(xs).toEqual([0, 320, 640, 960]);
     // Drifting a full screen width brings every pad back to the same place.
@@ -198,5 +202,22 @@ describe('wrapping across the screen edge', () => {
     expect(x - 66).toBeGreaterThanOrEqual(0);
     expect(x + 66).toBeLessThanOrEqual(1280);
     expect(isPadOnScreen(wrapPeerX(x, 1280), 66, 1280)).toBe(false);
+  });
+});
+
+describe('pad numbers at the screen edge', () => {
+  it('slides the number so the whole label stays on screen', () => {
+    // "15" (half width 22) on a pad centred 10 px from the right edge.
+    expect(1270 + labelShiftX(1270, 22, 1280, 4)).toBe(1254);
+    expect(5 + labelShiftX(5, 22, 1280, 4)).toBe(26);
+    expect(labelShiftX(640, 22, 1280, 4)).toBe(0);
+  });
+
+  it('the shifted label still sits on its own pad half', () => {
+    const r = 66 * (1 - config.frogSplash.pad.sizeJitter);
+    for (let x = 0; x < 1280; x += 5) {
+      const lx = x + labelShiftX(x, 22, 1280, 4);
+      expect(Math.abs(lx - x)).toBeLessThanOrEqual(r);
+    }
   });
 });

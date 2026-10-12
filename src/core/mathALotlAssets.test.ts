@@ -47,7 +47,7 @@ describe('Math-a-lotl assets', () => {
   });
 
   it('mixes the music below the water ambience', () => {
-    const music = audioGainFor(GAME_MUSIC_MAP['math-a-lotl'] ?? '');
+    const music = audioGainFor(GAME_MUSIC_MAP['math-a-lotl']);
     const ambience = GAME_MIDGROUND_MAP['math-a-lotl'].map(audioGainFor);
     expect(ambience).toHaveLength(2);
     for (const g of ambience) expect(music).toBeLessThan(g);

@@ -30,10 +30,13 @@ export function riverLayout(opts: {
   rowSpacingPx: number;
   shoreGapPx: number;
   bankHeightPx: number;
+  /** Shorelines sit this far inside each bank image (see scripts/sprites/pond.mjs). */
+  shoreInsetPx: number;
+  startBankFrac: number;
+  finishBankFrac: number;
 }): RiverLayout {
-  const { rows, rowSpacingPx, shoreGapPx, bankHeightPx } = opts;
-  // Shorelines sit 30 px inside each bank image (see scripts/sprites/pond.mjs).
-  const shoreInset = 30;
+  const { rows, rowSpacingPx, shoreGapPx, bankHeightPx, startBankFrac, finishBankFrac } = opts;
+  const shoreInset = opts.shoreInsetPx;
   const water = 2 * shoreGapPx + (rows - 1) * rowSpacingPx;
   const worldHeight = 2 * bankHeightPx + water - 2 * shoreInset;
   const farShoreY = bankHeightPx - shoreInset;
@@ -43,10 +46,10 @@ export function riverLayout(opts: {
     worldHeight,
     nearShoreY,
     farShoreY,
-    startY: nearShoreY + bankHeightPx * 0.4,
+    startY: nearShoreY + bankHeightPx * startBankFrac,
     // Just up the far bank — low enough to stay clear of the HUD bar when
     // the camera is scrolled to the very top of the world.
-    finishY: farShoreY - bankHeightPx * 0.25,
+    finishY: farShoreY - bankHeightPx * finishBankFrac,
     rowY,
   };
 }
@@ -78,6 +81,17 @@ export function padXs(count: number, screenWidth: number, offsetPx: number): num
  */
 export function wrapPeerX(x: number, screenWidth: number): number {
   return x < screenWidth / 2 ? x + screenWidth : x - screenWidth;
+}
+
+/**
+ * Local x offset for a pad's number so the whole label stays on screen
+ * while the pad (centre `x`) straddles an edge; 0 when it already fits.
+ * The main copy always shows at least half the pad, so the label fits.
+ */
+export function labelShiftX(x: number, halfLabelWidth: number, screenWidth: number, edgePx: number): number {
+  const lo = halfLabelWidth + edgePx;
+  const hi = screenWidth - halfLabelWidth - edgePx;
+  return Math.max(lo, Math.min(hi, x)) - x;
 }
 
 /**
