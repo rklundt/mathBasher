@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, type MathId, type SpeedKey } from '@/core/config';
+import { config, mathTimeScale, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -157,11 +157,13 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     this.hero = new Hero(this, width / 2, heroY, leftBound, rightBound);
 
     const speedConfig = config.scoring.speed[this.speed];
+    // Sprint 2.5.7 — harder math descends more slowly (more time to answer).
+    const timeScale = mathTimeScale(this.mathId);
     this.waveSystem = new WaveSystem({
       scene: this,
       lanes: config.layout.targetLanes,
-      descentSpeedPxPerSec: speedConfig.descentPxPerSec,
-      penaltyPxPerSec: speedConfig.penaltyPxPerSec,
+      descentSpeedPxPerSec: speedConfig.descentPxPerSec / timeScale,
+      penaltyPxPerSec: speedConfig.penaltyPxPerSec / timeScale,
       leftBound,
       rightBound,
       spawnY,

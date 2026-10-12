@@ -27,7 +27,12 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Fairer questions, more time for harder math** (sprint 2.5.7, in progress)
+- Harder math gets more time in every game: ×1.25 for Add / Subtract to 20, ×1.5 for Multiply, Divide and Mixed, ×2 for fractions — longer countdowns, a longer Space Escape timer, slower aliens in Alien Shoot. The Difficulty screen shows the real seconds for the math type you pick.
+- Add to 20: mostly sums from 10 to 20, with teen numbers (12 + 5) and crossing-ten facts (8 + 7); single-digit answers are now rare (about 1 in 8, was 4 in 10).
+- Subtract within 20: answers spread out, far fewer "− 10" and answer-10 questions, and almost no "− 0" or "7 − 7" giveaways (was a third of all questions).
+- Subtract within 10: giveaways cut from about half to about 1 in 8. Multiply / divide: × 10 and × 11 come up less often.
+- Add / Subtract to 20: the wrong answers are close to the right one, so you can't rule them out at a glance.
 
 ## [2.5.6] - 2026-10-12 — Frog Splash, a fifth game mode
 

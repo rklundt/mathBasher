@@ -5,6 +5,7 @@
 import { config } from '@/core/config';
 import { shuffleAnswers } from '@/math/distractors';
 import { pickMultiplicationDistractors } from '@/math/multDistractors';
+import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -22,6 +23,9 @@ import type { Question, QuestionGenerator } from '@/math/types';
  *     2×2?" essentially never.
  *   - Factor-uniform gives every multiplication FACT equal exposure, which
  *     is the actual goal of practicing times tables.
+ *   - Sprint 2.5.7: one exception — × 10 (and × 11 in 12×12) is an easy
+ *     pattern, so those factors come up about half as often
+ *     (`config.questionMix.multDiv`, `factorTable`).
  *
  * **Operator glyph: `×` (Unicode U+00D7), NOT ASCII `x`.** ASCII `x` reads as
  * a variable in math; the proper times sign disambiguates.
@@ -41,6 +45,7 @@ import type { Question, QuestionGenerator } from '@/math/types';
  */
 const FACTOR_MIN = 2;
 const FACTOR_MAX = 10;
+const FACTORS = factorTable(FACTOR_MIN, FACTOR_MAX);
 const PRODUCT_MIN = FACTOR_MIN * FACTOR_MIN; // 4
 const PRODUCT_MAX = FACTOR_MAX * FACTOR_MAX; // 100
 
@@ -48,10 +53,9 @@ const multTo100: QuestionGenerator = {
   id: 'mult-to-100',
   label: 'Multiply 10×10',
   generate(rng = defaultRng): Question {
-    // Factor-uniform: a, b independently uniform in [2, 10].
-    const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 9
-    const a = FACTOR_MIN + Math.floor(rng() * factorRange);
-    const b = FACTOR_MIN + Math.floor(rng() * factorRange);
+    // a, b independently from [2, 10], × 10 less often (sprint 2.5.7).
+    const a = pickWeighted(FACTORS, rng);
+    const b = pickWeighted(FACTORS, rng);
     const correctAnswer = a * b;
 
     const distractorCount = config.layout.targetLanes - 1;

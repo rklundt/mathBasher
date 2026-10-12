@@ -5,6 +5,7 @@
 import { config } from '@/core/config';
 import { shuffleAnswers } from '@/math/distractors';
 import { pickMultiplicationDistractors } from '@/math/multDistractors';
+import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -14,7 +15,7 @@ import type { Question, QuestionGenerator } from '@/math/types';
  *
  * Same shape as `multTo100` with the factor range widened to [2, 12]:
  * factors `a, b ∈ [2, 12]`, product `a × b ∈ [4, 144]`. Factor-uniform
- * sampling, Unicode `×` operator — see `multTo100.ts` for the full
+ * sampling (× 10 / × 11 less often since sprint 2.5.7), Unicode `×` operator — see `multTo100.ts` for the full
  * pedagogical rationale (one source-of-truth comment to avoid drift).
  *
  * **Why a separate tile from `mult-to-100`** (per user direction in sprint
@@ -33,6 +34,7 @@ import type { Question, QuestionGenerator } from '@/math/types';
  */
 const FACTOR_MIN = 2;
 const FACTOR_MAX = 12;
+const FACTORS = factorTable(FACTOR_MIN, FACTOR_MAX);
 const PRODUCT_MIN = FACTOR_MIN * FACTOR_MIN; // 4
 const PRODUCT_MAX = FACTOR_MAX * FACTOR_MAX; // 144
 
@@ -40,9 +42,9 @@ const multTo144: QuestionGenerator = {
   id: 'mult-to-144',
   label: 'Multiply 12×12',
   generate(rng = defaultRng): Question {
-    const factorRange = FACTOR_MAX - FACTOR_MIN + 1; // 11
-    const a = FACTOR_MIN + Math.floor(rng() * factorRange);
-    const b = FACTOR_MIN + Math.floor(rng() * factorRange);
+    // a, b independently from [2, 12], × 10 / × 11 less often (sprint 2.5.7).
+    const a = pickWeighted(FACTORS, rng);
+    const b = pickWeighted(FACTORS, rng);
     const correctAnswer = a * b;
 
     const distractorCount = config.layout.targetLanes - 1;

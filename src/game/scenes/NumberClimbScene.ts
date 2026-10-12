@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, pickFloorSpacingPx, type MathId, type SpeedKey } from '@/core/config';
+import { config, pickFloorSpacingPx, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { SfxKeys } from '@/core/audioKeys';
 import { Settings } from '@/services/Settings';
@@ -292,7 +292,8 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
 
     // Cumulative timer setup — totalTimeMs from config.
     const speedCfg = config.numberClimb.speed[this.speed];
-    this.totalTimeMs = speedCfg.totalTimeSec * 1000;
+    // Sprint 2.5.7 — harder math gets a longer round timer.
+    this.totalTimeMs = scaledSeconds(speedCfg.totalTimeSec, this.mathId) * 1000;
     this.remainingTimeMs = this.totalTimeMs;
 
     // GameSceneLifecycle — telemetry, HUD launch, audio loops,

@@ -67,27 +67,6 @@ describe('multTo144 generator', () => {
     expect(a).toEqual(b);
   });
 
-  describe('factor distribution (uniform over factors)', () => {
-    it('each factor value 2-12 appears within ±20% of the expected 1/11 share as the first factor', () => {
-      const ITERATIONS = 11_000;
-      const EXPECTED_PER_FACTOR = ITERATIONS / 11;
-      const TOLERANCE = 0.2;
-      const rng = mulberry32(42);
-      const counts = new Array(13).fill(0); // index 2..12 used
-      const re = /^(\d+) × (\d+) = \?$/;
-      for (let i = 0; i < ITERATIONS; i++) {
-        const q = multTo144.generate(rng);
-        const a = Number(re.exec(q.prompt)![1]);
-        counts[a]++;
-      }
-      for (let f = 2; f <= 12; f++) {
-        const ratio = counts[f] / EXPECTED_PER_FACTOR;
-        expect(
-          ratio,
-          `first factor=${f} appeared ${counts[f]} times (${(ratio * 100).toFixed(0)}% of expected)`,
-        ).toBeGreaterThan(1 - TOLERANCE);
-        expect(ratio).toBeLessThan(1 + TOLERANCE);
-      }
-    });
-  });
+  // The answer / factor mix (sprint 2.5.7 weights) is locked for every
+  // whole-number generator in `src/math/questionMix.test.ts`.
 });

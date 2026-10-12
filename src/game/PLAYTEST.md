@@ -333,6 +333,17 @@ Phone in landscape, then desktop.
 - [ ] Pause freezes the drift, the frog mid-hop, the timer and the fly.
 - [ ] Play Again replays Frog Splash.
 
+## Question mix + time per math type (sprint 2.5.7)
+
+Any game mode — the math is shared.
+
+- [ ] Difficulty screen: pick Add to 10, then Add Fractions — the seconds under Easy / Medium / Hard double (Space Escape: the round timer; Alien Shoot: no seconds shown).
+- [ ] Fractions on Hard: visibly more time per question than before; Alien Shoot aliens fall more slowly on Multiply than on Add to 10.
+- [ ] Add to 20, a full round: mostly answers 10–20, a mix of 8 + 7 and 13 + 5 kinds; at most one or two single-digit answers.
+- [ ] Subtract within 20, a full round: answers all over 1–18; "− 10" and "= 10" rare; no "− 0" / "x − x".
+- [ ] Subtract within 10: few "− 0" or "x − x".
+- [ ] Add / Subtract to 20: the wrong answers are near the right one.
+
 ## Logging the run
 
 ```
