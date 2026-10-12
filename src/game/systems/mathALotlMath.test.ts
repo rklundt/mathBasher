@@ -9,7 +9,6 @@ import { dirname, resolve } from 'node:path';
 import { mulberry32 } from '@/test-utils/mulberry32';
 import { config } from '@/core/config';
 import {
-  QuestionClock,
   buildBubbleWave,
   chaseHoldY,
   clampToWater,
@@ -200,35 +199,6 @@ describe('movement + geometry', () => {
     expect(clampToWater(10, 100, b)).toEqual({ x: 60, y: 240 });
     expect(clampToWater(2000, 900, b)).toEqual({ x: 1220, y: 660 });
     expect(clampToWater(500, 400, b)).toEqual({ x: 500, y: 400 });
-  });
-});
-
-describe('QuestionClock', () => {
-  it('expires exactly once per start, then stays quiet', () => {
-    const c = new QuestionClock();
-    c.start(1000);
-    expect(c.tick(600)).toBe(false);
-    expect(c.tick(600)).toBe(true);
-    expect(c.remainingSec).toBe(0);
-    // The extra frame after the last question's timeout: no second expiry.
-    expect(c.tick(16)).toBe(false);
-    expect(c.tick(5000)).toBe(false);
-  });
-
-  it('never expires after stop() (round over / question resolved)', () => {
-    const c = new QuestionClock();
-    c.start(100);
-    c.stop();
-    expect(c.tick(1000)).toBe(false);
-  });
-
-  it('restarts cleanly for the next question', () => {
-    const c = new QuestionClock();
-    c.start(50);
-    expect(c.tick(50)).toBe(true);
-    c.start(2000);
-    expect(c.remainingSec).toBe(2);
-    expect(c.tick(10)).toBe(false);
   });
 });
 

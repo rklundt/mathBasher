@@ -501,7 +501,74 @@ export const BgSpriteKeys = {
    * picks the game, before the per-game bundle loads.
    */
   MathALotl: 'math-a-lotl',
+  /**
+   * Frog Splash menu backdrop (sprint 2.5.6) — the river at a glance, drawn
+   * by `scripts/sprites/pond.mjs`. Shown behind Difficulty / Loading; the
+   * game scene draws its own scrolling river on top.
+   */
+  FrogSplash: 'frog-splash',
 } as const;
+
+/**
+ * Sprint 2.5.6 — Frog Splash frog sheets, one per colorway, drawn by
+ * `scripts/sprites/frog.mjs` (source of truth for the frame geometry).
+ * Poses, in order: sit, blink, crouch, leap, mouth open, oops.
+ */
+export const FrogSpriteKeys = {
+  Green: 'frog-green',
+  Blue: 'frog-blue',
+  Orange: 'frog-orange',
+} as const;
+export type FrogSpriteKey = (typeof FrogSpriteKeys)[keyof typeof FrogSpriteKeys];
+
+/** Frame geometry of the frog sheets — must match `scripts/sprites/frog.mjs`. */
+export const FROG_SHEET = {
+  frame: 220,
+  poses: { sit: 0, blink: 1, crouch: 2, leap: 3, mouth: 4, oops: 5 },
+  /** Mouth position relative to the frame centre (sheet px) — where the tongue starts. */
+  mouthOffset: { x: 0, y: -12 },
+} as const;
+export const FROG_POSE_COUNT = Object.keys(FROG_SHEET.poses).length;
+
+/** Pick one colorway at random (one frog per round). */
+export function pickRandomFrogSpriteKey(rng: () => number = Math.random): FrogSpriteKey {
+  const keys = Object.values(FrogSpriteKeys);
+  return keys[Math.floor(rng() * keys.length)]!;
+}
+
+/** The fly the frog catches at the far bank (wing-flap sheet, `frog.mjs`). */
+export const FLY_SHEET = { key: 'fly', frameWidth: 72, frameHeight: 56, frames: 2 } as const;
+
+/** Sprint 2.5.6 — single-image river pieces (`pond.mjs`), deferred to the game's bundle. */
+export const PondSpriteKeys = {
+  Water: 'pond-water',
+  Pad1: 'pond-pad-1',
+  Pad2: 'pond-pad-2',
+  Pad3: 'pond-pad-3',
+  Pad4: 'pond-pad-4',
+  Pad5: 'pond-pad-5',
+  Pad6: 'pond-pad-6',
+  Pad7: 'pond-pad-7',
+  Pad8: 'pond-pad-8',
+  BankNear: 'pond-bank-near',
+  BankFar: 'pond-bank-far',
+} as const;
+export type PondSpriteKey = (typeof PondSpriteKeys)[keyof typeof PondSpriteKeys];
+
+/** Every lily pad look (plain, flowers, bud, ladybug…); rows mix them. */
+export const POND_PAD_KEYS = [
+  PondSpriteKeys.Pad1,
+  PondSpriteKeys.Pad2,
+  PondSpriteKeys.Pad3,
+  PondSpriteKeys.Pad4,
+  PondSpriteKeys.Pad5,
+  PondSpriteKeys.Pad6,
+  PondSpriteKeys.Pad7,
+  PondSpriteKeys.Pad8,
+] as const;
+
+/** The splash animation sheet (`pond.mjs`). */
+export const SPLASH_SHEET = { key: 'pond-splash', frameWidth: 200, frameHeight: 150, frames: 4 } as const;
 
 /**
  * Sprint 2.5.4 — Math-a-lotl axolotl sprite sheets, one per colorway.
@@ -671,6 +738,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   // is named) when art lands.
   'number-climb': BgSpriteKeys.Nebula,
   'math-a-lotl': BgSpriteKeys.MathALotl,
+  'frog-splash': BgSpriteKeys.FrogSplash,
 };
 
 /**
@@ -685,6 +753,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'asteroid-field': { stars: true, bottomFade: true },
   'number-climb': { stars: false, bottomFade: true },
   'math-a-lotl': { stars: false, bottomFade: false },
+  'frog-splash': { stars: false, bottomFade: false },
 };
 
 /**
@@ -934,6 +1003,38 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameHeight: REEF_SHEETS[key].frameHeight,
     scope: 'game:math-a-lotl',
   })),
+  // Sprint 2.5.6 — Frog Splash frog sheets + fly (hero folder) and river
+  // pieces + splash sheet (bg folder). All deferred to the game's bundle.
+  ...(Object.values(FrogSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth: FROG_SHEET.frame,
+    frameHeight: FROG_SHEET.frame,
+    scope: 'game:frog-splash',
+  })),
+  {
+    kind: 'hero',
+    key: FLY_SHEET.key,
+    url: spritePath('hero', FLY_SHEET.key),
+    frameWidth: FLY_SHEET.frameWidth,
+    frameHeight: FLY_SHEET.frameHeight,
+    scope: 'game:frog-splash',
+  },
+  ...(Object.values(PondSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:frog-splash',
+  })),
+  {
+    kind: 'bg',
+    key: SPLASH_SHEET.key,
+    url: spritePath('bg', SPLASH_SHEET.key),
+    frameWidth: SPLASH_SHEET.frameWidth,
+    frameHeight: SPLASH_SHEET.frameHeight,
+    scope: 'game:frog-splash',
+  },
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -1019,4 +1120,6 @@ export type NonAlienSpriteKey =
   | ClimbEscapeShipKey
   | AxolotlSpriteKey
   | ReefSpriteKey
-  | ReefSheetKey;
+  | ReefSheetKey
+  | FrogSpriteKey
+  | PondSpriteKey;

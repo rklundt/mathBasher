@@ -38,7 +38,7 @@ interface SpeedDisplay {
  * "Speed" since they're really controlling enemy descent / drift rate.
  */
 function speedSectionTitleFor(gameId: GameId): string {
-  return gameId === 'number-climb' || gameId === 'math-a-lotl' ? 'Difficulty' : 'Speed';
+  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' ? 'Difficulty' : 'Speed';
 }
 
 function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
@@ -80,6 +80,12 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey): SpeedDisplay {
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const { bubbleCount, countdownSec } = config.mathALotl.speed[key];
       return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${countdownSec}s` };
+    }
+    case 'frog-splash': {
+      // Sprint 2.5.6 — difficulty = pads per row + time per hop (+ drift speed).
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { padCount, countdownSec } = config.frogSplash.speed[key];
+      return { label: labels[key], subtitle: `${padCount} lily pads · ${countdownSec}s` };
     }
   }
 }

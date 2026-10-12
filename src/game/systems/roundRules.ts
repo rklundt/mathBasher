@@ -91,3 +91,37 @@ export function resolveStrike(strikesSoFar: number, maxStrikes: number): StrikeD
     exhausted: strikesAfter >= maxStrikes,
   };
 }
+
+/**
+ * Per-question countdown that can EXPIRE ONLY ONCE per `start()` and
+ * stops ticking after `stop()` — so the timeout path can't run twice
+ * (the last-question case: the round has ended but the scene still gets
+ * one more update before GameOver mounts).
+ */
+export class QuestionClock {
+  private remainingMs = 0;
+  private running = false;
+
+  start(ms: number): void {
+    this.remainingMs = ms;
+    this.running = true;
+  }
+
+  stop(): void {
+    this.running = false;
+  }
+
+  /** Advance; returns true exactly once — on the tick that reaches zero. */
+  tick(dtMs: number): boolean {
+    if (!this.running) return false;
+    this.remainingMs = Math.max(0, this.remainingMs - dtMs);
+    if (this.remainingMs > 0) return false;
+    this.running = false;
+    return true;
+  }
+
+  /** Seconds left (0 once expired or stopped at zero). */
+  get remainingSec(): number {
+    return this.remainingMs / 1000;
+  }
+}
