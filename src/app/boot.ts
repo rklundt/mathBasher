@@ -17,6 +17,7 @@ import { GameScene } from '@/game/scenes/GameScene';
 import { AsteroidFieldScene } from '@/game/scenes/AsteroidFieldScene';
 import { NumberClimbScene } from '@/game/scenes/NumberClimbScene';
 import { MathALotlScene } from '@/game/scenes/MathALotlScene';
+import { FrogSplashScene } from '@/game/scenes/FrogSplashScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
@@ -129,6 +130,7 @@ export function bootGame(): void {
       AsteroidFieldScene,
       NumberClimbScene,
       MathALotlScene,
+      FrogSplashScene,
       HudScene,
       GameOverScene,
       PauseOverlay,

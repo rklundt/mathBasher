@@ -130,7 +130,8 @@ export class GameSceneLifecycle {
     // ambient space-noises loop instead of the Alien-Shoot-hero
     // skittering loop).
     const audio = getAudioManager();
-    audio.playLoop(GAME_MUSIC_MAP[gameId], 'music');
+    const music = GAME_MUSIC_MAP[gameId];
+    if (music) audio.playLoop(music, 'music');
     for (const key of GAME_MIDGROUND_MAP[gameId]) audio.playLoop(key, 'midground');
   }
 
@@ -142,7 +143,8 @@ export class GameSceneLifecycle {
   exit(): void {
     const { scene, gameId } = this.opts;
     const audio = getAudioManager();
-    audio.stopLoop(GAME_MUSIC_MAP[gameId]);
+    const music = GAME_MUSIC_MAP[gameId];
+    if (music) audio.stopLoop(music);
     for (const key of GAME_MIDGROUND_MAP[gameId]) audio.stopLoop(key);
     if (scene.scene.isActive(SceneKeys.Hud)) scene.scene.stop(SceneKeys.Hud);
     if (scene.scene.isActive(SceneKeys.PauseOverlay)) scene.scene.stop(SceneKeys.PauseOverlay);

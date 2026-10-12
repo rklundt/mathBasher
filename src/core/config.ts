@@ -649,6 +649,67 @@ export const config = {
     /** "Oops! Try again!" floater on a wrong catch: rises `risePx` while fading. */
     wrongNote: { durationMs: 1100, risePx: 50, floorMarginPx: 24 },
   },
+  /**
+   * Sprint 2.5.6 — Frog Splash. A frog hops up the river one row of lily
+   * pads per question (12 rows; the 12th sits against the far bank). Rows
+   * drift left / right in alternating directions; tap the pad with the
+   * right answer. A wrong pad sinks (SPLASH) and the frog swims back to
+   * the last row; running out of time also costs a life; either way the
+   * same question comes back with fresh pads. 3 lives per round.
+   * Speed key doubles as the difficulty, mirroring Space Escape's 2/3/4.
+   */
+  frogSplash: {
+    maxLives: 3,
+    speed: {
+      slow: { padCount: 2, countdownSec: 20, driftPxPerSec: 40 },
+      medium: { padCount: 3, countdownSec: 15, driftPxPerSec: 60 },
+      fast: { padCount: 4, countdownSec: 10, driftPxPerSec: 85 },
+    },
+    /** Vertical distance between pad rows (world px). */
+    rowSpacingPx: 150,
+    /** Gap between the shoreline and the first / last row. */
+    shoreGapPx: 95,
+    /** Height of each bank image (must match BANK_H in scripts/sprites/pond.mjs). */
+    bankHeightPx: 240,
+    /** Where the frog sits on screen as the camera follows (fraction of canvas height). */
+    cameraFrogYFrac: 0.7,
+    cameraScrollMs: 450,
+    pad: {
+      displayPx: 132,
+      /** Taps within radius × this still hit a pad. */
+      tapSlop: 1.15,
+      /** Extra width the drifting row wraps across, beyond the screen. */
+      wrapExtraPx: 200,
+      /** A finished row eases to a stop over this long (so the frog stays put). */
+      stopMs: 450,
+      sinkMs: 520,
+    },
+    frog: {
+      displayPx: 118,
+      hopMs: 480,
+      crouchMs: 90,
+      /** Peak height of the hop arc and how much the frog "grows" at the top of it. */
+      hopArcPx: 70,
+      hopGrow: 0.22,
+      blinkEveryMs: 3200,
+    },
+    /** After a SPLASH: how long before the frog pops back up on the last row. */
+    splashRecoverMs: 1000,
+    /** Pause between a correct landing and the next row's question. */
+    nextQuestionDelayMs: 350,
+    timeoutBannerMs: 900,
+    outOfLivesBannerMs: 1300,
+    finish: {
+      /** Delay before the frog hops from the last row onto the far bank. */
+      ashoreDelayMs: 350,
+      flyOrbitPx: 46,
+      /** Where the fly hovers relative to the frog's finish spot (beside it, in view). */
+      flyOffsetX: 170,
+      flyOffsetY: -10,
+      tongueMs: 140,
+      celebrateMs: 1800,
+    },
+  },
   layout: {
     /** number of answer lanes across the screen */
     targetLanes: 4,
