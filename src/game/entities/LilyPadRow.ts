@@ -4,9 +4,9 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
-import { PondSpriteKeys } from '@/core/spriteKeys';
+import { POND_PAD_KEYS } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
-import { padXs } from '@/game/systems/frogSplashMath';
+import { padXs, pickPadLooks } from '@/game/systems/frogSplashMath';
 
 interface Pad {
   readonly container: Phaser.GameObjects.Container;
@@ -39,9 +39,10 @@ export class LilyPadRow {
     rng: () => number,
   ) {
     this.offset = rng() * (screenWidth + this.cfg.wrapExtraPx);
+    const looks = pickPadLooks(count, POND_PAD_KEYS.length, rng);
     for (let i = 0; i < count; i++) {
-      const key = rng() < 0.3 ? PondSpriteKeys.Pad2 : PondSpriteKeys.Pad1;
-      const img = scene.add.image(0, 0, key).setDisplaySize(this.cfg.displayPx, this.cfg.displayPx);
+      const size = this.cfg.displayPx * (1 + (rng() * 2 - 1) * this.cfg.sizeJitter);
+      const img = scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size);
       img.setAngle(rng() * 360);
       const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
       // Same dark outline as the other games' answer labels (readable on any pad shade).

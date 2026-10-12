@@ -544,10 +544,28 @@ export const PondSpriteKeys = {
   Water: 'pond-water',
   Pad1: 'pond-pad-1',
   Pad2: 'pond-pad-2',
+  Pad3: 'pond-pad-3',
+  Pad4: 'pond-pad-4',
+  Pad5: 'pond-pad-5',
+  Pad6: 'pond-pad-6',
+  Pad7: 'pond-pad-7',
+  Pad8: 'pond-pad-8',
   BankNear: 'pond-bank-near',
   BankFar: 'pond-bank-far',
 } as const;
 export type PondSpriteKey = (typeof PondSpriteKeys)[keyof typeof PondSpriteKeys];
+
+/** Every lily pad look (plain, flowers, bud, ladybug…); rows mix them. */
+export const POND_PAD_KEYS = [
+  PondSpriteKeys.Pad1,
+  PondSpriteKeys.Pad2,
+  PondSpriteKeys.Pad3,
+  PondSpriteKeys.Pad4,
+  PondSpriteKeys.Pad5,
+  PondSpriteKeys.Pad6,
+  PondSpriteKeys.Pad7,
+  PondSpriteKeys.Pad8,
+] as const;
 
 /** The splash animation sheet (`pond.mjs`). */
 export const SPLASH_SHEET = { key: 'pond-splash', frameWidth: 200, frameHeight: 150, frames: 4 } as const;

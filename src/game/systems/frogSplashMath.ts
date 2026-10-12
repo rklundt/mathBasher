@@ -72,6 +72,24 @@ export function padXs(count: number, screenWidth: number, wrapExtraPx: number, o
   });
 }
 
+/**
+ * Which look (index into `lookCount` pad images) each pad in a row gets:
+ * random, but never the same as either neighbour — including across the
+ * wrap, where the last pad drifts in next to the first.
+ */
+export function pickPadLooks(count: number, lookCount: number, rng: () => number): number[] {
+  const looks: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const avoid = new Set<number>();
+    if (i > 0) avoid.add(looks[i - 1]!);
+    if (i === count - 1 && count > 2) avoid.add(looks[0]!);
+    const options = Array.from({ length: lookCount }, (_, k) => k).filter((k) => !avoid.has(k));
+    const pool = options.length > 0 ? options : [0];
+    looks.push(pool[Math.floor(rng() * pool.length)]!);
+  }
+  return looks;
+}
+
 /** Is a pad (by centre x) at least partly on screen? */
 export function isPadOnScreen(x: number, radius: number, screenWidth: number): boolean {
   return x + radius > 0 && x - radius < screenWidth;

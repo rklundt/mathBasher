@@ -13,6 +13,7 @@ import {
   hopPoint,
   isPadOnScreen,
   padXs,
+  pickPadLooks,
   pickTappedPad,
   riverLayout,
   rowAnswers,
@@ -142,5 +143,34 @@ describe('Frog Splash config', () => {
   it('bank height matches the river art generator', () => {
     const pond = readFileSync(resolve(__dirname, '../../../scripts/sprites/pond.mjs'), 'utf8');
     expect(Number(pond.match(/export const BANK_H = (\d+);/)?.[1])).toBe(cfg.bankHeightPx);
+  });
+});
+
+describe('pickPadLooks', () => {
+  it('never puts the same look next to itself, across the wrap too', () => {
+    const rng = mulberry32(7);
+    for (let trial = 0; trial < 300; trial++) {
+      for (const count of [2, 3, 4]) {
+        const looks = pickPadLooks(count, 8, rng);
+        expect(looks).toHaveLength(count);
+        for (let i = 0; i < count; i++) {
+          expect(looks[i]).toBeGreaterThanOrEqual(0);
+          expect(looks[i]).toBeLessThan(8);
+          expect(looks[i]).not.toBe(looks[(i + 1) % count]);
+        }
+      }
+    }
+  });
+
+  it('uses every look over many rows', () => {
+    const rng = mulberry32(11);
+    const seen = new Set<number>();
+    for (let n = 0; n < 200; n++) for (const l of pickPadLooks(4, 8, rng)) seen.add(l);
+    expect(seen.size).toBe(8);
+  });
+
+  it('keeps pads apart even at the biggest size', () => {
+    const biggest = config.frogSplash.pad.displayPx * (1 + config.frogSplash.pad.sizeJitter);
+    expect((1280 + config.frogSplash.pad.wrapExtraPx) / 4).toBeGreaterThan(biggest);
   });
 });
