@@ -14,9 +14,12 @@ const LABEL_EDGE_PX = 4;
 interface Pad {
   readonly container: Phaser.GameObjects.Container;
   readonly label: Phaser.GameObjects.Text;
-  /** The same pad drawn one screen width away, seen while it straddles an edge. */
+  /**
+   * The same pad drawn one screen width away, seen while it straddles an
+   * edge. No label: the number shows once, on the main copy. (A container
+   * like the main copy, so sink / restore scale both the same way.)
+   */
   readonly peer: Phaser.GameObjects.Container;
-  readonly peerLabel: Phaser.GameObjects.Text;
   readonly radius: number;
   answer: number | null;
 }
@@ -51,16 +54,14 @@ export class LilyPadRow {
     for (let i = 0; i < count; i++) {
       const size = this.cfg.displayPx * (1 + (rng() * 2 - 1) * this.cfg.sizeJitter);
       const angle = rng() * 360;
-      const make = (): [Phaser.GameObjects.Container, Phaser.GameObjects.Text] => {
-        const img = scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size).setAngle(angle);
-        const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
-        // Same dark outline as the other games' answer labels (readable on any pad shade).
-        label.setStroke('#0b1020', 7);
-        return [scene.add.container(0, y, [img, label]).setDepth(2), label];
-      };
-      const [container, label] = make();
-      const [peer, peerLabel] = make();
-      this.pads.push({ container, label, peer, peerLabel, radius: size / 2, answer: null });
+      const padImage = (): Phaser.GameObjects.Image =>
+        scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size).setAngle(angle);
+      const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
+      // Same dark outline as the other games' answer labels (readable on any pad shade).
+      label.setStroke('#0b1020', 7);
+      const container = scene.add.container(0, y, [padImage(), label]).setDepth(2);
+      const peer = scene.add.container(0, y, [padImage()]).setDepth(2);
+      this.pads.push({ container, label, peer, radius: size / 2, answer: null });
     }
     this.layout();
   }
