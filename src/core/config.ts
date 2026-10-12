@@ -676,6 +676,8 @@ export const config = {
     cameraScrollMs: 450,
     pad: {
       displayPx: 132,
+      /** Each pad is drawn up to ± this fraction bigger / smaller, for variety. */
+      sizeJitter: 0.08,
       /** Taps within radius × this still hit a pad. */
       tapSlop: 1.15,
       /** Extra width the drifting row wraps across, beyond the screen. */

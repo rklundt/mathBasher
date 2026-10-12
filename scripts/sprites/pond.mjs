@@ -5,7 +5,7 @@
 
 /**
  * Frog Splash river generator (sprint 2.5.6): a seamless water tile, lily
- * pads (plain + flowered), a splash sheet, and the two riverbanks. Drawn in
+ * pads (several looks), a splash sheet, and the two riverbanks. Drawn in
  * code like the frog — this file IS the source; edit and re-run.
  *
  * Usage:
@@ -15,7 +15,7 @@
  *
  * Outputs (public/assets/sprites/bg/):
  *   pond-water.webp        WATER_TILE² seamless tile (scrolled in game for the current)
- *   pond-pad-1/2.webp      PAD² top-down lily pads (plain / with a flower)
+ *   pond-pad-<n>.webp      PAD² top-down lily pads, one per PAD_VARIANTS look
  *   pond-splash.webp       SPLASH_FRAMES × (SPLASH_W × SPLASH_H) splash sheet
  *   pond-bank-near.webp    BANK_W × BANK_H start bank (shoreline along its TOP edge)
  *   pond-bank-far.webp     BANK_W × BANK_H far bank (shoreline along its BOTTOM edge)
@@ -85,11 +85,111 @@ function waterSvg() {
 
 // ---------- lily pads ----------
 
-function padSvg(withFlower) {
+/** Pad colourings: gradient centre → rim, rim stroke, vein highlight. */
+const PAD_PALETTES = {
+  meadow: { light: '#8fd163', dark: '#4fa33a', stroke: '#2f7a2a', vein: '#a6e07a' },
+  deep: { light: '#62b85c', dark: '#2c7a3b', stroke: '#1d5a29', vein: '#8fd08a' },
+  lime: { light: '#c6ea6c', dark: '#82c142', stroke: '#4f8f2a', vein: '#e2f6a6' },
+  olive: { light: '#bccd5e', dark: '#7f9c38', stroke: '#5b7023', vein: '#d9e48f' },
+  teal: { light: '#86d8a6', dark: '#3a9a6c', stroke: '#22704a', vein: '#b0eecb' },
+};
+
+/**
+ * Every pad look, in shipped order (`pond-pad-<n>.webp`). Decorations sit
+ * near the rim, clear of the answer number printed at the centre.
+ */
+export const PAD_VARIANTS = [
+  { palette: 'meadow' }, // 1 plain
+  { palette: 'meadow', deco: 'pinkFlower' }, // 2
+  { palette: 'deep', deco: 'whiteLily' }, // 3
+  { palette: 'lime', notch: 0.3, deco: 'bud' }, // 4
+  { palette: 'olive', deco: 'speckles', bite: true }, // 5 an old, nibbled pad
+  { palette: 'teal', deco: 'drops' }, // 6
+  { palette: 'meadow', deco: 'purpleFlower' }, // 7
+  { palette: 'deep', notch: 0.5, deco: 'ladybug' }, // 8
+];
+
+/** Ring of `n` petals around (fx, fy): rounded ellipses, or pointed lily petals. */
+function petals(fx, fy, n, { len, wid, fill, stroke, pointed = false, turn = 0 }) {
+  return Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + turn;
+    const deg = f((a * 180) / Math.PI);
+    if (pointed) {
+      // Drawn pointing right from the flower's centre, then rotated into place.
+      const d = `M0,0 Q${f(len * 0.45)},${f(-wid)} ${f(len)},0 Q${f(len * 0.45)},${f(wid)} 0,0 Z`;
+      return `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="1.4" stroke-linejoin="round" transform="translate(${f(fx)} ${f(fy)}) rotate(${deg})"/>`;
+    }
+    const px = fx + Math.cos(a) * len;
+    const py = fy + Math.sin(a) * len;
+    return `<ellipse cx="${f(px)}" cy="${f(py)}" rx="${len}" ry="${wid}" fill="${fill}" stroke="${stroke}" stroke-width="1.6" transform="rotate(${deg} ${f(px)} ${f(py)})"/>`;
+  }).join('');
+}
+
+const flowerHeart = (fx, fy) => `<circle cx="${f(fx)}" cy="${f(fy)}" r="5" fill="#ffe066" stroke="#d9a400" stroke-width="1.5"/>`;
+
+function padDeco(kind, c, r, rng) {
+  const fx = c + r * 0.62;
+  const fy = c + r * 0.5;
+  switch (kind) {
+    case 'pinkFlower':
+      return petals(fx, fy, 6, { len: 9, wid: 5, fill: '#ffb3cf', stroke: '#d9608e' }) + flowerHeart(fx, fy);
+    case 'purpleFlower':
+      return petals(fx, fy, 6, { len: 9, wid: 5, fill: '#d2b0ff', stroke: '#7f52c4' }) + flowerHeart(fx, fy);
+    case 'whiteLily':
+      return (
+        petals(fx, fy, 8, { len: 20, wid: 6, fill: '#ffffff', stroke: '#b9c7d6', pointed: true }) +
+        petals(fx, fy, 6, { len: 13, wid: 5, fill: '#fff6d6', stroke: '#d8c27a', pointed: true, turn: 0.3 }) +
+        `<circle cx="${f(fx)}" cy="${f(fy)}" r="5.5" fill="#ffd23f" stroke="#d99a00" stroke-width="1.5"/>`
+      );
+    case 'bud':
+      // A closed pink bud lying on the pad, wrapped in two green sepals.
+      return `<g transform="translate(${f(c + r * 0.66)} ${f(c + r * 0.42)}) rotate(-35)">
+        <path d="M-18,0 Q-4,-12 16,0 Q-4,12 -18,0 Z" fill="#ff9fc4" stroke="#d2588a" stroke-width="1.6"/>
+        <path d="M-4,-3 Q8,-2 16,0" fill="none" stroke="#d2588a" stroke-width="1.2" opacity="0.8"/>
+        <path d="M-20,0 Q-10,-11 0,-5 Q-10,-2 -20,0 Z" fill="#5fae3d" stroke="#3a7d24" stroke-width="1.3"/>
+        <path d="M-20,0 Q-10,11 0,5 Q-10,2 -20,0 Z" fill="#5fae3d" stroke="#3a7d24" stroke-width="1.3"/>
+      </g>`;
+    case 'speckles':
+      return Array.from({ length: 14 }, () => {
+        const a = rng() * Math.PI * 2;
+        const d = r * (0.55 + rng() * 0.32);
+        return `<ellipse cx="${f(c + Math.cos(a) * d)}" cy="${f(c + Math.sin(a) * d)}" rx="${f(2 + rng() * 3)}" ry="${f(1.6 + rng() * 2)}" fill="#8a6a2b" opacity="${f(0.45 + rng() * 0.3)}"/>`;
+      }).join('');
+    case 'drops':
+      // Beads of water: a shadow, a clear body, a bright glint.
+      return Array.from({ length: 5 }, (_, i) => {
+        const a = 0.4 + i * 1.15 + rng() * 0.3;
+        const d = r * (0.6 + rng() * 0.22);
+        const x = c + Math.cos(a) * d;
+        const y = c + Math.sin(a) * d;
+        const rr = 4 + rng() * 3;
+        return `<circle cx="${f(x + 1.5)}" cy="${f(y + 2)}" r="${f(rr)}" fill="#1d5a3a" opacity="0.3"/>
+          <circle cx="${f(x)}" cy="${f(y)}" r="${f(rr)}" fill="#d9fbff" opacity="0.75" stroke="#8fd7e6" stroke-width="1"/>
+          <circle cx="${f(x - rr * 0.35)}" cy="${f(y - rr * 0.35)}" r="${f(rr * 0.3)}" fill="#ffffff"/>`;
+      }).join('');
+    case 'ladybug':
+      return `<g transform="translate(${f(c + r * 0.6)} ${f(c + r * 0.48)}) rotate(30)">
+        <ellipse cx="2" cy="3" rx="11" ry="9" fill="#123018" opacity="0.3"/>
+        <circle cx="-10" cy="0" r="5" fill="#1b1b1b"/>
+        <circle cx="-12" cy="-2" r="1.3" fill="#ffffff"/><circle cx="-12" cy="2" r="1.3" fill="#ffffff"/>
+        <ellipse cx="2" cy="0" rx="11" ry="9" fill="#e8322b" stroke="#7a1410" stroke-width="1.6"/>
+        <path d="M-8,0 L13,0" stroke="#1b1b1b" stroke-width="1.6"/>
+        <circle cx="0" cy="-4.5" r="2.2" fill="#1b1b1b"/><circle cx="0" cy="4.5" r="2.2" fill="#1b1b1b"/>
+        <circle cx="7" cy="-3.5" r="1.8" fill="#1b1b1b"/><circle cx="7" cy="3.5" r="1.8" fill="#1b1b1b"/>
+        <ellipse cx="-1" cy="-5" rx="3" ry="1.5" fill="#ffffff" opacity="0.5"/>
+      </g>`;
+    default:
+      return '';
+  }
+}
+
+function padSvg({ palette, notch = 0.42, deco, bite = false }, seed) {
+  const pal = PAD_PALETTES[palette];
+  const rng = mulberry32(seed);
   const c = PAD / 2;
   const r = c - 8;
-  const notch = 0.42; // radians half-width of the notch
-  const a0 = -Math.PI / 2 + notch; // notch points up-ish, rotated in game
+  // notch = radians half-width of the notch; it points up-ish, rotated in game.
+  const a0 = -Math.PI / 2 + notch;
   const a1 = -Math.PI / 2 - notch + Math.PI * 2;
   const p = (a, rr = r) => [c + Math.cos(a) * rr, c + Math.sin(a) * rr];
   const [sx, sy] = p(a0);
@@ -98,27 +198,26 @@ function padSvg(withFlower) {
   const veins = Array.from({ length: 9 }, (_, i) => {
     const a = a0 + ((a1 - a0) * (i + 0.5)) / 9;
     const [vx, vy] = p(a, r - 10);
-    return `<path d="M${c},${c} L${f(vx)},${f(vy)}" stroke="#a6e07a" stroke-width="2.4" stroke-linecap="round" opacity="0.8"/>`;
+    return `<path d="M${c},${c} L${f(vx)},${f(vy)}" stroke="${pal.vein}" stroke-width="2.4" stroke-linecap="round" opacity="0.8"/>`;
   }).join('');
-  const defs = `<radialGradient id="pg" cx="0.45" cy="0.45" r="0.6"><stop offset="0" stop-color="#8fd163"/><stop offset="1" stop-color="#4fa33a"/></radialGradient>`;
-  let flower = '';
-  if (withFlower) {
-    // Near the rim, clear of the answer number printed at the centre.
-    const fx = c + r * 0.62;
-    const fy = c + r * 0.5;
-    flower = Array.from({ length: 6 }, (_, i) => {
-      const a = (i / 6) * Math.PI * 2;
-      return `<ellipse cx="${f(fx + Math.cos(a) * 9)}" cy="${f(fy + Math.sin(a) * 9)}" rx="9" ry="5" fill="#ffb3cf" stroke="#d9608e" stroke-width="1.6" transform="rotate(${f((a * 180) / Math.PI)} ${f(fx + Math.cos(a) * 9)} ${f(fy + Math.sin(a) * 9)})"/>`;
-    }).join('') + `<circle cx="${f(fx)}" cy="${f(fy)}" r="5" fill="#ffe066" stroke="#d9a400" stroke-width="1.5"/>`;
+  let defs = `<radialGradient id="pg" cx="0.45" cy="0.45" r="0.6"><stop offset="0" stop-color="${pal.light}"/><stop offset="1" stop-color="${pal.dark}"/></radialGradient>`;
+  // A bite out of the rim (lower left, away from the decorations), cut with a mask.
+  let mask = '';
+  if (bite) {
+    const [bx, by] = p(Math.PI * 0.8, r + 4);
+    defs += `<mask id="bite"><rect width="${PAD}" height="${PAD}" fill="#fff"/><circle cx="${f(bx)}" cy="${f(by)}" r="17" fill="#000"/></mask>`;
+    mask = ' mask="url(#bite)"';
   }
   return svg(
     PAD,
     PAD,
-    `<path d="${outline}" fill="#1f4f2a" opacity="0.35" transform="translate(4,6)"/>
-     <path d="${outline}" fill="url(#pg)" stroke="#2f7a2a" stroke-width="4" stroke-linejoin="round"/>
+    `<g${mask}>
+     <path d="${outline}" fill="#1f4f2a" opacity="0.35" transform="translate(4,6)"/>
+     <path d="${outline}" fill="url(#pg)" stroke="${pal.stroke}" stroke-width="4" stroke-linejoin="round"/>
      ${veins}
      <ellipse cx="${f(c - 22)}" cy="${f(c - 26)}" rx="20" ry="9" fill="#fff" opacity="0.18" transform="rotate(-25 ${f(c - 22)} ${f(c - 26)})"/>
-     ${flower}`,
+     </g>
+     ${padDeco(deco, c, r, rng)}`,
     defs,
   );
 }
@@ -230,10 +329,10 @@ async function main() {
     .png()
     .toBuffer();
 
+  const pads = await Promise.all(PAD_VARIANTS.map((v, i) => png(padSvg(v, 31 + i))));
   const outputs = {
+    ...Object.fromEntries(pads.map((buf, i) => [`pad${i + 1}`, [buf, resolve(BG_DIR, `pond-pad-${i + 1}.webp`)]])),
     water: [await png(waterSvg()), resolve(BG_DIR, 'pond-water.webp')],
-    pad1: [await png(padSvg(false)), resolve(BG_DIR, 'pond-pad-1.webp')],
-    pad2: [await png(padSvg(true)), resolve(BG_DIR, 'pond-pad-2.webp')],
     splash: [splashSheet, resolve(BG_DIR, 'pond-splash.webp')],
     near: [await png(bankSvg(false)), resolve(BG_DIR, 'pond-bank-near.webp')],
     far: [await png(bankSvg(true)), resolve(BG_DIR, 'pond-bank-far.webp')],
@@ -282,7 +381,8 @@ async function main() {
         { input: o.pad1[0], left: 200, top: 300 },
         { input: o.pad2[0], left: 560, top: 320 },
         { input: o.pad1[0], left: 920, top: 290 },
-        { input: o.splash[0], left: 0, top: 500 },
+        ...pads.map((input, i) => ({ input, left: 20 + i * PAD, top: 470 })),
+        { input: o.splash[0], left: 1060, top: 300 },
         { input: o.near[0], left: 0, top: 660 },
       ])
       .png()
