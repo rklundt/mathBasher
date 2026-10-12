@@ -12,12 +12,14 @@ import {
   cameraScrollY,
   hopPoint,
   isPadOnScreen,
+  nudgeIntoView,
   padXs,
   pickPadLooks,
   pickTappedPad,
   riverLayout,
   rowAnswers,
   rowDirection,
+  wrapPeerX,
 } from '@/game/systems/frogSplashMath';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,21 +53,21 @@ describe('rows + pads', () => {
   });
 
   it('spaces pads evenly and wraps them across the extended span', () => {
-    const xs = padXs(4, 1280, 200, 0);
-    expect(xs).toEqual([-100, 270, 640, 1010]);
-    // Drifting a full span brings every pad back to the same place.
-    expect(padXs(4, 1280, 200, 1480)).toEqual(xs);
-    // Any drift keeps pads inside [-extra/2, width + extra/2).
+    const xs = padXs(4, 1280, 0);
+    expect(xs).toEqual([0, 320, 640, 960]);
+    // Drifting a full screen width brings every pad back to the same place.
+    expect(padXs(4, 1280, 1280)).toEqual(xs);
+    // Any drift keeps pads inside [0, width) — never hidden off screen.
     for (const off of [-5000, -333, 77, 999, 12345]) {
-      for (const x of padXs(3, 1280, 200, off)) {
-        expect(x).toBeGreaterThanOrEqual(-100);
-        expect(x).toBeLessThan(1380);
+      for (const x of padXs(3, 1280, off)) {
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThan(1280);
       }
     }
   });
 
   it('keeps pads at least a pad apart, so they never overlap', () => {
-    const minGap = (1280 + cfg.pad.wrapExtraPx) / 4;
+    const minGap = 1280 / 4;
     expect(minGap).toBeGreaterThan(cfg.pad.displayPx);
   });
 
@@ -171,6 +173,30 @@ describe('pickPadLooks', () => {
 
   it('keeps pads apart even at the biggest size', () => {
     const biggest = config.frogSplash.pad.displayPx * (1 + config.frogSplash.pad.sizeJitter);
-    expect((1280 + config.frogSplash.pad.wrapExtraPx) / 4).toBeGreaterThan(biggest);
+    expect(1280 / 4).toBeGreaterThan(biggest);
+  });
+});
+
+describe('wrapping across the screen edge', () => {
+  it('draws a split pad a second time on the other side', () => {
+    expect(wrapPeerX(1250, 1280)).toBe(-30);
+    expect(wrapPeerX(20, 1280)).toBe(1300);
+  });
+
+  it('the pad at x always shows at least as much as its wrap copy', () => {
+    const r = 66;
+    const visible = (x: number) => Math.max(0, Math.min(1280, x + r) - Math.max(0, x - r));
+    for (let x = 0; x < 1280; x += 7) expect(visible(x)).toBeGreaterThanOrEqual(visible(wrapPeerX(x, 1280)));
+  });
+
+  it('slides a split pad fully on screen before the frog lands', () => {
+    expect(nudgeIntoView(1250, 66, 1280, 10)).toBe(-46);
+    expect(nudgeIntoView(20, 66, 1280, 10)).toBe(56);
+    expect(nudgeIntoView(640, 66, 1280, 10)).toBe(0);
+    // After the nudge the pad (and its wrap copy) is whole.
+    const x = 1279 + nudgeIntoView(1279, 66, 1280, 10);
+    expect(x - 66).toBeGreaterThanOrEqual(0);
+    expect(x + 66).toBeLessThanOrEqual(1280);
+    expect(isPadOnScreen(wrapPeerX(x, 1280), 66, 1280)).toBe(false);
   });
 });

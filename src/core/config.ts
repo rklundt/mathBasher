@@ -680,8 +680,10 @@ export const config = {
       sizeJitter: 0.08,
       /** Taps within radius × this still hit a pad. */
       tapSlop: 1.15,
-      /** Extra width the drifting row wraps across, beyond the screen. */
-      wrapExtraPx: 200,
+      /** A pad the frog jumps to that is split across a screen edge slides
+       *  this far in from the edge (over `nudgeMs`) so it lands whole. */
+      edgeMarginPx: 10,
+      nudgeMs: 380,
       /** A finished row eases to a stop over this long (so the frog stays put). */
       stopMs: 450,
       sinkMs: 520,
