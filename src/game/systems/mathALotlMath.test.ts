@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { mulberry32 } from '@/test-utils/mulberry32';
 import { config } from '@/core/config';
+import { QuestionClock } from '@/game/systems/roundRules';
 import {
-  QuestionClock,
   buildBubbleWave,
   chaseHoldY,
   clampToWater,

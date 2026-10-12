@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Frog Splash — a fifth game mode** (sprint 2.5.6, in progress)
+- A cartoon frog hops up a river, one row of drifting lily pads per question (12 rows). Tap the pad with the right answer; a wrong pad sinks — SPLASH — and the frog swims back to the last row to try the same question again. Running out of time also costs a life; 3 lives per round. After the last row the frog reaches the far bank and catches a fly.
+- Easy / Medium / Hard: 2 / 3 / 4 pads per row, 20 / 15 / 10 s per hop, faster drift. Stars by rows crossed, like Space Escape.
+- Three random frog colorways; all of the art is drawn in code (`scripts/sprites/frog.mjs`, `scripts/sprites/pond.mjs`). Plays silent for now.
+- Game Select gains a third row.
 
 ## [2.5.5] - 2026-10-11 — Math-a-lotl fixes
 

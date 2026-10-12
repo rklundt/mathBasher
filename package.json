@@ -31,6 +31,8 @@
     "sprite:extract": "node scripts/sprites/extract-from-video.mjs",
     "sprite:axolotl": "node scripts/sprites/axolotl.mjs",
     "sprite:reef": "node scripts/sprites/reef.mjs",
+    "sprite:frog": "node scripts/sprites/frog.mjs",
+    "sprite:pond": "node scripts/sprites/pond.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {

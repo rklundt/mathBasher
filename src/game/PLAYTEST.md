@@ -310,6 +310,25 @@ Phone in landscape, then desktop.
 - [ ] Audio: music is quieter than the water ambience; a wrong catch plays an underwater "bloop" (one of three) a little louder than the right-catch pop. Mute and the volume sliders still work. Pause freezes the bubbles, the axolotl and the reef.
 - [ ] Play Again replays Math-a-lotl (not another mode).
 
+## Frog Splash (sprint 2.5.6)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows five tiles (third row centred: Frog Splash); the title clears the grid.
+- [ ] Difficulty reads "2 lily pads · 20s", "3 lily pads · 15s", "4 lily pads · 10s" over a dimmed river backdrop.
+- [ ] One frog per round; over several rounds you see green, blue and orange. It blinks while waiting.
+- [ ] Q1 shows "👆 Tap the right lily pad!"; it goes away on the first hop.
+- [ ] Rows drift in alternating directions; the active row shows numbers, the rows ahead are plain pads.
+- [ ] Tap the right pad → crouch, leap along an arc (shadow on the water), land with a squash, "+points", the row stops, the camera follows up.
+- [ ] Tap a wrong pad → it sinks, splash, "Splash! Try again!", one Lives dot turns red; the frog pops back up on the last row (or the bank) and the SAME question returns with reshuffled pads and a fresh timer.
+- [ ] Let the timer run out → "Out of time!", a life is lost, same question with fresh pads.
+- [ ] Third life lost → "Out of lives!" → Game Over (stars by rows crossed).
+- [ ] Row 12 → the frog hops onto the far bank, its tongue catches the fly, a happy bounce, "You made it!" → Game Over with 3 stars.
+- [ ] Keys 1–4 pick the active row's visible pads left to right.
+- [ ] Fractions fit on the pads; numbers are readable on every pad.
+- [ ] Pause freezes the drift, the frog mid-hop, the timer and the fly.
+- [ ] Play Again replays Frog Splash.
+
 ## Logging the run
 
 ```
