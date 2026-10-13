@@ -1,6 +1,6 @@
 # Sprint Plan
 
-The full catalog of mathBasher sprints. One line per sprint, status updated by `/close-sprint`.
+The full catalog of mathBasher sprints. One line per sprint, status updated when each sprint closes.
 
 ## Sprint 0 — Project skeleton (planning + setup)
 
@@ -23,7 +23,7 @@ The full catalog of mathBasher sprints. One line per sprint, status updated by `
 | [0.5.4](foundation/0.5.4-click-to-start-splash.md) | Click-to-start splash + button-click SFX (defer Phaser construction to a user-gesture splash overlay to eliminate the AudioContext warning + iOS first-gesture handling; wire `button-click-1.mp3` to every PlaceholderButton + HUD icon activation through the existing AudioManager `play(key, 'sfx')` path) | Closed (2026-05-09) | 0.5.5 |
 | [0.5.5](foundation/0.5.5-refactor-pass.md) | Refactor pass + speed bump (setupScene + IconButton + boot.ts split + MenuLayout + AUDIO_MANIFEST + typography/palette + fossil-comment cleanup + type-cast tightening + late-add Story I: +21% cumulative descent-rate bump on alien-shoot) | Closed (2026-05-09) | 0.6 |
 | [0.6](foundation/0.6-mobile-responsive.md) | Mobile + responsive (FIT scaling + 1280×720 design canvas + SCALE.md doc · portrait-rotate overlay with kid-friendly copy · TouchFireButton with config-lifted constants · InputSystem carve-out · 8-viewport spot-check · perf sanity · DeveloperGuide.md updates · late-add Story 8: -15% speed re-tune pulling back the v0.5.5 over-correction) | Closed (2026-05-10) | 0.6.1 |
-| [0.6.1](foundation/0.6.1-sprite-prep.md) | Sprite prep (single-PNG pipeline via sharp + per-kind profiles · `.sprite-source/` workspace mirroring `.audio-source/` · video-to-spritesheet extractor with verify-grid + auto-margin + soft-alpha + cross-frame consistency restore · sprite-pipeline SKILL.md interactive workflow · ADR-0009) | Closed (2026-05-10) | 0.6.2 |
+| [0.6.1](foundation/0.6.1-sprite-prep.md) | Sprite prep (single-PNG pipeline via sharp + per-kind profiles · `.sprite-source/` workspace mirroring `.audio-source/` · video-to-spritesheet extractor with verify-grid + auto-margin + soft-alpha + cross-frame consistency restore · sprite-pipeline workflow notes · ADR-0009) | Closed (2026-05-10) | 0.6.2 |
 | [0.6.2](foundation/0.6.2-sprint-0.7-decisions.md) | Sprint 0.7 decisions (ADR-0010 sprite tier strategy: 128/192 dual-tier + subfolder layout + 12 fps default · color decontamination "unmatting" pass in extract pipeline · production-quality re-extract of all 5 alien-video batches as the sprint 0.7 candidate pool) | Closed (2026-05-10) | 0.6.3 |
 | [0.6.3](foundation/0.6.3-further-sprint-0.7-prep.md) | Further sprint 0.7 prep (random animated rider sprites per falling block from 45-key pool · shooter speed +15% · 1-second pre-fall jiggle · loading bar in BootScene · data-driven sprite-batch registry · variable-frame-count robustness · add-to-10 uniform answer distribution fix · all 5 alien videos processed at option-C dark-bg matched defaults) | Closed (2026-05-12) | 0.7 |
 | [0.7](foundation/0.7-art-polish.md) | Art + polish (CC0 + Midjourney sprite/audio assets · BackgroundScene parallax + nebula · hero re-skin with 3 round-robin speeders + engine glow + smoke death · particle hit-feedback + screen flash/shake + 6 random SFX · projectile glow capsule + muzzle flash · alien rider plate compositing · Baloo 2 typography · GameOverScene polish · HUD score-popup-at-alien + dot progress · MenuScene mute icon · AttributionScene hover · ADR-0010 sprite tier strategy · DeveloperGuide.md update · P2 cleanup grab-bag) | Closed (2026-05-14) | 0.7.5 |
@@ -41,7 +41,7 @@ Each is a small sprint: add a generator file, register it, add its multiplier to
 | 1.2 | Subtract within 10 — DELIVERED IN 1.1 | bundled |
 | 1.3 | Subtract within 20 — DELIVERED IN 1.1 | bundled |
 | 1.4 | Multiplication tables — split per user direction into Multiply 10×10 + Multiply 12×12, both DELIVERED IN 1.1 | bundled |
-| [1.5](phase-1/1.5-division-and-mixed-batch.md) | Phase 1 division + mixed batch — Divide 10×10 + Divide 12×12 + Mixed Math (random from all 8 others, via dependency-injection picker) + DifficultyScene 3-row layout for 9 tiles + lifted tile dimensions to config + deleted dead `description` field + write-once `setMixedDelegate` with HMR-safe escape hatch + zero reviewer-name leaks in committed source (bundled per user direction; mirrors the 1.1 bundle shape) | Closed (2026-05-16) |
+| [1.5](phase-1/1.5-division-and-mixed-batch.md) | Phase 1 division + mixed batch — Divide 10×10 + Divide 12×12 + Mixed Math (random from all 8 others, via dependency-injection picker) + DifficultyScene 3-row layout for 9 tiles + lifted tile dimensions to config + deleted dead `description` field + write-once `setMixedDelegate` with HMR-safe escape hatch + no internal workflow names in committed source (bundled per user direction; mirrors the 1.1 bundle shape) | Closed (2026-05-16) |
 | 1.6 | Mixed (random pick from selected operations) — DELIVERED IN 1.5 as "Mixed Math" (all-implemented; multi-select UI deferred) | bundled |
 
 ## Phase 2 — additional game modes (after phase 1)
