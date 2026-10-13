@@ -33,7 +33,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - Subtract within 20: answers spread out, far fewer "− 10" and answer-10 questions, and almost no "− 0" or "7 − 7" giveaways (was a third of all questions).
 - Subtract within 10: giveaways cut from about half to about 1 in 8. Multiply / divide: × 10 and × 11 come up less often.
 - Add / Subtract to 20: the wrong answers are close to the right one, so you can't rule them out at a glance (and a sum of 20 isn't always the biggest number on screen).
-- Space Escape's Difficulty screen shows long timers in minutes ("8 min timer", "2:30 timer").
+- Space Escape's Difficulty screen shows long round timers as minutes and seconds ("3:00 timer", "8:20 timer") instead of "500s".
 
 ## [2.5.6] - 2026-10-12 — Frog Splash, a fifth game mode
 

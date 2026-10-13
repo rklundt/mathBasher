@@ -43,14 +43,13 @@ function speedSectionTitleFor(gameId: GameId): string {
 
 /**
  * A round timer as a kid (or parent) reads it: seconds up to 2 minutes,
- * then minutes — "8 min", or "2:30" when it isn't a whole minute. Exact,
- * never rounded up: the tile must not promise more time than the round gives.
+ * then a clock-style "M:SS" ("3:00", "8:20") — one format across the three
+ * tiles. Exact, never rounded up: a tile must not promise more time than
+ * the round gives.
  */
 function timerLabel(totalSec: number): string {
   if (totalSec < 120) return `${totalSec}s`;
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return sec === 0 ? `${min} min` : `${min}:${String(sec).padStart(2, '0')}`;
+  return `${Math.floor(totalSec / 60)}:${String(totalSec % 60).padStart(2, '0')}`;
 }
 
 /**
