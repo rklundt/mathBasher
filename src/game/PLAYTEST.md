@@ -337,12 +337,12 @@ Phone in landscape, then desktop.
 
 Any game mode — the math is shared.
 
-- [ ] Difficulty screen: pick Add to 10, then Add Fractions — the seconds under Easy / Medium / Hard double (Space Escape: the round timer; Alien Shoot: no seconds shown).
+- [ ] Difficulty screen: pick Add to 10, then Add Fractions — the time under each difficulty doubles (Asteroid Field labels them Slow / Medium / Fast; Space Escape shows its round timer, in minutes from 2 min up; Alien Shoot shows no time).
 - [ ] Fractions on Hard: visibly more time per question than before; Alien Shoot aliens fall more slowly on Multiply than on Add to 10.
 - [ ] Add to 20, a full round: mostly answers 10–20, a mix of 8 + 7 and 13 + 5 kinds; at most one or two single-digit answers.
-- [ ] Subtract within 20, a full round: answers all over 1–18; "− 10" and "= 10" rare; no "− 0" / "x − x".
+- [ ] Subtract within 20, a full round: answers all over 1–18; "− 10" and "= 10" rare; "− 0" / "x − x" almost never.
 - [ ] Subtract within 10: few "− 0" or "x − x".
-- [ ] Add / Subtract to 20: the wrong answers are near the right one.
+- [ ] Add / Subtract to 20: the wrong answers are near the right one; with a sum of 19 or 20 the right answer isn't always the biggest choice.
 
 ## Logging the run
 

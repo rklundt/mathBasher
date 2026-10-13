@@ -28,7 +28,9 @@ import type { Question, QuestionGenerator } from '@/math/types';
  *     8 of 19 answers (42%) were single digits.
  *
  * Distractors are 3 distinct integers within ± `nearDistractorSpread` of the
- * sum (inside [2, 20]), then shuffled with the correct answer.
+ * sum, from [2, 20 + `distractorOverflow`] (21–24 are believable slips and
+ * stop a sum of 19 or 20 always being the biggest choice), then shuffled
+ * with the correct answer.
  */
 const SUM_MIN = 2;
 const SUM_MAX = 20;
@@ -61,7 +63,8 @@ const addTo20: QuestionGenerator = {
     const distractors = pickDistractors(correctAnswer, {
       count: distractorCount,
       min: SUM_MIN,
-      max: SUM_MAX,
+      // A little past 20, so a sum of 19 or 20 isn't always the biggest choice.
+      max: SUM_MAX + mix.distractorOverflow,
       near: config.questionMix.nearDistractorSpread,
       rng,
     });

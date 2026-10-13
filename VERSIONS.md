@@ -32,7 +32,8 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - Add to 20: mostly sums from 10 to 20, with teen numbers (12 + 5) and crossing-ten facts (8 + 7); single-digit answers are now rare (about 1 in 8, was 4 in 10).
 - Subtract within 20: answers spread out, far fewer "− 10" and answer-10 questions, and almost no "− 0" or "7 − 7" giveaways (was a third of all questions).
 - Subtract within 10: giveaways cut from about half to about 1 in 8. Multiply / divide: × 10 and × 11 come up less often.
-- Add / Subtract to 20: the wrong answers are close to the right one, so you can't rule them out at a glance.
+- Add / Subtract to 20: the wrong answers are close to the right one, so you can't rule them out at a glance (and a sum of 20 isn't always the biggest number on screen).
+- Space Escape's Difficulty screen shows long timers in minutes ("8 min timer").
 
 ## [2.5.6] - 2026-10-12 — Frog Splash, a fifth game mode
 
@@ -111,7 +112,7 @@ First time the project lets the kid pick a hero. Purely cosmetic — does NOT al
 
 **Sprint scope narrowed mid-flight:** the original 2.5 plan bundled the Hero Chooser with a splash-screen upgrade and per-game intro beats. Splash + intros carried to sprint 2.5.1 once the design conversation paused for more discussion. 2.5 ships the immersion-win Hero Chooser feature alone.
 
-8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Pre-release review returned APPROVED after one fix round (The kid-facing UX review flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
+8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Pre-release review returned APPROVED after one fix round (the kid-facing UX review flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
 
 ## [2.4.2] - 2026-05-23 — Hotfix: hero wiring rollback + Asteroid wrong-shot scope
 
@@ -131,7 +132,7 @@ Three changes — two fairness fixes across existing game modes + a presentation
 - **Asteroid Field — wrong-shot deterrent (A + B + D combined).** Existing -3s per-question timer deduction kept; NEW 1.5s FIRE-input cooldown after every wrong shot (with TouchFireButton visual dim + soft "click" SFX on attempted-fire-while-locked so the kid registers "blocked" rather than "broken"); NEW round-wide cap of 2 wrong shots (2nd ends the round as fail with "Out of shots!" banner). Top-left HUD lives row mirrors the Climb pattern. Telemetry: `AsteroidField.roundWrongShotBudgetExhausted`. All three deterrents config-gated (set any knob to 0 to disable).
 - **Space Robot hero + OG Yellow fallback.** New default Alien Shoot hero (single static Midjourney sprite at `public/assets/sprites/hero/space-robot.webp`); the original Speeder1/2/3 round-robin set is now opt-in as "OG Yellow" via Settings → Game → Hero. First time the project lets the kid pick a hero. New `Settings.heroSkin` setting, localStorage-backed (try/catch tolerant of iOS private mode); 2-button picker with sprite thumbnails so the choice reads at a glance.
 
-10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Pre-release review returned APPROVED after one fix round (The kid-facing UX review flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
+10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Pre-release review returned APPROVED after one fix round (the kid-facing UX review flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
 
 ## [2.4.0] - 2026-05-22 — Fraction math types ("Add Fractions" + "Subtract Fractions")
 

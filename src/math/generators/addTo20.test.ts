@@ -47,13 +47,13 @@ describe('addTo20 generator', () => {
       }
     });
 
-    it('every choice is a distinct integer in [2, 20]', () => {
+    it('every choice is a distinct integer in [2, 24] (wrong answers may slip past 20)', () => {
       for (const q of samples) {
         expect(new Set(q.choices).size).toBe(q.choices.length);
         for (const c of q.choices) {
           expect(Number.isInteger(c)).toBe(true);
           expect(c).toBeGreaterThanOrEqual(2);
-          expect(c).toBeLessThanOrEqual(20);
+          expect(c).toBeLessThanOrEqual(24);
         }
       }
     });

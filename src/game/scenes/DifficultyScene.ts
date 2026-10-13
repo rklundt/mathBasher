@@ -42,6 +42,14 @@ function speedSectionTitleFor(gameId: GameId): string {
 }
 
 /**
+ * A round timer as a kid reads it: seconds up to 2 minutes, whole minutes
+ * after that ("500s" is hard to picture; "8 min" isn't).
+ */
+function timerLabel(totalSec: number): string {
+  return totalSec < 120 ? `${totalSec}s` : `${Math.round(totalSec / 60)} min`;
+}
+
+/**
  * Label + subtitle for a difficulty tile. Time limits shown are the real
  * ones for the selected math type (sprint 2.5.7 — harder math gets more
  * time), so the subtitles refresh when the math type changes.
@@ -77,7 +85,7 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       // shared line.)
       return {
         label: labels[key],
-        subtitle: `${rungs} rungs · ${totalSec}s timer`,
+        subtitle: `${rungs} rungs · ${timerLabel(totalSec)} timer`,
       };
     }
     case 'math-a-lotl': {
@@ -129,6 +137,10 @@ export class DifficultyScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    // Phaser reuses the scene instance: drop the previous visit's objects.
+    this.mathButtons.clear();
+    this.speedButtons.clear();
+    this.speedSubtitles.clear();
 
     const { width, height } = this.scale;
     const cx = width / 2;

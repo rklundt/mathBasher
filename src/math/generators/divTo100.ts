@@ -16,14 +16,14 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * then dividend computed as `d × q ∈ [4, 100]`. Question is
  * `"{dividend} ÷ {divisor} = ?"`, correct answer is `q`. This guarantees
  * integer results without rejection sampling and gives every multiplication
- * fact (and its inverse) equal practice exposure.
+ * fact (and its inverse) equal practice exposure, apart from the 10s.
  *
  * **Why factor-uniform and not dividend-uniform** (pedagogically): the same
  * argument as `multTo100.ts` — products with many factor pairs (e.g. 12 has
  * the pairs 2×6, 3×4, 4×3, 6×2) would over-expose if we sampled dividend
  * first, and products with one pair (e.g. 4 = 2×2) would under-expose.
- * Factor-uniform spreads attention evenly across the 9² = 81 (divisor,
- * quotient) pairs, which is what a kid actually needs to practice.
+ * Factor-uniform spreads attention across the 9² = 81 (divisor,
+ * quotient) pairs (evenly, except the 10s), which is what a kid actually needs to practice.
  *
  * **Operator glyph**: Unicode division sign `÷` (U+00F7), NOT ASCII `/`.
  * The `÷` matches what kids see in textbooks and reads as division at a
