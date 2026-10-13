@@ -27,9 +27,9 @@ interface Sample {
   choices: number[];
 }
 
-function sample(id: MathId, seed = 2507): Sample[] {
+function sample(id: MathId, n = N, seed = 2507): Sample[] {
   const rng = mulberry32(seed);
-  return Array.from({ length: N }, () => {
+  return Array.from({ length: n }, () => {
     const q = generators[id].generate(rng);
     const [a, b] = q.prompt.match(/\d+/g)!.map(Number) as [number, number];
     return { a, b, answer: q.correctAnswer, choices: q.choices };
@@ -54,6 +54,11 @@ describe('weighted tables', () => {
     let b = 0;
     for (let i = 0; i < 20_000; i++) if (pickWeighted(table, rng) === 'b') b++;
     expect(b / 20_000).toBeCloseTo(0.75, 1);
+  });
+
+  it('pickWeighted refuses an empty or all-zero table', () => {
+    expect(() => pickWeighted([], () => 0.5)).toThrow();
+    expect(() => pickWeighted([{ value: 1, weight: 0 }], () => 0.5)).toThrow();
   });
 
   it('answerWeightedTable gives each answer exactly its answer weight', () => {
@@ -89,16 +94,26 @@ describe('weighted tables', () => {
 describe('Add to 10', () => {
   const xs = sample('add-to-10');
 
-  it('spreads answers 2–10 evenly; 0 and 1 are rare', () => {
+  it('spreads answers 3–10 evenly; 2 about half as often; 0 and 1 are rare', () => {
     const shares = answerShares(xs);
-    const unit = 1 / (9 + 2 * config.questionMix.addTo10.tinyAnswerWeight);
-    for (let sum = 2; sum <= 10; sum++) expect(shares.get(sum)! / unit).toBeGreaterThan(0.85);
-    for (let sum = 2; sum <= 10; sum++) expect(shares.get(sum)! / unit).toBeLessThan(1.15);
+    const mix = config.questionMix.addTo10;
+    const unit = 1 / (8 + mix.twoAnswerWeight + 2 * mix.tinyAnswerWeight);
+    for (let sum = 3; sum <= 10; sum++) expect(shares.get(sum)! / unit).toBeGreaterThan(0.85);
+    for (let sum = 3; sum <= 10; sum++) expect(shares.get(sum)! / unit).toBeLessThan(1.15);
+    expect(shares.get(2)! / unit).toBeCloseTo(mix.twoAnswerWeight, 1);
     expect((shares.get(0) ?? 0) + (shares.get(1) ?? 0)).toBeLessThan(0.08);
   });
 
   it('keeps "+ 0" problems rare', () => {
     expect(share(xs, (s) => s.answer > 0 && (s.a === 0 || s.b === 0))).toBeLessThan(0.15);
+  });
+});
+
+describe('no single problem dominates', () => {
+  it.each(['add-to-10', 'sub-to-10', 'add-to-20', 'sub-to-20'] as const)('%s: no prompt above 7%%', (id) => {
+    const counts = new Map<string, number>();
+    for (const s of sample(id)) counts.set(`${s.a},${s.b}`, (counts.get(`${s.a},${s.b}`) ?? 0) + 1);
+    expect(Math.max(...counts.values()) / N).toBeLessThan(0.07);
   });
 });
 
@@ -139,10 +154,12 @@ describe('Subtract within 10', () => {
     expect(share(xs, (s) => s.b === 0 || s.a === s.b)).toBeLessThan(0.15);
   });
 
-  it('spreads answers 1–9 evenly', () => {
+  it('spreads answers 1–8 evenly (9 about half as often)', () => {
     const shares = answerShares(xs);
-    const unit = 1 / (9 + 2 * config.questionMix.subTo10.edgeAnswerWeight);
-    for (let r = 1; r <= 9; r++) {
+    const mix = config.questionMix.subTo10;
+    const unit = 1 / (8 + mix.nineAnswerWeight + 2 * mix.edgeAnswerWeight);
+    expect(shares.get(9)! / unit).toBeCloseTo(mix.nineAnswerWeight, 1);
+    for (let r = 1; r <= 8; r++) {
       expect(shares.get(r)! / unit, `answer ${r}`).toBeGreaterThan(0.85);
       expect(shares.get(r)! / unit, `answer ${r}`).toBeLessThan(1.15);
     }
@@ -172,11 +189,18 @@ describe('Subtract within 20', () => {
 });
 
 describe('Add / Subtract to 20 wrong answers', () => {
+  it('a sum of 20 is not always the biggest choice', () => {
+    const top = sample('add-to-20').filter((s) => s.answer === 20);
+    const biggest = top.filter((s) => Math.max(...s.choices) === 20).length / top.length;
+    expect(biggest).toBeLessThan(0.35);
+  });
+
   it('sit near the right answer', () => {
     const spread = config.questionMix.nearDistractorSpread;
     for (const id of ['add-to-20', 'sub-to-20'] as const) {
-      for (const s of sample(id).slice(0, 5000)) {
+      for (const s of sample(id, 5000)) {
         for (const c of s.choices) expect(Math.abs(c - s.answer), `${id} ${s.answer}: ${c}`).toBeLessThanOrEqual(spread);
+        if (id === 'add-to-20') expect(Math.max(...s.choices)).toBeLessThanOrEqual(20 + config.questionMix.addTo20.distractorOverflow);
       }
     }
   });

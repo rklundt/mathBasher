@@ -34,6 +34,10 @@ export const config = {
      * Space Escape's round timer) is multiplied by this, and Alien Shoot's
      * descent slows by the same factor. Read through `mathTimeScale()`;
      * scaled seconds are whole numbers (`scaledSeconds()`).
+     *
+     * Wrong-answer time penalties (`asteroidField.wrongShotCountdownPenaltySec`,
+     * `numberClimb.wrongRungTimePenaltySec`) stay fixed on purpose: a slip on
+     * harder math costs the same seconds, so a smaller share of the longer time.
      */
     mathTimeScale: {
       'add-to-10': 1.0,
@@ -758,6 +762,8 @@ export const config = {
     addTo10: {
       /** Answers 0 and 1 (0 + 0, 1 + 0). */
       tinyAnswerWeight: 0.3,
+      /** Answer 2: nearly always "1 + 1" (the "+ 0" forms are rare), so keep it from topping the list. */
+      twoAnswerWeight: 0.5,
       /** "+ 0" problems. */
       plusZeroWeight: 0.15,
     },
@@ -769,10 +775,15 @@ export const config = {
       /** "+ 1" and "+ 10" problems. */
       plusOneWeight: 0.2,
       plusTenWeight: 0.2,
+      /** Wrong answers may go this far past 20 (21–24 are believable slips), so a
+       *  sum of 19 or 20 isn't always the biggest choice. */
+      distractorOverflow: 4,
     },
     subTo10: {
       /** Answers 0 (x − x) and 10 (10 − 0). */
       edgeAnswerWeight: 0.3,
+      /** Answer 9: only 9 − 0 or 10 − 1, so "10 − 1" would otherwise top the list. */
+      nineAnswerWeight: 0.5,
       /** "− 0" and "− 1" problems. */
       minusZeroWeight: 0.15,
       minusOneWeight: 0.6,

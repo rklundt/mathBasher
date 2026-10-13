@@ -32,6 +32,7 @@ export interface Weighted<T> {
 export function pickWeighted<T>(table: readonly Weighted<T>[], rng: () => number): T {
   let total = 0;
   for (const e of table) total += e.weight;
+  if (!(total > 0)) throw new Error('pickWeighted: the table is empty or has no positive weight');
   let r = rng() * total;
   for (const e of table) {
     r -= e.weight;

@@ -15,7 +15,8 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * friendly per the project's audience), drawn from a weighted table of
  * every such problem (sprint 2.5.7, `src/math/questionMix.ts`):
  *
- *  - answers 1–9 come up equally often; 0 (x − x) and 10 (10 − 0) rarely;
+ *  - answers 1–8 come up equally often; 9 (only 9 − 0 or 10 − 1) about
+ *    half as often; 0 (x − x) and 10 (10 − 0) rarely;
  *  - "− 0" problems are rare and "− 1" a little less common.
  *
  * Tuning history:
@@ -35,7 +36,7 @@ for (let a = 0; a <= MINUEND_MAX; a++) {
 const TABLE = answerWeightedTable(
   problems,
   (p) => p.answer,
-  (r) => (r === 0 || r === RESULT_MAX ? mix.edgeAnswerWeight : 1),
+  (r) => (r === 0 || r === RESULT_MAX ? mix.edgeAnswerWeight : r === 9 ? mix.nineAnswerWeight : 1),
   (p) => (p.b === 0 ? mix.minusZeroWeight : p.b === 1 ? mix.minusOneWeight : 1),
 );
 

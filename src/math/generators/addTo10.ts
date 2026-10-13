@@ -14,7 +14,8 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * Two addends `a, b` from [0, 10] with `a + b <= 10`, drawn from a weighted
  * table of every such problem (sprint 2.5.7, `src/math/questionMix.ts`):
  *
- *  - answers 2–10 come up equally often; 0 and 1 (0 + 0, 1 + 0) rarely;
+ *  - answers 3–10 come up equally often; 2 (almost always 1 + 1) about
+ *    half as often; 0 and 1 (0 + 0, 1 + 0) rarely;
  *  - "+ 0" problems are rare — recognising 0 + 5 = 5 is still worth
  *    seeing at this level, but not a quarter of the time.
  *
@@ -40,7 +41,7 @@ for (let a = ADDEND_MIN; a <= ADDEND_MAX; a++) {
 const TABLE = answerWeightedTable(
   problems,
   (p) => p.answer,
-  (sum) => (sum <= 1 ? mix.tinyAnswerWeight : 1),
+  (sum) => (sum <= 1 ? mix.tinyAnswerWeight : sum === 2 ? mix.twoAnswerWeight : 1),
   (p) => (p.answer > 0 && (p.a === 0 || p.b === 0) ? mix.plusZeroWeight : 1),
 );
 

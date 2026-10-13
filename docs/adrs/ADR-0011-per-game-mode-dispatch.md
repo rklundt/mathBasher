@@ -147,6 +147,8 @@ When sprint 2.X adds game mode `<id>`:
    }
    ```
 
+   **Time limits scale with the math type** (sprint 2.5.7): read every per-question countdown or round timer through `scaledSeconds(sec, mathId)`, and divide any "time to answer" speed (e.g. a descent rate) by `mathTimeScale(mathId)`, both from `src/core/config.ts`. The mode's `speedDisplayFor` arm in `DifficultyScene` takes `mathId` and shows the scaled seconds.
+
 8. **Register the scene** in `src/app/boot.ts` `scene: [...]` array. Order matters (render order = registration order); put it adjacent to other game scenes.
 
 9. **Add a `gameSceneKeyFor` arm** (`src/core/sceneKeys.ts`) returning the new scene key. It's an exhaustive switch, so step 1 already makes a missing arm a compile error; DifficultyScene and GameOverScene's Play Again both route through it.

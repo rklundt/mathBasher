@@ -15,7 +15,7 @@ import type { Question, QuestionGenerator } from '@/math/types';
  * Factors `a, b ∈ [2, 10]`, product `a × b ∈ [4, 100]`.
  *
  * **Sampling strategy: factor-uniform, NOT product-uniform.** Each factor is
- * drawn independently uniform from [2, 10]. This is the right pedagogical
+ * drawn independently from [2, 10], uniform except for 10 (see below). This is the right pedagogical
  * choice because:
  *   - Product-uniform would over-expose products with many factor pairs
  *     (e.g. 12 = 2×6 = 3×4 = 4×3 = 6×2 — 4 pairs) and under-expose products
