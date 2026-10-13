@@ -42,11 +42,15 @@ function speedSectionTitleFor(gameId: GameId): string {
 }
 
 /**
- * A round timer as a kid reads it: seconds up to 2 minutes, whole minutes
- * after that ("500s" is hard to picture; "8 min" isn't).
+ * A round timer as a kid (or parent) reads it: seconds up to 2 minutes,
+ * then minutes — "8 min", or "2:30" when it isn't a whole minute. Exact,
+ * never rounded up: the tile must not promise more time than the round gives.
  */
 function timerLabel(totalSec: number): string {
-  return totalSec < 120 ? `${totalSec}s` : `${Math.round(totalSec / 60)} min`;
+  if (totalSec < 120) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return sec === 0 ? `${min} min` : `${min}:${String(sec).padStart(2, '0')}`;
 }
 
 /**

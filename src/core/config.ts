@@ -491,7 +491,7 @@ export const config = {
     /**
      * Cumulative timer budget per Difficulty (which doubles as Speed
      * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
-     * 120s. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
+     * 120s — before `round.mathTimeScale` stretches them for harder math. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
      * ends the round.
      *
      * Game-mechanic tuning only — score multipliers live in
