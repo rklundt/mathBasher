@@ -33,6 +33,8 @@
     "sprite:reef": "node scripts/sprites/reef.mjs",
     "sprite:frog": "node scripts/sprites/frog.mjs",
     "sprite:pond": "node scripts/sprites/pond.mjs",
+    "sprite:alienships": "node scripts/sprites/alienships.mjs",
+    "sprite:cockpit": "node scripts/sprites/cockpit.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {

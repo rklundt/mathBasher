@@ -27,7 +27,13 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Space Shooter — a sixth game mode** (sprint 2.6, in progress)
+- You're in a spaceship cockpit looking out the window. Alien ships carrying the answers fly around on curvy paths, bouncing off the window frame and each other. Tap the ship with the right answer and the cockpit's lasers blast it.
+- A wrong ship's shield blocks the lasers and costs a life (the question stays). Run out of time and the ships blast the cockpit — that costs a life too, and the same question comes back with fresh ships. 3 lives per round.
+- Easy / Medium / Hard: 3 / 4 / 5 ships, 20 / 15 / 12 s per question (longer for harder math), faster flying.
+- 20 different cartoon alien ships, drawn in code; long answers like "1 11/12" sit on a dark display so they're always easy to read.
+- New music; laser and hit sounds from Alien Shoot. Game Select now has three rows of two.
+- Credits: all audio is noted as rendered by ElevenLabs from original prompts written by the project owner.
 
 ## [2.5.7] - 2026-10-12 — Fairer questions, more time for harder math
 

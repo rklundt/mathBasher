@@ -344,6 +344,26 @@ Any game mode — the math is shared.
 - [ ] Subtract within 10: few "− 0" or "x − x".
 - [ ] Add / Subtract to 20: the wrong answers are near the right one; with a sum of 19 or 20 the right answer isn't always the biggest choice.
 
+## Space Shooter (sprint 2.6)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows six tiles in three rows of two; Space Shooter is bottom right.
+- [ ] Difficulty reads "3 ships · 20s", "4 ships · 15s", "5 ships · 12s" for Add to 10 (longer for harder math) over a dimmed cockpit backdrop.
+- [ ] In game: the space view behind the window, the cockpit frame in front; the HUD readable over the cockpit top.
+- [ ] Q1 shows "👆 Tap the ship with the right answer!" over the dashboard; it goes away on the first shot.
+- [ ] Ships warp in, fly curvy paths, bounce off the window frame and each other, never go behind the cockpit frame.
+- [ ] Every ship in a wave looks different; answers sit in the dark porthole. Fractions on Hard: mixed numbers ("1 11/12") sit on a dark display pill and read clearly.
+- [ ] Tap the right ship → lasers from both bottom corners, explosion, "+points", the others warp away, next question.
+- [ ] Tap a wrong ship → shield flash, "Shields up! Try again!", a Lives dot turns red, that ship warps away; the question stays.
+- [ ] Let the timer run out → red bolts from the ships, cracks on the glass, red flash + shake, "Out of time! You got blasted!", a life lost, same question with fresh ships.
+- [ ] Third life lost → "Out of lives!" → Game Over (stars by correct answers).
+- [ ] Hard has 5 ships; keys 1–5 pick ships left to right.
+- [ ] Taps on the cockpit around the window do nothing.
+- [ ] Music plays (the new loop); lasers, hits, wrong and timeout sounds play.
+- [ ] Pause freezes the ships, lasers and timer.
+- [ ] Play Again replays Space Shooter.
+
 ## Logging the run
 
 ```

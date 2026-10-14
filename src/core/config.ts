@@ -752,6 +752,70 @@ export const config = {
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
   },
   /**
+   * Sprint 2.6 — Space Shooter. The kid sits in a cockpit looking out the
+   * window; alien ships carrying the answers fly around in it on curvy
+   * paths, bouncing off the window frame and each other. Tap the ship with
+   * the right answer: lasers fire, it explodes, next question. A wrong ship
+   * shrugs the lasers off with a shield, warps away, and costs a life; the
+   * question stays. Time runs out → the ships blast the cockpit, a life is
+   * lost and the same question comes back with fresh ships. 3 lives.
+   * Speed key doubles as the difficulty: 3 / 4 / 5 ships.
+   */
+  spaceShooter: {
+    maxLives: 3,
+    speed: {
+      slow: { shipCount: 3, countdownSec: 20, flyPxPerSec: 60 },
+      medium: { shipCount: 4, countdownSec: 15, flyPxPerSec: 85 },
+      fast: { shipCount: 5, countdownSec: 12, flyPxPerSec: 115 },
+    },
+    /**
+     * Where ship CENTRES may fly (design px). Measured from the cockpit art
+     * (`pnpm sprite:cockpit --measure`: opening x 222–1062, y 108–615, with
+     * rounded, tapered corners) and pulled in by a ship radius, so every
+     * ship stays fully inside the window.
+     */
+    window: { left: 318, right: 968, top: 176, bottom: 540 },
+    /** Taps outside this (the cockpit around the window) are ignored. */
+    tapWindow: { left: 222, right: 1062, top: 108, bottom: 615 },
+    ship: {
+      displayPx: 132,
+      /** Collision / tap radius as a fraction of displayPx (the hull, not the halo). */
+      radiusFrac: 0.42,
+      tapSlop: 1.2,
+      /** How fast a ship's heading can change (rad/s), and how quickly that turn rate wanders. */
+      maxTurnRadPerSec: 1.4,
+      turnJitterPerSec: 3.0,
+      /** Gentle up / down bob and a lean into turns, for a "flying" feel. */
+      bobPx: 5,
+      bobMs: 1100,
+      leanDeg: 8,
+      /** Spawn spacing: centres at least this × radius apart. */
+      spawnGapFrac: 2.3,
+      warpInMs: 320,
+      warpOutMs: 260,
+    },
+    label: {
+      /** Widest a label may get before it shrinks (design px, at ship scale 1). */
+      maxWidthPx: 118,
+      /** A label wider than the porthole by this much gets a dark "display" pill behind it. */
+      pillPadPx: 12,
+      pillHeightPadPx: 10,
+    },
+    laser: {
+      /** Cannon muzzles at the bottom corners of the window (design px). */
+      leftMuzzle: { x: 300, y: 640 },
+      rightMuzzle: { x: 980, y: 640 },
+      shotMs: 120,
+      fadeMs: 160,
+    },
+    /** Pause between a hit and the next question's ships warping in. */
+    nextQuestionDelayMs: 650,
+    /** Time's up: the ships fire at the cockpit for this long before the life is lost. */
+    blastMs: 1100,
+    outOfLivesBannerMs: 1300,
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
