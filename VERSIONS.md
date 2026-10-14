@@ -29,6 +29,17 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.5.7] - 2026-10-12 — Fairer questions, more time for harder math
+
+**Fairer questions, more time for harder math**
+- Harder math gets more time in every game: ×1.25 for Add / Subtract to 20, ×1.5 for Multiply, Divide and Mixed, ×2 for fractions — longer countdowns, a longer Space Escape timer, slower aliens in Alien Shoot. The Difficulty screen shows the real time for the math type you pick.
+- Add to 20: mostly sums from 10 to 20, with teen numbers (12 + 5) and crossing-ten facts (8 + 7); single-digit answers are now rare (about 1 in 8, was 4 in 10).
+- Subtract within 20: answers spread out, far fewer "− 10" and answer-10 questions, and almost no "− 0" or "7 − 7" giveaways (was a third of all questions).
+- Subtract within 10: giveaways cut from about half to about 1 in 8. Multiply / divide: × 10 and × 11 come up less often.
+- Add / Subtract to 20: the wrong answers are close to the right one, so you can't rule them out at a glance (and a sum of 20 isn't always the biggest number on screen).
+- Space Escape's Difficulty screen shows long round timers as minutes and seconds ("3:00 timer", "8:20 timer") instead of "500s".
+- Housekeeping: older sprint notes reworded in plain project language. No player-facing change.
+
 ## [2.5.6] - 2026-10-12 — Frog Splash, a fifth game mode
 
 **Frog Splash — a fifth game mode**
@@ -106,7 +117,7 @@ First time the project lets the kid pick a hero. Purely cosmetic — does NOT al
 
 **Sprint scope narrowed mid-flight:** the original 2.5 plan bundled the Hero Chooser with a splash-screen upgrade and per-game intro beats. Splash + intros carried to sprint 2.5.1 once the design conversation paused for more discussion. 2.5 ships the immersion-win Hero Chooser feature alone.
 
-8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
+8 new unit tests cover `Settings.chosenHero` persistence (default-null, round-trip, invalid-value rejection, getItem/setItem throw tolerance, subscriber semantics). Pre-release review returned APPROVED after one fix round (the kid-facing UX review flagged the missing Back button on mid-session re-open + the subtitle copy nit; both addressed).
 
 ## [2.4.2] - 2026-05-23 — Hotfix: hero wiring rollback + Asteroid wrong-shot scope
 
@@ -126,7 +137,7 @@ Three changes — two fairness fixes across existing game modes + a presentation
 - **Asteroid Field — wrong-shot deterrent (A + B + D combined).** Existing -3s per-question timer deduction kept; NEW 1.5s FIRE-input cooldown after every wrong shot (with TouchFireButton visual dim + soft "click" SFX on attempted-fire-while-locked so the kid registers "blocked" rather than "broken"); NEW round-wide cap of 2 wrong shots (2nd ends the round as fail with "Out of shots!" banner). Top-left HUD lives row mirrors the Climb pattern. Telemetry: `AsteroidField.roundWrongShotBudgetExhausted`. All three deterrents config-gated (set any knob to 0 to disable).
 - **Space Robot hero + OG Yellow fallback.** New default Alien Shoot hero (single static Midjourney sprite at `public/assets/sprites/hero/space-robot.webp`); the original Speeder1/2/3 round-robin set is now opt-in as "OG Yellow" via Settings → Game → Hero. First time the project lets the kid pick a hero. New `Settings.heroSkin` setting, localStorage-backed (try/catch tolerant of iOS private mode); 2-button picker with sprite thumbnails so the choice reads at a glance.
 
-10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Six-reviewer audit returned APPROVED after one fix round (Support reviewer flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
+10 new unit tests cover `Settings.heroSkin` persistence + invalid-value rejection and `pickNextHeroSpriteKey` branching. Pre-release review returned APPROVED after one fix round (the kid-facing UX review flagged the silent FIRE cooldown + missing "Lives" label + missing thumbnails — all addressed).
 
 ## [2.4.0] - 2026-05-22 — Fraction math types ("Add Fractions" + "Subtract Fractions")
 
@@ -140,8 +151,8 @@ The first math types with **non-integer answers** and the first generators whose
 - **Story 5 — Cross-game fraction rendering.** All three games (Alien Shoot, Asteroid Field, Number Climb) thread `answerDisplay` through to their answer-slot renderers. Integer generators continue to render bare numbers exactly as before. Defensive font-shrink (via `setScale`) for long fraction labels so `"1 1/2"` and `"4 11/12"` fit the chassis / rock / rung without clipping.
 - **Story 6 — Centralized scoring config.** A single well-commented `config.scoring` region documents the formula (`basePerCorrect × mathDifficulty × speed.multiplier × wrongShotMult`) and the multiplier-ladder rationale. Per-game `speed` blocks cross-reference back. Pure docs refactor.
 - **Story 7 — Score calibration.** New `'add-fractions': 4.0` and `'subtract-fractions': 4.5` multipliers (peer of div-to-144 and one +0.5 step past). 8 parity tests in `ScoreCalculator.test.ts` lock the calibration. Mixed Math **excludes** fractions (decimal answers don't compose with Mixed's integer rounds).
-- **Story 8 — `docs/SCORING.md` reference doc.** Public formula + multiplier table + cross-game max-score grid + star ladders. CLAUDE.md gains a "keep SCORING.md in sync" convention rule.
-- **Story 9 — Six-reviewer audit + close.** APPROVED after a Legal must-fix (SCORING.md tooling-leak rephrased) and a Support should-fix (the long-fraction font-shrink).
+- **Story 8 — `docs/SCORING.md` reference doc.** Public formula + multiplier table + cross-game max-score grid + star ladders. The project guidelines gain a "keep SCORING.md in sync" convention rule.
+- **Story 9 — Pre-release review + close.** APPROVED after a Legal must-fix (SCORING.md tooling-leak rephrased) and a Support should-fix (the long-fraction font-shrink).
 
 Test suite: **440 tests** (was 353 pre-sprint; +87 net). Typecheck clean, build green throughout.
 
@@ -154,9 +165,9 @@ mathBasher is now **live on a public production URL** via Azure Static Web Apps.
 - **Story 1 — `public/staticwebapp.config.json`** — tiered caching (immutable for content-hashed JS/CSS bundles, 7-day for stable-named game assets, no-cache for `index.html`), SPA `navigationFallback`, basic security headers (`X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options`), explicit `.webp` MIME.
 - **Story 2 — `.github/workflows/deploy.yml`** — hand-authored push-triggered deploy. pnpm 9 + Node 20, full test suite as a gate, `Azure/static-web-apps-deploy@v1` with `skip_app_build`. `development` branch → named `development` staging environment; `main` → production. Includes a post-deploy `curl` smoke test asserting `200 + text/html` on the live URL.
 - **Story 3 — first deploy + cross-environment verification** — first staging deploy needed one fix (`app_location` must point at `dist/`, not repo root, when `skip_app_build: true`). After the fix, both `development` → staging and `main` → production deployed green; headers, MIME, SPA routing, and gameplay all verified live.
-- **Story 4 — deployment documentation** — `DeveloperGuide.md` architecture diagram + tech-stack + project-layout updated, plus a new "Deployment" section (two-environment flow, cache-tier table, "changed asset → new filename" convention). Private operational runbook (`docs/deployment-runbook.md`, gitignored) holds environment URLs, token rotation, rollback. `CLAUDE.md` architecture note amended (the container / App-Service material reframed as the future Phase 3+ path).
-- **Story 5 — six-reviewer audit + close** — APPROVED after addressing one must-fix and one chosen should-fix. Audit fixes:
-  - **Co-Authored-By: Claude trailers scrubbed from the entire repo** (project-owner decision: scrub everywhere). Both branches' history and all 25 version tags rewritten via `git filter-branch`; force-pushed (`main` required temporary lift of branch protection); `origin/main-pre-scrub` retained as backup. Going-forward policy: no AI trailer added to new commits.
+- **Story 4 — deployment documentation** — `DeveloperGuide.md` architecture diagram + tech-stack + project-layout updated, plus a new "Deployment" section (two-environment flow, cache-tier table, "changed asset → new filename" convention). Private operational runbook (`docs/deployment-runbook.md`, gitignored) holds environment URLs, token rotation, rollback. The project guidelines' architecture note amended (the container / App-Service material reframed as the future Phase 3+ path).
+- **Story 5 — pre-release review + close** — APPROVED after addressing one must-fix and one chosen should-fix. Audit fixes:
+  - **Tool attribution trailers scrubbed from the entire repo** (project-owner decision: scrub everywhere). Both branches' history and all 25 version tags rewritten via `git filter-branch`; force-pushed (`main` required temporary lift of branch protection); `origin/main-pre-scrub` retained as backup. Going-forward policy: no AI trailer added to new commits.
   - **Post-deploy smoke test** added to the workflow and verified working live.
 
 **Sprint 3.5** (the older App-Service-based Azure deployment sprint) was **RETIRED** at this close — superseded by the SWA decision; its backend-hosting parts are absorbed into the re-scoped Phase 3 (sprint 3.3, "Backend hosting + datastore").
@@ -171,7 +182,7 @@ A catch-all sprint paying down the sprint 2.2 audit's should-fix items plus the 
 - **Config + code cleanup** — Climb entity dimensions lifted into `config.numberClimb.{hero,rung,frame}`; dead code removed; the `pickRung` decision logic extracted to a pure, fully-tested `resolveRungPick`.
 - **WebP migration** — `scripts/sprites/process.mjs` gained a `--format` flag; 39 background + hero + asteroid assets migrated PNG → WebP, cutting the background payload ~9.5 MB → ~1.0 MB.
 - **Cross-game true-up** — Alien Shoot + Asteroid Field rounds normalized 20 → 12 questions (matching Number Climb); cross-game max-score parity verified and locked with tests.
-- **Six-reviewer audit fixes** — a false-positive-Warning fix in the Climb input cooldown, a shared banner-legibility treatment over busy floor art, and documentation/credits accuracy.
+- **Pre-release review fixes** — a false-positive-Warning fix in the Climb input cooldown, a shared banner-legibility treatment over busy floor art, and documentation/credits accuracy.
 
 ## [2.2.0] - 2026-05-21 — Number Climb (ships as "Space Escape!")
 
@@ -409,7 +420,7 @@ A round actually feels like a game now. Background music + the hero's "skitterin
 - **SettingsScene label "Background ambience" → "Background sounds"** — plainer English for younger readers.
 
 ### Notes
-- All six review agents passed at wrap-up. Two should-fix items folded in (PauseOverlay Esc routing guard; AudioManager naming consistency). Five nice-to-haves applied (rename `AudioKeys` → `SfxKeys`, BootScene preload count derived from list, SettingsScene warns on missing onBack, kid-friendlier label, future-account-prep storage comment).
+- All six review checks passed at wrap-up. Two should-fix items folded in (PauseOverlay Esc routing guard; AudioManager naming consistency). Five nice-to-haves applied (rename `AudioKeys` → `SfxKeys`, BootScene preload count derived from list, SettingsScene warns on missing onBack, kid-friendlier label, future-account-prep storage comment).
 - Test count: 70 → 93. Bundle stays at ~1.5 MB JS (audio is loaded async by Phaser, not bundled).
 - New telemetry events: `AudioManager.setVolume`, `MenuScene.SettingsOpened`, `PauseOverlay.SettingsOpened`, `SettingsScene Started`/`Completed`. Two new reserved property names in telemetry-core: none added (sprint reused `from` and `reason`).
 - `button-click-1.mp3` was processed via the audio pipeline during the sprint window but kept untracked — sprint 0.5.4 picks it up to wire to button activations across the project.
@@ -436,11 +447,11 @@ mathBasher's first sound. `fire-1.mp3` plays on every shot (Space, mouse, touch 
 Pure-TS tests with no phaser import (per the project's test-layer rule).
 
 ### Tooling fixes (in-sprint)
-- **Encoder pipeline filter ORDER** (`scripts/audio/encode.mjs`) — fixed a real bug discovered while running the audio-pipeline skill on a quiet input. The chain was `trim → limiter → loudnorm`; for very quiet inputs (mean -39 dB), loudnorm's 23 dB boost pushed peaks past the -1.5 dBTP ceiling unchecked. Reordered to `trim → loudnorm → limiter` (with `level=disabled` from v0.5.1 still set) — limiter is now the FINAL brick-wall safety net.
+- **Encoder pipeline filter ORDER** (`scripts/audio/encode.mjs`) — fixed a real bug discovered while running the audio pipeline on a quiet input. The chain was `trim → limiter → loudnorm`; for very quiet inputs (mean -39 dB), loudnorm's 23 dB boost pushed peaks past the -1.5 dBTP ceiling unchecked. Reordered to `trim → loudnorm → limiter` (with `level=disabled` from v0.5.1 still set) — limiter is now the FINAL brick-wall safety net.
 - **Probe metadata-leak detection** (`scripts/audio/probe.mjs`, prior PR) — surfaces any `Metadata:` block in the output so future leaks get caught at verification, not after-the-fact.
 
 ### Notes
-- All six review agents passed. Two should-fix items folded in at wrap-up (HUD icon keyboard accessibility + visual distinction between Mute and Pause).
+- All six review checks passed. Two should-fix items folded in at wrap-up (HUD icon keyboard accessibility + visual distinction between Mute and Pause).
 - Real bug caught while writing tests: Node 20+ ships `globalThis.localStorage` as an empty stub without methods (reserved for the experimental `--localstorage-file` flag); `resolveDefaultStorage()` now verifies methods are functions before trusting the binding.
 - New telemetry events: `AudioManager.setMuted`, `AudioManager.play.notInitialized`, `AudioManager.play.keyMissing`, `BootScene PreloadedSfx`. All carry only fixed-string `reason` values — zero PII.
 - Bundle stays ~1.5 MB (audio is loaded async by Phaser, not bundled into the JS).
@@ -466,7 +477,7 @@ A round used to be all-or-nothing — once started, the only way out was to fini
 - **`src/game/scenes/HudScene.ts`** — added a single `getGameScene()` accessor that wraps the `as GameScene | null` cast, so the four call sites for pause/resume/quit/bind read as typed code instead of scattering casts.
 
 ### Notes
-- All six review agents passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Two should-fix items folded in at wrap-up (real time-gap in the pause-invariance test; `getGameScene` accessor in HudScene). Zero must-fix items.
+- All six review checks passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Two should-fix items folded in at wrap-up (real time-gap in the pause-invariance test; `getGameScene` accessor in HudScene). Zero must-fix items.
 - Test count: 45 → **56** (+11). New file count: 4.
 - iOS Safari audio gotcha (audio blocked until first user interaction) flagged in audio-format guidance for sprint 4 — not a 0.5.1 deliverable.
 - Bundle still ~1.5MB / ~340KB gzipped (Phaser-dominated).
@@ -511,7 +522,7 @@ The release where mathBasher actually plays. Hero auto-runs across the bottom; f
 - New events: `RoundStarted`, `QuestionStarted`, `QuestionEnded`, `WrongShot`, `RoundEnded`, `HighScoreSaved`. All carry `mathId`, `speed` and the relevant gameplay context. Zero PII.
 
 ### Notes
-- All six review agents passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Five "should-fix" items folded in at wrap-up; one ("first-time wrong-shot tooltip") deferred to the art-polish milestone.
+- All six review checks passed (InfoSec / Senior Dev / Support / DevOps / Architect / Legal). Five "should-fix" items folded in at wrap-up; one ("first-time wrong-shot tooltip") deferred to the art-polish milestone.
 - Test count unchanged at 45 across 5 files — gameplay code is Phaser-coupled and verified by manual playtest, per the project's documented test-layer rule.
 - Bundle still ~1.5MB / ~340KB gzipped (Phaser-dominated).
 

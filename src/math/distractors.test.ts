@@ -107,3 +107,30 @@ describe('shuffleAnswers', () => {
     expect(result).not.toBe(distractors);
   });
 });
+
+describe('pickDistractors near option (sprint 2.5.7)', () => {
+  it('keeps wrong answers within ± near of the answer, clipped to the range', () => {
+    const rng = mulberry32(5);
+    for (let i = 0; i < 500; i++) {
+      const out = pickDistractors(20, { count: 3, min: 2, max: 20, near: 6, rng });
+      expect(new Set(out).size).toBe(3);
+      for (const x of out) {
+        expect(x).toBeGreaterThanOrEqual(14);
+        expect(x).toBeLessThanOrEqual(19);
+      }
+    }
+  });
+
+  it('falls back to the whole range when the window is too small', () => {
+    const rng = mulberry32(6);
+    const seen = new Set<number>();
+    for (let i = 0; i < 300; i++) {
+      const out = pickDistractors(10, { count: 3, min: 0, max: 20, near: 1, rng });
+      expect(new Set(out).size).toBe(3);
+      expect(out).not.toContain(10);
+      for (const x of out) seen.add(x);
+    }
+    // Only 9 and 11 sit within ± 1 — the draw had to use the full range.
+    expect([...seen].some((x) => Math.abs(x - 10) > 1)).toBe(true);
+  });
+});

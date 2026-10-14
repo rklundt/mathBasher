@@ -45,7 +45,7 @@ Both folders are gitignored; only the final processed PNG in `public/assets/spri
 
 ## The `raw/processed/` convention
 
-After a raw file has been **successfully encoded AND verified**, the sprite-pipeline skill moves it from `.sprite-source/raw/<topic>/<file>` to `.sprite-source/raw/processed/<file>`. This keeps `raw/` showing only "what's pending" so re-runs of the pipeline don't re-encode files that already shipped.
+After a raw file has been **successfully encoded AND verified**, the sprite-pipeline workflow moves it from `.sprite-source/raw/<topic>/<file>` to `.sprite-source/raw/processed/<file>`. This keeps `raw/` showing only "what's pending" so re-runs of the pipeline don't re-encode files that already shipped.
 
 Don't manually delete files from `processed/` — they're the audit trail back to the original source. If you need to re-process a file (e.g. because the encoding profile changed), move it BACK from `processed/` to `raw/<topic>/`.
 

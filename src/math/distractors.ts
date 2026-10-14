@@ -13,6 +13,12 @@ export interface PickDistractorsOpts {
   max: number;
   /** Optional injected RNG for deterministic tests. Defaults to `Math.random`. */
   rng?: () => number;
+  /**
+   * Sprint 2.5.7 — draw only within ± this of the correct answer (clamped to
+   * [min, max]), so wrong answers look plausible ("17": 14, 15, 19 — not 3).
+   * Falls back to the whole range if the window is too small.
+   */
+  near?: number;
 }
 
 /**
@@ -48,6 +54,19 @@ export function pickDistractors(correct: number, opts: PickDistractorsOpts): num
     );
   }
 
+  // Sampling window: the whole range, or just around the answer (`near`).
+  let lo = min;
+  let hi = max;
+  if (opts.near !== undefined) {
+    const nLo = Math.max(min, correct - opts.near);
+    const nHi = Math.min(max, correct + opts.near);
+    if (nHi - nLo + 1 - (correct >= nLo && correct <= nHi ? 1 : 0) >= count) {
+      lo = nLo;
+      hi = nHi;
+    }
+  }
+  const windowSize = hi - lo + 1;
+
   const picked = new Set<number>();
   // Defense-in-depth: an adversarial / degenerate rng (e.g. one that always
   // returns 0) could otherwise make this loop never terminate. Cap iterations
@@ -56,8 +75,8 @@ export function pickDistractors(correct: number, opts: PickDistractorsOpts): num
   const maxIterations = count * 20 + 100;
   let iters = 0;
   while (picked.size < count && iters < maxIterations) {
-    // floor(rng() * rangeSize) -> int in [0, rangeSize-1]; offset by min.
-    const candidate = min + Math.floor(rng() * rangeSize);
+    // floor(rng() * windowSize) -> int in [0, windowSize-1]; offset by lo.
+    const candidate = lo + Math.floor(rng() * windowSize);
     iters++;
     if (candidate === correct) continue;
     picked.add(candidate);
