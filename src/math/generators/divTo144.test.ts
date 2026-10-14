@@ -67,27 +67,6 @@ describe('divTo144 generator', () => {
     expect(a).toEqual(b);
   });
 
-  describe('divisor distribution (uniform over factors)', () => {
-    it('each divisor value 2-12 appears within ±20% of the expected 1/11 share', () => {
-      const ITERATIONS = 11_000;
-      const EXPECTED_PER_FACTOR = ITERATIONS / 11;
-      const TOLERANCE = 0.2;
-      const rng = mulberry32(42);
-      const counts = new Array(13).fill(0); // index 2..12 used
-      const re = /^(\d+) ÷ (\d+) = \?$/;
-      for (let i = 0; i < ITERATIONS; i++) {
-        const q = divTo144.generate(rng);
-        const divisor = Number(re.exec(q.prompt)![2]);
-        counts[divisor]++;
-      }
-      for (let f = 2; f <= 12; f++) {
-        const ratio = counts[f] / EXPECTED_PER_FACTOR;
-        expect(
-          ratio,
-          `divisor=${f} appeared ${counts[f]} times (${(ratio * 100).toFixed(0)}% of expected)`,
-        ).toBeGreaterThan(1 - TOLERANCE);
-        expect(ratio).toBeLessThan(1 + TOLERANCE);
-      }
-    });
-  });
+  // The answer / factor mix (sprint 2.5.7 weights) is locked for every
+  // whole-number generator in `src/math/questionMix.test.ts`.
 });

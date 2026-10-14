@@ -71,30 +71,6 @@ describe('divTo100 generator', () => {
     expect(a).toEqual(b);
   });
 
-  // Documented contract: factor-uniform sampling. Each divisor value 2-10
-  // should appear roughly 1/9 of the time. Same shape as the multTo100
-  // distribution test.
-  describe('divisor distribution (uniform over factors)', () => {
-    it('each divisor value 2-10 appears within ±20% of the expected 1/9 share', () => {
-      const ITERATIONS = 9_000;
-      const EXPECTED_PER_FACTOR = ITERATIONS / 9;
-      const TOLERANCE = 0.2;
-      const rng = mulberry32(42);
-      const counts = new Array(11).fill(0); // index 2..10 used
-      const re = /^(\d+) ÷ (\d+) = \?$/;
-      for (let i = 0; i < ITERATIONS; i++) {
-        const q = divTo100.generate(rng);
-        const divisor = Number(re.exec(q.prompt)![2]);
-        counts[divisor]++;
-      }
-      for (let f = 2; f <= 10; f++) {
-        const ratio = counts[f] / EXPECTED_PER_FACTOR;
-        expect(
-          ratio,
-          `divisor=${f} appeared ${counts[f]} times (${(ratio * 100).toFixed(0)}% of expected)`,
-        ).toBeGreaterThan(1 - TOLERANCE);
-        expect(ratio).toBeLessThan(1 + TOLERANCE);
-      }
-    });
-  });
+  // The answer / factor mix (sprint 2.5.7 weights) is locked for every
+  // whole-number generator in `src/math/questionMix.test.ts`.
 });

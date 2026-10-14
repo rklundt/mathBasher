@@ -4,39 +4,64 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
 /**
  * Subtract-within-20 generator.
  *
- * Same shape as `subTo10` but with [0, 20] range. Minuend `a ∈ [0, 20]`,
- * subtrahend `b ∈ [0, a]` (no negatives). Result sampled uniformly from
- * [0, 20]; minuend then sampled uniformly from [result, 20]; subtrahend
- * computed as `a - result`.
+ * Minuend `a ∈ [0, 20]`, subtrahend `b ∈ [0, a]` (no negatives), drawn from
+ * a weighted table of every such problem (sprint 2.5.7,
+ * `src/math/questionMix.ts`):
  *
- * Distractors are 3 distinct integers from [0, 20] not equal to the result.
+ *  - answers spread across 1–18 (1–9 a bit more often than 10–18), with
+ *    no single answer — 10 included — standing out; 0 (x − x) and 19–20
+ *    (only possible as "− 0" / "− 1") are rare;
+ *  - among problems with the same answer: start from a teen number, and
+ *    crossing back over ten (13 − 5) is favoured; starting from 10 or less
+ *    (Subtract within 10's job), "− 0", "− 1" and "− 10" are rare.
+ *
+ * Tuning history:
+ *   v2.5.7: was uniform over results 0–20, then uniform minuend — a third
+ *     of all questions were "− 0" or "x − x", and the answers bunched up.
+ *
+ * Distractors are 3 distinct integers within ± `nearDistractorSpread` of the
+ * result (inside [0, 20]).
  */
-const RESULT_MIN = 0;
 const RESULT_MAX = 20;
 const MINUEND_MAX = 20;
+
+const mix = config.questionMix.subTo20;
+const problems: Operands[] = [];
+for (let a = 0; a <= MINUEND_MAX; a++) {
+  for (let b = 0; b <= a; b++) problems.push({ a, b, answer: a - b });
+}
+const TABLE = answerWeightedTable(
+  problems,
+  (p) => p.answer,
+  (r) => (r === 0 || r >= 19 ? mix.edgeAnswerWeight : r >= 10 ? mix.teenAnswerWeight : 1),
+  (p) => {
+    let w = p.a <= 10 ? mix.smallStartWeight : p.b > p.a - 10 ? mix.crossTenWeight : 1;
+    if (p.b === 0) w *= mix.minusZeroWeight;
+    else if (p.b === 1) w *= mix.minusOneWeight;
+    else if (p.b === 10) w *= mix.minusTenWeight;
+    return w;
+  },
+);
 
 const subTo20: QuestionGenerator = {
   id: 'sub-to-20',
   label: 'Subtract within 20',
   generate(rng = defaultRng): Question {
-    const resultRange = RESULT_MAX - RESULT_MIN + 1; // 21
-    const correctAnswer = RESULT_MIN + Math.floor(rng() * resultRange);
-
-    const aRange = MINUEND_MAX - correctAnswer + 1;
-    const a = correctAnswer + Math.floor(rng() * aRange);
-    const b = a - correctAnswer;
+    const { a, b, answer: correctAnswer } = pickWeighted(TABLE, rng);
 
     const distractorCount = config.layout.targetLanes - 1;
     const distractors = pickDistractors(correctAnswer, {
       count: distractorCount,
-      min: RESULT_MIN,
+      min: 0,
       max: RESULT_MAX,
+      near: config.questionMix.nearDistractorSpread,
       rng,
     });
 

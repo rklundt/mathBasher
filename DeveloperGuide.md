@@ -333,7 +333,7 @@ config.hero.fireCooldownMs            // 200
 config.layout.targetLanes             // 4
 ```
 
-**Code reads from `config`. Magic numbers in code are flagged at review.** Adding a new math type is a new key in `config.scoring.mathDifficulty` plus a new generator file — no engine changes.
+**Code reads from `config`. Magic numbers in code are flagged at review.** Adding a new math type is a new key in `config.scoring.mathDifficulty` and `config.round.mathTimeScale` (how much extra time it gets) plus a new generator file — no engine changes. Whole-number generators draw from weighted tables tuned in `config.questionMix` (`src/math/questionMix.ts`).
 
 ### Telemetry pattern
 
@@ -554,7 +554,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | What's planned / in-flight / shipped? | `.sprints/SPRINT-PLAN.md` (the catalog) + `.sprints/phase-X/<id>-<name>.md` (per-sprint specs). Made publicly visible in sprint 2.1.9. |
 | How do I add a new game mode? | `docs/adrs/ADR-0011-per-game-mode-dispatch.md` — 12-step checklist |
 | Where do gameplay numbers come from? | `src/core/config.ts` |
-| How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add multiplier to `config.ts` |
+| How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add its score multiplier (`config.scoring.mathDifficulty`) and time multiplier (`config.round.mathTimeScale`) to `config.ts` |
 | How do I add a new scene? | `src/game/scenes/<Name>Scene.ts`, register key in `src/core/sceneKeys.ts`, add to scene array in `src/main.ts` |
 | How does deployment work? | The **Deployment** section above — two Free Azure Static Web Apps (one per env), push-triggered (`development` → dev SWA, `main` → prod SWA), IaC in `/infra/`. ADR-0007 covered the earlier App Service plan, now superseded by the SWA decision. |
 | Why no React? | `docs/adrs/ADR-0001-tech-stack.md` |

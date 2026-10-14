@@ -1,6 +1,6 @@
 # Scoring
 
-Reference doc for mathBasher's scoring model — formula, multipliers, max-score grid, star ladders. This file **describes**; it does not define. The authoritative sources are `src/core/config.ts` (the `config.scoring` block) and `src/services/ScoreCalculator.ts` (per-question recording + star derivation). Per `CLAUDE.md`'s "keep SCORING.md in sync" rule, this file must be updated in the same commit that changes any of those sources.
+Reference doc for mathBasher's scoring model — formula, multipliers, max-score grid, star ladders. This file **describes**; it does not define. The authoritative sources are `src/core/config.ts` (the `config.scoring` block) and `src/services/ScoreCalculator.ts` (per-question recording + star derivation). Per the project's "keep SCORING.md in sync" rule, this file must be updated in the same commit that changes any of those sources.
 
 ---
 

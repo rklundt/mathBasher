@@ -45,7 +45,7 @@ interface RangeSpec {
  */
 const RANGES: Readonly<Record<MathId, RangeSpec>> = {
   'add-to-10': { min: 0, max: 10 },
-  'add-to-20': { min: 2, max: 20 },
+  'add-to-20': { min: 2, max: 24 }, // wrong answers may slip a little past 20 (sprint 2.5.7)
   'sub-to-10': { min: 0, max: 10 },
   'sub-to-20': { min: 0, max: 20 },
   'mult-to-100': { min: 4, max: 100 },

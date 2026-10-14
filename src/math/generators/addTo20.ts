@@ -4,60 +4,68 @@
 
 import { config } from '@/core/config';
 import { pickDistractors, shuffleAnswers } from '@/math/distractors';
+import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
 /**
  * Add-to-20 generator.
  *
- * Two addends `a, b` chosen from [1, 10] with `a + b ∈ [2, 20]`.
- * The SUM is sampled FIRST uniformly, then `a` is sampled uniformly from the
- * valid range that keeps both addends in [1, 10]. Algorithm:
- *   1. correctAnswer = uniform [2, 20]
- *   2. Valid `a` range = [max(1, sum-10), min(10, sum-1)]  (so b = sum-a ∈ [1, 10])
- *   3. a = uniform from that range
- *   4. b = correctAnswer - a
+ * Two addends `a, b ≥ 1` with `a + b ≤ 20` — teen addends included
+ * (12 + 5, 14 + 6) — drawn from a weighted table of every such problem
+ * (sprint 2.5.7, `src/math/questionMix.ts`):
  *
- * Like `addTo10`, this produces an answer-uniform distribution — every sum
- * value in [2, 20] gets equal exposure. Pedagogically correct for
- * "see every answer value" learning.
+ *  - sums 10–20 come up equally often; single-digit sums (2 + 2, 2 + 5)
+ *    are rare (about 1 in 8) — this tier is a step up from Add to 10;
+ *  - among problems with the same sum, two single digits that cross ten
+ *    (8 + 7) are favoured, and "+ 1" / "+ 10" are rarer.
  *
- * Choice of [1, 10] for addends (not [0, 10]):
- *   - 0 + N is trivially N — not interesting math practice for a kid
- *     who's already mastered "add to 10"; this tier should feel like
- *     a step up. addTo10 keeps 0 as a valid addend because at that
- *     level recognizing "0 + 5 = 5" is still useful learning.
+ * No "+ 0": 0 + N is trivially N — not practice for a kid who has already
+ * mastered Add to 10 (which keeps 0 as a valid addend).
  *
- * Distractors are 3 distinct integers from [2, 20] not equal to the correct
- * sum, then shuffled with the correct answer to length 4 (matches
- * `config.layout.targetLanes`).
+ * Tuning history:
+ *   v2.5.7: was uniform over sums 2–20 with both addends in [1, 10], so
+ *     8 of 19 answers (42%) were single digits.
+ *
+ * Distractors are 3 distinct integers within ± `nearDistractorSpread` of the
+ * sum, from [2, 20 + `distractorOverflow`] (21–24 are believable slips and
+ * stop a sum of 19 or 20 always being the biggest choice), then shuffled
+ * with the correct answer.
  */
 const SUM_MIN = 2;
 const SUM_MAX = 20;
 const ADDEND_MIN = 1;
-const ADDEND_MAX = 10;
+
+const mix = config.questionMix.addTo20;
+const problems: Operands[] = [];
+for (let a = ADDEND_MIN; a <= SUM_MAX - ADDEND_MIN; a++) {
+  for (let b = ADDEND_MIN; a + b <= SUM_MAX; b++) problems.push({ a, b, answer: a + b });
+}
+const TABLE = answerWeightedTable(
+  problems,
+  (p) => p.answer,
+  (sum) => (sum < 10 ? mix.singleDigitAnswerWeight : 1),
+  (p) => {
+    let w = p.a <= 9 && p.b <= 9 && p.answer > 10 ? mix.crossTenWeight : 1;
+    if (p.a === 1 || p.b === 1) w *= mix.plusOneWeight;
+    if (p.a === 10 || p.b === 10) w *= mix.plusTenWeight;
+    return w;
+  },
+);
 
 const addTo20: QuestionGenerator = {
   id: 'add-to-20',
   label: 'Add to 20',
   generate(rng = defaultRng): Question {
-    // Uniform-over-sum: correctAnswer ∈ [2, 20]
-    const sumRange = SUM_MAX - SUM_MIN + 1; // 19
-    const correctAnswer = SUM_MIN + Math.floor(rng() * sumRange);
-
-    // Constrain `a` so both addends stay in [1, 10].
-    // a ∈ [max(1, sum-10), min(10, sum-1)]
-    const aMin = Math.max(ADDEND_MIN, correctAnswer - ADDEND_MAX);
-    const aMax = Math.min(ADDEND_MAX, correctAnswer - ADDEND_MIN);
-    const aRange = aMax - aMin + 1;
-    const a = aMin + Math.floor(rng() * aRange);
-    const b = correctAnswer - a;
+    const { a, b, answer: correctAnswer } = pickWeighted(TABLE, rng);
 
     const distractorCount = config.layout.targetLanes - 1;
     const distractors = pickDistractors(correctAnswer, {
       count: distractorCount,
       min: SUM_MIN,
-      max: SUM_MAX,
+      // A little past 20, so a sum of 19 or 20 isn't always the biggest choice.
+      max: SUM_MAX + mix.distractorOverflow,
+      near: config.questionMix.nearDistractorSpread,
       rng,
     });
 

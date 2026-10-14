@@ -19,20 +19,20 @@ Every sprint file follows the same shape:
 2. **Summary:** one paragraph, what the sprint delivers
 3. **Stories:** discrete units of work, each with type, output, acceptance criteria
 4. **Definition of done:** checklist of what "complete" means
-5. **Notes for Claude Code:** standard guidance + sprint-specific gotchas
+5. **Implementation notes:** standard guidance + sprint-specific gotchas
 
 ## How to execute a sprint
 
 1. Read the sprint file from start to finish
-2. Run `/start-sprint <sprint-id>` in Claude Code to re-ground context and confirm readiness
+2. Kick off the sprint: re-read the plan and context and confirm readiness
 3. Create the sprint branch: `git checkout -b sprint/<id>-<short-title>` (e.g. `sprint/0.1-scaffold`)
 4. Work through stories in order; respect blocks. Commit per-story with messages like `0.1 story 4: central config file`.
 5. When a story requires human input (asset choice, gameplay tuning, sign-off), pause and ask
-6. Run `/wrap-sprint <sprint-id>` to produce a wrap-up review with a fix plan and test list (also runs the six-reviewer audit: InfoSec, Architect, Senior Dev, Support, DevOps, Legal — spawned in parallel)
+6. Wrap up the sprint: a pre-release review (security, architecture, code quality, kid-facing UX, DevOps, licensing) with a fix plan and test list
 7. Iterate until APPROVED
 8. Get human sign-off
 9. Open a PR from `sprint/<id>-...` to `main`; merge after review
-10. Run `/close-sprint <sprint-id>` to update `SPRINT-PLAN.md` and the sprint file's status
+10. Close the sprint: update `SPRINT-PLAN.md` and the sprint file's status
 
 ## How to create a new sprint
 
@@ -45,7 +45,7 @@ Every sprint file follows the same shape:
 
 | Type | Description | Output |
 | --- | --- | --- |
-| Claude Code preparation | Re-grounding, reading context | Confirmation |
+| Sprint kickoff | Re-grounding, reading context | Confirmation |
 | Code | Implementation | TypeScript file(s) |
 | Code/data definition | Configuration, schemas | TypeScript or JSON file |
 | Asset | Adding free CC0 assets to `/public/assets/` | File(s) committed |
@@ -74,7 +74,7 @@ Statuses tracked in `SPRINT-PLAN.md`:
 - **Reviewed** — wrap-up review approved
 - **Closed** — human signed off, sprint complete
 
-`/close-sprint` updates this automatically.
+Closing a sprint updates this.
 
 ## What if a sprint is wrong?
 
