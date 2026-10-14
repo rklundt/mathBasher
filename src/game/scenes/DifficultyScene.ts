@@ -38,7 +38,9 @@ interface SpeedDisplay {
  * "Speed" since they're really controlling enemy descent / drift rate.
  */
 function speedSectionTitleFor(gameId: GameId): string {
-  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' ? 'Difficulty' : 'Speed';
+  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' || gameId === 'space-shooter'
+    ? 'Difficulty'
+    : 'Speed';
 }
 
 /**
@@ -104,6 +106,13 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       const { padCount } = config.frogSplash.speed[key];
       const countdownSec = scaledSeconds(config.frogSplash.speed[key].countdownSec, mathId);
       return { label: labels[key], subtitle: `${padCount} lily pads · ${countdownSec}s` };
+    }
+    case 'space-shooter': {
+      // Sprint 2.6 — difficulty = ships in the window + time per question (+ flight speed).
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { shipCount } = config.spaceShooter.speed[key];
+      const countdownSec = scaledSeconds(config.spaceShooter.speed[key].countdownSec, mathId);
+      return { label: labels[key], subtitle: `${shipCount} ships · ${countdownSec}s` };
     }
   }
 }
