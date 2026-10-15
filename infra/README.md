@@ -65,8 +65,10 @@ What the Cloudflare proxy means for the SWAs:
 - **Security headers:** HSTS comes from Cloudflare; the Content-Security-Policy
   (and nosniff / referrer / frame options) come from `staticwebapp.config.json`
   — one place per header. The CSP allows only the site itself, Google Fonts,
-  and `data:`/`blob:` images and audio (Phaser). It blocks Cloudflare's
-  injected bot-detection script, which the game doesn't need. If a browser
+  `data:`/`blob:` images and audio (Phaser), and Cloudflare Web Analytics
+  (`static.cloudflareinsights.com` script, `cloudflareinsights.com` beacon).
+  It blocks Cloudflare's injected inline bot-detection snippet, which the
+  game doesn't need. If a browser
   telemetry endpoint is ever added (e.g. Application Insights), add its hosts
   to `connect-src`.
 
