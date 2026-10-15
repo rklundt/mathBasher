@@ -126,20 +126,20 @@ describe('computeStackSlots', () => {
 describe('computeRowSlots', () => {
   it('centres a row of three secondary buttons with the gap between them', () => {
     const { secondaryW, secondaryH } = config.layout.button;
-    const slots = computeRowSlots(640, 550, 16, 3);
+    const slots = computeRowSlots(640, 550, config.layout.button.rowGapPx, 3);
     expect(slots).toHaveLength(3);
     expect(slots[1]!.x).toBe(640);
-    expect(slots[2]!.x - slots[1]!.x).toBe(secondaryW + 16);
+    expect(slots[2]!.x - slots[1]!.x).toBe(secondaryW + config.layout.button.rowGapPx);
     for (const s of slots) expect([s.y, s.width, s.height]).toEqual([550, secondaryW, secondaryH]);
   });
 
   it('fits the 1280-wide canvas', () => {
-    const slots = computeRowSlots(640, 550, 16, 3);
+    const slots = computeRowSlots(640, 550, config.layout.button.rowGapPx, 3);
     expect(slots[0]!.x - slots[0]!.width / 2).toBeGreaterThan(0);
     expect(slots[2]!.x + slots[2]!.width / 2).toBeLessThan(1280);
   });
 
   it('returns nothing for an empty row', () => {
-    expect(computeRowSlots(640, 550, 16, 0)).toEqual([]);
+    expect(computeRowSlots(640, 550, config.layout.button.rowGapPx, 0)).toEqual([]);
   });
 });
