@@ -128,6 +128,9 @@ export class LoadingScene extends Phaser.Scene {
       case 'frog-splash':
         caption = 'Loading Frog Splash…';
         break;
+      case 'space-shooter':
+        caption = 'Loading Space Shooter…';
+        break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }

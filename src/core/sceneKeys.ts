@@ -53,7 +53,8 @@ export const SceneKeys = {
    * Number Climb — sprint 2.2 third game mode. Vertical climb; 12
    * floors; kid taps the correct rung at each floor. Difficulty
    * controls rung count (2/3/4); Speed controls cumulative timer
-   * budget (250s/180s/120s). 3 cumulative lives (sprint 2.5.2 — every
+   * budget (300s/216s/144s since sprint 2.6.1: the shared per-question
+   * base × the floors). 3 cumulative lives (sprint 2.5.2 — every
    * wrong pick costs a life; round ends when all 3 are spent or the
    * timer hits 0). Stars height-based.
    */
@@ -72,6 +73,12 @@ export const SceneKeys = {
    * comes back with fresh pads.
    */
   FrogSplash: 'frog-splash',
+  /**
+   * Space Shooter — sprint 2.6 sixth game mode. First-person cockpit: alien
+   * ships carrying the answers fly around the window; tap the right one.
+   * A wrong ship or a timeout costs one of 3 lives.
+   */
+  SpaceShooter: 'space-shooter',
   /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
@@ -116,5 +123,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.MathALotl;
     case 'frog-splash':
       return SceneKeys.FrogSplash;
+    case 'space-shooter':
+      return SceneKeys.SpaceShooter;
   }
 }

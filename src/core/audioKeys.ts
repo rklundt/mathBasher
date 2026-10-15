@@ -242,6 +242,11 @@ export const MusicKeys = {
    * the river ambience via `AUDIO_GAIN`.
    */
   PondLoop1: 'loop-6',
+  /**
+   * Space Shooter gameplay loop (sprint 2.6). 30 s stereo track, encoded
+   * `--kind music --no-trim` for a clean loop seam. No ambience under it.
+   */
+  CockpitLoop1: 'loop-7',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -273,6 +278,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'number-climb': MusicKeys.EscapeLoop1,
   'math-a-lotl': MusicKeys.ReefLoop1,
   'frog-splash': MusicKeys.PondLoop1,
+  'space-shooter': MusicKeys.CockpitLoop1,
 };
 
 /**
@@ -296,6 +302,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'math-a-lotl': [MidgroundKeys.Underwater1, MidgroundKeys.Underwater2],
   // Sprint 2.5.6 — brook + crickets, layered.
   'frog-splash': [MidgroundKeys.RiverBrook1, MidgroundKeys.RiverCrickets1],
+  // Sprint 2.6 — music only (the lasers and explosions are the action).
+  'space-shooter': [],
 };
 
 /**
@@ -414,6 +422,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === MidgroundKeys.RiverBrook1 || key === MidgroundKeys.RiverCrickets1) return 'game:frog-splash';
   if (key === MusicKeys.PondLoop1) return 'game:frog-splash';
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
+  // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
+  if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
   return 'eager';
 }
 

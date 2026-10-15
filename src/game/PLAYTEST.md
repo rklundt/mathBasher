@@ -315,7 +315,7 @@ Phone in landscape, then desktop.
 Phone in landscape, then desktop.
 
 - [ ] Game Select shows five tiles (third row centred: Frog Splash); the title clears the grid.
-- [ ] Difficulty reads "2 lily pads · 20s", "3 lily pads · 15s", "4 lily pads · 10s" over a dimmed river backdrop.
+- [ ] Difficulty reads "2 lily pads · 25s", "3 lily pads · 18s", "4 lily pads · 12s" over a dimmed river backdrop.
 - [ ] One frog per round; over several rounds you see green, blue and orange. It blinks while waiting.
 - [ ] Q1 shows "👆 Tap the right lily pad!"; it goes away on the first hop.
 - [ ] Rows drift in alternating directions; the active row shows numbers, the rows ahead are plain pads.
@@ -343,6 +343,34 @@ Any game mode — the math is shared.
 - [ ] Subtract within 20, a full round: answers all over 1–18; "− 10" and "= 10" rare; "− 0" / "x − x" almost never.
 - [ ] Subtract within 10: few "− 0" or "x − x".
 - [ ] Add / Subtract to 20: the wrong answers are near the right one; with a sum of 19 or 20 the right answer isn't always the biggest choice.
+
+## Space Shooter (sprint 2.6)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows six tiles in three rows of two; Space Shooter is bottom right.
+- [ ] Difficulty reads "3 ships · 25s", "4 ships · 18s", "5 ships · 12s" for Add to 10 (longer for harder math) over a dimmed cockpit backdrop.
+- [ ] In game: the space view behind the window, the cockpit frame in front; the HUD readable over the cockpit top.
+- [ ] Q1 shows "👆 Tap the ship with the right answer!" over the dashboard; it goes away on the first shot.
+- [ ] Ships warp in (can't be shot until they're fully in), fly curvy paths, bounce off the window frame and each other, never go behind the cockpit frame — even a wide answer like "1 11/12" in a bottom corner stays whole.
+- [ ] Every ship in a wave looks different; answers sit in the dark porthole. Fractions on Hard: mixed numbers ("1 11/12") sit on a dark display pill and read clearly.
+- [ ] Tap the right ship → lasers from both bottom corners, explosion, "+points", the others warp away, next question.
+- [ ] Tap a wrong ship → shield flash, "Shields up! Try again!", a Lives dot turns red, that ship warps away; the question stays. Tapping again right away does nothing until the shield flash ends (no second life lost).
+- [ ] Let the timer run out → red bolts from the ships, cracks on the glass, red flash + shake, "Out of time! You got blasted!", a life lost, same question with fresh ships.
+- [ ] Third life lost → "Out of lives!" → Game Over (stars by correct answers).
+- [ ] Hard has 5 ships; keys 1–5 pick ships left to right.
+- [ ] Taps on the cockpit around the window do nothing.
+- [ ] Music plays (the new loop); lasers, hits, wrong and timeout sounds play.
+- [ ] Pause freezes the ships, lasers and timer.
+- [ ] Play Again replays Space Shooter.
+
+## Fraction time + Change Game (sprint 2.6.1)
+
+- [ ] Every timed game shows the same base times for Add to 10: 25s / 18s / 12s (Space Escape: "5:00 / 3:36 / 2:24 timer"). Alien Shoot shows no time.
+- [ ] Difficulty screen with Add Fractions: times are 3× those (e.g. Frog Splash "2 lily pads · 75s / 54s / 36s").
+- [ ] Easy + Add Fractions in Alien Shoot (aliens take ~48 s to fall) and Space Escape (15:00 run): does it feel calm or just slow / boring?
+- [ ] Game Over (any game): Play Again on top; Change Difficulty · Change Game · Main Menu in a row below, clear of the "New High Score!" badge; keyboard Tab order is Play Again → Change Difficulty → Change Game → Main Menu.
+- [ ] Change Game → Game Select; picking a game shows the same math type and difficulty still selected.
 
 ## Logging the run
 

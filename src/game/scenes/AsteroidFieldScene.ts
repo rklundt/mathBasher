@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, isTouchPrimary, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
+import { config, isTouchPrimary, questionSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -49,7 +49,7 @@ import { text } from '@/game/ui/typography';
  *      asteroid → next question. Hit a wrong one → penalty flag for
  *      half-points-on-eventual-correct.
  *   6. Each question has a HARD countdown timer (config.asteroidField
- *      .speed.{slow,medium,fast}.countdownSec). Timeout = wrong answer
+ *      round.baseQuestionSec, shared by every timed game). Timeout = wrong answer
  *      + next question.
  *   7. 20 questions → endRound → GameOverScene (unchanged).
  *
@@ -246,7 +246,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       bottomBound: this.bottomBound,
       driftPxPerSec: speedCfg.driftPxPerSec,
       // Sprint 2.5.7 — harder math gets more time per question.
-      countdownSec: scaledSeconds(speedCfg.countdownSec, this.mathId),
+      countdownSec: questionSeconds(this.speed, this.mathId),
     });
 
     // Round controller: anti-repeat + question loop + score (same as GameScene).

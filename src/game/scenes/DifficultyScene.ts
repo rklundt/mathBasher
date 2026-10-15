@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
-import { config, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
+import { config, questionSeconds, roundSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
 import { Settings, type GameId } from '@/services/Settings';
 import { generators, getImplementedIds } from '@/math/registry';
@@ -38,7 +38,9 @@ interface SpeedDisplay {
  * "Speed" since they're really controlling enemy descent / drift rate.
  */
 function speedSectionTitleFor(gameId: GameId): string {
-  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' ? 'Difficulty' : 'Speed';
+  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' || gameId === 'space-shooter'
+    ? 'Difficulty'
+    : 'Speed';
 }
 
 /**
@@ -68,14 +70,14 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       return map[key];
     }
     case 'asteroid-field': {
-      const countdownSec = scaledSeconds(config.asteroidField.speed[key].countdownSec, mathId);
+      const countdownSec = questionSeconds(key, mathId);
       const labels: Record<SpeedKey, string> = { slow: 'Slow', medium: 'Medium', fast: 'Fast' };
       return { label: labels[key], subtitle: `${countdownSec}s per question` };
     }
     case 'number-climb': {
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const rungs = RUNGS_PER_DIFFICULTY[key];
-      const totalSec = scaledSeconds(config.numberClimb.speed[key].totalTimeSec, mathId);
+      const totalSec = roundSeconds(key, mathId, config.numberClimb.questionsPerRound);
       // Sprint 2.4 story 0 — "N floors" lifted OUT of the per-difficulty
       // subtitle (it was constant across all three difficulties and
       // pushed each subtitle wider than its tile, causing visual overlap
@@ -95,15 +97,22 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       // Sprint 2.5.4 — difficulty = bubble count + rise speed + countdown.
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const { bubbleCount } = config.mathALotl.speed[key];
-      const countdownSec = scaledSeconds(config.mathALotl.speed[key].countdownSec, mathId);
+      const countdownSec = questionSeconds(key, mathId);
       return { label: labels[key], subtitle: `${bubbleCount} bubbles · ${countdownSec}s` };
     }
     case 'frog-splash': {
       // Sprint 2.5.6 — difficulty = pads per row + time per hop (+ drift speed).
       const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
       const { padCount } = config.frogSplash.speed[key];
-      const countdownSec = scaledSeconds(config.frogSplash.speed[key].countdownSec, mathId);
+      const countdownSec = questionSeconds(key, mathId);
       return { label: labels[key], subtitle: `${padCount} lily pads · ${countdownSec}s` };
+    }
+    case 'space-shooter': {
+      // Sprint 2.6 — difficulty = ships in the window + time per question (+ flight speed).
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { shipCount } = config.spaceShooter.speed[key];
+      const countdownSec = questionSeconds(key, mathId);
+      return { label: labels[key], subtitle: `${shipCount} ships · ${countdownSec}s` };
     }
   }
 }

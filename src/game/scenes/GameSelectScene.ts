@@ -13,9 +13,9 @@ import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
- * Game-mode selection. Five tiles as of sprint 2.5.6 (Alien Shoot,
- * Asteroid Field, Space Escape!, Math-a-lotl, Frog Splash): a 2×2 grid
- * plus a centred third row. A sixth game fills the third row.
+ * Game-mode selection. Six tiles as of sprint 2.6 (Alien Shoot, Asteroid
+ * Field, Space Escape!, Math-a-lotl, Frog Splash, Space Shooter): three
+ * rows of two.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
@@ -37,9 +37,9 @@ export class GameSelectScene extends Phaser.Scene {
     // the affordance is in the same spot every screen.
     createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
-    // Sprint 2.5.6 — five games: three rows of tiles (2 + 2 + 1 centred),
-    // 120 tall so the grid stays clear of the title above and Back below.
-    // Columns at cx ± (TILE_W + TILE_GAP) / 2; col 0 = centred.
+    // Sprint 2.6 — six games: three rows of two tiles, 120 tall so the grid
+    // stays clear of the title above and Back below. Columns at
+    // cx ± (TILE_W + TILE_GAP) / 2.
     const TILE_W = 440;
     const TILE_H = 120;
     const TILE_GAP = 14;
@@ -69,14 +69,15 @@ export class GameSelectScene extends Phaser.Scene {
       });
 
     // Alien Shoot (the original lane-drop gameplay), Asteroid Field
-    // (sprint 2.1 free-aim), Space Escape! (sprint 2.2 climb), and
-    // Math-a-lotl (sprint 2.5.4 underwater bubbles), and Frog Splash (sprint
-    // 2.5.6 river hop).
+    // (sprint 2.1 free-aim), Space Escape! (sprint 2.2 climb), Math-a-lotl
+    // (sprint 2.5.4 underwater bubbles), Frog Splash (sprint 2.5.6 river
+    // hop) and Space Shooter (sprint 2.6 cockpit window).
     const alienShoot = tile(-1, -1, 'Alien Shoot', 'Aliens carry answers. Shoot the right one.', 'alien-shoot');
     const asteroidField = tile(1, -1, 'Asteroid Field', 'Aim at floating asteroids. Beat the timer.', 'asteroid-field');
     const numberClimb = tile(-1, 0, 'Space Escape!', 'Climb to escape the burning station.', 'number-climb');
     const mathALotl = tile(1, 0, 'Math-a-lotl', 'Help the axolotl catch the right bubble.', 'math-a-lotl');
-    const frogSplash = tile(0, 1, 'Frog Splash', 'Hop across the river on the right lily pads.', 'frog-splash');
+    const frogSplash = tile(-1, 1, 'Frog Splash', 'Hop across the river on the right lily pads.', 'frog-splash');
+    const spaceShooter = tile(1, 1, 'Space Shooter', 'From your cockpit, blast the right alien ship.', 'space-shooter');
 
     const back = new PlaceholderButton({
       scene: this,
@@ -88,7 +89,7 @@ export class GameSelectScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    new KeyboardNavigator(this, [alienShoot, asteroidField, numberClimb, mathALotl, frogSplash, back]);
+    new KeyboardNavigator(this, [alienShoot, asteroidField, numberClimb, mathALotl, frogSplash, spaceShooter, back]);
 
     // Esc returns to the previous step in the menu stack.
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));

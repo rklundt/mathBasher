@@ -507,6 +507,12 @@ export const BgSpriteKeys = {
    * game scene draws its own scrolling river on top.
    */
   FrogSplash: 'frog-splash',
+  /**
+   * Space Shooter menu backdrop (sprint 2.6) — the cosmos behind the
+   * cockpit, dimmed, processed by `scripts/sprites/cockpit.mjs` from the
+   * owner's images. The game scene draws the full-brightness view itself.
+   */
+  SpaceShooter: 'space-shooter',
 } as const;
 
 /**
@@ -566,6 +572,31 @@ export const POND_PAD_KEYS = [
   PondSpriteKeys.Pad7,
   PondSpriteKeys.Pad8,
 ] as const;
+
+/**
+ * Sprint 2.6 — Space Shooter scenery (`scripts/sprites/cockpit.mjs`): the
+ * view out of the window and the cockpit around it (1.5× the design
+ * canvas, drawn at 1280×720). Deferred to the game's bundle.
+ */
+export const SpaceShooterSpriteKeys = {
+  Cosmos: 'space-cosmos',
+  Cockpit: 'cockpit',
+} as const;
+export type SpaceShooterSpriteKey = (typeof SpaceShooterSpriteKeys)[keyof typeof SpaceShooterSpriteKeys];
+
+/**
+ * The 20 alien ships (`scripts/sprites/alienships.mjs` — source of truth
+ * for this geometry): COLS × ROWS frames of `frame` px. `porthole` is
+ * the dark answer window in sheet px (centre + radius incl. its rim).
+ */
+export const ALIEN_SHIP_SHEET = {
+  key: 'alien-ships',
+  frame: 240,
+  cols: 5,
+  rows: 4,
+  count: 20,
+  porthole: { x: 120, y: 132, r: 53 },
+} as const;
 
 /** The splash animation sheet (`pond.mjs`). */
 export const SPLASH_SHEET = { key: 'pond-splash', frameWidth: 200, frameHeight: 150, frames: 4 } as const;
@@ -739,6 +770,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'number-climb': BgSpriteKeys.Nebula,
   'math-a-lotl': BgSpriteKeys.MathALotl,
   'frog-splash': BgSpriteKeys.FrogSplash,
+  'space-shooter': BgSpriteKeys.SpaceShooter,
 };
 
 /**
@@ -754,6 +786,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'number-climb': { stars: false, bottomFade: true },
   'math-a-lotl': { stars: false, bottomFade: false },
   'frog-splash': { stars: false, bottomFade: false },
+  'space-shooter': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1035,6 +1068,27 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameHeight: SPLASH_SHEET.frameHeight,
     scope: 'game:frog-splash',
   },
+  // Sprint 2.6 — Space Shooter ships (one sheet), cockpit + cosmos.
+  {
+    kind: 'hero',
+    key: ALIEN_SHIP_SHEET.key,
+    url: spritePath('hero', ALIEN_SHIP_SHEET.key),
+    frameWidth: ALIEN_SHIP_SHEET.frame,
+    frameHeight: ALIEN_SHIP_SHEET.frame,
+    scope: 'game:space-shooter',
+  },
+  {
+    kind: 'hero',
+    key: SpaceShooterSpriteKeys.Cockpit,
+    url: spritePath('hero', SpaceShooterSpriteKeys.Cockpit),
+    scope: 'game:space-shooter',
+  },
+  {
+    kind: 'bg',
+    key: SpaceShooterSpriteKeys.Cosmos,
+    url: spritePath('bg', SpaceShooterSpriteKeys.Cosmos),
+    scope: 'game:space-shooter',
+  },
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -1122,4 +1176,5 @@ export type NonAlienSpriteKey =
   | ReefSpriteKey
   | ReefSheetKey
   | FrogSpriteKey
-  | PondSpriteKey;
+  | PondSpriteKey
+  | SpaceShooterSpriteKey;

@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
+import { config, questionSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
@@ -443,7 +443,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.currentQuestion = question;
     this.usedWrongCatch = false;
     // Sprint 2.5.7 — harder math gets more time per question.
-    this.clock.start(scaledSeconds(this.cfg.speed[this.speed].countdownSec, this.mathId) * 1000);
+    this.clock.start(questionSeconds(this.speed, this.mathId) * 1000);
     this.spawnWave();
     if (this.roundController.questionIndex === 0) this.showTapHint();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());

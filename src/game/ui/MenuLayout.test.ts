@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 // Imports the pure-geometry module directly — does NOT pull Phaser
 // into the test's import graph (MenuLayout.ts itself imports
 // PlaceholderButton -> Phaser, which would crash without a DOM env).
-import { computeStackSlots } from '@/game/ui/menuLayoutGeometry';
+import { computeRowSlots, computeStackSlots } from '@/game/ui/menuLayoutGeometry';
 import { config } from '@/core/config';
 
 /**
@@ -120,5 +120,26 @@ describe('computeStackSlots', () => {
     expect(slots[1].y).toBe(360);
     expect(slots[2].y).toBe(428);
     expect(slots.every((s) => s.width === SEC_W)).toBe(true);
+  });
+});
+
+describe('computeRowSlots', () => {
+  it('centres a row of three secondary buttons with the gap between them', () => {
+    const { secondaryW, secondaryH } = config.layout.button;
+    const slots = computeRowSlots(640, 550, config.layout.button.rowGapPx, 3);
+    expect(slots).toHaveLength(3);
+    expect(slots[1]!.x).toBe(640);
+    expect(slots[2]!.x - slots[1]!.x).toBe(secondaryW + config.layout.button.rowGapPx);
+    for (const s of slots) expect([s.y, s.width, s.height]).toEqual([550, secondaryW, secondaryH]);
+  });
+
+  it('fits the 1280-wide canvas', () => {
+    const slots = computeRowSlots(640, 550, config.layout.button.rowGapPx, 3);
+    expect(slots[0]!.x - slots[0]!.width / 2).toBeGreaterThan(0);
+    expect(slots[2]!.x + slots[2]!.width / 2).toBeLessThan(1280);
+  });
+
+  it('returns nothing for an empty row', () => {
+    expect(computeRowSlots(640, 550, config.layout.button.rowGapPx, 0)).toEqual([]);
   });
 });

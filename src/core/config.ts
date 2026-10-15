@@ -29,6 +29,19 @@ export const config = {
      */
     starThresholds: [8, 10, 11] as const,
     /**
+     * Sprint 2.6.1 — the time to answer ONE question at each difficulty,
+     * shared by every timed game (Asteroid Field, Math-a-lotl, Frog Splash,
+     * Space Shooter; Space Escape gets this × its floors as one round
+     * timer). Then stretched by `mathTimeScale` for harder math. Read it
+     * through `questionSeconds()` / `roundSeconds()`.
+     *
+     * New games use this base too, unless a game's time limit isn't a
+     * clock — Alien Shoot's limit is how fast the aliens fall, and keeps
+     * its own speeds (`scoring.speed.*.descentPxPerSec`), still slowed
+     * by `mathTimeScale`.
+     */
+    baseQuestionSec: { slow: 25, medium: 18, fast: 12 },
+    /**
      * Sprint 2.5.7 — harder math gets more time, in every game mode. Each
      * game's time limit for the chosen difficulty (per-question countdown,
      * Space Escape's round timer) is multiplied by this, and Alien Shoot's
@@ -49,8 +62,10 @@ export const config = {
       'div-to-100': 1.5,
       'div-to-144': 1.5,
       mixed: 1.5,
-      'add-fractions': 2.0,
-      'subtract-fractions': 2.0,
+      // Sprint 2.6.1 — 2.0 → 3.0 after playtest: adding / subtracting
+      // fractions needs much more time than whole-number math at every level.
+      'add-fractions': 3.0,
+      'subtract-fractions': 3.0,
     },
     /**
      * Anti-repeat sliding window — GameScene tracks the last N prompt
@@ -116,9 +131,10 @@ export const config = {
    * across any two game modes produce the same max score. Locked by the
    * parity tests in `ScoreCalculator.test.ts`.
    *
-   * Per-game blocks below (`asteroidField.speed`, `numberClimb.speed`)
-   * carry difficulty-related game-mechanic tuning (countdown / drift /
-   * timer), NOT score tuning. They cross-reference back to this block.
+   * Per-game blocks below (`asteroidField.speed`, `frogSplash.speed`, …)
+   * carry difficulty-related game-mechanic tuning (drift, counts; time per
+   * question is the shared `round.baseQuestionSec`), NOT score tuning.
+   * They cross-reference back to this block.
    * Adding a new math type or scoring multiplier — only edit here.
    */
   scoring: {
@@ -325,9 +341,9 @@ export const config = {
    */
   asteroidField: {
     /**
-     * Asteroid drift speed (px/s) + per-question countdown (seconds) per
-     * Speed selector. The countdown is a HARD timeout — when it hits 0,
-     * the question is marked wrong and the wave advances.
+     * Asteroid drift speed (px/s) per Speed selector. The countdown is a
+     * HARD timeout — when it hits 0, the question is marked wrong and the
+     * wave advances.
      *
      * First-pass values; tune in playtest. Faster speed = more drift AND
      * less time. Slower speed = more aim time + slower targets.
@@ -335,10 +351,11 @@ export const config = {
      * Game-mechanic tuning only — score multipliers live in
      * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
      */
+    // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1).
     speed: {
-      slow: { driftPxPerSec: 30, countdownSec: 25 },
-      medium: { driftPxPerSec: 50, countdownSec: 18 },
-      fast: { driftPxPerSec: 75, countdownSec: 12 },
+      slow: { driftPxPerSec: 30 },
+      medium: { driftPxPerSec: 50 },
+      fast: { driftPxPerSec: 75 },
     },
     /**
      * Number of asteroids per wave. Matches `layout.targetLanes` (4) so
@@ -481,27 +498,16 @@ export const config = {
      * Total floors per round. Stars + GameOverScene's "Pass" both
      * pivot off reaching this. Sprint 2.2 wrap-up playtest: 10 felt
      * short, 20 (the global default for arcade modes) too long — 12
-     * landed as the sweet spot. Cumulative timer values below are
-     * UNCHANGED across the 10 → 12 bump; the slight per-floor time
-     * pressure increase IS the difficulty bump for the extra two
-     * floors. computeClimbStars scales proportionally (40 % / 70 % /
+     * landed as the sweet spot. Since sprint 2.6.1 the round timer is the
+     * shared per-question base × these floors (`roundSeconds()`), so changing
+     * the floor count changes the timer too. computeClimbStars scales proportionally (40 % / 70 % /
      * 100 % of totalFloors): for 12 → 4 / 8 / 12.
      */
     questionsPerRound: 12,
-    /**
-     * Cumulative timer budget per Difficulty (which doubles as Speed
-     * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
-     * 120s — before `round.mathTimeScale` stretches them for harder math. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
-     * ends the round.
-     *
-     * Game-mechanic tuning only — score multipliers live in
-     * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
-     */
-    speed: {
-      slow: { totalTimeSec: 250 },
-      medium: { totalTimeSec: 180 },
-      fast: { totalTimeSec: 120 },
-    },
+    // Cumulative round timer: the shared `round.baseQuestionSec` × the
+    // floors (`roundSeconds()`, sprint 2.6.1 — was 250 / 180 / 120 s;
+    // now 300 / 216 / 144 s before `round.mathTimeScale`). A wrong rung
+    // deducts `wrongRungTimePenaltySec`; timer-to-0 ends the round.
     /**
      * Seconds removed from the cumulative timer on each wrong rung
      * pick. Mirrors `asteroidField.wrongShotCountdownPenaltySec` for
@@ -608,9 +614,10 @@ export const config = {
     /** Waterline as a fraction of canvas height — must match `SKY_FRAC` in `scripts/sprites/reef.mjs`. */
     waterlineFrac: 0.25,
     speed: {
-      slow: { bubbleCount: 3, risePxPerSec: 42, countdownSec: 25 },
-      medium: { bubbleCount: 4, risePxPerSec: 58, countdownSec: 18 },
-      fast: { bubbleCount: 4, risePxPerSec: 80, countdownSec: 12 },
+      // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1).
+      slow: { bubbleCount: 3, risePxPerSec: 42 },
+      medium: { bubbleCount: 4, risePxPerSec: 58 },
+      fast: { bubbleCount: 4, risePxPerSec: 80 },
     },
     bubble: {
       diameterPx: 104,
@@ -685,9 +692,10 @@ export const config = {
   frogSplash: {
     maxLives: 3,
     speed: {
-      slow: { padCount: 2, countdownSec: 20, driftPxPerSec: 40 },
-      medium: { padCount: 3, countdownSec: 15, driftPxPerSec: 60 },
-      fast: { padCount: 4, countdownSec: 10, driftPxPerSec: 85 },
+      // Time per hop: the shared `round.baseQuestionSec` (sprint 2.6.1; was 20 / 15 / 10).
+      slow: { padCount: 2, driftPxPerSec: 40 },
+      medium: { padCount: 3, driftPxPerSec: 60 },
+      fast: { padCount: 4, driftPxPerSec: 85 },
     },
     /** Vertical distance between pad rows (world px). */
     rowSpacingPx: 150,
@@ -749,6 +757,85 @@ export const config = {
     },
     anim: { splashFps: 12, flyFps: 18 },
     /** "Splash!" note floating up from a pad; kept this far in from the screen edges. */
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+  },
+  /**
+   * Sprint 2.6 — Space Shooter. The kid sits in a cockpit looking out the
+   * window; alien ships carrying the answers fly around in it on curvy
+   * paths, bouncing off the window frame and each other. Tap the ship with
+   * the right answer: lasers fire, it explodes, next question. A wrong ship
+   * shrugs the lasers off with a shield, warps away, and costs a life; the
+   * question stays. Time runs out → the ships blast the cockpit, a life is
+   * lost and the same question comes back with fresh ships. 3 lives.
+   * Speed key doubles as the difficulty: 3 / 4 / 5 ships.
+   */
+  spaceShooter: {
+    maxLives: 3,
+    speed: {
+      // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1; was 20 / 15 / 12).
+      slow: { shipCount: 3, flyPxPerSec: 60 },
+      medium: { shipCount: 4, flyPxPerSec: 85 },
+      fast: { shipCount: 5, flyPxPerSec: 115 },
+    },
+    /**
+     * Where ship CENTRES may fly (design px): between `top` and `bottom`,
+     * and left / right of the window's measured edge (`windowEdge`, rows of
+     * [y, left, right] printed by `pnpm sprite:cockpit --measure` and checked
+     * against the shipped image by `spaceShooterAssets.test.ts`; the opening is
+     * rounded and tapers towards the bottom). `edgeHalfWidthPx` is half the
+     * widest ship-plus-answer-pill, checked over `edgeReachPx` above and
+     * below, so a ship and its label never tuck behind the cockpit frame.
+     */
+    window: { top: 176, bottom: 540 },
+    windowEdge: [
+      [120, 304, 983], [140, 275, 1014], [160, 256, 1034], [180, 241, 1046], [200, 230, 1053],
+      [220, 225, 1057], [240, 223, 1060], [260, 222, 1061], [280, 224, 1061], [300, 229, 1059],
+      [320, 234, 1054], [340, 239, 1049], [360, 245, 1042], [380, 250, 1036], [400, 256, 1030],
+      [420, 262, 1024], [440, 267, 1018], [460, 273, 1012], [480, 279, 1006], [500, 286, 1000],
+      [520, 291, 994], [540, 297, 988], [560, 303, 983], [580, 313, 972], [600, 331, 953],
+    ] as ReadonlyArray<readonly [number, number, number]>,
+    edgeHalfWidthPx: 76,
+    edgeReachPx: 40,
+    /** Taps outside this (the cockpit around the window) are ignored. */
+    tapWindow: { left: 222, right: 1062, top: 108, bottom: 615 },
+    ship: {
+      displayPx: 132,
+      /** Collision / tap radius as a fraction of displayPx (the hull, not the halo). */
+      radiusFrac: 0.42,
+      tapSlop: 1.2,
+      /** How fast a ship's heading can change (rad/s), and how quickly that turn rate wanders. */
+      maxTurnRadPerSec: 1.4,
+      turnJitterPerSec: 3.0,
+      /** Gentle up / down bob and a lean into turns, for a "flying" feel. */
+      bobPx: 5,
+      bobMs: 1100,
+      leanDeg: 8,
+      /** Spawn spacing: centres at least this × radius apart. */
+      spawnGapFrac: 2.3,
+      warpInMs: 320,
+      warpOutMs: 260,
+      /** A wrong ship's shield flash; it warps away (and taps unlock) after this. */
+      shieldMs: 380,
+    },
+    label: {
+      /** Widest a label may get before it shrinks (design px, at ship scale 1). */
+      maxWidthPx: 118,
+      /** A label wider than the porthole by this much gets a dark "display" pill behind it. */
+      pillPadPx: 12,
+      pillHeightPadPx: 10,
+    },
+    laser: {
+      /** Cannon muzzles at the bottom corners of the window (design px). */
+      leftMuzzle: { x: 300, y: 640 },
+      rightMuzzle: { x: 980, y: 640 },
+      shotMs: 120,
+      fadeMs: 160,
+    },
+    /** Pause between a hit and the next question's ships warping in. */
+    nextQuestionDelayMs: 650,
+    /** Time's up: the ships fire at the cockpit for this long before the life is lost. */
+    blastMs: 1100,
+    outOfLivesBannerMs: 1300,
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
   },
   /**
@@ -871,6 +958,13 @@ export const config = {
       primaryH: 64,
       secondaryW: 200,
       secondaryH: 56,
+      /** Gap between buttons stacked vertically (`stackButtons`). */
+      stackGapPx: 12,
+      /**
+       * Gap between buttons side by side (`rowButtons`, sprint 2.6.1) — wide
+       * enough that a thumb aimed at one doesn't land on its neighbour.
+       */
+      rowGapPx: 32,
       tileW: 320,
       tileH: 200,
     },
@@ -910,7 +1004,7 @@ export const config = {
       // Sprint 2.2 story 15b — bumped 20 → 60 so the standalone subtitle
       // text under each speed button has horizontal breathing room. At
       // 20 px gap the three subtitles read as one continuous run-on
-      // string ("2 rungs · 250s timer 3 rungs · 180s timer …").
+      // string ("2 rungs · 5:00 timer 3 rungs · 3:36 timer …").
       speedGapPx: 60,
       /**
        * Vertical offset (in design pixels) of the section label ABOVE
@@ -987,6 +1081,20 @@ export function mathTimeScale(mathId: MathId | null): number {
 /** A difficulty's time limit stretched for the math type, in whole seconds. */
 export function scaledSeconds(sec: number, mathId: MathId | null): number {
   return Math.round(sec * mathTimeScale(mathId));
+}
+
+/**
+ * Sprint 2.6.1 — time to answer one question (whole seconds): the shared
+ * base for the difficulty, stretched for the math type. Every timed game
+ * reads its countdown here.
+ */
+export function questionSeconds(speed: SpeedKey, mathId: MathId | null): number {
+  return scaledSeconds(config.round.baseQuestionSec[speed], mathId);
+}
+
+/** A whole round's timer (Space Escape): the per-question base × the questions, stretched for the math. */
+export function roundSeconds(speed: SpeedKey, mathId: MathId | null, questions: number): number {
+  return scaledSeconds(config.round.baseQuestionSec[speed] * questions, mathId);
 }
 
 /**
