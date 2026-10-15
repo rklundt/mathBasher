@@ -183,6 +183,14 @@ Both SWAs carry tags `project=mathbasher`, `environment=dev|prod`,
 `managed-by=bicep` (set in the bicepparam files); the resource groups carry
 `project` and `environment`.
 
+**Changing a live app's settings:** a `what-if` of a full Bicep redeploy lists
+the deploy metadata GitHub writes onto each app (`repositoryUrl`, `branch`,
+`provider`) as *Delete*, because the template doesn't declare it. For a small
+change (tags, preview policy) prefer a targeted update so that metadata stays:
+`az tag update --operation Merge …` for tags, and a `PATCH` of just the
+property (`az rest --method patch … --body '{"properties":{…}}'`). Keep the
+bicepparam files in step, so they still describe the live state.
+
 (Replaces the former single-SWA model that used one token +
 `deployment_environment: development` for a preview environment.)
 
