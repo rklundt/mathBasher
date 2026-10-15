@@ -341,9 +341,9 @@ export const config = {
    */
   asteroidField: {
     /**
-     * Asteroid drift speed (px/s) per
-     * Speed selector. The countdown is a HARD timeout — when it hits 0,
-     * the question is marked wrong and the wave advances.
+     * Asteroid drift speed (px/s) per Speed selector. The countdown is a
+     * HARD timeout — when it hits 0, the question is marked wrong and the
+     * wave advances.
      *
      * First-pass values; tune in playtest. Faster speed = more drift AND
      * less time. Slower speed = more aim time + slower targets.
