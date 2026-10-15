@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**More time for fractions, "Change Game" after a round** (sprint 2.6.1, in progress)
+_Nothing yet._
+
+## [2.6.1] - 2026-10-15 — Same time per question in every game, more time for fractions, "Change Game"
+
+**More time for fractions, "Change Game" after a round**
 - Every timed game now gives the same time per question: 25 / 18 / 12 s for Easy / Medium / Hard (Frog Splash and Space Shooter get a little more than before; Space Escape's round timer becomes 5:00 / 3:36 / 2:24). Harder math still stretches it.
 - Adding and subtracting fractions now gets 3× the time (was 2×) at every difficulty, in every game (in Alien Shoot, the aliens fall 3× slower).
 - Game Over has a new **Change Game** button that goes straight to Game Select (math type and difficulty carry over), next to Change Difficulty and Main Menu.
