@@ -364,6 +364,12 @@ Phone in landscape, then desktop.
 - [ ] Pause freezes the ships, lasers and timer.
 - [ ] Play Again replays Space Shooter.
 
+## Fraction time + Change Game (sprint 2.6.1)
+
+- [ ] Difficulty screen with Add Fractions: times are 3× the Add to 10 times (e.g. Frog Splash "2 lily pads · 60s / 45s / 30s").
+- [ ] Game Over (any game): Play Again on top; Change Difficulty · Change Game · Main Menu in a row below, clear of the "New High Score!" badge; keyboard Tab order is Play Again → Change Difficulty → Change Game → Main Menu.
+- [ ] Change Game → Game Select; picking a game shows the same math type and difficulty still selected.
+
 ## Logging the run
 
 ```

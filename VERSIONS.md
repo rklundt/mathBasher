@@ -27,7 +27,9 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**More time for fractions, "Change Game" after a round** (sprint 2.6.1, in progress)
+- Adding and subtracting fractions now gets 3× the time (was 2×) at every difficulty, in every game.
+- Game Over has a new **Change Game** button that goes straight to Game Select (math type and difficulty carry over), next to Change Difficulty and Main Menu.
 
 ## [2.6.0] - 2026-10-15 — Space Shooter, a sixth game mode
 

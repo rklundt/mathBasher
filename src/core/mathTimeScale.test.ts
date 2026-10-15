@@ -22,7 +22,7 @@ describe('math time scale', () => {
   });
 
   it('scales a time limit to whole seconds (no math type picked = unchanged)', () => {
-    expect(scaledSeconds(10, 'add-fractions')).toBe(20);
+    expect(scaledSeconds(10, 'add-fractions')).toBe(30);
     expect(scaledSeconds(10, 'add-to-20')).toBe(13); // 12.5 rounds up
     expect(scaledSeconds(15, null)).toBe(15);
   });
