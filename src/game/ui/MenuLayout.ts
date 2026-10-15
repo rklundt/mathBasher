@@ -4,10 +4,10 @@
 
 import type Phaser from 'phaser';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
+import { computeRowSlots, computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
 
 export type { ButtonKind };
-export { computeStackSlots };
+export { computeRowSlots, computeStackSlots };
 
 export interface StackItem {
   label: string;
@@ -82,6 +82,41 @@ export function stackButtons(
         y: slots[i].y,
         width: slots[i].width,
         height: slots[i].height,
+        label: item.label,
+        ...(item.subtitle !== undefined && { subtitle: item.subtitle }),
+        ...(item.onClick !== undefined && { onClick: item.onClick }),
+        ...(item.disabled !== undefined && { disabled: item.disabled }),
+      }),
+  );
+}
+
+export interface RowOpts {
+  /** Vertical center of the row, in scene-design pixels. */
+  centerY: number;
+  /** Pixel gap between adjacent buttons. Default 16. */
+  gap?: number;
+  /** Horizontal center of the row. Defaults to scene midpoint. */
+  centerX?: number;
+  /** Every button in the row has this size class. Default 'secondary'. */
+  kind?: ButtonKind;
+  items: ReadonlyArray<Omit<StackItem, 'kind'>>;
+}
+
+/**
+ * Lay out buttons side by side in one centred row (e.g. Game Over's
+ * "Change Difficulty · Change Game · Main Menu"). Returns them in order.
+ */
+export function rowButtons(scene: Phaser.Scene, opts: RowOpts): PlaceholderButton[] {
+  const cx = opts.centerX ?? scene.scale.width / 2;
+  const slots = computeRowSlots(cx, opts.centerY, opts.gap ?? 16, opts.items.length, opts.kind ?? 'secondary');
+  return opts.items.map(
+    (item, i) =>
+      new PlaceholderButton({
+        scene,
+        x: slots[i]!.x,
+        y: slots[i]!.y,
+        width: slots[i]!.width,
+        height: slots[i]!.height,
         label: item.label,
         ...(item.subtitle !== undefined && { subtitle: item.subtitle }),
         ...(item.onClick !== undefined && { onClick: item.onClick }),

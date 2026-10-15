@@ -49,8 +49,10 @@ export const config = {
       'div-to-100': 1.5,
       'div-to-144': 1.5,
       mixed: 1.5,
-      'add-fractions': 2.0,
-      'subtract-fractions': 2.0,
+      // Sprint 2.6.1 — 2.0 → 3.0 after playtest: adding / subtracting
+      // fractions needs much more time than whole-number math at every level.
+      'add-fractions': 3.0,
+      'subtract-fractions': 3.0,
     },
     /**
      * Anti-repeat sliding window — GameScene tracks the last N prompt
