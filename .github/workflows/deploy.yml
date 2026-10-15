@@ -5,8 +5,11 @@
 name: Deploy to Azure Static Web Apps
 
 # Push-triggered deploys, two SEPARATE Free Static Web Apps (one per env):
-#   push to `development` -> dev SWA  (AZURE_SWA_TOKEN_DEV),  production env
-#   push to `main`        -> prod SWA (AZURE_SWA_TOKEN_PROD), production env
+#   push to `development` -> dev SWA,  via the `development` GitHub Environment
+#   push to `main`        -> prod SWA, via the `production` GitHub Environment
+# Each GitHub Environment holds its own AZURE_SWA_TOKEN secret and only
+# accepts deploys from its branch, so the prod token can't be read by a
+# workflow running on any other branch. Pull requests are checked by ci.yml.
 # Each SWA serves its own custom domain on its own production environment —
 # the Free tier can't bind a custom domain to a preview/named environment, so
 # there's one Free SWA per environment (see infra/README.md). No pull_request
@@ -17,10 +20,12 @@ on:
       - main
       - development
 
-# Only the latest push per branch deploys; an in-flight run is superseded.
+# Only the latest push per branch deploys. On `development` an in-flight run
+# is superseded; on `main` (prod) it runs to the end rather than being cut
+# off mid-upload.
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
 
 permissions:
   contents: read
@@ -29,15 +34,22 @@ jobs:
   build-and-deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
+    # The branch picks the GitHub Environment (and with it the deploy token
+    # and the protection rules): main -> production, development -> development.
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+      url: ${{ github.ref_name == 'main' && 'https://mathbasher.mykfam.com' || 'https://mathbasher-dev.mykfam.com' }}
     steps:
+      # Actions are pinned to full commit SHAs (the tag is in the comment), so
+      # a moved or compromised tag can't change what runs.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           # Node 22: pnpm 11 (sprint 2.5.1) requires Node >= 22.13 — it uses
           # the `node:sqlite` builtin, which doesn't exist on Node 20 and
@@ -63,32 +75,26 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      # Fail closed: the deploy step's `main && PROD || DEV` expression would
-      # silently fall through to the DEV token if the PROD secret were ever
-      # empty or missing — deploying prod content to the dev site and still
-      # going green. Refuse to deploy instead.
+      # Fail closed: refuse to deploy if this environment's token is missing
+      # (e.g. the environment was recreated without its secret).
       - name: Check deploy token
         env:
-          PROD_TOKEN: ${{ secrets.AZURE_SWA_TOKEN_PROD }}
-          DEV_TOKEN: ${{ secrets.AZURE_SWA_TOKEN_DEV }}
+          TOKEN: ${{ secrets.AZURE_SWA_TOKEN }}
+          TARGET: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
         run: |
-          if [ "$GITHUB_REF_NAME" = "main" ]; then name=AZURE_SWA_TOKEN_PROD; tok="$PROD_TOKEN"; target=prod
-          else name=AZURE_SWA_TOKEN_DEV; tok="$DEV_TOKEN"; target=dev; fi
-          if [ -z "$tok" ]; then
-            echo "::error::Secret $name is empty or missing — refusing to deploy branch '$GITHUB_REF_NAME'."
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Secret AZURE_SWA_TOKEN is empty or missing in this environment — refusing to deploy branch '$GITHUB_REF_NAME'."
             exit 1
           fi
-          echo "Deploying '$GITHUB_REF_NAME' to the $target SWA ($name)."
+          echo "Deploying '$GITHUB_REF_NAME' to the $TARGET SWA."
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
-          # Per-branch token selects the matching SWA: `main` -> prod SWA,
-          # anything else (i.e. `development`) -> dev SWA. Each token is that
-          # SWA's deploy key, stored as a GitHub Actions secret. The "Check
-          # deploy token" step above guarantees the selected one is non-empty.
-          azure_static_web_apps_api_token: ${{ github.ref_name == 'main' && secrets.AZURE_SWA_TOKEN_PROD || secrets.AZURE_SWA_TOKEN_DEV }}
+          # The environment's own token selects the matching SWA (prod or dev).
+          # The "Check deploy token" step above guarantees it is non-empty.
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN }}
           action: upload
           # We build with pnpm above; skip_app_build tells the action not to
           # run its own (Oryx) build. With the build skipped, `app_location`

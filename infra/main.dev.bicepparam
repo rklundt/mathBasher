@@ -18,4 +18,10 @@ using './main.bicep'
 param name = 'swa-games-mathBlaster-dev-use2'
 param location = 'eastus2'
 param customDomain = 'mathbasher-dev.mykfam.com'
-param stagingEnvironmentPolicy = 'Enabled'
+// Disabled once the leftover `development` preview environment is deleted.
+param stagingEnvironmentPolicy = 'Disabled'
+param tags = {
+  project: 'mathbasher'
+  environment: 'dev'
+  'managed-by': 'bicep'
+}
