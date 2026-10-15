@@ -13,9 +13,9 @@ import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
- * Game-mode selection. Five tiles as of sprint 2.5.6 (Alien Shoot,
- * Asteroid Field, Space Escape!, Math-a-lotl, Frog Splash): a 2×2 grid
- * plus a centred third row. A sixth game fills the third row.
+ * Game-mode selection. Six tiles as of sprint 2.6 (Alien Shoot, Asteroid
+ * Field, Space Escape!, Math-a-lotl, Frog Splash, Space Shooter): three
+ * rows of two.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
@@ -77,7 +77,7 @@ export class GameSelectScene extends Phaser.Scene {
     const numberClimb = tile(-1, 0, 'Space Escape!', 'Climb to escape the burning station.', 'number-climb');
     const mathALotl = tile(1, 0, 'Math-a-lotl', 'Help the axolotl catch the right bubble.', 'math-a-lotl');
     const frogSplash = tile(-1, 1, 'Frog Splash', 'Hop across the river on the right lily pads.', 'frog-splash');
-    const spaceShooter = tile(1, 1, 'Space Shooter', 'Blast the alien ship with the right answer.', 'space-shooter');
+    const spaceShooter = tile(1, 1, 'Space Shooter', 'From your cockpit, blast the right alien ship.', 'space-shooter');
 
     const back = new PlaceholderButton({
       scene: this,

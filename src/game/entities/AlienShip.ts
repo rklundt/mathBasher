@@ -8,7 +8,8 @@ import { ALIEN_SHIP_SHEET, ParticleSpriteKeys } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
 import { shipLabelLayout, type ShipBody } from '@/game/systems/spaceShooterMath';
 
-export type ShipState = 'flying' | 'leaving';
+/** arriving = warping in (flies, can't be shot yet) · flying · leaving = hit / warping out. */
+export type ShipState = 'arriving' | 'flying' | 'leaving';
 
 /**
  * One alien ship in Space Shooter (sprint 2.6): a frame of the code-drawn
@@ -23,8 +24,10 @@ export type ShipState = 'flying' | 'leaving';
 export class AlienShip {
   readonly container: Phaser.GameObjects.Container;
   readonly body: ShipBody;
-  state: ShipState = 'flying';
+  state: ShipState = 'arriving';
   private readonly sprite: Phaser.GameObjects.Image;
+  /** Sprite + answer together, so they bob and shake as one. */
+  private readonly hull: Phaser.GameObjects.Container;
   private readonly cfg = config.spaceShooter;
   private readonly scale: number;
 
@@ -65,11 +68,12 @@ export class AlienShip {
       parts.push(pill);
     }
     parts.push(label);
-    this.container = scene.add.container(x, y, parts).setDepth(5);
+    this.hull = scene.add.container(0, 0, parts);
+    this.container = scene.add.container(x, y, [this.hull]).setDepth(5);
 
-    // A gentle bob, so a ship never looks parked.
+    // A gentle bob (answer and all), so a ship never looks parked.
     scene.tweens.add({
-      targets: this.sprite,
+      targets: this.hull,
       y: this.cfg.ship.bobPx,
       duration: this.cfg.ship.bobMs * (0.85 + Math.random() * 0.3),
       yoyo: true,
@@ -93,6 +97,9 @@ export class AlienShip {
       alpha: 1,
       duration: this.cfg.ship.warpInMs,
       ease: 'Back.Out',
+      onComplete: () => {
+        if (this.state === 'arriving') this.state = 'flying';
+      },
     });
     this.ring(0x9fe8ff, 0.2, 1.3, this.cfg.ship.warpInMs + 120);
   }
@@ -148,11 +155,11 @@ export class AlienShip {
 
   /** Wrong answer: the lasers splash off a shield and the ship shakes. */
   shieldBlock(): void {
-    this.ring(0x5ad1ff, 0.9, 1.25, 380, 6);
+    this.ring(0x5ad1ff, 0.9, 1.25, this.cfg.ship.shieldMs, 6);
     this.sprite.setTint(0x9fe8ff);
-    // Shake the sprite (the container is placed every frame by the flight).
+    // Shake the hull (the outer container is placed every frame by the flight).
     this.scene.tweens.add({
-      targets: this.sprite,
+      targets: this.hull,
       x: 8,
       duration: 50,
       yoyo: true,
@@ -178,7 +185,7 @@ export class AlienShip {
 
   destroy(): void {
     this.scene.tweens.killTweensOf(this.container);
-    this.scene.tweens.killTweensOf(this.sprite);
+    this.scene.tweens.killTweensOf(this.hull);
     this.container.destroy();
   }
 }

@@ -8,9 +8,10 @@ import { config } from '@/core/config';
 import {
   bounceOffWalls,
   collide,
-  extendChoices,
-  parseFractionDisplay,
-  inRect,
+  inBounds,
+  rectBounds,
+  windowXBounds,
+  type FlightBounds,
   leanFor,
   pickShipFrames,
   pickTappedShip,
@@ -22,32 +23,54 @@ import {
 } from '@/game/systems/spaceShooterMath';
 
 const cfg = config.spaceShooter;
-const bounds = cfg.window;
+const bounds: FlightBounds = {
+  top: cfg.window.top,
+  bottom: cfg.window.bottom,
+  xAt: (y) => windowXBounds(y, cfg.windowEdge, cfg.edgeHalfWidthPx, cfg.edgeReachPx),
+};
 const r = cfg.ship.displayPx * cfg.ship.radiusFrac;
 
 const ship = (x: number, y: number, heading = 0, turn = 0): ShipBody => ({ x, y, heading, turn, r });
 
 describe('window geometry', () => {
-  it('keeps every ship fully inside the cockpit window', () => {
+  it('a ship and its widest answer label stay inside the window at every height, corners included', () => {
     const half = cfg.ship.displayPx / 2;
-    const tw = cfg.tapWindow;
-    expect(bounds.left - half).toBeGreaterThanOrEqual(tw.left);
-    expect(bounds.right + half).toBeLessThanOrEqual(tw.right);
-    expect(bounds.top - half).toBeGreaterThanOrEqual(tw.top);
-    expect(bounds.bottom + half).toBeLessThanOrEqual(tw.bottom);
+    for (let y = bounds.top; y <= bounds.bottom; y += 4) {
+      const { left, right } = bounds.xAt(y);
+      expect(right).toBeGreaterThan(left);
+      // Every measured window row across the ship's height clears the ship + label.
+      for (const [ry, el, er] of cfg.windowEdge) {
+        if (Math.abs(ry - y) > cfg.edgeReachPx) continue;
+        expect(left - cfg.edgeHalfWidthPx, `y=${y} row=${ry}`).toBeGreaterThanOrEqual(el);
+        expect(right + cfg.edgeHalfWidthPx, `y=${y} row=${ry}`).toBeLessThanOrEqual(er);
+      }
+    }
+    // Widest label: the max label width plus its pill padding.
+    expect(cfg.edgeHalfWidthPx).toBeGreaterThanOrEqual(cfg.label.maxWidthPx / 2 + cfg.label.pillPadPx);
+    expect(cfg.edgeHalfWidthPx).toBeGreaterThanOrEqual(half);
+    expect(bounds.top - half).toBeGreaterThanOrEqual(cfg.tapWindow.top);
+    expect(bounds.bottom + half).toBeLessThanOrEqual(cfg.tapWindow.bottom);
+  });
+
+  it('the bounds narrow towards the tapered bottom of the window', () => {
+    const mid = bounds.xAt(320);
+    const low = bounds.xAt(bounds.bottom);
+    expect(low.right - low.left).toBeLessThan(mid.right - mid.left);
   });
 
   it('has room for the most ships (Hard)', () => {
-    const area = (bounds.right - bounds.left + 2 * r) * (bounds.bottom - bounds.top + 2 * r);
+    const { left, right } = bounds.xAt(bounds.bottom);
+    const area = (right - left + 2 * r) * (bounds.bottom - bounds.top + 2 * r);
     expect(area).toBeGreaterThan(cfg.speed.fast.shipCount * Math.PI * r * r * 3);
   });
 });
 
 describe('flight', () => {
   it('bounces off a wall: back inside, heading turned around', () => {
-    const s = ship(bounds.left - 10, 300, Math.PI); // flying left, past the left wall
-    expect(bounceOffWalls(s, bounds)).toBe(true);
-    expect(s.x).toBe(bounds.left);
+    const box = rectBounds({ left: 318, right: 968, top: 176, bottom: 540 });
+    const s = ship(318 - 10, 300, Math.PI); // flying left, past the left wall
+    expect(bounceOffWalls(s, box)).toBe(true);
+    expect(s.x).toBe(318);
     expect(Math.cos(s.heading)).toBeGreaterThan(0);
   });
 
@@ -58,6 +81,21 @@ describe('flight', () => {
     expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeCloseTo(2 * r, 5);
     expect(Math.cos(a.heading)).toBeLessThan(0);
     expect(Math.cos(b.heading)).toBeGreaterThan(0);
+  });
+
+  it('ships exactly on top of each other are pushed apart', () => {
+    const a = ship(500, 300, 0);
+    const b = ship(500, 300, Math.PI / 2);
+    expect(collide(a, b)).toBe(true);
+    expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeCloseTo(2 * r, 5);
+  });
+
+  it('a ship flying straight into one crossing its path heads away, not off at random', () => {
+    // A flies right into B; B crosses downward. A's velocity along the line is all swapped away.
+    const a = ship(500, 300, 0);
+    const b = ship(500 + r * 1.5, 300, Math.PI / 2);
+    collide(a, b);
+    expect(Math.cos(a.heading)).toBeLessThan(0);
   });
 
   it('ships flying apart are separated but keep their headings', () => {
@@ -77,7 +115,7 @@ describe('flight', () => {
     for (let step = 0; step < 60 * 60; step++) {
       stepShips(ships, 1 / 60, bounds, tuning, rng);
       for (const s of ships) {
-        expect(inRect(s, bounds)).toBe(true);
+        expect(inBounds(s, bounds)).toBe(true);
         headings.add(Math.round(s.heading * 10));
       }
       for (let i = 0; i < ships.length; i++) {
@@ -98,7 +136,7 @@ describe('spawning', () => {
     for (let n = 0; n < 50; n++) {
       const pts = spawnPoints(5, bounds, r * cfg.ship.spawnGapFrac, rng);
       expect(pts).toHaveLength(5);
-      for (const p of pts) expect(inRect(p, bounds)).toBe(true);
+      for (const p of pts) expect(inBounds(p, bounds)).toBe(true);
       for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
           expect(Math.hypot(pts[i]!.x - pts[j]!.x, pts[i]!.y - pts[j]!.y)).toBeGreaterThan(2 * r);
@@ -110,7 +148,7 @@ describe('spawning', () => {
   it('still returns the right count when the gap is impossible', () => {
     const pts = spawnPoints(5, bounds, 10_000, mulberry32(1));
     expect(pts).toHaveLength(5);
-    for (const p of pts) expect(inRect(p, bounds)).toBe(true);
+    for (const p of pts) expect(inBounds(p, bounds)).toBe(true);
   });
 });
 
@@ -175,38 +213,5 @@ describe('waves', () => {
       expect(new Set(frames).size).toBe(5);
       for (const f of frames) expect(f).toBeLessThan(20);
     }
-  });
-});
-
-describe('five ships on Hard', () => {
-  it('parses fraction labels', () => {
-    expect(parseFractionDisplay('3/4')).toEqual({ num: 3, den: 4 });
-    expect(parseFractionDisplay('1 1/2')).toEqual({ num: 3, den: 2 });
-    expect(parseFractionDisplay('2')).toEqual({ num: 2, den: 1 });
-    expect(parseFractionDisplay('x')).toBeNull();
-  });
-
-  it('adds a nearby whole number, never negative, never a duplicate', () => {
-    const rng = mulberry32(8);
-    const out = extendChoices({ choices: [0, 1, 2, 3], correctAnswer: 0 }, 5, rng);
-    expect(out.choices).toHaveLength(5);
-    expect(new Set(out.choices).size).toBe(5);
-    expect(Math.min(...out.choices)).toBeGreaterThanOrEqual(0);
-    expect(out.choices.slice(0, 4)).toEqual([0, 1, 2, 3]);
-  });
-
-  it('adds a plausible fraction with a matching label', () => {
-    const rng = mulberry32(2);
-    const q = { choices: [0.75, 0.8, 0.6, 0.375], correctAnswer: 0.75, correctDisplay: '3/4', choiceDisplays: ['3/4', '4/5', '3/5', '3/8'] };
-    const out = extendChoices(q, 5, rng);
-    expect(out.choices).toHaveLength(5);
-    expect(out.choiceDisplays).toHaveLength(5);
-    expect(new Set(out.choices.map((c) => c.toFixed(6))).size).toBe(5);
-    const extra = parseFractionDisplay(out.choiceDisplays![4]!)!;
-    expect(extra.num / extra.den).toBeCloseTo(out.choices[4]!, 9);
-  });
-
-  it('leaves 4 choices alone when only 4 ships fly', () => {
-    expect(extendChoices({ choices: [1, 2, 3, 4], correctAnswer: 2 }, 4, mulberry32(1)).choices).toEqual([1, 2, 3, 4]);
   });
 });

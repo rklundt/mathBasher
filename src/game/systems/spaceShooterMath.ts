@@ -3,7 +3,6 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
-import { buildFractionDistractors, decimalValue, formatFraction, mixedToImproper } from '@/math/fractionMath';
 
 /**
  * Pure helpers for Space Shooter (sprint 2.6) — no Phaser, so the ships'
@@ -16,6 +15,55 @@ export interface Rect {
   readonly right: number;
   readonly top: number;
   readonly bottom: number;
+}
+
+/**
+ * Where ship centres may fly: a top / bottom, and left / right edges that
+ * can change with height (the cockpit window is rounded and tapers).
+ */
+export interface FlightBounds {
+  readonly top: number;
+  readonly bottom: number;
+  xAt(y: number): { left: number; right: number };
+}
+
+/** Plain rectangular bounds (tests, and any straight-edged window). */
+export function rectBounds(r: Rect): FlightBounds {
+  return { top: r.top, bottom: r.bottom, xAt: () => ({ left: r.left, right: r.right }) };
+}
+
+/**
+ * Left / right limits for a ship centre at height `y`, from the window's
+ * measured edge (rows of [y, leftEdge, rightEdge]): the tightest edge
+ * within `reachY` above or below — a ship and its answer label are tall —
+ * pulled in by `halfWidth` (half the widest ship-plus-label).
+ */
+export function windowXBounds(
+  y: number,
+  edge: ReadonlyArray<readonly [number, number, number]>,
+  halfWidth: number,
+  reachY: number,
+): { left: number; right: number } {
+  let left = -Infinity;
+  let right = Infinity;
+  for (const [ry, l, r] of edge) {
+    if (Math.abs(ry - y) > reachY) continue;
+    left = Math.max(left, l);
+    right = Math.min(right, r);
+  }
+  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+    // No measured row nearby: fall back to the narrowest row overall.
+    left = Math.max(...edge.map((e) => e[1]));
+    right = Math.min(...edge.map((e) => e[2]));
+  }
+  return { left: left + halfWidth, right: right - halfWidth };
+}
+
+/** Is a point inside the flight bounds? */
+export function inBounds(p: { x: number; y: number }, b: FlightBounds, slack = 1e-6): boolean {
+  if (p.y < b.top - slack || p.y > b.bottom + slack) return false;
+  const { left, right } = b.xAt(p.y);
+  return p.x >= left - slack && p.x <= right + slack;
 }
 
 /** One ship's flight state. Velocity is always `speed` along `heading`. */
@@ -41,7 +89,7 @@ export interface FlightTuning {
  * Afterwards every ship is inside `bounds` (centres) and no two overlap
  * by more than a hair.
  */
-export function stepShips(ships: ShipBody[], dtSec: number, bounds: Rect, t: FlightTuning, rng: () => number): void {
+export function stepShips(ships: ShipBody[], dtSec: number, bounds: FlightBounds, t: FlightTuning, rng: () => number): void {
   for (const s of ships) {
     s.turn += (rng() * 2 - 1) * t.turnJitter * dtSec;
     s.turn = Math.max(-t.maxTurn, Math.min(t.maxTurn, s.turn));
@@ -58,16 +106,17 @@ export function stepShips(ships: ShipBody[], dtSec: number, bounds: Rect, t: Fli
 }
 
 /** Reflect off any wall the centre has crossed; returns true if it bounced. */
-export function bounceOffWalls(s: ShipBody, b: Rect): boolean {
+export function bounceOffWalls(s: ShipBody, b: FlightBounds): boolean {
   let vx = Math.cos(s.heading);
   let vy = Math.sin(s.heading);
   let hit = false;
-  if (s.x < b.left) {
-    s.x = b.left;
+  const { left, right } = b.xAt(s.y);
+  if (s.x < left) {
+    s.x = left;
     vx = Math.abs(vx);
     hit = true;
-  } else if (s.x > b.right) {
-    s.x = b.right;
+  } else if (s.x > right) {
+    s.x = right;
     vx = -Math.abs(vx);
     hit = true;
   }
@@ -94,19 +143,14 @@ export function bounceOffWalls(s: ShipBody, b: Rect): boolean {
  * bounce). Returns true if they touched.
  */
 export function collide(a: ShipBody, b: ShipBody): boolean {
-  let dx = b.x - a.x;
-  let dy = b.y - a.y;
-  let dist = Math.hypot(dx, dy);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dist = Math.hypot(dx, dy);
   const minDist = a.r + b.r;
   if (dist >= minDist) return false;
-  if (dist < 1e-6) {
-    // Exactly on top of each other: pick any direction.
-    dx = 1;
-    dy = 0;
-    dist = 1;
-  }
-  const nx = dx / dist;
-  const ny = dy / dist;
+  // Exactly on top of each other: push apart along any direction.
+  const nx = dist < 1e-6 ? 1 : dx / dist;
+  const ny = dist < 1e-6 ? 0 : dy / dist;
   const push = (minDist - dist) / 2;
   a.x -= nx * push;
   a.y -= ny * push;
@@ -120,10 +164,19 @@ export function collide(a: ShipBody, b: ShipBody): boolean {
   const bn = bvx * nx + bvy * ny;
   // Only bounce if they're moving towards each other.
   if (an - bn > 0) {
-    a.heading = Math.atan2(avy + (bn - an) * ny, avx + (bn - an) * nx);
-    b.heading = Math.atan2(bvy + (an - bn) * ny, bvx + (an - bn) * nx);
+    a.heading = bouncedHeading(avx + (bn - an) * nx, avy + (bn - an) * ny, -nx, -ny);
+    b.heading = bouncedHeading(bvx + (an - bn) * nx, bvy + (an - bn) * ny, nx, ny);
   }
   return true;
+}
+
+/**
+ * Heading of a bounced velocity. If the swap left (almost) nothing — one
+ * ship flying straight into the other, the other flying across — head away
+ * along the push direction instead of an arbitrary angle.
+ */
+function bouncedHeading(vx: number, vy: number, awayX: number, awayY: number): number {
+  return Math.hypot(vx, vy) < 1e-6 ? Math.atan2(awayY, awayX) : Math.atan2(vy, vx);
 }
 
 /**
@@ -133,16 +186,15 @@ export function collide(a: ShipBody, b: ShipBody): boolean {
  */
 export function spawnPoints(
   count: number,
-  bounds: Rect,
+  bounds: FlightBounds,
   minGap: number,
   rng: () => number,
 ): Array<{ x: number; y: number }> {
   const pts: Array<{ x: number; y: number }> = [];
   for (let tries = 0; pts.length < count && tries < 400; tries++) {
-    const p = {
-      x: bounds.left + rng() * (bounds.right - bounds.left),
-      y: bounds.top + rng() * (bounds.bottom - bounds.top),
-    };
+    const y = bounds.top + rng() * (bounds.bottom - bounds.top);
+    const { left, right } = bounds.xAt(y);
+    const p = { x: left + rng() * (right - left), y };
     if (pts.every((q) => Math.hypot(q.x - p.x, q.y - p.y) >= minGap)) pts.push(p);
   }
   if (pts.length === count) return pts;
@@ -151,12 +203,9 @@ export function spawnPoints(
   const rows = Math.ceil(count / cols);
   const grid: Array<{ x: number; y: number }> = [];
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      grid.push({
-        x: bounds.left + ((c + 0.5) / cols) * (bounds.right - bounds.left),
-        y: bounds.top + ((r + 0.5) / rows) * (bounds.bottom - bounds.top),
-      });
-    }
+    const y = bounds.top + ((r + 0.5) / rows) * (bounds.bottom - bounds.top);
+    const { left, right } = bounds.xAt(y);
+    for (let c = 0; c < cols; c++) grid.push({ x: left + ((c + 0.5) / cols) * (right - left), y });
   }
   for (let i = grid.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -252,57 +301,4 @@ export function pickShipFrames(count: number, total: number, rng: () => number):
     [all[i], all[j]] = [all[j]!, all[i]!];
   }
   return all.slice(0, Math.min(count, total));
-}
-
-/** Parse a fraction display ("3/4", "1 1/2", "2") into an improper fraction. */
-export function parseFractionDisplay(display: string): { num: number; den: number } | null {
-  const mixed = /^(\d+) (\d+)\/(\d+)$/.exec(display);
-  if (mixed) return mixedToImproper(Number(mixed[1]), Number(mixed[2]), Number(mixed[3]));
-  const frac = /^(\d+)\/(\d+)$/.exec(display);
-  if (frac) return { num: Number(frac[1]), den: Number(frac[2]) };
-  const whole = /^(\d+)$/.exec(display);
-  if (whole) return { num: Number(whole[1]), den: 1 };
-  return null;
-}
-
-/**
- * Questions come with 4 answer choices; Hard flies 5 ships. Top the choices
- * up to `count` with plausible extra wrong answers: for whole numbers, the
- * nearest unused numbers around the answer (never negative); for fractions,
- * more of the usual kid mistakes (numerator / denominator off by one,
- * doubled denominator). Already-long enough choices come back unchanged.
- */
-export function extendChoices(
-  q: { choices: readonly number[]; correctAnswer: number; correctDisplay?: string; choiceDisplays?: readonly string[] },
-  count: number,
-  rng: () => number,
-): { choices: number[]; choiceDisplays?: string[] } {
-  const choices = [...q.choices];
-  const displays = q.choiceDisplays ? [...q.choiceDisplays] : undefined;
-  if (choices.length >= count) return { choices, choiceDisplays: displays };
-  const taken = (v: number): boolean => choices.some((c) => Math.abs(c - v) < 1e-9);
-
-  if (displays && q.correctDisplay) {
-    const correct = parseFractionDisplay(q.correctDisplay);
-    if (correct) {
-      for (const d of buildFractionDistractors(rng, correct.num, correct.den, count + 4)) {
-        if (choices.length >= count) break;
-        const v = decimalValue(d.num, d.den);
-        if (taken(v)) continue;
-        choices.push(v);
-        displays.push(formatFraction(d.num, d.den));
-      }
-    }
-    return { choices, choiceDisplays: displays };
-  }
-
-  // Whole numbers: try answer ± 1, ± 2, … in a random order at each distance.
-  for (let k = 1; choices.length < count && k < 50; k++) {
-    const pair = rng() < 0.5 ? [q.correctAnswer - k, q.correctAnswer + k] : [q.correctAnswer + k, q.correctAnswer - k];
-    for (const v of pair) {
-      if (choices.length >= count) break;
-      if (v >= 0 && Number.isInteger(v) && !taken(v)) choices.push(v);
-    }
-  }
-  return { choices };
 }

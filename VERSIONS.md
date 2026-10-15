@@ -33,7 +33,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - Easy / Medium / Hard: 3 / 4 / 5 ships, 20 / 15 / 12 s per question (longer for harder math), faster flying.
 - 20 different cartoon alien ships, drawn in code; long answers like "1 11/12" sit on a dark display so they're always easy to read.
 - New music; laser and hit sounds from Alien Shoot. Game Select now has three rows of two.
-- Credits: all audio is noted as rendered by ElevenLabs from original prompts written by the project owner.
+- Credits: all audio is noted as rendered by ElevenLabs, and all generated images as made by Midjourney, from original prompts written by the project owner.
 
 ## [2.5.7] - 2026-10-12 — Fairer questions, more time for harder math
 
