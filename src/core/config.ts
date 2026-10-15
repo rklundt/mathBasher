@@ -771,18 +771,19 @@ export const config = {
     /**
      * Where ship CENTRES may fly (design px): between `top` and `bottom`,
      * and left / right of the window's measured edge (`windowEdge`, rows of
-     * [y, left, right] from `pnpm sprite:cockpit --measure`; the opening is
+     * [y, left, right] printed by `pnpm sprite:cockpit --measure` and checked
+     * against the shipped image by `spaceShooterAssets.test.ts`; the opening is
      * rounded and tapers towards the bottom). `edgeHalfWidthPx` is half the
      * widest ship-plus-answer-pill, checked over `edgeReachPx` above and
      * below, so a ship and its label never tuck behind the cockpit frame.
      */
     window: { top: 176, bottom: 540 },
     windowEdge: [
-      [110, 339, 934], [130, 287, 1001], [150, 265, 1025], [170, 248, 1041], [190, 235, 1050],
-      [210, 227, 1055], [230, 224, 1059], [250, 222, 1061], [270, 223, 1061], [290, 227, 1061],
-      [310, 232, 1057], [330, 237, 1051], [350, 242, 1045], [370, 248, 1039], [390, 253, 1033],
-      [410, 259, 1027], [430, 264, 1021], [450, 270, 1015], [470, 276, 1009], [490, 282, 1003],
-      [510, 288, 997], [530, 295, 991], [550, 300, 985], [570, 307, 979], [590, 322, 963], [610, 342, 942],
+      [120, 304, 983], [140, 275, 1014], [160, 256, 1034], [180, 241, 1046], [200, 230, 1053],
+      [220, 225, 1057], [240, 223, 1060], [260, 222, 1061], [280, 224, 1061], [300, 229, 1059],
+      [320, 234, 1054], [340, 239, 1049], [360, 245, 1042], [380, 250, 1036], [400, 256, 1030],
+      [420, 262, 1024], [440, 267, 1018], [460, 273, 1012], [480, 279, 1006], [500, 286, 1000],
+      [520, 291, 994], [540, 297, 988], [560, 303, 983], [580, 313, 972], [600, 331, 953],
     ] as ReadonlyArray<readonly [number, number, number]>,
     edgeHalfWidthPx: 76,
     edgeReachPx: 40,

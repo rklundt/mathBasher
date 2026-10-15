@@ -13,8 +13,11 @@
  *   (both)       the menu backdrop: cosmos behind the cockpit, dimmed
  *                ×0.6 like the other menu backdrops        → sprites/bg/space-shooter.webp
  *
- * Also prints the window opening's bounding box in the 1280×720 design
- * canvas (`--measure`), which `config.spaceShooter.window` is based on.
+ * Also prints the window opening in the 1280×720 design canvas: its
+ * bounding box, and its left / right edge every `EDGE_STEP` px of height in
+ * the exact format of `config.spaceShooter.windowEdge` (paste it in after
+ * re-rendering the cockpit; `spaceShooterAssets.test.ts` checks the table
+ * against the shipped image).
  *
  * Usage:
  *   pnpm sprite:cockpit             # write the three WebPs
@@ -33,6 +36,8 @@ const W = 1280;
 const H = 720;
 /** The cockpit ships at 1.5× the design canvas so it stays crisp on large phones. */
 const COCKPIT_SCALE = 1.5;
+/** Row spacing of the measured window edge (`config.spaceShooter.windowEdge`). */
+const EDGE_STEP = 20;
 
 async function cockpitAt(w, h) {
   // The source is 1960×1080 (≈1.81:1); a fill to 16:9 squeezes it ~2%, invisible here.
@@ -67,7 +72,10 @@ async function measureWindow() {
     rowR[y] = Math.max(rowR[y], x);
     stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
   }
-  const rows = [top + 15, top + 60, (top + bottom) >> 1, bottom - 60, bottom - 15].map((y) => [y, rowL[y], rowR[y]]);
+  const rows = [];
+  for (let y = Math.ceil(top / EDGE_STEP) * EDGE_STEP; y <= bottom; y += EDGE_STEP) {
+    if (rowL[y] >= 0) rows.push([y, rowL[y], rowR[y]]);
+  }
   return { left, right, top, bottom, rows };
 }
 
@@ -82,7 +90,10 @@ function refuseOverwrite(paths, force) {
 
 async function main() {
   const args = process.argv.slice(2);
-  console.log('window opening (design px):', JSON.stringify(await measureWindow()));
+  const win = await measureWindow();
+  console.log('window opening (design px):', JSON.stringify({ left: win.left, right: win.right, top: win.top, bottom: win.bottom }));
+  console.log('windowEdge (paste into config.spaceShooter.windowEdge):');
+  console.log(win.rows.map((r) => `[${r.join(', ')}]`).join(', '));
   if (args.includes('--measure')) return;
 
   const outCockpit = resolve(ROOT, 'public/assets/sprites/hero/cockpit.webp');
