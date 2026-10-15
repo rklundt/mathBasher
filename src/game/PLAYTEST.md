@@ -315,7 +315,7 @@ Phone in landscape, then desktop.
 Phone in landscape, then desktop.
 
 - [ ] Game Select shows five tiles (third row centred: Frog Splash); the title clears the grid.
-- [ ] Difficulty reads "2 lily pads · 20s", "3 lily pads · 15s", "4 lily pads · 10s" over a dimmed river backdrop.
+- [ ] Difficulty reads "2 lily pads · 25s", "3 lily pads · 18s", "4 lily pads · 12s" over a dimmed river backdrop.
 - [ ] One frog per round; over several rounds you see green, blue and orange. It blinks while waiting.
 - [ ] Q1 shows "👆 Tap the right lily pad!"; it goes away on the first hop.
 - [ ] Rows drift in alternating directions; the active row shows numbers, the rows ahead are plain pads.
@@ -349,7 +349,7 @@ Any game mode — the math is shared.
 Phone in landscape, then desktop.
 
 - [ ] Game Select shows six tiles in three rows of two; Space Shooter is bottom right.
-- [ ] Difficulty reads "3 ships · 20s", "4 ships · 15s", "5 ships · 12s" for Add to 10 (longer for harder math) over a dimmed cockpit backdrop.
+- [ ] Difficulty reads "3 ships · 25s", "4 ships · 18s", "5 ships · 12s" for Add to 10 (longer for harder math) over a dimmed cockpit backdrop.
 - [ ] In game: the space view behind the window, the cockpit frame in front; the HUD readable over the cockpit top.
 - [ ] Q1 shows "👆 Tap the ship with the right answer!" over the dashboard; it goes away on the first shot.
 - [ ] Ships warp in (can't be shot until they're fully in), fly curvy paths, bounce off the window frame and each other, never go behind the cockpit frame — even a wide answer like "1 11/12" in a bottom corner stays whole.
@@ -366,7 +366,8 @@ Phone in landscape, then desktop.
 
 ## Fraction time + Change Game (sprint 2.6.1)
 
-- [ ] Difficulty screen with Add Fractions: times are 3× the Add to 10 times (e.g. Frog Splash "2 lily pads · 60s / 45s / 30s").
+- [ ] Every timed game shows the same base times for Add to 10: 25s / 18s / 12s (Space Escape: "5:00 / 3:36 / 2:24 timer"). Alien Shoot shows no time.
+- [ ] Difficulty screen with Add Fractions: times are 3× those (e.g. Frog Splash "2 lily pads · 75s / 54s / 36s").
 - [ ] Game Over (any game): Play Again on top; Change Difficulty · Change Game · Main Menu in a row below, clear of the "New High Score!" badge; keyboard Tab order is Play Again → Change Difficulty → Change Game → Main Menu.
 - [ ] Change Game → Game Select; picking a game shows the same math type and difficulty still selected.
 

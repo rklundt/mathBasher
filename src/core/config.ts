@@ -39,6 +39,19 @@ export const config = {
      * `numberClimb.wrongRungTimePenaltySec`) stay fixed on purpose: a slip on
      * harder math costs the same seconds, so a smaller share of the longer time.
      */
+    /**
+     * Sprint 2.6.1 — the time to answer ONE question at each difficulty,
+     * shared by every timed game (Asteroid Field, Math-a-lotl, Frog Splash,
+     * Space Shooter; Space Escape gets this × its floors as one round
+     * timer). Then stretched by `mathTimeScale` for harder math. Read it
+     * through `questionSeconds()` / `roundSeconds()`.
+     *
+     * New games use this base too, unless a game's time limit isn't a
+     * clock — Alien Shoot's limit is how fast the aliens fall, and keeps
+     * its own speeds (`scoring.speed.*.descentPxPerSec`), still slowed
+     * by `mathTimeScale`.
+     */
+    baseQuestionSec: { slow: 25, medium: 18, fast: 12 },
     mathTimeScale: {
       'add-to-10': 1.0,
       'sub-to-10': 1.0,
@@ -118,9 +131,9 @@ export const config = {
    * across any two game modes produce the same max score. Locked by the
    * parity tests in `ScoreCalculator.test.ts`.
    *
-   * Per-game blocks below (`asteroidField.speed`, `numberClimb.speed`)
-   * carry difficulty-related game-mechanic tuning (countdown / drift /
-   * timer), NOT score tuning. They cross-reference back to this block.
+   * Per-game blocks below (`asteroidField.speed`, `frogSplash.speed`, …)
+   * carry difficulty-related game-mechanic tuning (drift / counts; time
+   * per question is the shared `round.baseQuestionSec`), NOT score tuning. They cross-reference back to this block.
    * Adding a new math type or scoring multiplier — only edit here.
    */
   scoring: {
@@ -337,10 +350,11 @@ export const config = {
      * Game-mechanic tuning only — score multipliers live in
      * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
      */
+    // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1).
     speed: {
-      slow: { driftPxPerSec: 30, countdownSec: 25 },
-      medium: { driftPxPerSec: 50, countdownSec: 18 },
-      fast: { driftPxPerSec: 75, countdownSec: 12 },
+      slow: { driftPxPerSec: 30 },
+      medium: { driftPxPerSec: 50 },
+      fast: { driftPxPerSec: 75 },
     },
     /**
      * Number of asteroids per wave. Matches `layout.targetLanes` (4) so
@@ -490,20 +504,10 @@ export const config = {
      * 100 % of totalFloors): for 12 → 4 / 8 / 12.
      */
     questionsPerRound: 12,
-    /**
-     * Cumulative timer budget per Difficulty (which doubles as Speed
-     * here). Slow = 250s for the whole climb, Medium = 180s, Fast =
-     * 120s — before `round.mathTimeScale` stretches them for harder math. Wrong-rung deducts `wrongRungTimePenaltySec`; timer-to-0
-     * ends the round.
-     *
-     * Game-mechanic tuning only — score multipliers live in
-     * `config.scoring.speed[*].multiplier` (sprint 2.4 story 6).
-     */
-    speed: {
-      slow: { totalTimeSec: 250 },
-      medium: { totalTimeSec: 180 },
-      fast: { totalTimeSec: 120 },
-    },
+    // Cumulative round timer: the shared `round.baseQuestionSec` × the
+    // floors (`roundSeconds()`, sprint 2.6.1 — was 250 / 180 / 120 s;
+    // now 300 / 216 / 144 s before `round.mathTimeScale`). A wrong rung
+    // deducts `wrongRungTimePenaltySec`; timer-to-0 ends the round.
     /**
      * Seconds removed from the cumulative timer on each wrong rung
      * pick. Mirrors `asteroidField.wrongShotCountdownPenaltySec` for
@@ -610,9 +614,10 @@ export const config = {
     /** Waterline as a fraction of canvas height — must match `SKY_FRAC` in `scripts/sprites/reef.mjs`. */
     waterlineFrac: 0.25,
     speed: {
-      slow: { bubbleCount: 3, risePxPerSec: 42, countdownSec: 25 },
-      medium: { bubbleCount: 4, risePxPerSec: 58, countdownSec: 18 },
-      fast: { bubbleCount: 4, risePxPerSec: 80, countdownSec: 12 },
+      // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1).
+      slow: { bubbleCount: 3, risePxPerSec: 42 },
+      medium: { bubbleCount: 4, risePxPerSec: 58 },
+      fast: { bubbleCount: 4, risePxPerSec: 80 },
     },
     bubble: {
       diameterPx: 104,
@@ -687,9 +692,10 @@ export const config = {
   frogSplash: {
     maxLives: 3,
     speed: {
-      slow: { padCount: 2, countdownSec: 20, driftPxPerSec: 40 },
-      medium: { padCount: 3, countdownSec: 15, driftPxPerSec: 60 },
-      fast: { padCount: 4, countdownSec: 10, driftPxPerSec: 85 },
+      // Time per hop: the shared `round.baseQuestionSec` (sprint 2.6.1; was 20 / 15 / 10).
+      slow: { padCount: 2, driftPxPerSec: 40 },
+      medium: { padCount: 3, driftPxPerSec: 60 },
+      fast: { padCount: 4, driftPxPerSec: 85 },
     },
     /** Vertical distance between pad rows (world px). */
     rowSpacingPx: 150,
@@ -766,9 +772,10 @@ export const config = {
   spaceShooter: {
     maxLives: 3,
     speed: {
-      slow: { shipCount: 3, countdownSec: 20, flyPxPerSec: 60 },
-      medium: { shipCount: 4, countdownSec: 15, flyPxPerSec: 85 },
-      fast: { shipCount: 5, countdownSec: 12, flyPxPerSec: 115 },
+      // Time per question: the shared `round.baseQuestionSec` (sprint 2.6.1; was 20 / 15 / 12).
+      slow: { shipCount: 3, flyPxPerSec: 60 },
+      medium: { shipCount: 4, flyPxPerSec: 85 },
+      fast: { shipCount: 5, flyPxPerSec: 115 },
     },
     /**
      * Where ship CENTRES may fly (design px): between `top` and `bottom`,
@@ -1067,6 +1074,20 @@ export function mathTimeScale(mathId: MathId | null): number {
 /** A difficulty's time limit stretched for the math type, in whole seconds. */
 export function scaledSeconds(sec: number, mathId: MathId | null): number {
   return Math.round(sec * mathTimeScale(mathId));
+}
+
+/**
+ * Sprint 2.6.1 — time to answer one question (whole seconds): the shared
+ * base for the difficulty, stretched for the math type. Every timed game
+ * reads its countdown here.
+ */
+export function questionSeconds(speed: SpeedKey, mathId: MathId | null): number {
+  return scaledSeconds(config.round.baseQuestionSec[speed], mathId);
+}
+
+/** A whole round's timer (Space Escape): the per-question base × the questions, stretched for the math. */
+export function roundSeconds(speed: SpeedKey, mathId: MathId | null, questions: number): number {
+  return scaledSeconds(config.round.baseQuestionSec[speed] * questions, mathId);
 }
 
 /**
