@@ -110,6 +110,16 @@ export function bounceOffWalls(s: ShipBody, b: FlightBounds): boolean {
   let vx = Math.cos(s.heading);
   let vy = Math.sin(s.heading);
   let hit = false;
+  if (s.y < b.top) {
+    s.y = b.top;
+    vy = Math.abs(vy);
+    hit = true;
+  } else if (s.y > b.bottom) {
+    s.y = b.bottom;
+    vy = -Math.abs(vy);
+    hit = true;
+  }
+  // Left / right edges at the (clamped) height — the window tapers.
   const { left, right } = b.xAt(s.y);
   if (s.x < left) {
     s.x = left;
@@ -118,15 +128,6 @@ export function bounceOffWalls(s: ShipBody, b: FlightBounds): boolean {
   } else if (s.x > right) {
     s.x = right;
     vx = -Math.abs(vx);
-    hit = true;
-  }
-  if (s.y < b.top) {
-    s.y = b.top;
-    vy = Math.abs(vy);
-    hit = true;
-  } else if (s.y > b.bottom) {
-    s.y = b.bottom;
-    vy = -Math.abs(vy);
     hit = true;
   }
   if (hit) {
