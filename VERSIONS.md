@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**Space Shooter — a sixth game mode** (sprint 2.6, in progress)
+_Nothing yet._
+
+## [2.6.0] - 2026-10-15 — Space Shooter, a sixth game mode
+
+**Space Shooter — a sixth game mode**
 - You're in a spaceship cockpit looking out the window. Alien ships carrying the answers fly around on curvy paths, bouncing off the window frame and each other. Tap the ship with the right answer and the cockpit's lasers blast it.
 - A wrong ship's shield blocks the lasers and costs a life (the question stays). Run out of time and the ships blast the cockpit — that costs a life too, and the same question comes back with fresh ships. 3 lives per round.
 - Easy / Medium / Hard: 3 / 4 / 5 ships, 20 / 15 / 12 s per question (longer for harder math), faster flying.
