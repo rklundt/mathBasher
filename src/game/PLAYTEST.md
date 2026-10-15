@@ -352,10 +352,10 @@ Phone in landscape, then desktop.
 - [ ] Difficulty reads "3 ships · 20s", "4 ships · 15s", "5 ships · 12s" for Add to 10 (longer for harder math) over a dimmed cockpit backdrop.
 - [ ] In game: the space view behind the window, the cockpit frame in front; the HUD readable over the cockpit top.
 - [ ] Q1 shows "👆 Tap the ship with the right answer!" over the dashboard; it goes away on the first shot.
-- [ ] Ships warp in, fly curvy paths, bounce off the window frame and each other, never go behind the cockpit frame.
+- [ ] Ships warp in (can't be shot until they're fully in), fly curvy paths, bounce off the window frame and each other, never go behind the cockpit frame — even a wide answer like "1 11/12" in a bottom corner stays whole.
 - [ ] Every ship in a wave looks different; answers sit in the dark porthole. Fractions on Hard: mixed numbers ("1 11/12") sit on a dark display pill and read clearly.
 - [ ] Tap the right ship → lasers from both bottom corners, explosion, "+points", the others warp away, next question.
-- [ ] Tap a wrong ship → shield flash, "Shields up! Try again!", a Lives dot turns red, that ship warps away; the question stays.
+- [ ] Tap a wrong ship → shield flash, "Shields up! Try again!", a Lives dot turns red, that ship warps away; the question stays. Tapping again right away does nothing until the shield flash ends (no second life lost).
 - [ ] Let the timer run out → red bolts from the ships, cracks on the glass, red flash + shake, "Out of time! You got blasted!", a life lost, same question with fresh ships.
 - [ ] Third life lost → "Out of lives!" → Game Over (stars by correct answers).
 - [ ] Hard has 5 ships; keys 1–5 pick ships left to right.

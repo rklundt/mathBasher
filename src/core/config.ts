@@ -769,12 +769,23 @@ export const config = {
       fast: { shipCount: 5, countdownSec: 12, flyPxPerSec: 115 },
     },
     /**
-     * Where ship CENTRES may fly (design px). Measured from the cockpit art
-     * (`pnpm sprite:cockpit --measure`: opening x 222–1062, y 108–615, with
-     * rounded, tapered corners) and pulled in by a ship radius, so every
-     * ship stays fully inside the window.
+     * Where ship CENTRES may fly (design px): between `top` and `bottom`,
+     * and left / right of the window's measured edge (`windowEdge`, rows of
+     * [y, left, right] from `pnpm sprite:cockpit --measure`; the opening is
+     * rounded and tapers towards the bottom). `edgeHalfWidthPx` is half the
+     * widest ship-plus-answer-pill, checked over `edgeReachPx` above and
+     * below, so a ship and its label never tuck behind the cockpit frame.
      */
-    window: { left: 318, right: 968, top: 176, bottom: 540 },
+    window: { top: 176, bottom: 540 },
+    windowEdge: [
+      [110, 339, 934], [130, 287, 1001], [150, 265, 1025], [170, 248, 1041], [190, 235, 1050],
+      [210, 227, 1055], [230, 224, 1059], [250, 222, 1061], [270, 223, 1061], [290, 227, 1061],
+      [310, 232, 1057], [330, 237, 1051], [350, 242, 1045], [370, 248, 1039], [390, 253, 1033],
+      [410, 259, 1027], [430, 264, 1021], [450, 270, 1015], [470, 276, 1009], [490, 282, 1003],
+      [510, 288, 997], [530, 295, 991], [550, 300, 985], [570, 307, 979], [590, 322, 963], [610, 342, 942],
+    ] as ReadonlyArray<readonly [number, number, number]>,
+    edgeHalfWidthPx: 76,
+    edgeReachPx: 40,
     /** Taps outside this (the cockpit around the window) are ignored. */
     tapWindow: { left: 222, right: 1062, top: 108, bottom: 615 },
     ship: {
@@ -793,6 +804,8 @@ export const config = {
       spawnGapFrac: 2.3,
       warpInMs: 320,
       warpOutMs: 260,
+      /** A wrong ship's shield flash; it warps away (and taps unlock) after this. */
+      shieldMs: 380,
     },
     label: {
       /** Widest a label may get before it shrinks (design px, at ship scale 1). */

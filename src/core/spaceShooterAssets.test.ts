@@ -3,7 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import sharp from 'sharp';
@@ -29,6 +29,20 @@ describe('Space Shooter assets', () => {
     // The porthole sits inside the frame.
     expect(s.porthole.x - s.porthole.r).toBeGreaterThan(0);
     expect(s.porthole.y + s.porthole.r).toBeLessThan(s.frame);
+  });
+
+  it('the declared geometry matches the drawing script', () => {
+    const src = readFileSync(resolve(PUBLIC, '..', 'scripts/sprites/alienships.mjs'), 'utf8');
+    const num = (name: string) => Number(new RegExp(`export const ${name} = (\\d+);`).exec(src)![1]);
+    expect(num('FRAME')).toBe(ALIEN_SHIP_SHEET.frame);
+    expect(num('COLS')).toBe(ALIEN_SHIP_SHEET.cols);
+    expect(num('ROWS')).toBe(ALIEN_SHIP_SHEET.rows);
+    const badge = /export const BADGE = \{ x: (\d+), y: (\d+), r: (\d+) \}/.exec(src)!;
+    expect(Number(badge[1])).toBe(ALIEN_SHIP_SHEET.porthole.x);
+    expect(Number(badge[2])).toBe(ALIEN_SHIP_SHEET.porthole.y);
+    // The porthole's coloured rim is drawn 7 px outside the dark glass.
+    expect(src).toContain('r="${r + 7}"');
+    expect(Number(badge[3]) + 7).toBe(ALIEN_SHIP_SHEET.porthole.r);
   });
 
   it('the cosmos fills the 16:9 canvas and the cockpit is 16:9 too', async () => {

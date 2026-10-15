@@ -13,14 +13,16 @@ import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AlienShip } from '@/game/entities/AlienShip';
 import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
+import { extendChoices } from '@/math/extendChoices';
 import {
-  extendChoices,
   leanFor,
   pickShipFrames,
   pickTappedShip,
   shipAnswers,
   spawnPoints,
   stepShips,
+  windowXBounds,
+  type FlightBounds,
   type FlightTuning,
 } from '@/game/systems/spaceShooterMath';
 import { ALIEN_SHIP_SHEET, SpaceShooterSpriteKeys } from '@/core/spriteKeys';
@@ -58,6 +60,8 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
   private roundController!: RoundController;
   private lifecycle!: GameSceneLifecycle;
   private flight!: FlightTuning;
+  /** Where ship centres may fly: inside the window's measured, tapered edge. */
+  private bounds!: FlightBounds;
 
   private ships: AlienShip[] = [];
   private currentQuestion: Question | null = null;
@@ -131,6 +135,12 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
       maxTurn: this.cfg.ship.maxTurnRadPerSec,
       turnJitter: this.cfg.ship.turnJitterPerSec,
     };
+    const { window: win, windowEdge, edgeHalfWidthPx, edgeReachPx } = this.cfg;
+    this.bounds = {
+      top: win.top,
+      bottom: win.bottom,
+      xAt: (y) => windowXBounds(y, windowEdge, edgeHalfWidthPx, edgeReachPx),
+    };
 
     const { width, height } = this.scale;
     // Space out the window (behind), then the ships, then the cockpit frame.
@@ -161,23 +171,30 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
 
   override update(_time: number, dt: number): void {
     if (this.paused || this.roundOver) return;
-    const flying = this.ships.filter((s) => s.state === 'flying');
+    // Arriving ships fly too (they just can't be shot until they've warped in).
+    const moving = this.movingShips();
     stepShips(
-      flying.map((s) => s.body),
+      moving.map((s) => s.body),
       Math.min(dt, 50) / 1000,
-      this.cfg.window,
+      this.bounds,
       this.flight,
       Math.random,
     );
-    for (const s of flying) s.sync(leanFor(s.body.turn, this.cfg.ship.maxTurnRadPerSec, this.cfg.ship.leanDeg));
+    for (const s of moving) s.sync(leanFor(s.body.turn, this.cfg.ship.maxTurnRadPerSec, this.cfg.ship.leanDeg));
     if (this.busy) return;
     if (this.clock.tick(dt)) this.handleTimeout();
   }
 
   // ----- Input -------------------------------------------------------------
 
+  /** Ships that can be shot: fully warped in, not hit. */
   private flyingShips(): AlienShip[] {
     return this.ships.filter((s) => s.state === 'flying');
+  }
+
+  /** Ships still in the window (arriving or flying). */
+  private movingShips(): AlienShip[] {
+    return this.ships.filter((s) => s.state !== 'leaving');
   }
 
   private handlePointer(pointer: Phaser.Input.Pointer): void {
@@ -276,11 +293,13 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     const outOfLives = this.loseLife();
     // No "Try again!" when that was the last life — "Out of lives!" follows.
     this.floatNote(ship.body.x, ship.body.y - 70, outOfLives ? 'Shields up!' : 'Shields up! Try again!');
-    // Out of play at once (no second shot at it); it warps away after the shield flash.
+    // Out of play at once (no second shot at it). Taps stay locked until the
+    // shield flash ends, so a frantic double-tap can't cost a second life.
     ship.state = 'leaving';
-    this.time.delayedCall(380, () => ship.warpOut(() => (this.ships = this.ships.filter((s) => s !== ship))));
-    if (outOfLives) return;
-    this.busy = false;
+    this.time.delayedCall(this.cfg.ship.shieldMs, () => {
+      ship.warpOut(() => (this.ships = this.ships.filter((s) => s !== ship)));
+      if (!outOfLives && !this.roundOver) this.busy = false;
+    });
   }
 
   /** Time's up: the ships blast the cockpit, a life is lost, same question with fresh ships. */
@@ -300,9 +319,9 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
   /** Every ship fires a red bolt at the window; flash, shake, cracks on the glass. */
   private blastCockpit(): void {
     const { width, height } = this.scale;
-    const flying = this.flyingShips();
+    const shooters = this.movingShips();
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
-    flying.forEach((ship, i) => {
+    shooters.forEach((ship, i) => {
       this.time.delayedCall(i * 110, () => {
         const hit = {
           x: this.cfg.tapWindow.left + (0.2 + Math.random() * 0.6) * (this.cfg.tapWindow.right - this.cfg.tapWindow.left),
@@ -324,7 +343,6 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
           onComplete: () => {
             bolt.destroy();
             this.crackGlass(hit.x, hit.y);
-            if (i === 0) getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
           },
         });
       });
@@ -333,7 +351,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     this.time.delayedCall(180, () => {
       const flash = this.add.rectangle(0, 0, width, height, 0xff2a2a, 0.45).setOrigin(0, 0).setDepth(20);
       this.tweens.add({ targets: flash, alpha: 0, duration: 450, onComplete: () => flash.destroy() });
-      this.cameras.main.shake(350, 0.012);
+      this.cameras.main.shake(350, 0.007);
     });
   }
 
@@ -435,7 +453,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
       rng: Math.random,
     });
     const r = this.cfg.ship.displayPx * this.cfg.ship.radiusFrac;
-    const points = spawnPoints(answers.length, this.cfg.window, r * this.cfg.ship.spawnGapFrac, Math.random);
+    const points = spawnPoints(answers.length, this.bounds, r * this.cfg.ship.spawnGapFrac, Math.random);
     const frames = pickShipFrames(answers.length, ALIEN_SHIP_SHEET.count, Math.random);
     answers.forEach((a, i) => {
       const p = points[i]!;
@@ -445,9 +463,9 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     });
   }
 
-  /** Every ship still flying warps away. */
+  /** Every ship still in the window warps away. */
   private clearShips(): void {
-    for (const s of this.flyingShips()) {
+    for (const s of this.movingShips()) {
       s.warpOut(() => (this.ships = this.ships.filter((x) => x !== s)));
     }
   }

@@ -509,7 +509,8 @@ export const BgSpriteKeys = {
   FrogSplash: 'frog-splash',
   /**
    * Space Shooter menu backdrop (sprint 2.6) — the cosmos behind the
-   * cockpit, dimmed, drawn by `scripts/sprites/cockpit.mjs`. The game
+   * cockpit, dimmed, processed by `scripts/sprites/cockpit.mjs` from the
+   * owner's images. The game
    * scene draws the full-brightness view itself.
    */
   SpaceShooter: 'space-shooter',
