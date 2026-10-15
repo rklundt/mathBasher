@@ -505,7 +505,7 @@ not one SWA with a preview environment. (The Free tier only binds a custom domai
 to a SWA's *production* environment, so each environment is its own Free SWA with
 its domain on its production env.) The apps are captured as Bicep IaC in `/infra/`
 (see `infra/README.md`). Deploys are automatic — `.github/workflows/deploy.yml`
-runs on every push, and a per-branch deploy token picks the matching SWA:
+runs on every push, and the branch picks a GitHub Environment (`production` for `main`, `development` for `development`) whose own deploy token selects the matching SWA. Pull requests are checked by `.github/workflows/ci.yml` (typecheck, tests, build) before they merge:
 
 | Push to | Deploys to | Custom domain |
 |---|---|---|

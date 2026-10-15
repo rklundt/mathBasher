@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Behind-the-scenes hardening** (sprint 2.6.2, in progress) — no gameplay change
+- Build and test tools updated to patched versions (vite, vitest, sharp, express): no known vulnerabilities in dependencies.
+- The site now sends a Content-Security-Policy, so the browser only runs the game's own code and loads its own files plus Google Fonts.
+- Deploys run through separate production and development environments with their own credentials; every pull request is checked (typecheck, tests, build) before merging; build actions are pinned to exact versions.
+- Azure resources tagged; an unused preview environment removed.
 
 ## [2.6.1] - 2026-10-15 — Same time per question in every game, more time for fractions, "Change Game"
 

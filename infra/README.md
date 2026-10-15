@@ -62,9 +62,13 @@ What the Cloudflare proxy means for the SWAs:
   `public/staticwebapp.config.json`. If a shipped asset is ever overwritten in
   place (the rename-don't-overwrite rule exists to avoid this), purge it in
   Cloudflare as well.
-- **Security headers** such as HSTS now come from Cloudflare; future headers
-  (e.g. a Content-Security-Policy) can be added either there or in
-  `staticwebapp.config.json` — pick one place per header.
+- **Security headers:** HSTS comes from Cloudflare; the Content-Security-Policy
+  (and nosniff / referrer / frame options) come from `staticwebapp.config.json`
+  — one place per header. The CSP allows only the site itself, Google Fonts,
+  and `data:`/`blob:` images and audio (Phaser). It blocks Cloudflare's
+  injected bot-detection script, which the game doesn't need. If a browser
+  telemetry endpoint is ever added (e.g. Application Insights), add its hosts
+  to `connect-src`.
 
 ## What Bicep manages — and deliberately does NOT
 
@@ -119,9 +123,9 @@ the SKU, region and staging policy are the properties Bicep owns, and they match
 az group create -n rg-games-prod-use2 -l eastus2
 az deployment group what-if -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 az deployment group create  -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
-# then pipe the deploy token straight into the prod GitHub Actions secret
+# then pipe the deploy token straight into the prod GitHub Environment's secret
 # (never print it — terminal scrollback and session logs keep it):
-az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv | gh secret set AZURE_SWA_TOKEN_PROD --repo rklundt/mathBasher
+az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv | gh secret set AZURE_SWA_TOKEN --env production --repo rklundt/mathBasher
 ```
 
 ### Wire a custom domain (dev first, then prod)
@@ -160,11 +164,22 @@ az group delete -n <resource-group>
 
 ## Deploy pipeline (two-SWA model)
 
-`.github/workflows/deploy.yml` deploys per branch to the matching SWA, each with
-its own deploy token secret:
+`.github/workflows/deploy.yml` deploys per branch to the matching SWA through a
+**GitHub Environment**, each holding its own `AZURE_SWA_TOKEN` secret and
+accepting deploys only from its branch (so no other branch's workflow can read
+the prod token):
 
-- `main` → prod SWA (`AZURE_SWA_TOKEN_PROD`)
-- `development` → dev SWA (`AZURE_SWA_TOKEN_DEV`)
+- `main` → `production` environment → prod SWA
+- `development` → `development` environment → dev SWA
+
+Pull requests into `development` / `main` run `.github/workflows/ci.yml`
+(typecheck, tests, build) — no secrets. Every action in both workflows is
+pinned to a full commit SHA, with the release tag in a comment; bump them
+deliberately (resolve the new tag's commit, check its release notes).
+
+Both SWAs carry tags `project=mathbasher`, `environment=dev|prod`,
+`managed-by=bicep` (set in the bicepparam files); the resource groups carry
+`project` and `environment`.
 
 (Replaces the former single-SWA model that used one token +
 `deployment_environment: development` for a preview environment.)

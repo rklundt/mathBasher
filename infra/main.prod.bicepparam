@@ -19,3 +19,8 @@ param name = 'swa-games-mathBasher-prod-use2'
 param location = 'eastus2'
 param customDomain = 'mathbasher.mykfam.com'
 param stagingEnvironmentPolicy = 'Disabled'
+param tags = {
+  project: 'mathbasher'
+  environment: 'prod'
+  'managed-by': 'bicep'
+}

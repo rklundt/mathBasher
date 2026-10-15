@@ -61,9 +61,13 @@ is still live.
 ''')
 param stagingEnvironmentPolicy string = 'Disabled'
 
+@description('Resource tags (project / environment / managed-by), set per environment in the bicepparam.')
+param tags object = {}
+
 resource swa 'Microsoft.Web/staticSites@2024-04-01' = {
   name: name
   location: location
+  tags: tags
   sku: {
     name: 'Free'
     tier: 'Free'
