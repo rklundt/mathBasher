@@ -368,6 +368,7 @@ Phone in landscape, then desktop.
 
 - [ ] Every timed game shows the same base times for Add to 10: 25s / 18s / 12s (Space Escape: "5:00 / 3:36 / 2:24 timer"). Alien Shoot shows no time.
 - [ ] Difficulty screen with Add Fractions: times are 3× those (e.g. Frog Splash "2 lily pads · 75s / 54s / 36s").
+- [ ] Easy + Add Fractions in Alien Shoot (aliens take ~48 s to fall) and Space Escape (15:00 run): does it feel calm or just slow / boring?
 - [ ] Game Over (any game): Play Again on top; Change Difficulty · Change Game · Main Menu in a row below, clear of the "New High Score!" badge; keyboard Tab order is Play Again → Change Difficulty → Change Game → Main Menu.
 - [ ] Change Game → Game Select; picking a game shows the same math type and difficulty still selected.
 

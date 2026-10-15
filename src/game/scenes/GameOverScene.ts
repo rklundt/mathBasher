@@ -215,9 +215,9 @@ export class GameOverScene extends Phaser.Scene {
         },
       ],
     });
-    const { primaryH, secondaryH } = config.layout.button;
+    const { primaryH, secondaryH, stackGapPx } = config.layout.button;
     const row = rowButtons(this, {
-      centerY: playAgainY + primaryH / 2 + 16 + secondaryH / 2,
+      centerY: playAgainY + primaryH / 2 + stackGapPx + secondaryH / 2,
       items: [
         { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
         // Math type + difficulty carry over (Settings keeps them).

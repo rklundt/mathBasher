@@ -53,7 +53,8 @@ export const SceneKeys = {
    * Number Climb — sprint 2.2 third game mode. Vertical climb; 12
    * floors; kid taps the correct rung at each floor. Difficulty
    * controls rung count (2/3/4); Speed controls cumulative timer
-   * budget (250s/180s/120s). 3 cumulative lives (sprint 2.5.2 — every
+   * budget (300s/216s/144s since sprint 2.6.1: the shared per-question
+   * base × the floors). 3 cumulative lives (sprint 2.5.2 — every
    * wrong pick costs a life; round ends when all 3 are spent or the
    * timer hits 0). Stars height-based.
    */

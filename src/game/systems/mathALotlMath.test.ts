@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { mulberry32 } from '@/test-utils/mulberry32';
-import { config } from '@/core/config';
+import { config, questionSeconds } from '@/core/config';
 import {
   buildBubbleWave,
   chaseHoldY,
@@ -227,8 +227,8 @@ describe('Math-a-lotl config', () => {
   it('gives every difficulty a countdown long enough for a full bubble crossing', () => {
     // Water height on the 720 design canvas, waterline to floor.
     const water = 720 * (1 - config.mathALotl.waterlineFrac);
-    for (const [key, s] of Object.entries(config.mathALotl.speed)) {
-      expect(config.round.baseQuestionSec[key as keyof typeof config.round.baseQuestionSec]).toBeGreaterThan(water / s.risePxPerSec);
+    for (const key of ['slow', 'medium', 'fast'] as const) {
+      expect(questionSeconds(key, null)).toBeGreaterThan(water / config.mathALotl.speed[key].risePxPerSec);
     }
   });
 
