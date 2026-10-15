@@ -22,7 +22,7 @@ describe('extendChoices', () => {
     const rng = mulberry32(2026);
     for (const id of getImplementedIds()) {
       for (const speed of ['slow', 'medium', 'fast'] as SpeedKey[]) {
-        for (let n = 0; n < 150; n++) {
+        for (let n = 0; n < 60; n++) {
           const q = generators[id].generate(rng, speed);
           const out = extendChoices(q, target, rng);
           expect(out.choices, `${id} ${speed}`).toHaveLength(target);

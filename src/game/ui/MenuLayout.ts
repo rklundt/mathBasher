@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type Phaser from 'phaser';
+import { config } from '@/core/config';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { computeRowSlots, computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
 
@@ -70,7 +71,7 @@ export function stackButtons(
 ): PlaceholderButton[] {
   const { width: sceneW } = scene.scale;
   const cx = opts.centerX ?? sceneW / 2;
-  const gap = opts.gap ?? 12;
+  const gap = opts.gap ?? config.layout.button.stackGapPx;
   const items = opts.items;
   const slots = computeStackSlots(cx, opts.centerY, gap, items);
 
@@ -93,7 +94,7 @@ export function stackButtons(
 export interface RowOpts {
   /** Vertical center of the row, in scene-design pixels. */
   centerY: number;
-  /** Pixel gap between adjacent buttons. Default 16. */
+  /** Pixel gap between adjacent buttons. Default `config.layout.button.rowGapPx`. */
   gap?: number;
   /** Horizontal center of the row. Defaults to scene midpoint. */
   centerX?: number;
@@ -108,15 +109,15 @@ export interface RowOpts {
  */
 export function rowButtons(scene: Phaser.Scene, opts: RowOpts): PlaceholderButton[] {
   const cx = opts.centerX ?? scene.scale.width / 2;
-  const slots = computeRowSlots(cx, opts.centerY, opts.gap ?? 16, opts.items.length, opts.kind ?? 'secondary');
+  const slots = computeRowSlots(cx, opts.centerY, opts.gap ?? config.layout.button.rowGapPx, opts.items.length, opts.kind ?? 'secondary');
   return opts.items.map(
     (item, i) =>
       new PlaceholderButton({
         scene,
-        x: slots[i]!.x,
-        y: slots[i]!.y,
-        width: slots[i]!.width,
-        height: slots[i]!.height,
+        x: slots[i].x,
+        y: slots[i].y,
+        width: slots[i].width,
+        height: slots[i].height,
         label: item.label,
         ...(item.subtitle !== undefined && { subtitle: item.subtitle }),
         ...(item.onClick !== undefined && { onClick: item.onClick }),

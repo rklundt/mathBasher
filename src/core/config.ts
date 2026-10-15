@@ -29,17 +29,6 @@ export const config = {
      */
     starThresholds: [8, 10, 11] as const,
     /**
-     * Sprint 2.5.7 — harder math gets more time, in every game mode. Each
-     * game's time limit for the chosen difficulty (per-question countdown,
-     * Space Escape's round timer) is multiplied by this, and Alien Shoot's
-     * descent slows by the same factor. Read through `mathTimeScale()`;
-     * scaled seconds are whole numbers (`scaledSeconds()`).
-     *
-     * Wrong-answer time penalties (`asteroidField.wrongShotCountdownPenaltySec`,
-     * `numberClimb.wrongRungTimePenaltySec`) stay fixed on purpose: a slip on
-     * harder math costs the same seconds, so a smaller share of the longer time.
-     */
-    /**
      * Sprint 2.6.1 — the time to answer ONE question at each difficulty,
      * shared by every timed game (Asteroid Field, Math-a-lotl, Frog Splash,
      * Space Shooter; Space Escape gets this × its floors as one round
@@ -52,6 +41,17 @@ export const config = {
      * by `mathTimeScale`.
      */
     baseQuestionSec: { slow: 25, medium: 18, fast: 12 },
+    /**
+     * Sprint 2.5.7 — harder math gets more time, in every game mode. Each
+     * game's time limit for the chosen difficulty (per-question countdown,
+     * Space Escape's round timer) is multiplied by this, and Alien Shoot's
+     * descent slows by the same factor. Read through `mathTimeScale()`;
+     * scaled seconds are whole numbers (`scaledSeconds()`).
+     *
+     * Wrong-answer time penalties (`asteroidField.wrongShotCountdownPenaltySec`,
+     * `numberClimb.wrongRungTimePenaltySec`) stay fixed on purpose: a slip on
+     * harder math costs the same seconds, so a smaller share of the longer time.
+     */
     mathTimeScale: {
       'add-to-10': 1.0,
       'sub-to-10': 1.0,
@@ -132,8 +132,9 @@ export const config = {
    * parity tests in `ScoreCalculator.test.ts`.
    *
    * Per-game blocks below (`asteroidField.speed`, `frogSplash.speed`, …)
-   * carry difficulty-related game-mechanic tuning (drift / counts; time
-   * per question is the shared `round.baseQuestionSec`), NOT score tuning. They cross-reference back to this block.
+   * carry difficulty-related game-mechanic tuning (drift, counts; time per
+   * question is the shared `round.baseQuestionSec`), NOT score tuning.
+   * They cross-reference back to this block.
    * Adding a new math type or scoring multiplier — only edit here.
    */
   scoring: {
@@ -340,7 +341,7 @@ export const config = {
    */
   asteroidField: {
     /**
-     * Asteroid drift speed (px/s) + per-question countdown (seconds) per
+     * Asteroid drift speed (px/s) per
      * Speed selector. The countdown is a HARD timeout — when it hits 0,
      * the question is marked wrong and the wave advances.
      *
@@ -497,10 +498,9 @@ export const config = {
      * Total floors per round. Stars + GameOverScene's "Pass" both
      * pivot off reaching this. Sprint 2.2 wrap-up playtest: 10 felt
      * short, 20 (the global default for arcade modes) too long — 12
-     * landed as the sweet spot. Cumulative timer values below are
-     * UNCHANGED across the 10 → 12 bump; the slight per-floor time
-     * pressure increase IS the difficulty bump for the extra two
-     * floors. computeClimbStars scales proportionally (40 % / 70 % /
+     * landed as the sweet spot. Since sprint 2.6.1 the round timer is the
+     * shared per-question base × these floors (`roundSeconds()`), so changing
+     * the floor count changes the timer too. computeClimbStars scales proportionally (40 % / 70 % /
      * 100 % of totalFloors): for 12 → 4 / 8 / 12.
      */
     questionsPerRound: 12,
@@ -958,6 +958,13 @@ export const config = {
       primaryH: 64,
       secondaryW: 200,
       secondaryH: 56,
+      /** Gap between buttons stacked vertically (`stackButtons`). */
+      stackGapPx: 12,
+      /**
+       * Gap between buttons side by side (`rowButtons`, sprint 2.6.1) — wide
+       * enough that a thumb aimed at one doesn't land on its neighbour.
+       */
+      rowGapPx: 32,
       tileW: 320,
       tileH: 200,
     },
@@ -997,7 +1004,7 @@ export const config = {
       // Sprint 2.2 story 15b — bumped 20 → 60 so the standalone subtitle
       // text under each speed button has horizontal breathing room. At
       // 20 px gap the three subtitles read as one continuous run-on
-      // string ("2 rungs · 250s timer 3 rungs · 180s timer …").
+      // string ("2 rungs · 5:00 timer 3 rungs · 3:36 timer …").
       speedGapPx: 60,
       /**
        * Vertical offset (in design pixels) of the section label ABOVE
