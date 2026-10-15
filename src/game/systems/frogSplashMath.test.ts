@@ -137,11 +137,9 @@ describe('camera + hop', () => {
 });
 
 describe('Frog Splash config', () => {
-  it('mirrors Space Escape: 2 / 3 / 4 pads, less time and faster drift as it gets harder', () => {
+  it('mirrors Space Escape: 2 / 3 / 4 pads and faster drift as it gets harder', () => {
     const { slow, medium, fast } = cfg.speed;
     expect([slow.padCount, medium.padCount, fast.padCount]).toEqual([2, 3, 4]);
-    expect(medium.countdownSec).toBeLessThan(slow.countdownSec);
-    expect(fast.countdownSec).toBeLessThan(medium.countdownSec);
     expect(medium.driftPxPerSec).toBeGreaterThan(slow.driftPxPerSec);
     expect(fast.driftPxPerSec).toBeGreaterThan(medium.driftPxPerSec);
   });

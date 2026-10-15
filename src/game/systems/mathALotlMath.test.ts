@@ -227,8 +227,8 @@ describe('Math-a-lotl config', () => {
   it('gives every difficulty a countdown long enough for a full bubble crossing', () => {
     // Water height on the 720 design canvas, waterline to floor.
     const water = 720 * (1 - config.mathALotl.waterlineFrac);
-    for (const s of Object.values(config.mathALotl.speed)) {
-      expect(s.countdownSec).toBeGreaterThan(water / s.risePxPerSec);
+    for (const [key, s] of Object.entries(config.mathALotl.speed)) {
+      expect(config.round.baseQuestionSec[key as keyof typeof config.round.baseQuestionSec]).toBeGreaterThan(water / s.risePxPerSec);
     }
   });
 
@@ -251,8 +251,6 @@ describe('Math-a-lotl config', () => {
     expect(fast.bubbleCount).toBeGreaterThanOrEqual(medium.bubbleCount);
     expect(medium.risePxPerSec).toBeGreaterThan(slow.risePxPerSec);
     expect(fast.risePxPerSec).toBeGreaterThan(medium.risePxPerSec);
-    expect(medium.countdownSec).toBeLessThan(slow.countdownSec);
-    expect(fast.countdownSec).toBeLessThan(medium.countdownSec);
   });
 
   it('waterline matches the backdrop generator', () => {

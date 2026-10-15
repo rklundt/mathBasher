@@ -333,7 +333,7 @@ config.hero.fireCooldownMs            // 200
 config.layout.targetLanes             // 4
 ```
 
-**Code reads from `config`. Magic numbers in code are flagged at review.** Adding a new math type is a new key in `config.scoring.mathDifficulty` and `config.round.mathTimeScale` (how much extra time it gets) plus a new generator file — no engine changes. Whole-number generators draw from weighted tables tuned in `config.questionMix` (`src/math/questionMix.ts`).
+**Code reads from `config`. Magic numbers in code are flagged at review.** Adding a new math type is a new key in `config.scoring.mathDifficulty` and `config.round.mathTimeScale` (how much extra time it gets) plus a new generator file — no engine changes. Whole-number generators draw from weighted tables tuned in `config.questionMix` (`src/math/questionMix.ts`). Time to answer is shared too: every timed game reads `questionSeconds(speed, mathId)` — one base per difficulty (`config.round.baseQuestionSec`, 25 / 18 / 12 s) stretched by `mathTimeScale` — so a new game mode gets the same clock unless its limit isn't a clock (see ADR-0011 step 7).
 
 ### Telemetry pattern
 

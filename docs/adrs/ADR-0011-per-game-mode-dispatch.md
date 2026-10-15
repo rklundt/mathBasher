@@ -147,7 +147,7 @@ When sprint 2.X adds game mode `<id>`:
    }
    ```
 
-   **Time limits scale with the math type** (sprint 2.5.7): read every per-question countdown or round timer through `scaledSeconds(sec, mathId)`, and divide any "time to answer" speed (e.g. a descent rate) by `mathTimeScale(mathId)`, both from `src/core/config.ts`. The mode's `speedDisplayFor` arm in `DifficultyScene` takes `mathId` and shows the scaled seconds.
+   **Time limits: one shared base, scaled for the math** (sprints 2.5.7, 2.6.1): a timed mode reads its per-question countdown from `questionSeconds(speed, mathId)` (or, for a whole-round timer, `roundSeconds(speed, mathId, questions)`) in `src/core/config.ts` — the shared `config.round.baseQuestionSec` (25 / 18 / 12 s) stretched by `round.mathTimeScale`. Don't give a new mode its own countdown table unless its time limit genuinely isn't a clock (Alien Shoot's limit is how fast the aliens fall: it keeps its own speeds and divides them by `mathTimeScale(mathId)`). The mode's `speedDisplayFor` arm in `DifficultyScene` takes `mathId` and shows the same seconds.
 
 8. **Register the scene** in `src/app/boot.ts` `scene: [...]` array. Order matters (render order = registration order); put it adjacent to other game scenes.
 
