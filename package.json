@@ -1,7 +1,7 @@
 {
   "name": "mathbasher",
   "private": true,
-  "version": "2.5.7",
+  "version": "2.6.1",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "description": "A browser-based math game for kids. Aliens descend carrying answers; fire at the right one before they reach the hero.",
@@ -33,6 +33,8 @@
     "sprite:reef": "node scripts/sprites/reef.mjs",
     "sprite:frog": "node scripts/sprites/frog.mjs",
     "sprite:pond": "node scripts/sprites/pond.mjs",
+    "sprite:alienships": "node scripts/sprites/alienships.mjs",
+    "sprite:cockpit": "node scripts/sprites/cockpit.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {

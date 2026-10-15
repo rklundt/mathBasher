@@ -29,6 +29,23 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.6.1] - 2026-10-15 — Same time per question in every game, more time for fractions, "Change Game"
+
+**More time for fractions, "Change Game" after a round**
+- Every timed game now gives the same time per question: 25 / 18 / 12 s for Easy / Medium / Hard (Frog Splash and Space Shooter get a little more than before; Space Escape's round timer becomes 5:00 / 3:36 / 2:24). Harder math still stretches it.
+- Adding and subtracting fractions now gets 3× the time (was 2×) at every difficulty, in every game (in Alien Shoot, the aliens fall 3× slower).
+- Game Over has a new **Change Game** button that goes straight to Game Select (math type and difficulty carry over), next to Change Difficulty and Main Menu.
+
+## [2.6.0] - 2026-10-15 — Space Shooter, a sixth game mode
+
+**Space Shooter — a sixth game mode**
+- You're in a spaceship cockpit looking out the window. Alien ships carrying the answers fly around on curvy paths, bouncing off the window frame and each other. Tap the ship with the right answer and the cockpit's lasers blast it.
+- A wrong ship's shield blocks the lasers and costs a life (the question stays). Run out of time and the ships blast the cockpit — that costs a life too, and the same question comes back with fresh ships. 3 lives per round.
+- Easy / Medium / Hard: 3 / 4 / 5 ships, 20 / 15 / 12 s per question (longer for harder math), faster flying.
+- 20 different cartoon alien ships, drawn in code; long answers like "1 11/12" sit on a dark display so they're always easy to read.
+- New music; laser and hit sounds from Alien Shoot. Game Select now has three rows of two.
+- Credits: all audio is noted as rendered by ElevenLabs, and all generated images as made by Midjourney, from original prompts written by the project owner.
+
 ## [2.5.7] - 2026-10-12 — Fairer questions, more time for harder math
 
 **Fairer questions, more time for harder math**

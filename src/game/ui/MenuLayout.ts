@@ -3,11 +3,12 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type Phaser from 'phaser';
+import { config } from '@/core/config';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
+import { computeRowSlots, computeStackSlots, type ButtonKind } from '@/game/ui/menuLayoutGeometry';
 
 export type { ButtonKind };
-export { computeStackSlots };
+export { computeRowSlots, computeStackSlots };
 
 export interface StackItem {
   label: string;
@@ -70,11 +71,46 @@ export function stackButtons(
 ): PlaceholderButton[] {
   const { width: sceneW } = scene.scale;
   const cx = opts.centerX ?? sceneW / 2;
-  const gap = opts.gap ?? 12;
+  const gap = opts.gap ?? config.layout.button.stackGapPx;
   const items = opts.items;
   const slots = computeStackSlots(cx, opts.centerY, gap, items);
 
   return items.map(
+    (item, i) =>
+      new PlaceholderButton({
+        scene,
+        x: slots[i].x,
+        y: slots[i].y,
+        width: slots[i].width,
+        height: slots[i].height,
+        label: item.label,
+        ...(item.subtitle !== undefined && { subtitle: item.subtitle }),
+        ...(item.onClick !== undefined && { onClick: item.onClick }),
+        ...(item.disabled !== undefined && { disabled: item.disabled }),
+      }),
+  );
+}
+
+export interface RowOpts {
+  /** Vertical center of the row, in scene-design pixels. */
+  centerY: number;
+  /** Pixel gap between adjacent buttons. Default `config.layout.button.rowGapPx`. */
+  gap?: number;
+  /** Horizontal center of the row. Defaults to scene midpoint. */
+  centerX?: number;
+  /** Every button in the row has this size class. Default 'secondary'. */
+  kind?: ButtonKind;
+  items: ReadonlyArray<Omit<StackItem, 'kind'>>;
+}
+
+/**
+ * Lay out buttons side by side in one centred row (e.g. Game Over's
+ * "Change Difficulty · Change Game · Main Menu"). Returns them in order.
+ */
+export function rowButtons(scene: Phaser.Scene, opts: RowOpts): PlaceholderButton[] {
+  const cx = opts.centerX ?? scene.scale.width / 2;
+  const slots = computeRowSlots(cx, opts.centerY, opts.gap ?? config.layout.button.rowGapPx, opts.items.length, opts.kind ?? 'secondary');
+  return opts.items.map(
     (item, i) =>
       new PlaceholderButton({
         scene,

@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, scaledSeconds, type MathId, type SpeedKey } from '@/core/config';
+import { config, questionSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { computeClimbStars } from '@/services/ScoreCalculator';
@@ -397,9 +397,9 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     return true;
   }
 
-  /** Time per hop: the difficulty's countdown, stretched for harder math (sprint 2.5.7). */
+  /** Time per hop: the shared base for the difficulty, stretched for harder math. */
   private countdownMs(): number {
-    return scaledSeconds(this.cfg.speed[this.speed].countdownSec, this.mathId) * 1000;
+    return questionSeconds(this.speed, this.mathId) * 1000;
   }
 
   /** Same question, fresh pads. After a splash the frog pops back up where it last sat. */

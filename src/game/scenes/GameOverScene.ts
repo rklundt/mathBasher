@@ -10,7 +10,7 @@ import { Settings, type GameId } from '@/services/Settings';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { stackButtons } from '@/game/ui/MenuLayout';
+import { rowButtons, stackButtons } from '@/game/ui/MenuLayout';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
@@ -185,8 +185,13 @@ export class GameOverScene extends Phaser.Scene {
     // 500ms after scene mount so the headline pop reads first.
     this.buildStarRow(cx, height * 0.46);
 
-    const buttons = stackButtons(this, {
-      centerY: height * 0.72,
+    // Sprint 2.6.1 — Play Again on its own, then a row of three: Change
+    // Difficulty · Change Game · Main Menu ("Change Game" saves a trip
+    // through the main menu). A row keeps the stack clear of the
+    // "New High Score!" badge above.
+    const playAgainY = height * 0.68;
+    const [playAgain] = stackButtons(this, {
+      centerY: playAgainY,
       items: [
         {
           label: 'Play Again',
@@ -208,18 +213,21 @@ export class GameOverScene extends Phaser.Scene {
             this.scene.start(gameSceneKeyFor(gameId));
           },
         },
-        {
-          label: 'Change Difficulty',
-          kind: 'secondary',
-          onClick: () => this.scene.start(SceneKeys.Difficulty),
-        },
-        {
-          label: 'Main Menu',
-          kind: 'secondary',
-          onClick: () => this.scene.start(SceneKeys.Menu),
-        },
       ],
     });
+    // The row sits as far below Play Again as its buttons sit from each
+    // other, so a thumb aimed at Play Again doesn't land on the row.
+    const { primaryH, secondaryH, rowGapPx } = config.layout.button;
+    const row = rowButtons(this, {
+      centerY: playAgainY + primaryH / 2 + rowGapPx + secondaryH / 2,
+      items: [
+        { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
+        // Math type + difficulty carry over (Settings keeps them).
+        { label: 'Change Game', onClick: () => this.scene.start(SceneKeys.GameSelect) },
+        { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
+      ],
+    });
+    const buttons = [playAgain!, ...row];
 
     new KeyboardNavigator(this, buttons);
 

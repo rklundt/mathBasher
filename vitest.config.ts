@@ -15,6 +15,9 @@ export default defineConfig({
     passWithNoTests: true,
     // Hoist mocks above imports per Vitest convention.
     globals: false,
+    // A few tests sample thousands of questions or import a module cold;
+    // the 5 s default left little headroom on a busy machine or CI runner.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

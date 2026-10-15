@@ -67,3 +67,23 @@ export function computeStackSlots(
   }
   return slots;
 }
+
+/**
+ * Slots for a single horizontal ROW of buttons, all the same kind, centred
+ * on (centerX, centerY) with `gap` px between them. Same slot shape as
+ * `computeStackSlots` (each `x` / `y` is the button's centre).
+ */
+export function computeRowSlots(
+  centerX: number,
+  centerY: number,
+  gap: number,
+  count: number,
+  kind: ButtonKind = 'secondary',
+): StackedSlot[] {
+  if (count <= 0) return [];
+  const width = kind === 'primary' ? config.layout.button.primaryW : config.layout.button.secondaryW;
+  const height = kind === 'primary' ? config.layout.button.primaryH : config.layout.button.secondaryH;
+  const total = width * count + gap * (count - 1);
+  const left = centerX - total / 2;
+  return Array.from({ length: count }, (_, i) => ({ x: left + width / 2 + i * (width + gap), y: centerY, width, height }));
+}
