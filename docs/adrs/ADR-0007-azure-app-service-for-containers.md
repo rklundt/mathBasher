@@ -1,6 +1,6 @@
 # ADR-0007: Azure App Service for Containers (over Container Apps)
 
-**Status:** Accepted (2026-05-08). **Superseded for current hosting** by [ADR-0012](ADR-0012-static-web-apps-hosting.md) (2026-10-16): the game deploys to Azure Static Web Apps and no App Service plan, container registry or Key Vault exists. Kept as the plan for a future backend.
+**Status:** Accepted (2026-05-08). **Superseded for current hosting** by [ADR-0012](ADR-0012-static-web-apps-hosting.md) (2026-10-15): the game deploys to Azure Static Web Apps and no App Service plan, container registry or Key Vault exists. Kept as the plan for a future backend.
 
 ## Context
 
