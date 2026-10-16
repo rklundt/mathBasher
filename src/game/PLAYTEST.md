@@ -374,9 +374,9 @@ Phone in landscape, then desktop.
 
 ## Security headers (sprint 2.6.2)
 
-Content-Security-Policy is new, so check it on real phones (dev site), not only desktop:
+Content-Security-Policy is new, so check it on real phones (dev site), not only desktop, before the release goes to production:
 - [ ] iPhone Safari and an Android phone: the game loads, the title font is the game font (not a fallback), music and sound effects play after the first tap, fullscreen works.
-- [ ] Desktop devtools console: no "Refused to load" / "Refused to connect" CSP errors from the game itself (one blocked inline script from Cloudflare is expected).
+- [ ] Desktop devtools console: no "Refused to load" / "Refused to connect" CSP errors from the game itself (one blocked inline script is expected: Cloudflare's injected bot-detection snippet, reported as an inline script refused by `script-src`).
 
 ## Logging the run
 

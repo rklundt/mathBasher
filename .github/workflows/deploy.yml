@@ -121,6 +121,11 @@ jobs:
           EXPECTED_HOST: ${{ github.ref_name == 'main' && 'polite-desert-0af64970f.5.azurestaticapps.net' || 'brave-river-0f2e36c0f.7.azurestaticapps.net' }}
         run: |
           if [ -z "$DEPLOY_URL" ]; then
+            # Prod must be confirmed; on dev a missing URL only warns.
+            if [ "$GITHUB_REF_NAME" = "main" ]; then
+              echo "::error::Deploy step exposed no URL — can't confirm the production upload went to the prod app."
+              exit 1
+            fi
             echo "::warning::Deploy step exposed no URL — can't confirm the target app."
             exit 0
           fi
