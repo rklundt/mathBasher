@@ -28,6 +28,8 @@
  *   ui           — buttons / panels / frames; 256×256 max  → public/assets/sprites/ui/
  *   particle     — explosion / glow / smoke; 64×64 max     → public/assets/sprites/particles/
  *   bg           — parallax / tile art; 512×512 max        → public/assets/sprites/bg/
+ *   asteroid     — Asteroid Field rock images; 192×192 max → public/assets/sprites/asteroids/
+ *                  (use `--format webp-lossless`; the shipped rocks are lossless WebP)
  *
  * If `--kind` is omitted, defaults to `alien` (the most common type for
  * mathBasher today).
@@ -133,6 +135,17 @@ const PROFILES = {
     quality: 90,
     folder: 'public/assets/sprites/bg',
     description: 'parallax/tile art — 1280×1280 max, full RGB',
+  },
+  asteroid: {
+    // Sprint 2.6.3 — Asteroid Field's image rocks got their own kind. They
+    // were processed with `--kind alien` before (same 192 px profile) and
+    // shipped in `aliens/`, though they aren't aliens.
+    maxDim: 192,
+    palette: true,
+    compressionLevel: 9,
+    quality: 90,
+    folder: 'public/assets/sprites/asteroids',
+    description: 'Asteroid Field rock images — 192×192 max bounding box',
   },
 };
 

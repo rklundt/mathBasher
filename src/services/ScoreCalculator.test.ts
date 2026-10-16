@@ -257,7 +257,7 @@ describe('computeClimbStars', () => {
  * Asteroid Field, and Number Climb for the same (mathId, speed).
  *
  * The per-game mechanics (Alien Shoot's wrong-shot penalty, Asteroid
- * Field's per-question timeout, Number Climb's mulligan) only reduce
+ * Field's per-question timeout, Number Climb's wrong pick) only reduce
  * a round BELOW max — they never change the max itself. So the games
  * are already calibrated; no per-game scoring multiplier is needed.
  *

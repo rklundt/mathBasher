@@ -16,9 +16,11 @@ import {
   hasEscaped,
   isWithinCatch,
   pickTappedBubble,
+  resolveBubbleEvent,
   rotationFor,
   stepToward,
   visibleBubbles,
+  wrongNoteY,
 } from '@/game/systems/mathALotlMath';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -258,5 +260,107 @@ describe('Math-a-lotl config', () => {
     const m = reef.match(/export const SKY_FRAC = ([\d.]+);/);
     expect(m).not.toBeNull();
     expect(Number(m?.[1])).toBe(config.mathALotl.waterlineFrac);
+  });
+});
+
+describe('wrongNoteY', () => {
+  // 720-tall screen, 24 px floor margin, note rises 50 px, bubble radius 40.
+  it('starts the note below a bubble near the surface', () => {
+    expect(wrongNoteY(300, 40, 50, 720, 24)).toBe(390);
+  });
+
+  it('starts it above a bubble near the floor, where below would leave the screen', () => {
+    expect(wrongNoteY(640, 40, 50, 720, 24)).toBe(600);
+  });
+
+  it('still fits below when it ends exactly at the floor margin', () => {
+    expect(wrongNoteY(606, 40, 50, 720, 24)).toBe(696);
+    expect(wrongNoteY(607, 40, 50, 720, 24)).toBe(567);
+  });
+});
+
+describe('resolveBubbleEvent', () => {
+  const state = (over: Partial<Parameters<typeof resolveBubbleEvent>[0]> = {}) => ({
+    correctAnswer: 8,
+    livesUsed: 0,
+    maxLives: 3,
+    usedWrongCatch: false,
+    ...over,
+  });
+
+  it('1. right bubble, first try: correct, full points', () => {
+    expect(resolveBubbleEvent(state(), { type: 'catch', answer: 8 })).toEqual({
+      kind: 'correct',
+      record: { wasCorrect: true, usedWrongShot: false },
+    });
+  });
+
+  it('2. right bubble after a wrong catch: correct, half points', () => {
+    expect(resolveBubbleEvent(state({ livesUsed: 1, usedWrongCatch: true }), { type: 'catch', answer: 8 })).toEqual({
+      kind: 'correct',
+      record: { wasCorrect: true, usedWrongShot: true },
+    });
+  });
+
+  it('3. first wrong catch: a life spent, two left, the wave carries on', () => {
+    expect(resolveBubbleEvent(state(), { type: 'catch', answer: 5 })).toEqual({
+      kind: 'wrong',
+      livesUsed: 1,
+      livesRemaining: 2,
+      usedWrongCatch: true,
+    });
+  });
+
+  it('4. second wrong catch: one life left', () => {
+    expect(resolveBubbleEvent(state({ livesUsed: 1, usedWrongCatch: true }), { type: 'catch', answer: 5 })).toEqual({
+      kind: 'wrong',
+      livesUsed: 2,
+      livesRemaining: 1,
+      usedWrongCatch: true,
+    });
+  });
+
+  it('5. wrong catch on the last life: out of lives, recorded as a used miss', () => {
+    expect(resolveBubbleEvent(state({ livesUsed: 2 }), { type: 'catch', answer: 5 })).toEqual({
+      kind: 'out-of-lives',
+      livesUsed: 3,
+      livesRemaining: 0,
+      usedWrongCatch: true,
+      record: { wasCorrect: false, usedWrongShot: true },
+    });
+  });
+
+  it('6. with one life, the first wrong catch ends the round', () => {
+    expect(resolveBubbleEvent(state({ maxLives: 1 }), { type: 'catch', answer: 5 }).kind).toBe('out-of-lives');
+  });
+
+  it('7. right bubble escapes: no penalty, respawn (flag false or true)', () => {
+    expect(resolveBubbleEvent(state(), { type: 'escaped', answer: 8 })).toEqual({ kind: 'escaped-correct' });
+    expect(resolveBubbleEvent(state({ usedWrongCatch: true }), { type: 'escaped', answer: 8 })).toEqual({
+      kind: 'escaped-correct',
+    });
+  });
+
+  it('8. a wrong bubble escaping is ignored', () => {
+    expect(resolveBubbleEvent(state(), { type: 'escaped', answer: 5 })).toEqual({ kind: 'escaped-wrong' });
+  });
+
+  it('9. timeout with no wrong catch: missed, no life lost', () => {
+    expect(resolveBubbleEvent(state(), { type: 'timeout' })).toEqual({
+      kind: 'timeout',
+      record: { wasCorrect: false, usedWrongShot: false },
+    });
+  });
+
+  it('10. timeout after a wrong catch: missed, marked as used', () => {
+    expect(resolveBubbleEvent(state({ livesUsed: 1, usedWrongCatch: true }), { type: 'timeout' })).toEqual({
+      kind: 'timeout',
+      record: { wasCorrect: false, usedWrongShot: true },
+    });
+  });
+
+  it('between questions (no answer) nothing counts as correct', () => {
+    expect(resolveBubbleEvent(state({ correctAnswer: null }), { type: 'catch', answer: 8 }).kind).toBe('wrong');
+    expect(resolveBubbleEvent(state({ correctAnswer: null }), { type: 'escaped', answer: 8 }).kind).toBe('escaped-wrong');
   });
 });

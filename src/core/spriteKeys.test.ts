@@ -3,8 +3,13 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import {
   _resetCachedSpriteTier,
+  AsteroidSpriteKeys,
+  SPRITE_MANIFEST,
   getCachedSpriteTier,
   HeroSpriteKeys,
   pickNextHeroSpriteKey,
@@ -13,7 +18,7 @@ import {
 } from '@/core/spriteKeys';
 
 /**
- * Sprint 0.7 Story 13 (D5 from sprint 0.6.3 wrap-up review) — unit
+ * Sprint 0.7 Story 13 (D5 from sprint 0.6.3 pre-release review) — unit
  * test for `pickSpriteTier(viewportWidth, dpr)`.
  *
  * The function is pure (no side effects, no DOM access — viewport +
@@ -169,6 +174,32 @@ describe('spritePath extension resolution', () => {
     expect(spritePath('projectile', 'laser')).toBe(
       '/assets/sprites/projectiles/laser.png',
     );
+  });
+
+  it('asteroid kind is .webp in its own folder (sprint 2.6.3)', () => {
+    expect(spritePath('asteroid', 'asteroid-1')).toBe('/assets/sprites/asteroids/asteroid-1.webp');
+  });
+});
+
+/**
+ * Sprint 2.6.3 — Asteroid Field's image rocks moved from `aliens/` to their
+ * own `asteroids/` folder. Every manifest entry must point at a file that
+ * really exists, so a botched move fails here, not as a missing texture.
+ */
+describe('asteroid sprites', () => {
+  const PUBLIC = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public');
+  const entries = SPRITE_MANIFEST.filter((e) => (Object.values(AsteroidSpriteKeys) as string[]).includes(e.key));
+
+  it('all eight are in the manifest as kind asteroid', () => {
+    expect(entries).toHaveLength(8);
+    for (const e of entries) {
+      expect(e.kind).toBe('asteroid');
+      expect(e.url).toBe(spritePath('asteroid', e.key));
+    }
+  });
+
+  it('every file exists on disk', () => {
+    for (const e of entries) expect(existsSync(resolve(PUBLIC, e.url.replace(/^\//, ''))), e.url).toBe(true);
   });
 });
 

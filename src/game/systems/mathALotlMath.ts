@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
+import { pickSubsetWithCorrect, resolveStrike } from '@/game/systems/roundRules';
 
 /**
  * Pure helpers for Math-a-lotl (sprint 2.5.4) — no Phaser, so the wave
@@ -199,6 +199,96 @@ export function clampToWater(
     x: Math.max(bounds.left, Math.min(bounds.right, x)),
     y: Math.max(bounds.top, Math.min(bounds.bottom, y)),
   };
+}
+
+// ----- Outcomes (sprint 2.6.3) --------------------------------------------
+
+/** What the round knows when a bubble event happens. */
+export interface BubbleRoundState {
+  /** The current question's answer; null between questions (nothing matches). */
+  correctAnswer: number | null;
+  /** Lives spent so far this round. */
+  livesUsed: number;
+  maxLives: number;
+  /** A wrong bubble was caught on this question (the right one then scores half). */
+  usedWrongCatch: boolean;
+}
+
+/** What `RoundController.recordOutcome` should be told. */
+export interface OutcomeRecord {
+  wasCorrect: boolean;
+  usedWrongShot: boolean;
+}
+
+export type CatchDecision =
+  | { kind: 'correct'; record: OutcomeRecord }
+  | { kind: 'wrong'; livesUsed: number; livesRemaining: number; usedWrongCatch: true }
+  | { kind: 'out-of-lives'; livesUsed: number; livesRemaining: 0; usedWrongCatch: true; record: OutcomeRecord };
+export type EscapeDecision = { kind: 'escaped-correct' } | { kind: 'escaped-wrong' };
+export type TimeoutDecision = { kind: 'timeout'; record: OutcomeRecord };
+
+/**
+ * Pure outcome rules for Math-a-lotl, moved out of `MathALotlScene` so they
+ * can be tested without Phaser (the `resolveRungPick` precedent). Each event
+ * has its own return type, so the scene's `switch` over it is exhaustive.
+ *
+ *  - Catch the right bubble → `correct`. Half points if a wrong one was
+ *    caught first on this question.
+ *  - Catch a wrong bubble → `wrong` (a life is spent, the wave carries on),
+ *    or `out-of-lives` if that was the last life (the round ends).
+ *  - The right bubble reaches the surface → `escaped-correct`: no penalty,
+ *    the wave respawns. A wrong one escaping → `escaped-wrong`: it just pops.
+ *  - The countdown runs out → `timeout`: the question is missed, no life lost.
+ *
+ * The scene keeps every side effect, the guards (paused / transitioning /
+ * round over), the clock (which fires a timeout only once), and resetting
+ * `usedWrongCatch` when the next question starts.
+ */
+export function resolveBubbleEvent(state: BubbleRoundState, event: { type: 'catch'; answer: number }): CatchDecision;
+export function resolveBubbleEvent(state: BubbleRoundState, event: { type: 'escaped'; answer: number }): EscapeDecision;
+export function resolveBubbleEvent(state: BubbleRoundState, event: { type: 'timeout' }): TimeoutDecision;
+export function resolveBubbleEvent(
+  state: BubbleRoundState,
+  event: { type: 'catch' | 'escaped'; answer: number } | { type: 'timeout' },
+): CatchDecision | EscapeDecision | TimeoutDecision {
+  if (event.type === 'timeout') {
+    return { kind: 'timeout', record: { wasCorrect: false, usedWrongShot: state.usedWrongCatch } };
+  }
+  const isCorrect = event.answer === state.correctAnswer;
+  if (event.type === 'escaped') {
+    return isCorrect ? { kind: 'escaped-correct' } : { kind: 'escaped-wrong' };
+  }
+  if (isCorrect) {
+    return { kind: 'correct', record: { wasCorrect: true, usedWrongShot: state.usedWrongCatch } };
+  }
+  const strike = resolveStrike(state.livesUsed, state.maxLives);
+  if (strike.exhausted) {
+    return {
+      kind: 'out-of-lives',
+      livesUsed: strike.strikesAfter,
+      livesRemaining: 0,
+      usedWrongCatch: true,
+      record: { wasCorrect: false, usedWrongShot: true },
+    };
+  }
+  return { kind: 'wrong', livesUsed: strike.strikesAfter, livesRemaining: strike.remaining, usedWrongCatch: true };
+}
+
+/**
+ * Where the "Oops! Try again!" note starts after a wrong catch: below the
+ * bubble when it fits (so a catch near the surface stays in the water,
+ * clear of the HUD), above it near the floor, where "below" would start
+ * off screen.
+ */
+export function wrongNoteY(
+  bubbleY: number,
+  radius: number,
+  risePx: number,
+  screenHeight: number,
+  floorMarginPx: number,
+): number {
+  const below = bubbleY + radius + risePx;
+  return below <= screenHeight - floorMarginPx ? below : bubbleY - radius;
 }
 
 function shuffled<T>(arr: T[], rng: () => number): T[] {

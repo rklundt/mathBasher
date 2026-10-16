@@ -15,6 +15,8 @@ import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import { text } from '@/game/ui/typography';
+import { applyBannerLegibility, screenBanner } from '@/game/ui/callouts';
+import { assertNever } from '@/shared/assertNever';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
 import { resolveStrike } from '@/game/systems/roundRules';
@@ -39,7 +41,7 @@ import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
  *      - 'correct': award score, hero `jumpTo(rung.x, rung.y)`, camera
  *        scrolls down so the hero settles back near canvas center, then
  *        `afterFloor()` → next floor OR endRound on the final floor.
- *      - 'wrong-mulligan': deduct `wrongRungTimePenaltySec` from the
+ *      - 'wrong': deduct `wrongRungTimePenaltySec` from the
  *        cumulative timer, spend one cumulative life, hero
  *        `fallBackToFloor(currentFloorY)`, InputSystem `acceptInput()`
  *        to allow another try (as long as lives remain). If that was
@@ -84,21 +86,6 @@ const HATCH_SFX_DELAY_MS = 150;
 // movement felt sluggish"). Still leaves a 50 ms gap after the hatch
 // SFX starts (150 ms) so the door audibly leads the hero's move.
 const HERO_JUMP_DELAY_MS = 200;
-
-/**
- * Sprint 2.2.1 story 1 — how long the one-time first-wrong ("Lost a
- * life!") banner holds at full opacity before its 300ms fade-out.
- */
-const MULLIGAN_HINT_HOLD_MS = 1500;
-
-/**
- * Sprint 2.5.2 — vertical position of the first-wrong banner as a
- * fraction of screen height. The banner is screen-fixed and horizontally
- * centered (it used to follow the hero's x, which clipped it off-screen
- * when the hero stood on an outer rung); 0.34 centers it in the gap between
- * the next floor's rungs and the settled hero's head.
- */
-const MULLIGAN_HINT_Y_FRAC = 0.34;
 
 /**
  * Sprint 2.2.1 story 2 — how long the "Out of time!" banner holds
@@ -147,7 +134,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
    * Per-round floor spacing (px). Picked at `create()` from
    * `pickFloorSpacingPx()` so desktop and mobile can carry independent
    * values. Used for the frame band height, next-floor y math, and the
-   * fall-back-to-floor target y on a mulligan.
+   * fall-back-to-floor target y on a wrong pick.
    */
   private floorSpacingPx = 0;
 
@@ -228,10 +215,10 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // top margin for the HUD, bottom margin = the canvas bottom gutter.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
-    const footerHeight = config.layout.attributionFooterHeightPx;
+    const bottomGutter = config.layout.canvasBottomGutterPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
-    const bottomPlayfield = height - footerHeight - 16;
+    const bottomPlayfield = height - bottomGutter - 16;
     // Sprint 2.2 story 13d — anchor floor 0 so its FRAME bottom aligns
     // with the playfield bottom (not the hero's feet). With the taller
     // floor band (173 px after stories 13b + 13c bumps), centering on
@@ -331,7 +318,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
    * rest there too, so it looked vertically centered / floating. This
    * offsets it DOWN so its feet land `bottomGapPx` above the band bottom,
    * reading as "standing on the floor." Applied at every resting site:
-   * the start floor, each correct-pick landing, and the mulligan
+   * the start floor, each correct-pick landing, and the wrong-pick
    * fall-back. (NOT the fall-off-screen exit — that intentionally drops
    * past the bottom.)
    */
@@ -386,21 +373,23 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       case 'correct':
         this.handleCorrectPick(outcome.rung);
         break;
-      case 'wrong-mulligan':
-        this.handleWrongMulligan();
+      case 'wrong':
+        this.handleWrongPick();
         break;
       case 'rung-consumed':
         // Defensive — double-tap of an already-consumed rung. Ignore.
         break;
+      default:
+        assertNever(outcome, 'rung pick outcome');
     }
   }
 
   private handleCorrectPick(rung: NumberClimbRung): void {
     this.transitioning = true;
-    const usedMulligan = this.floorSystem.hasUsedMulligan();
+    const hadWrongPick = this.floorSystem.hadWrongPickThisFloor();
     const { scoreDelta } = this.roundController.recordOutcome({
       wasCorrect: true,
-      usedWrongShot: usedMulligan,
+      usedWrongShot: hadWrongPick,
     });
     this.events.emit('correctHit', {
       x: rung.x,
@@ -446,7 +435,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     });
   }
 
-  private handleWrongMulligan(): void {
+  private handleWrongPick(): void {
     this.remainingTimeMs = Math.max(
       0,
       this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000,
@@ -471,7 +460,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // First wrong of the session: a one-time banner teaches that a wrong
     // pick costs a life (the lives HUD also decrements). Shown once per
     // session via sessionStorage.
-    this.maybeShowFirstMulliganHint();
+    this.maybeShowFirstLifeLostHint();
 
     // Hero falls back to the CURRENT floor's base (the floor the kid is
     // still on — they haven't climbed yet). After the animation,
@@ -518,8 +507,8 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       mathId: this.mathId,
       speed: this.speed,
     });
-    // The mulligan path does NOT call `roundController.recordOutcome`
-    // for the current question (the FloorSystem returns 'wrong-mulligan'
+    // The wrong-pick path does NOT call `roundController.recordOutcome`
+    // for the current question (the FloorSystem returns 'wrong'
     // and the scene only deducts time + falls the hero back). So this
     // path is the FIRST record for the in-flight question — mark it
     // wrong before emitting `questionEnded`.
@@ -544,8 +533,8 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
    * retry) to the lives-accurate "Lost a life! Try again!" now that 3
    * cumulative lives is the only rule.
    */
-  private maybeShowFirstMulliganHint(): void {
-    const FLAG_KEY = 'numberClimb.mulliganHintSeen';
+  private maybeShowFirstLifeLostHint(): void {
+    const FLAG_KEY = 'numberClimb.lifeLostHintSeen';
     try {
       if (sessionStorage.getItem(FLAG_KEY) === '1') return;
       sessionStorage.setItem(FLAG_KEY, '1');
@@ -557,18 +546,18 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const banner = text(
       this,
       this.scale.width / 2,
-      this.scale.height * MULLIGAN_HINT_Y_FRAC,
+      this.scale.height * config.numberClimb.lifeLostHint.yFrac,
       'Lost a life! Try again!',
       'warning',
     ).setOrigin(0.5);
     banner.setScrollFactor(0);
     banner.setDepth(100);
-    this.applyBannerLegibility(banner);
-    this.time.delayedCall(MULLIGAN_HINT_HOLD_MS, () => {
+    applyBannerLegibility(banner);
+    this.time.delayedCall(config.numberClimb.lifeLostHint.holdMs, () => {
       this.tweens.add({
         targets: banner,
         alpha: 0,
-        duration: 300,
+        duration: config.numberClimb.lifeLostHint.fadeMs,
         ease: 'Quad.Out',
         onComplete: () => banner.destroy(),
       });
@@ -585,16 +574,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // off-screen reads as "I picked the wrong rung" rather than
     // "time's up." Screen-fixed (scrollFactor 0) since the camera may
     // be anywhere up the climb. Holds ~600ms, then the hero falls.
-    const banner = text(
-      this,
-      this.scale.width / 2,
-      this.scale.height / 2,
-      'Out of time!',
-      'warning',
-    ).setOrigin(0.5);
-    banner.setScrollFactor(0);
-    banner.setDepth(100);
-    this.applyBannerLegibility(banner);
+    const banner = screenBanner(this, 'Out of time!', { fixedToCamera: true });
     this.time.delayedCall(TIMER_OUT_BANNER_HOLD_MS, () => {
       banner.destroy();
       this.hero.fallOffScreen(this.scale.height, () => {
@@ -608,7 +588,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       gameId: this.gameId,
       questionIndex: String(this.roundController.questionIndex),
       wasCorrect: String(wasCorrect),
-      usedWrongShot: String(this.floorSystem.hasUsedMulligan()),
+      usedWrongShot: String(this.floorSystem.hadWrongPickThisFloor()),
       mathId: this.mathId,
       speed: this.speed,
     };
@@ -643,19 +623,6 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.startNextQuestion();
   }
 
-  /**
-   * Sprint 2.2.1 — shared legibility treatment for the scene's banners
-   * ("Lost a life! Try again!", "Out of time!", "Escaped Safe!"). These render over per-floor background art that can
-   * be bright (the fire floor, lit station rooms), where the bare warm-
-   * amber / light-grey fill drops below the WCAG-AA 4.5:1 contrast bar.
-   * A heavy dark stroke + soft drop shadow makes the copy readable on any
-   * floor backdrop without needing a backing rect per call site.
-   */
-  private applyBannerLegibility(banner: Phaser.GameObjects.Text): void {
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
-  }
-
   // ----- End-round + cleanup ----------------------------------------------
 
   private endRound(): void {
@@ -681,7 +648,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const banner = text(this, bannerX, bannerY, 'Escaped Safe!', 'headline');
     banner.setOrigin(0.5);
     banner.setDepth(100); // above the frame + hero z-order
-    this.applyBannerLegibility(banner);
+    applyBannerLegibility(banner);
 
     this.time.delayedCall(1000, () => {
       banner.destroy();

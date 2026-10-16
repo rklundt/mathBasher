@@ -614,7 +614,7 @@ export class HudScene extends Phaser.Scene {
     // later, after fade-out of survivors).
     gameScene.events.on('correctHit', this.onCorrectHit, this);
     // Sprint 2.2.1 story 1 — Number Climb emits `timePenalty` on a
-    // wrong-rung mulligan. Harmless to bind for the arcade modes too
+    // wrong-rung pick. Harmless to bind for the arcade modes too
     // (they never emit it).
     gameScene.events.on('timePenalty', this.onTimePenalty, this);
     // Sprint 2.4.1 story 1 — Number Climb emits `strikesChanged` on
@@ -765,7 +765,7 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * Sprint 2.2.1 story 1 — floating "−Ns" popup at the countdown timer
-   * when a Number Climb wrong-rung mulligan costs cumulative-timer
+   * when a Number Climb wrong-rung pick costs cumulative-timer
    * seconds. Mirrors `popupScoreDelta` but red + anchored at the
    * timer (where the cost is paid) rather than at a hit position.
    * No-op if the countdown text isn't present (arcade modes never

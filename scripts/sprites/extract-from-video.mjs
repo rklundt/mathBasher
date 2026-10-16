@@ -105,6 +105,7 @@ const KIND_FOLDERS = {
   ui: 'public/assets/sprites/ui',
   particle: 'public/assets/sprites/particles',
   bg: 'public/assets/sprites/bg',
+  asteroid: 'public/assets/sprites/asteroids',
 };
 
 const TEMP_DIR = '.sprite-source/working/.extract-temp';

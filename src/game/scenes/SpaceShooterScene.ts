@@ -26,7 +26,7 @@ import {
   type FlightTuning,
 } from '@/game/systems/spaceShooterMath';
 import { ALIEN_SHIP_SHEET, SpaceShooterSpriteKeys } from '@/core/spriteKeys';
-import { text } from '@/game/ui/typography';
+import { createTapHint, floatNote, screenBanner, type TapHint } from '@/game/ui/callouts';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { pickRandomHitCorrectSfx, pickRandomHitWrongSfx, SfxKeys } from '@/core/audioKeys';
 
@@ -73,7 +73,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
   private roundOver = false;
   private readonly clock = new QuestionClock();
   private keyHandlers: Array<{ event: string; fn: () => void }> = [];
-  private tapHint?: Phaser.GameObjects.Container;
+  private tapHint?: TapHint;
 
   constructor() {
     super(SpaceShooterScene.key);
@@ -292,7 +292,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     _th.logToAi('WrongShip', SeverityLevel.Information, this.questionProps());
     const outOfLives = this.loseLife();
     // No "Try again!" when that was the last life — "Out of lives!" follows.
-    this.floatNote(ship.body.x, ship.body.y - 70, outOfLives ? 'Shields up!' : 'Shields up! Try again!');
+    floatNote(this, ship.body.x, ship.body.y - 70, outOfLives ? 'Shields up!' : 'Shields up! Try again!', this.cfg.note);
     // Out of play at once (no second shot at it). Taps stay locked until the
     // shield flash ends, so a frantic double-tap can't cost a second life.
     ship.state = 'leaving';
@@ -307,7 +307,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     this.busy = true;
     this.usedWrongThisQuestion = true;
     _th.logToAi('SpaceShooter.timeout', SeverityLevel.Information, this.questionProps());
-    const banner = this.screenBanner('Out of time! You got blasted!');
+    const banner = screenBanner(this, 'Out of time! You got blasted!');
     this.blastCockpit();
     this.time.delayedCall(this.cfg.blastMs, () => {
       banner.destroy();
@@ -399,7 +399,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
       score: this.roundController.score,
       correctCount: this.roundController.correctCount,
     });
-    this.screenBanner('Out of lives!');
+    screenBanner(this, 'Out of lives!');
     this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound());
   }
 
@@ -422,7 +422,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     this.spawnWave(question);
     this.clock.start(this.countdownMs());
     this.busy = false;
-    if (this.roundController.questionIndex === 0) this.tapHint?.setVisible(true);
+    if (this.roundController.questionIndex === 0) this.tapHint?.show();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());
     this.events.emit('questionStarted', {
       question,
@@ -483,48 +483,20 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
 
   // ----- Feedback ----------------------------------------------------------
 
-  /** Short message floating up from a point, kept on screen. */
-  private floatNote(x: number, y: number, msg: string): void {
-    const { edgeMarginPx: margin, risePx, durationMs } = this.cfg.note;
-    const cx = Math.max(margin, Math.min(this.scale.width - margin, x));
-    const note = text(this, cx, y, msg, 'rowLabel').setOrigin(0.5).setDepth(100);
-    note.setStroke('#0b1020', 6);
-    this.tweens.add({
-      targets: note,
-      y: y - risePx,
-      alpha: { from: 1, to: 0 },
-      duration: durationMs,
-      ease: 'Quad.In',
-      onComplete: () => note.destroy(),
+  /** "Tap the ship with the right answer!" pill over the dashboard, Q1 only. */
+  private buildTapHint(): void {
+    const { aboveBottomPx, heightPx, backdropAlpha } = this.cfg.tapHint;
+    this.tapHint = createTapHint(this, {
+      x: this.scale.width / 2,
+      y: this.scale.height - aboveBottomPx,
+      label: '👆 Tap the ship with the right answer!',
+      heightPx,
+      backdropAlpha,
     });
   }
 
-  /** Big centred banner. */
-  private screenBanner(msg: string): Phaser.GameObjects.Text {
-    const banner = text(this, this.scale.width / 2, this.scale.height / 2, msg, 'warning')
-      .setOrigin(0.5)
-      .setDepth(100);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
-    return banner;
-  }
-
-  /** "Tap the ship with the right answer!" pill over the dashboard, Q1 only. */
-  private buildTapHint(): void {
-    const H = 60;
-    const container = this.add.container(this.scale.width / 2, this.scale.height - 62);
-    const label = text(this, 0, 0, '👆 Tap the ship with the right answer!', 'rowLabel').setOrigin(0.5);
-    const bg = this.add.rectangle(0, 0, label.width + 48, H, 0x0b1020, 0.75).setStrokeStyle(2, 0xffffff, 0.7);
-    container.add([bg, label]);
-    container.setDepth(50).setVisible(false);
-    this.tweens.add({ targets: container, alpha: { from: 1, to: 0.6 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    this.tapHint = container;
-  }
-
   private hideTapHint(): void {
-    if (!this.tapHint) return;
-    this.tweens.killTweensOf(this.tapHint);
-    this.tapHint.destroy();
+    this.tapHint?.destroy();
     this.tapHint = undefined;
   }
 

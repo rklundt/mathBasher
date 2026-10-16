@@ -4,7 +4,7 @@
 
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { bootGame } from '@/app/boot';
-import { mountAttributionFooter } from '@/game/ui/domAttributionFooter';
+import { mountAttributionFooter } from '@/app/attributionFooter';
 
 _th.logToAi('AppBoot Started', SeverityLevel.Information);
 

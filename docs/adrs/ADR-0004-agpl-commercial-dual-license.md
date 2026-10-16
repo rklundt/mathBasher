@@ -39,7 +39,7 @@ mathBasher is dual-licensed:
 
 The decision above is unchanged; only **how** the §7(b) notice is displayed changed. The notice moved out of the Phaser canvas (the always-on `AttributionScene`, now deleted) into a DOM footer:
 
-- Markup + CSS: `#app-footer` in `index.html`. Filled at page load by `mountAttributionFooter()` (`src/game/ui/domAttributionFooter.ts`), still from the single source of truth `src/core/attribution.ts`.
+- Markup + CSS: `#app-footer` in `index.html`. Filled at page load by `mountAttributionFooter()` (`src/game/ui/domAttributionFooter.ts`), still from the single source of truth `src/core/attribution.ts`. *(2026-10-16, sprint 2.6.3: the file moved to `src/app/attributionFooter.ts`, beside the other browser-shell code; the text and source link are unchanged.)*
 - Layout: the page is a column the height of the visible viewport — the game canvas fills the space and the footer sits in flow directly beneath it. So the notice stays above a phone's URL bar, no game element can cover it (or sit under its Source link), and it is stacked above the boot splash so it shows from first paint.
 - It wraps to a second line on narrow screens instead of truncating (NOTICE §7(b)(b)).
 - The source link (NOTICE §7(b)(c), AGPL §13) is built by CI per deployment, pinned to the exact commit deployed (`.../tree/<short-sha>`).

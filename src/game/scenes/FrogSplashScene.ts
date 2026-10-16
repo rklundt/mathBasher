@@ -30,7 +30,8 @@ import {
   SPLASH_SHEET,
   pickRandomFrogSpriteKey,
 } from '@/core/spriteKeys';
-import { text } from '@/game/ui/typography';
+import { CALLOUT_INK_CSS } from '@/game/ui/uiPalette';
+import { createTapHint, floatNote, screenBanner, type TapHint } from '@/game/ui/callouts';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import {
   pickRandomFrogHopSfx,
@@ -91,7 +92,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   private roundOver = false;
   private readonly clock = new QuestionClock();
   private keyHandlers: Array<{ event: string; fn: () => void }> = [];
-  private tapHint?: Phaser.GameObjects.Container;
+  private tapHint?: TapHint;
 
   constructor() {
     super(FrogSplashScene.key);
@@ -362,7 +363,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     _th.logToAi('WrongPad', SeverityLevel.Information, this.questionProps());
     const outOfLives = this.loseLife();
     // No "Try again!" when that was the last life — "Out of lives!" follows.
-    this.floatNote(at.x, at.y - 60, outOfLives ? 'Splash!' : 'Splash! Try again!');
+    floatNote(this, at.x, at.y - 60, outOfLives ? 'Splash!' : 'Splash! Try again!', this.cfg.note);
     if (outOfLives) return;
     this.time.delayedCall(this.cfg.splashRecoverMs, () => this.retryQuestion(true));
   }
@@ -375,7 +376,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     _th.logToAi('FrogSplash.timeout', SeverityLevel.Information, this.questionProps());
     // "Out of time!" shows even on the last life, so the kid knows why
     // the round is ending.
-    const banner = this.screenBanner('Out of time!');
+    const banner = screenBanner(this, 'Out of time!', { fixedToCamera: true });
     this.time.delayedCall(this.cfg.timeoutBannerMs, () => {
       banner.destroy();
       if (this.loseLife()) return;
@@ -432,7 +433,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       score: this.roundController.score,
       correctCount: this.roundController.correctCount,
     });
-    this.screenBanner('Out of lives!');
+    screenBanner(this, 'Out of lives!', { fixedToCamera: true });
     this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound(false));
   }
 
@@ -508,8 +509,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.playSparkle(this.frog.x, this.frog.y - 30);
     this.frog.cheer();
     // Gold (not green) with a heavy outline — green reads poorly on blue water.
-    const banner = this.screenBanner('You made it!', 'stars');
-    banner.setStroke('#0b1020', 10);
+    const banner = screenBanner(this, 'You made it!', { style: 'stars', fixedToCamera: true });
+    banner.setStroke(CALLOUT_INK_CSS, 10);
     banner.setScale(0.6);
     this.tweens.add({ targets: banner, scale: 1, duration: 300, ease: 'Back.Out' });
     _th.logToAi('FrogSplash.crossed', SeverityLevel.Information, {
@@ -535,7 +536,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.rows[this.activeRow]!.setAnswers(this.answersFor(question));
     this.clock.start(this.countdownMs());
     this.busy = false;
-    if (this.roundController.questionIndex === 0) this.tapHint?.setVisible(true);
+    if (this.roundController.questionIndex === 0) this.tapHint?.show();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());
     this.events.emit('questionStarted', {
       question,
@@ -596,50 +597,23 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.time.delayedCall(550, () => burst.destroy());
   }
 
-  /** Short message floating up from a world point. */
-  private floatNote(x: number, y: number, msg: string): void {
-    const { edgeMarginPx: margin, risePx, durationMs } = this.cfg.note;
-    const cx = Math.max(margin, Math.min(this.scale.width - margin, x));
-    const note = text(this, cx, y, msg, 'rowLabel').setOrigin(0.5).setDepth(100);
-    note.setStroke('#0b1020', 6);
-    this.tweens.add({
-      targets: note,
-      y: y - risePx,
-      alpha: { from: 1, to: 0 },
-      duration: durationMs,
-      ease: 'Quad.In',
-      onComplete: () => note.destroy(),
+  /** "Tap the right lily pad!" pill on Q1 only; freed on the first hop. */
+  private buildTapHint(): void {
+    const { y, heightPx, backdropAlpha } = this.cfg.tapHint;
+    // Screen-fixed: the camera starts scrolled down the river. The pill
+    // is sized to the text, so it never spills past the box.
+    this.tapHint = createTapHint(this, {
+      x: this.scale.width / 2,
+      y,
+      label: '👆 Tap the right lily pad!',
+      heightPx,
+      backdropAlpha,
+      fixedToCamera: true,
     });
   }
 
-  /** Big centred banner that ignores the camera scroll. */
-  private screenBanner(msg: string, kind: 'warning' | 'stars' = 'warning'): Phaser.GameObjects.Text {
-    const banner = text(this, this.scale.width / 2, this.scale.height / 2, msg, kind)
-      .setOrigin(0.5)
-      .setDepth(100)
-      .setScrollFactor(0);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
-    return banner;
-  }
-
-  /** "Tap the right lily pad!" pill on Q1 only; freed on the first hop. */
-  private buildTapHint(): void {
-    const H = 60;
-    const container = this.add.container(this.scale.width / 2, 150).setScrollFactor(0);
-    const label = text(this, 0, 0, '👆 Tap the right lily pad!', 'rowLabel').setOrigin(0.5);
-    // Pill sized to the text, so it never spills past the box.
-    const bg = this.add.rectangle(0, 0, label.width + 48, H, 0x0b1020, 0.55).setStrokeStyle(2, 0xffffff, 0.7);
-    container.add([bg, label]);
-    container.setDepth(50).setVisible(false);
-    this.tweens.add({ targets: container, alpha: { from: 1, to: 0.6 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    this.tapHint = container;
-  }
-
   private hideTapHint(): void {
-    if (!this.tapHint) return;
-    this.tweens.killTweensOf(this.tapHint);
-    this.tapHint.destroy();
+    this.tapHint?.destroy();
     this.tapHint = undefined;
   }
 
