@@ -1,6 +1,6 @@
 # ADR-0012: Azure Static Web Apps hosting; Express server kept but not deployed
 
-**Status:** Accepted (2026-10-16). Records decisions made in sprints 2.3 and 2.5.2.
+**Status:** Accepted (2026-10-15). Records decisions made in sprints 2.3 and 2.5.2.
 **Supersedes:** [ADR-0002](ADR-0002-single-container-deployment.md) and [ADR-0007](ADR-0007-azure-app-service-for-containers.md) for current hosting. Both stay as the plan for a future backend.
 
 ## Context
