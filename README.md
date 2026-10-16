@@ -45,7 +45,7 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-For a production-style local run (Express serving the built assets):
+For a production-style local run (Express serving the built assets; the live site is static on Azure Static Web Apps, so this server isn't deployed):
 
 ```bash
 pnpm build                 # builds client (Vite) + server (tsc)
@@ -61,7 +61,7 @@ src/              browser-side TypeScript (Vite)
   services/      score store, audio manager, settings (no Phaser)
   core/          config, telemetry, attribution, shared types
 public/           static assets served as-is by Vite (CREDITS.md lives here)
-server/           Express server for production container
+server/           Express server (not deployed; future backend)
   src/           server source
   dist/          compiled output
 docs/             reference documents (ADRs)

@@ -88,7 +88,7 @@ pnpm build               # builds client (Vite -> dist/) AND server (tsc -> serv
 pnpm start               # node serves both on http://localhost:8080
 ```
 
-The Express server reads `PORT` from env (default 8080), binds `0.0.0.0`, exposes `/health` for container probes, and handles SIGTERM/SIGINT gracefully. Try `PORT=9000 pnpm start` to confirm the env-port contract works end-to-end.
+The Express server reads `PORT` from env (default 8080), binds `0.0.0.0`, exposes `/health` for container probes, and handles SIGTERM/SIGINT gracefully. Try `PORT=9000 pnpm start` to confirm the env-port contract works end-to-end. It serves `dist/` from the app root (the folder holding `package.json`, `server/src/paths.ts`), so the same build works from the repo and in the container. This is a local production-style run only: the live site is static (ADR-0012).
 
 ### 7. (Optional) Build the Docker image
 
@@ -158,7 +158,7 @@ A **browser-based math game for kids**, modeled on the arcade-shooter feel of th
 |  Azure Static Web Apps  (production hosting)             |
 |                                                          |
 |  - serves the static SPA bundle from a global edge       |
-|  - staticwebapp.config.json: cache headers + SPA routing |
+|  - staticwebapp.config.json: cache, CSP, SPA routing     |
 |  - GitHub Actions auto-deploys on push                   |
 +----------------------------------------------------------+
 
@@ -166,7 +166,8 @@ A **browser-based math game for kids**, modeled on the arcade-shooter feel of th
   Serves /dist + GET /health for local production-style runs,
   and is the landing spot for a future "mature to Azure App
   Service" backend move (Phase 3+). The current production
-  path is 100% static — no server sits in the request path.
+  path is 100% static — no server sits in the request path
+  (ADR-0012; ADR-0002 / ADR-0007 are the future-backend plan).
 ```
 
 Single repo. The browser side and the server side share the same TypeScript toolchain and a single `package.json`; today only the static browser bundle is deployed.
@@ -260,7 +261,7 @@ mathBasher/
 │       └── SCALE.md             canvas scaling strategy doc (FIT + 1280×720 + landscape lock)
 │
 ├── public/              static assets served as-is by Vite (copied to dist/ root)
-│   ├── staticwebapp.config.json  Azure SWA cache headers + SPA routing
+│   ├── staticwebapp.config.json  Azure SWA cache + security headers (CSP) + SPA routing
 │   └── assets/          CREDITS.md attribution ledger
 │       ├── audio/       shipped MP3s (sfx/, music/, midground/) — see scripts/audio/
 │       └── sprites/     shipped PNGs/WebPs by kind (aliens/{128,192}/, hero/, ui/, particles/, bg/)
@@ -282,9 +283,10 @@ mathBasher/
 │   ├── README.md        the only tracked file in here
 │   └── working/         (gitignored too) — preview HTMLs + verify-grid intermediates
 │
-├── server/              EXPRESS SERVER for production
+├── server/              EXPRESS SERVER (not deployed; future backend, ADR-0012)
 │   ├── src/
 │   │   ├── index.ts             bootstraps Express; PORT-from-env, /health, SIGTERM
+│   │   ├── paths.ts             finds dist/ from the app root (repo or /app in Docker)
 │   │   ├── telemetry.ts         server-side _th, mirrors browser shape
 │   │   └── routes/
 │   │       └── health.ts        GET /health (sub-100ms, no async work)
@@ -505,7 +507,7 @@ not one SWA with a preview environment. (The Free tier only binds a custom domai
 to a SWA's *production* environment, so each environment is its own Free SWA with
 its domain on its production env.) The apps are captured as Bicep IaC in `/infra/`
 (see `infra/README.md`). Deploys are automatic — `.github/workflows/deploy.yml`
-runs on every push, and a per-branch deploy token picks the matching SWA:
+runs on every push, and the branch picks a GitHub Environment (`production` for `main`, `development` for `development`) whose own deploy token selects the matching SWA. Pull requests are checked by `.github/workflows/ci.yml` (typecheck, tests, build) before they merge:
 
 | Push to | Deploys to | Custom domain |
 |---|---|---|
@@ -528,7 +530,7 @@ Branching model: sprint branches → PR → `development` (verify on the dev URL
 
 ### Rollback
 
-A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.5.2 release onward; older runs used the retired single-SWA workflow or built the footer's source link without a commit pin.
+A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.6.2 release onward: from then on each run reads its token from its GitHub Environment. Older runs read the retired repo-level tokens (deleted once the 2.6.2 release has deployed), so they stop at "Check deploy token" without deploying; for anything older, revert instead.
 
 ---
 
@@ -556,11 +558,11 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where do gameplay numbers come from? | `src/core/config.ts` |
 | How do I add a new math difficulty? | New file in `src/math/generators/`, register in `src/math/registry.ts`, add its score multiplier (`config.scoring.mathDifficulty`) and time multiplier (`config.round.mathTimeScale`) to `config.ts` |
 | How do I add a new scene? | `src/game/scenes/<Name>Scene.ts`, register key in `src/core/sceneKeys.ts`, add to scene array in `src/main.ts` |
-| How does deployment work? | The **Deployment** section above — two Free Azure Static Web Apps (one per env), push-triggered (`development` → dev SWA, `main` → prod SWA), IaC in `/infra/`. ADR-0007 covered the earlier App Service plan, now superseded by the SWA decision. |
+| How does deployment work? | The **Deployment** section above — two Free Azure Static Web Apps (one per env), push-triggered (`development` → dev SWA, `main` → prod SWA), IaC in `/infra/`. ADR-0012 records the SWA decision; ADR-0002 / ADR-0007 (container on App Service) are superseded for hosting and kept as the future-backend plan. |
 | Why no React? | `docs/adrs/ADR-0001-tech-stack.md` |
 | Why AGPL+commercial? | `docs/adrs/ADR-0004-agpl-commercial-dual-license.md` |
 | Why is sprint id the version? | `docs/adrs/ADR-0005-sprint-id-as-version.md` |
-| What runs in production? | `Dockerfile` build stage, `server/src/index.ts` runtime |
+| What runs in production? | Only the static `dist/` build, served by Azure Static Web Apps with headers from `public/staticwebapp.config.json` (ADR-0012). The `Dockerfile` + `server/` are the future-backend path and aren't deployed. |
 | What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest. Generators inject an RNG (`rng?: () => number`) so tests pin determinism by passing a seeded sequence — see `src/test-utils/mulberry32.ts` |
 | How do I add a new scene? | New file in `src/game/scenes/<Name>Scene.ts` extending `Phaser.Scene`; register its key in `src/core/sceneKeys.ts`; add the class to the scene array in `src/main.ts`. Scenes that should render on top of others (HUD, overlays, attribution) are registered LAST. |
 | Where does the cross-scene round selection live? | `src/services/Settings.ts` — module-level singleton with `setMathId`/`setSpeed`/`isReady`. Scenes read on `create`. |

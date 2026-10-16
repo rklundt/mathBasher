@@ -33,10 +33,11 @@ audit: false
 
 overrides:
   # Version floors that must hold across any future install / lockfile regen.
-  # vite 6.4.x is the build/dev toolchain baseline; esbuild 0.25.x carries the
+  # vite 6.4.4 is the build/dev toolchain baseline (patched dev-server
+  # advisories, sprint 2.6.2); esbuild 0.25.x carries the
   # dev-server security fix (the pre-0.25 default let any website send requests
   # to the running dev server). Do not lower these without a deliberate review.
-  vite: ^6.4.2
+  vite: ^6.4.4
   esbuild: ^0.25.0
 
 # --- Lifecycle-script approval (replaces package.json "pnpm".onlyBuiltDependencies) ---

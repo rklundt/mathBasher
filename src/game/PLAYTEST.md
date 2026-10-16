@@ -372,6 +372,12 @@ Phone in landscape, then desktop.
 - [ ] Game Over (any game): Play Again on top; Change Difficulty · Change Game · Main Menu in a row below, clear of the "New High Score!" badge; keyboard Tab order is Play Again → Change Difficulty → Change Game → Main Menu.
 - [ ] Change Game → Game Select; picking a game shows the same math type and difficulty still selected.
 
+## Security headers (sprint 2.6.2)
+
+Content-Security-Policy is new, so check it on real phones (dev site), not only desktop, before the release goes to production:
+- [ ] iPhone Safari and an Android phone: the game loads, the title font is the game font (not a fallback), music and sound effects play after the first tap, fullscreen works.
+- [ ] Desktop devtools console: no "Refused to load" / "Refused to connect" CSP errors from the game itself (one blocked inline script is expected: Cloudflare's injected bot-detection snippet, reported as an inline script refused by `script-src`).
+
 ## Logging the run
 
 ```
