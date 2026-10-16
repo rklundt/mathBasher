@@ -20,5 +20,7 @@
   // rootDir is the project root so cross-folder imports (server/src ->
   // src/shared) stay valid; outputs land under server/dist mirroring the
   // source tree (e.g. server/dist/server/src/index.js).
-  "include": ["server/src/**/*.ts", "src/shared/**/*.ts"]
+  // Tests run under Vitest and are not compiled into the server build.
+  "include": ["server/src/**/*.ts", "src/shared/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
 }

@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 
 import { _th, SeverityLevel, type TelemetryProps } from './telemetry.js';
 import { healthRouter } from './routes/health.js';
+import { resolveDistDir } from './paths.js';
 
 /**
  * Express server. Serves the Vite-built static assets in production and exposes
@@ -36,10 +37,10 @@ function resolvePort(): number {
 const PORT = resolvePort();
 const HOST = '0.0.0.0';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-// server/dist/index.js -> ../../dist (the Vite client build)
-const distDir = join(__dirname, '..', '..', 'dist');
+// The Vite client build, at <app root>/dist (repo root locally, /app in the
+// Docker image). Found from the app root rather than a fixed number of '..'
+// hops: tsc writes this file to server/dist/server/src/.
+const distDir = resolveDistDir(dirname(fileURLToPath(import.meta.url)));
 
 function bootstrap(): void {
   const dict: TelemetryProps = {
