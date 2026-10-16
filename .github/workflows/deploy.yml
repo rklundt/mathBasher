@@ -41,7 +41,7 @@ jobs:
       url: ${{ github.ref_name == 'main' && 'https://mathbasher.mykfam.com' || 'https://mathbasher-dev.mykfam.com' }}
     steps:
       # Actions are pinned to full commit SHAs (the tag is in the comment), so
-      # a moved or compromised tag can't change what runs.
+      # a moved or compromised tag can't change the action code that runs.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -90,7 +90,9 @@ jobs:
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
-        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
+        # Docker action: the SHA pins the wrapper, but its image is Microsoft's
+        # moving `:stable` tag, so the uploader itself can still change.
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1 (moving tag)
         with:
           # The environment's own token selects the matching SWA (prod or dev).
           # The "Check deploy token" step above guarantees it is non-empty.
@@ -109,6 +111,26 @@ jobs:
           # No deployment_environment: each branch deploys to ITS OWN SWA's
           # production environment (the token picks the SWA). The custom domain
           # for that environment binds to this production env.
+
+      # Fail if the upload landed on the wrong app (e.g. the dev token pasted
+      # into the production environment): the URL the deploy step reports must
+      # be this environment's default hostname.
+      - name: Check deploy target
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.static_web_app_url }}
+          EXPECTED_HOST: ${{ github.ref_name == 'main' && 'polite-desert-0af64970f.5.azurestaticapps.net' || 'brave-river-0f2e36c0f.7.azurestaticapps.net' }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::warning::Deploy step exposed no URL — can't confirm the target app."
+            exit 0
+          fi
+          host="${DEPLOY_URL#*://}"
+          host="${host%%/*}"
+          if [ "$host" != "$EXPECTED_HOST" ]; then
+            echo "::error::Deployed to $host, expected $EXPECTED_HOST — this environment's AZURE_SWA_TOKEN belongs to another app."
+            exit 1
+          fi
+          echo "Deploy target confirmed: $host"
 
       # Post-deploy smoke test — `pnpm test` above checks the code; this
       # checks the LIVE site responds. Catches a deploy that uploaded but

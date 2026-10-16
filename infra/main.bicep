@@ -55,9 +55,8 @@ param customDomain string
 @allowed([ 'Enabled', 'Disabled' ])
 @description('''
 Preview (named) environments policy. The two-SWA model uses only each SWA's
-production environment, so the default is Disabled (no preview envs). The dev
-SWA may keep this Enabled during the migration if its `development` preview env
-is still live.
+production environment, so the default is Disabled (no preview envs). Both
+SWAs use it since sprint 2.6.2.
 ''')
 param stagingEnvironmentPolicy string = 'Disabled'
 

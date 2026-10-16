@@ -74,7 +74,7 @@ What the Cloudflare proxy means for the SWAs:
 
 ## What Bicep manages — and deliberately does NOT
 
-**Manages:** the Static Web App resource (SKU Free, region, staging-env policy).
+**Manages:** the Static Web App resource (SKU Free, region, staging-env policy, tags).
 
 **Does NOT manage:**
 - **The custom domain + its DNS record.** DNS lives in Cloudflare (see above),
@@ -122,7 +122,7 @@ the SKU, region and staging policy are the properties Bicep owns, and they match
 ### Stand up prod (new resource group + SWA)
 
 ```bash
-az group create -n rg-games-prod-use2 -l eastus2
+az group create -n rg-games-prod-use2 -l eastus2 --tags project=mathbasher environment=prod
 az deployment group what-if -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 az deployment group create  -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 # then pipe the deploy token straight into the prod GitHub Environment's secret
@@ -177,7 +177,10 @@ the prod token):
 Pull requests into `development` / `main` run `.github/workflows/ci.yml`
 (typecheck, tests, build) — no secrets. Every action in both workflows is
 pinned to a full commit SHA, with the release tag in a comment; bump them
-deliberately (resolve the new tag's commit, check its release notes).
+deliberately (resolve the new tag's commit, check its release notes). One
+limit: `Azure/static-web-apps-deploy` is a Docker action whose image is
+Microsoft's moving `:stable` tag, so pinning the action pins its wrapper, not
+the uploader inside it.
 
 Both SWAs carry tags `project=mathbasher`, `environment=dev|prod`,
 `managed-by=bicep` (set in the bicepparam files); the resource groups carry
@@ -195,12 +198,14 @@ bicepparam files in step, so they still describe the live state.
 `deployment_environment: development` for a preview environment.)
 
 The workflow fails closed: a "Check deploy token" step refuses to deploy if the
-selected branch's secret is empty, so a missing prod token can never fall
-through to the dev SWA. It also sets `VITE_SOURCE_URL` to the exact commit being
+environment's secret is empty, and a "Check deploy target" step fails the run
+if the app that received the upload isn't this branch's (its default hostname
+is compared with the one expected for the environment), so a token pasted into
+the wrong environment is caught on its first run. It also sets `VITE_SOURCE_URL` to the exact commit being
 built (`.../tree/<short-sha>`) for the footer's AGPL §13 source link.
 
 **Rollback:** prefer reverting the bad commit (the push redeploys). Re-running an
-older Actions run is only safe for runs from the sprint 2.5.2 release onward:
-earlier `main` runs either used the retired single-SWA workflow or built the
-footer's source link without a commit pin (the #61 run even shipped the
-placeholder link).
+older Actions run is only safe for runs from the sprint 2.6.2 release onward
+(the first deploy through the `production` environment): older runs read the
+retired repo-level token secrets, which are deleted, so they stop at "Check
+deploy token" without deploying.
