@@ -175,7 +175,9 @@ the prod token):
 - `development` → `development` environment → dev SWA
 
 Pull requests into `development` / `main` run `.github/workflows/ci.yml`
-(typecheck, tests, build) — no secrets. Every action in both workflows is
+(typecheck, tests, build) — no secrets. Branch protection makes its
+`Typecheck, test, build` check required on both branches (admins can still
+override, e.g. for the release merge). Every action in both workflows is
 pinned to a full commit SHA, with the release tag in a comment; bump them
 deliberately (resolve the new tag's commit, check its release notes). One
 limit: `Azure/static-web-apps-deploy` is a Docker action whose image is
@@ -201,11 +203,15 @@ The workflow fails closed: a "Check deploy token" step refuses to deploy if the
 environment's secret is empty, and a "Check deploy target" step fails the run
 if the app that received the upload isn't this branch's (its default hostname
 is compared with the one expected for the environment), so a token pasted into
-the wrong environment is caught on its first run. It also sets `VITE_SOURCE_URL` to the exact commit being
-built (`.../tree/<short-sha>`) for the footer's AGPL §13 source link.
+the wrong environment is caught on its first run. The check runs after the
+upload, so it reports the mix-up rather than preventing it. A red "Check deploy target" means the other site was overwritten: put the right token in the environment, then re-run the last good deploy of the overwritten site's branch. The
+expected hostnames are in `deploy.yml`; if a SWA is ever recreated, update
+them there as well as in the Environments table above. The workflow also sets
+`VITE_SOURCE_URL` to the exact commit being built (`.../tree/<short-sha>`)
+for the footer's AGPL §13 source link.
 
 **Rollback:** prefer reverting the bad commit (the push redeploys). Re-running an
 older Actions run is only safe for runs from the sprint 2.6.2 release onward
 (the first deploy through the `production` environment): older runs read the
-retired repo-level token secrets, which are deleted, so they stop at "Check
-deploy token" without deploying.
+retired repo-level token secrets, which are deleted once the 2.6.2 release has
+deployed, so they stop at "Check deploy token" without deploying.

@@ -528,7 +528,7 @@ Branching model: sprint branches → PR → `development` (verify on the dev URL
 
 ### Rollback
 
-A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.6.2 release onward: from then on each run reads its token from its GitHub Environment. Older runs read the retired repo-level tokens (now deleted), so they stop at "Check deploy token" without deploying; for anything older, revert instead.
+A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.6.2 release onward: from then on each run reads its token from its GitHub Environment. Older runs read the retired repo-level tokens (deleted once the 2.6.2 release has deployed), so they stop at "Check deploy token" without deploying; for anything older, revert instead.
 
 ---
 

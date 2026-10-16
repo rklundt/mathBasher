@@ -18,7 +18,7 @@ using './main.bicep'
 param name = 'swa-games-mathBlaster-dev-use2'
 param location = 'eastus2'
 param customDomain = 'mathbasher-dev.mykfam.com'
-// Disabled once the leftover `development` preview environment is deleted.
+// No preview environments (the leftover one was deleted in sprint 2.6.2).
 param stagingEnvironmentPolicy = 'Disabled'
 param tags = {
   project: 'mathbasher'
