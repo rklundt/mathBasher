@@ -62,13 +62,19 @@ What the Cloudflare proxy means for the SWAs:
   `public/staticwebapp.config.json`. If a shipped asset is ever overwritten in
   place (the rename-don't-overwrite rule exists to avoid this), purge it in
   Cloudflare as well.
-- **Security headers** such as HSTS now come from Cloudflare; future headers
-  (e.g. a Content-Security-Policy) can be added either there or in
-  `staticwebapp.config.json` — pick one place per header.
+- **Security headers:** HSTS comes from Cloudflare; the Content-Security-Policy
+  (and nosniff / referrer / frame options) come from `staticwebapp.config.json`
+  — one place per header. The CSP allows only the site itself, Google Fonts,
+  `data:`/`blob:` images and audio (Phaser), and Cloudflare Web Analytics
+  (`static.cloudflareinsights.com` script, `cloudflareinsights.com` beacon).
+  It blocks Cloudflare's injected inline bot-detection snippet, which the
+  game doesn't need. If a browser
+  telemetry endpoint is ever added (e.g. Application Insights), add its hosts
+  to `connect-src`.
 
 ## What Bicep manages — and deliberately does NOT
 
-**Manages:** the Static Web App resource (SKU Free, region, staging-env policy).
+**Manages:** the Static Web App resource (SKU Free, region, staging-env policy, tags).
 
 **Does NOT manage:**
 - **The custom domain + its DNS record.** DNS lives in Cloudflare (see above),
@@ -116,12 +122,12 @@ the SKU, region and staging policy are the properties Bicep owns, and they match
 ### Stand up prod (new resource group + SWA)
 
 ```bash
-az group create -n rg-games-prod-use2 -l eastus2
+az group create -n rg-games-prod-use2 -l eastus2 --tags project=mathbasher environment=prod
 az deployment group what-if -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 az deployment group create  -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
-# then pipe the deploy token straight into the prod GitHub Actions secret
+# then pipe the deploy token straight into the prod GitHub Environment's secret
 # (never print it — terminal scrollback and session logs keep it):
-az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv | gh secret set AZURE_SWA_TOKEN_PROD --repo rklundt/mathBasher
+az staticwebapp secrets list -n swa-games-mathBasher-prod-use2 -g rg-games-prod-use2 --query properties.apiKey -o tsv | gh secret set AZURE_SWA_TOKEN --env production --repo rklundt/mathBasher
 ```
 
 ### Wire a custom domain (dev first, then prod)
@@ -160,22 +166,52 @@ az group delete -n <resource-group>
 
 ## Deploy pipeline (two-SWA model)
 
-`.github/workflows/deploy.yml` deploys per branch to the matching SWA, each with
-its own deploy token secret:
+`.github/workflows/deploy.yml` deploys per branch to the matching SWA through a
+**GitHub Environment**, each holding its own `AZURE_SWA_TOKEN` secret and
+accepting deploys only from its branch (so no other branch's workflow can read
+the prod token):
 
-- `main` → prod SWA (`AZURE_SWA_TOKEN_PROD`)
-- `development` → dev SWA (`AZURE_SWA_TOKEN_DEV`)
+- `main` → `production` environment → prod SWA
+- `development` → `development` environment → dev SWA
+
+Pull requests into `development` / `main` run `.github/workflows/ci.yml`
+(typecheck, tests, build) — no secrets. Branch protection makes its
+`Typecheck, test, build` check required on both branches (admins can still
+override, e.g. for the release merge). Every action in both workflows is
+pinned to a full commit SHA, with the release tag in a comment; bump them
+deliberately (resolve the new tag's commit, check its release notes). One
+limit: `Azure/static-web-apps-deploy` is a Docker action whose image is
+Microsoft's moving `:stable` tag, so pinning the action pins its wrapper, not
+the uploader inside it.
+
+Both SWAs carry tags `project=mathbasher`, `environment=dev|prod`,
+`managed-by=bicep` (set in the bicepparam files); the resource groups carry
+`project` and `environment`.
+
+**Changing a live app's settings:** a `what-if` of a full Bicep redeploy lists
+the deploy metadata GitHub writes onto each app (`repositoryUrl`, `branch`,
+`provider`) as *Delete*, because the template doesn't declare it. For a small
+change (tags, preview policy) prefer a targeted update so that metadata stays:
+`az tag update --operation Merge …` for tags, and a `PATCH` of just the
+property (`az rest --method patch … --body '{"properties":{…}}'`). Keep the
+bicepparam files in step, so they still describe the live state.
 
 (Replaces the former single-SWA model that used one token +
 `deployment_environment: development` for a preview environment.)
 
 The workflow fails closed: a "Check deploy token" step refuses to deploy if the
-selected branch's secret is empty, so a missing prod token can never fall
-through to the dev SWA. It also sets `VITE_SOURCE_URL` to the exact commit being
-built (`.../tree/<short-sha>`) for the footer's AGPL §13 source link.
+environment's secret is empty, and a "Check deploy target" step fails the run
+if the app that received the upload isn't this branch's (its default hostname
+is compared with the one expected for the environment), so a token pasted into
+the wrong environment is caught on its first run. The check runs after the
+upload, so it reports the mix-up rather than preventing it. A red "Check deploy target" means the other site was overwritten: put the right token in the environment, then re-run the last good deploy of the overwritten site's branch. The
+expected hostnames are in `deploy.yml`; if a SWA is ever recreated, update
+them there as well as in the Environments table above. The workflow also sets
+`VITE_SOURCE_URL` to the exact commit being built (`.../tree/<short-sha>`)
+for the footer's AGPL §13 source link.
 
 **Rollback:** prefer reverting the bad commit (the push redeploys). Re-running an
-older Actions run is only safe for runs from the sprint 2.5.2 release onward:
-earlier `main` runs either used the retired single-SWA workflow or built the
-footer's source link without a commit pin (the #61 run even shipped the
-placeholder link).
+older Actions run is only safe for runs from the sprint 2.6.2 release onward
+(the first deploy through the `production` environment): older runs read the
+retired repo-level token secrets, which are deleted once the 2.6.2 release has
+deployed, so they stop at "Check deploy token" without deploying.

@@ -21,6 +21,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      // Vitest 4 reports only files some test imports unless `include` lists
+      // the sources, so untested files would silently drop out of the total.
+      include: ['src/**/*.ts', 'server/src/**/*.ts'],
       exclude: [
         '**/node_modules/**',
         '**/dist/**',
@@ -28,6 +31,7 @@ export default defineConfig({
         '**/*.spec.ts',
         '**/*.config.ts',
         'server/dist/**',
+        'src/test-utils/**',
       ],
     },
   },

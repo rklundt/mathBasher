@@ -14,7 +14,9 @@
  *   _th.logToAi('RoundStarted', SeverityLevel.Information, dict);
  *
  * App Insights browser SDK wiring will be added to the shared factory in a
- * later milestone; until then, this falls back to console output.
+ * later milestone; until then, this falls back to console output. When it is,
+ * add its ingestion hosts to `connect-src` in the Content-Security-Policy
+ * (`public/staticwebapp.config.json`), or the browser will block them.
  */
 
 import { makeTelemetry } from '@/shared/telemetry-core';

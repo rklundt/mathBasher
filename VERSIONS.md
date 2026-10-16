@@ -29,6 +29,15 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.6.2] - 2026-10-15 — Behind-the-scenes hardening
+
+**Behind-the-scenes hardening** — no gameplay change
+- Tools updated to patched versions (vite, vitest and sharp, used to build and test the game, and express, used by the not-yet-deployed server): no known vulnerabilities in dependencies.
+- The site now sends a Content-Security-Policy: the browser only runs the game's own code and loads only the game's own files, Google Fonts and Cloudflare Web Analytics (the hosting network's visit counter).
+- Each release goes out through its own protected step (production or development) with its own key, and every proposed change is checked automatically (typecheck, tests, build) before it's merged. The build steps are pinned to exact versions.
+- Azure resources are tagged, and an unused preview copy of the dev site was removed.
+- Developer notes: the hosting setup is written down, and the local test server serves the game again.
+
 ## [2.6.1] - 2026-10-15 — Same time per question in every game, more time for fractions, "Change Game"
 
 **More time for fractions, "Change Game" after a round**
