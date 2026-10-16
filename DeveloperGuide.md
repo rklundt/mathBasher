@@ -158,7 +158,7 @@ A **browser-based math game for kids**, modeled on the arcade-shooter feel of th
 |  Azure Static Web Apps  (production hosting)             |
 |                                                          |
 |  - serves the static SPA bundle from a global edge       |
-|  - staticwebapp.config.json: cache headers + SPA routing |
+|  - staticwebapp.config.json: cache, CSP, SPA routing     |
 |  - GitHub Actions auto-deploys on push                   |
 +----------------------------------------------------------+
 
@@ -260,7 +260,7 @@ mathBasher/
 │       └── SCALE.md             canvas scaling strategy doc (FIT + 1280×720 + landscape lock)
 │
 ├── public/              static assets served as-is by Vite (copied to dist/ root)
-│   ├── staticwebapp.config.json  Azure SWA cache headers + SPA routing
+│   ├── staticwebapp.config.json  Azure SWA cache + security headers (CSP) + SPA routing
 │   └── assets/          CREDITS.md attribution ledger
 │       ├── audio/       shipped MP3s (sfx/, music/, midground/) — see scripts/audio/
 │       └── sprites/     shipped PNGs/WebPs by kind (aliens/{128,192}/, hero/, ui/, particles/, bg/)
@@ -528,7 +528,7 @@ Branching model: sprint branches → PR → `development` (verify on the dev URL
 
 ### Rollback
 
-A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.5.2 release onward; older runs used the retired single-SWA workflow or built the footer's source link without a commit pin.
+A redeploy is the rollback — `git revert` the bad commit on `main` and push (preferred), or re-run an earlier good run from the Actions tab. Re-running is only safe for runs from the 2.6.2 release onward: from then on each run reads its token from its GitHub Environment. Older runs read the retired repo-level tokens (now deleted), so they stop at "Check deploy token" without deploying; for anything older, revert instead.
 
 ---
 

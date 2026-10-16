@@ -4,7 +4,7 @@
 
 // PROD environment params. Deploy against resource group rg-games-prod-use2
 // (create the RG first — see infra/README.md):
-//   az group create -n rg-games-prod-use2 -l eastus2
+//   az group create -n rg-games-prod-use2 -l eastus2 --tags project=mathbasher environment=prod
 //   az deployment group what-if -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 //   az deployment group create  -g rg-games-prod-use2 -f infra/main.bicep -p infra/main.prod.bicepparam
 //

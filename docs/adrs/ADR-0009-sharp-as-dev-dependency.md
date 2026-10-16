@@ -55,3 +55,7 @@ This decision **explicitly justifies it** with these mitigations:
 - A second contributor reports postinstall friction (e.g. the libvips binary download fails behind a corporate proxy, or the platform isn't supported by sharp's prebuilds) — at that point we evaluate vendoring the binary into a release artifact OR documenting a system-libvips fallback.
 - `sharp` itself has a security incident — caret pin gets dropped to an exact version (or replaced) in a deliberate ADR-amending change.
 - A new asset format becomes important (WebP shipping in addition to PNG, AVIF for compression wins, SVG sprite atlases) — sharp supports all of these and the script gets per-format profiles, but the architecture decision documented here doesn't change.
+
+## Amendment (sprint 2.6.2)
+
+Bumped to `sharp@^0.35.5` (libvips 8.18.7) to clear dependency advisories; the 0.34 → 0.35 step was reviewed as the deliberate bump described above. The generators re-render the shipped sprites pixel-identically. sharp remains dev-only: its libvips binaries (LGPL-3.0-or-later) are loaded dynamically by the sprite scripts and asset tests, are not in the Vite bundle, and are never redistributed by the deploy.

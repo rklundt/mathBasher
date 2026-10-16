@@ -9,9 +9,9 @@
 // The DEV SWA: the original hand-created SWA (legacy `mathBlaster` name kept to
 // avoid a recreate), now fed by the `development` branch since the 2026-10-04
 // two-SWA cutover. The custom domain below binds to its production env.
-// `stagingEnvironmentPolicy` stays Enabled until the old `development` preview
-// environment (left over from the single-SWA model) is confirmed unused and
-// deleted; then flip it to Disabled.
+// The old `development` preview environment (left over from the single-SWA
+// model) was deleted in sprint 2.6.2 and `stagingEnvironmentPolicy` set to
+// Disabled, matching prod.
 
 using './main.bicep'
 
