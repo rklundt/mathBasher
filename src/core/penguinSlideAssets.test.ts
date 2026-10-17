@@ -130,6 +130,24 @@ describe('Penguin Slide assets', () => {
     }
   });
 
+  it('never plays the same sound twice in a row (the two gulps strictly alternate)', () => {
+    const pickers = [
+      pickRandomPenguinGulpSfx,
+      pickRandomPenguinBonkSfx,
+      pickRandomPenguinSwishSfx,
+      pickRandomPenguinHopSfx,
+      pickRandomPenguinYummySfx,
+    ];
+    for (const pick of pickers) {
+      let prev = pick();
+      for (let i = 0; i < 60; i++) {
+        const next = pick();
+        expect(next).not.toBe(prev);
+        prev = next;
+      }
+    }
+  });
+
   it('5 lanes leave room for the widest answer badge', () => {
     const { left, right } = config.penguinSlide.lanes;
     const laneWidth = (right - left) / config.penguinSlide.speed.fast.fishCount;

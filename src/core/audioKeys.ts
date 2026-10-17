@@ -173,29 +173,49 @@ const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
   ...PENGUIN_YUMMY_KEYS,
 ]);
 
+/**
+ * Sprint 2.7 — a random pick that never repeats the one before it, so two
+ * sounds strictly alternate and three never play the same one twice running.
+ */
+function noRepeatPicker<T extends string>(keys: readonly T[]): (rng?: () => number) => T {
+  let last = -1;
+  return (rng = Math.random) => {
+    if (keys.length < 2) return keys[0];
+    let i = Math.floor(rng() * (keys.length - 1));
+    if (last >= 0 && i >= last) i += 1;
+    last = i;
+    return keys[i];
+  };
+}
+const nextPenguinGulp = noRepeatPicker(PENGUIN_GULP_KEYS);
+const nextPenguinBonk = noRepeatPicker(PENGUIN_BONK_KEYS);
+const nextPenguinSwish = noRepeatPicker(PENGUIN_SWISH_KEYS);
+const nextPenguinHop = noRepeatPicker(PENGUIN_HOP_KEYS);
+const nextPenguinYummy = noRepeatPicker(PENGUIN_YUMMY_KEYS);
+
 /** Right fish caught. */
 export function pickRandomPenguinGulpSfx(rng: () => number = Math.random): (typeof PENGUIN_GULP_KEYS)[number] {
-  return PENGUIN_GULP_KEYS[Math.floor(rng() * PENGUIN_GULP_KEYS.length)];
+  return nextPenguinGulp(rng);
 }
 
 /** Snowball (wrong fish) or the row arriving (time's up). */
 export function pickRandomPenguinBonkSfx(rng: () => number = Math.random): (typeof PENGUIN_BONK_KEYS)[number] {
-  return PENGUIN_BONK_KEYS[Math.floor(rng() * PENGUIN_BONK_KEYS.length)];
+  return nextPenguinBonk(rng);
 }
 
 /** A lane change, or the slide sound now and then while sliding. */
 export function pickRandomPenguinSwishSfx(rng: () => number = Math.random): (typeof PENGUIN_SWISH_KEYS)[number] {
-  return PENGUIN_SWISH_KEYS[Math.floor(rng() * PENGUIN_SWISH_KEYS.length)];
+  return nextPenguinSwish(rng);
 }
 
 /** The round's last fish caught: "Yummy!" (in place of the gulp). */
 export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typeof PENGUIN_YUMMY_KEYS)[number] {
-  return PENGUIN_YUMMY_KEYS[Math.floor(rng() * PENGUIN_YUMMY_KEYS.length)];
+  return nextPenguinYummy(rng);
 }
 
 /** The hop up to grab a fish (right or wrong). */
 export function pickRandomPenguinHopSfx(rng: () => number = Math.random): (typeof PENGUIN_HOP_KEYS)[number] {
-  return PENGUIN_HOP_KEYS[Math.floor(rng() * PENGUIN_HOP_KEYS.length)];
+  return nextPenguinHop(rng);
 }
 
 /** Sprint 2.5.6 — random Frog Splash fly-catch sound. */
