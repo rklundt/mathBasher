@@ -9,6 +9,7 @@ import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { stackButtons } from '@/game/ui/MenuLayout';
 import { text } from '@/game/ui/typography';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
+import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 
 /**
  * Translucent overlay that floats above GameScene + HudScene while a round
@@ -31,15 +32,15 @@ import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 export interface PauseOverlayInit {
   /** Called when the user picks Resume (or presses Esc again on the overlay). */
   resumeFn: () => void;
-  /** Called when the user picks Quit to Menu. */
-  quitFn: () => void;
+  /** Called when the user picks Change Game (`game-select`) or Quit to Menu (`menu`). */
+  quitFn: (destination: QuitDestination) => void;
 }
 
 export class PauseOverlay extends Phaser.Scene {
   static readonly key = SceneKeys.PauseOverlay;
 
   private resumeFn?: () => void;
-  private quitFn?: () => void;
+  private quitFn?: (destination: QuitDestination) => void;
 
   constructor() {
     super(PauseOverlay.key);
@@ -63,14 +64,18 @@ export class PauseOverlay extends Phaser.Scene {
 
     // TextKind 'headline' — 67px primary, sized between 'h2' (58px) and
     // 'title' (76px). Promoted to its own kind in Sprint 0.7.5 Story 3.
-    text(this, width / 2, height * 0.32, 'Paused', 'headline').setOrigin(0.5);
+    // Sprint 2.6.5 — title a little higher to make room for Change Game.
+    text(this, width / 2, height * 0.29, 'Paused', 'headline').setOrigin(0.5);
 
+    // Sprint 2.6.5 — "Change Game" goes straight to Game Select (math type
+    // and difficulty carry over), like the button on Game Over.
     const buttons = stackButtons(this, {
-      centerY: height * 0.58,
+      centerY: height * 0.6,
       items: [
         { label: 'Resume', onClick: () => this.handleResume() },
         { label: 'Settings', kind: 'secondary', onClick: () => this.handleSettings() },
-        { label: 'Quit to Menu', onClick: () => this.handleQuit() },
+        { label: 'Change Game', onClick: () => this.handleQuit('game-select') },
+        { label: 'Quit to Menu', onClick: () => this.handleQuit('menu') },
       ],
     });
 
@@ -104,8 +109,8 @@ export class PauseOverlay extends Phaser.Scene {
     this.resumeFn?.();
   }
 
-  private handleQuit(): void {
-    this.quitFn?.();
+  private handleQuit(destination: QuitDestination): void {
+    this.quitFn?.(destination);
   }
 
   /**

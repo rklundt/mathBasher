@@ -30,7 +30,7 @@ import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
  *  - `jumpTo(targetX, targetY, onComplete)` — arc up to a rung the
  *    kid picked. Plays a brief jump SFX (reuses Fire1 as a click-y
  *    placeholder; could get a dedicated jump SFX later).
- *  - `fallBackToFloor(floorY, onComplete)` — wrong-rung mulligan.
+ *  - `fallBackToFloor(floorY, onComplete)` — wrong-rung pick.
  *    Hero falls back DOWN to the level's base. Plays `hit-wrong-3.mp3`
  *    per the sprint spec. ~400ms.
  *  - `fallOffScreen(onComplete)` — round-end fall. Hero accelerates
@@ -219,7 +219,7 @@ export class NumberClimbHero extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Wrong-rung mulligan. Hero tries to jump, doesn't catch the
+   * Wrong pick. Hero tries to jump, doesn't catch the
    * (wrong) rung, falls back to the floor's base y. Plays a random
    * wrong-hit SFX from the 3-variant pool (picks `hit-wrong-N`; the
    * spec calls out hit-wrong-3 specifically as the climb's wrong-rung

@@ -41,7 +41,7 @@ export function pickSubsetWithCorrect(
   const picked: number[] = [];
   for (let i = 0; i < count; i++) {
     const idx = Math.floor(rng() * remaining.length);
-    picked.push(remaining[idx]!);
+    picked.push(remaining[idx]);
     remaining.splice(idx, 1);
   }
   // Guarantee the correct answer is present.
@@ -59,7 +59,7 @@ export function pickSubsetWithCorrect(
 function shuffle<T>(arr: T[], rng: () => number): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
 }

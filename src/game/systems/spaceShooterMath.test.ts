@@ -120,7 +120,7 @@ describe('flight', () => {
       }
       for (let i = 0; i < ships.length; i++) {
         for (let j = i + 1; j < ships.length; j++) {
-          const d = Math.hypot(ships[i]!.x - ships[j]!.x, ships[i]!.y - ships[j]!.y);
+          const d = Math.hypot(ships[i].x - ships[j].x, ships[i].y - ships[j].y);
           // Pressed against a wall a pair can't always fully separate in one step.
           expect(d).toBeGreaterThan(2 * r * 0.6);
         }
@@ -139,7 +139,7 @@ describe('spawning', () => {
       for (const p of pts) expect(inBounds(p, bounds)).toBe(true);
       for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
-          expect(Math.hypot(pts[i]!.x - pts[j]!.x, pts[i]!.y - pts[j]!.y)).toBeGreaterThan(2 * r);
+          expect(Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y)).toBeGreaterThan(2 * r);
         }
       }
     }

@@ -192,7 +192,7 @@ export class Asteroid extends Phaser.GameObjects.Container {
       return sprite;
     }
     // Procedural polygon variant (the original sprint 2.1 look).
-    const fillColor = ASTEROID_PALETTE[Math.floor(this.rng() * ASTEROID_PALETTE.length)]!;
+    const fillColor = ASTEROID_PALETTE[Math.floor(this.rng() * ASTEROID_PALETTE.length)];
     const borderColor = darkerVariant(fillColor, visualCfg.borderDarken);
     const visualRotation = this.rng() * Math.PI * 2;
 
@@ -211,9 +211,9 @@ export class Asteroid extends Phaser.GameObjects.Container {
     graphics.lineStyle(visualCfg.borderWidthPx, borderColor, 1);
     graphics.fillStyle(fillColor, 1);
     graphics.beginPath();
-    graphics.moveTo(vertices[0]!.x, vertices[0]!.y);
+    graphics.moveTo(vertices[0].x, vertices[0].y);
     for (let i = 1; i < vertices.length; i++) {
-      graphics.lineTo(vertices[i]!.x, vertices[i]!.y);
+      graphics.lineTo(vertices[i].x, vertices[i].y);
     }
     graphics.closePath();
     graphics.fillPath();

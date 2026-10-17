@@ -75,7 +75,7 @@ export const config = {
      * question" feeling without breaking the answer-uniformity
      * guarantee of the math generators.
      *
-     * Why this exists: sprint 1.1 wrap-up repetition audit measured
+     * Why this exists: sprint 1.1 end-of-sprint repetition check measured
      * 3.7 duplicate prompts per 20-question round on add-to-10 /
      * sub-to-10 (some answers — like 0 in add-to-10 — have only ONE
      * possible prompt that produces them, so when those answer values
@@ -239,7 +239,7 @@ export const config = {
      * Jiggle oscillation frequency in Hz (wiggles per second). 3 Hz = three
      * left-right wiggles during the 1-second jiggle window — fast enough
      * to read as "coming loose" anticipation, slow enough to not look
-     * frantic. Lifted to config in sprint 0.6.3's wrap-up review for
+     * frantic. Lifted to config in sprint 0.6.3's pre-release review for
      * symmetry with the other jiggle knobs.
      */
     preFallJiggleHz: 3,
@@ -287,7 +287,7 @@ export const config = {
      *     wider plate underneath the rider
      *
      * Tuning history:
-     *   v1.1 wrap-up playtest — "hard to aim" → bumped chassisWidthPx
+     *   v1.1 end-of-sprint playtest — "hard to aim" → bumped chassisWidthPx
      *     80 → 100 (+25%) for easier hit targeting. Height kept at 60
      *     (only the horizontal aim was the issue). To revert: set
      *     chassisWidthPx back to 80 — plateLayers auto-rescale via the
@@ -307,7 +307,7 @@ export const config = {
      * `widthScale` is a multiplier on `chassisWidthPx` so the plate
      * scales together with the chassis — tune the chassis width above
      * and the plate auto-follows. Tuned ratios:
-     *   L1 1.00× — chassis-matched outer edge (sprint 1.1 wrap-up
+     *   L1 1.00× — chassis-matched outer edge (sprint 1.1 end-of-sprint review
      *     playtest changed this from 1.05× → 1.00× per "needs to be
      *     even with the width of the box with the answer numbers" —
      *     the prior 5% overhang made the plate visibly wider than the
@@ -396,7 +396,7 @@ export const config = {
     projectileSpeedPxPerSec: 600,
     /**
      * Seconds removed from the per-question countdown when the player
-     * hits a wrong asteroid. Sprint 2.1 wrap-up addition (in addition
+     * hits a wrong asteroid. Sprint 2.1 end-of-sprint addition (in addition
      * to the existing half-points-on-eventual-correct flag that Alien
      * Shoot also has). Set to 0 to disable the time penalty.
      *
@@ -435,7 +435,7 @@ export const config = {
      */
     heroRotationRadPerSec: 4.0,
     /**
-     * Sprint 2.1 wrap-up — visual tuning constants for the procedural
+     * Sprint 2.1 end-of-sprint review — visual tuning constants for the procedural
      * polygon asteroid (`Asteroid.ts`) and the image-variant scale
      * multiplier. Lifted from inline constants to satisfy the project's
      * "every tunable number in config" convention. A future "make
@@ -495,8 +495,17 @@ export const config = {
    */
   numberClimb: {
     /**
+     * The one-time-per-session "Lost a life! Try again!" banner after the
+     * first wrong pick (sprint 2.2.1; screen-fixed and centred since 2.5.2):
+     * holds `holdMs`, then fades over `fadeMs`. `yFrac` (of screen height)
+     * puts it in the gap between the next floor's rungs and the settled
+     * hero's head; it used to follow the hero's x and clipped off screen on
+     * an outer rung.
+     */
+    lifeLostHint: { holdMs: 1500, fadeMs: 300, yFrac: 0.34 },
+    /**
      * Total floors per round. Stars + GameOverScene's "Pass" both
-     * pivot off reaching this. Sprint 2.2 wrap-up playtest: 10 felt
+     * pivot off reaching this. Sprint 2.2 end-of-sprint playtest: 10 felt
      * short, 20 (the global default for arcade modes) too long — 12
      * landed as the sweet spot. Since sprint 2.6.1 the round timer is the
      * shared per-question base × these floors (`roundSeconds()`), so changing
@@ -582,7 +591,7 @@ export const config = {
        * band BOTTOM instead, so it reads as standing on the floor. The
        * scene applies a downward offset of
        * `floorSpacingPx/2 - bottomGapPx - heightPx/2` to every hero
-       * resting position (start floor, each climbed floor, mulligan
+       * resting position (start floor, each climbed floor, wrong pick
        * fall-back). Tune in playtest.
        */
       bottomGapPx: 8,
@@ -679,6 +688,8 @@ export const config = {
     escapeNote: { holdMs: 1500, fadeMs: 400, belowWaterlinePx: 132 },
     /** "Oops! Try again!" floater on a wrong catch: rises `risePx` while fading. */
     wrongNote: { durationMs: 1100, risePx: 50, floorMarginPx: 24 },
+    /** Q1 "👆 Tap a bubble!" hint: a fixed-size pill this far below the waterline. */
+    tapHint: { belowWaterlinePx: 70, widthPx: 240, heightPx: 64, backdropAlpha: 0.5 },
   },
   /**
    * Sprint 2.5.6 — Frog Splash. A frog hops up the river one row of lily
@@ -758,6 +769,10 @@ export const config = {
     anim: { splashFps: 12, flyFps: 18 },
     /** "Splash!" note floating up from a pad; kept this far in from the screen edges. */
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+    /** Q1 "👆 Tap the right lily pad!" hint: screen-fixed (the camera starts scrolled), this far from the top. */
+    tapHint: { y: 150, heightPx: 60, backdropAlpha: 0.55 },
+    /** "You made it!" gets a heavier outline than other banners (gold reads poorly on blue water). */
+    finishBannerStrokePx: 10,
   },
   /**
    * Sprint 2.6 — Space Shooter. The kid sits in a cockpit looking out the
@@ -837,6 +852,8 @@ export const config = {
     blastMs: 1100,
     outOfLivesBannerMs: 1300,
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+    /** Q1 "👆 Tap the ship…" hint, this far above the bottom edge (over the dashboard). */
+    tapHint: { aboveBottomPx: 62, heightPx: 60, backdropAlpha: 0.75 },
   },
   /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
@@ -937,7 +954,29 @@ export const config = {
      *     14px text + 9px padding above/below = 32. Slightly more
      *     headroom for Baloo 2 descenders too.
      */
-    attributionFooterHeightPx: 32,
+    canvasBottomGutterPx: 32,
+    /**
+     * Sprint 2.6.3 — the shared look of game callouts (`src/game/ui/callouts.ts`):
+     * the pulsing "👆 …" tap hint, floating notes ("Oops! Try again!") and
+     * centred banners ("Out of lives!"). Colours live in `uiPalette.ts`;
+     * where each game puts its hint is in that game's own block.
+     */
+    callout: {
+      /** Tap-hint pill width = label width + this, unless the game sets a width. */
+      pillPaddingPx: 48,
+      pillBorderPx: 2,
+      pillBorderAlpha: 0.7,
+      /** Tap hints sit above the playfield; notes and banners above everything. */
+      hintDepth: 50,
+      textDepth: 100,
+      noteStrokePx: 6,
+      bannerStrokePx: 8,
+      bannerShadowOffsetY: 3,
+      bannerShadowBlur: 6,
+      /** The tap hint pulses down to this alpha and back, every `pulseMs`. */
+      pulseMs: 800,
+      pulseMinAlpha: 0.6,
+    },
     /**
      * Canonical button dimensions across all menu scenes. Tuned for
      * mouse + touch + keyboard accessibility:
@@ -971,7 +1010,7 @@ export const config = {
     /**
      * DifficultyScene math-tile + Speed-tile grid dimensions.
      *
-     * Lifted to config in sprint 1.5 wrap-up (mirroring the sprint 1.1
+     * Lifted to config in sprint 1.5 end-of-sprint review (mirroring the sprint 1.1
      * chassis-dims lift). The math-tile
      * dimensions have been re-tuned in TWO consecutive sprints (1.1
      * went 100→116, 1.5 went 116→64 to fit 3 rows of 9 tiles), so
@@ -984,7 +1023,7 @@ export const config = {
      *     grid (4+4+1) fits 9 implemented generators. Tiles match
      *     Speed-button height for visual rhythm. Subtitle dropped
      *     on math tiles (Story 5) so a 64-tall tile is sufficient.
-     *   v1.1 wrap-up: 220×116 (subtitle wrapping needed the height).
+     *   v1.1 end-of-sprint review: 220×116 (subtitle wrapping needed the height).
      *   v0.7.5: 200×80 baseline.
      */
     difficultyTile: {
@@ -1055,9 +1094,9 @@ export const config = {
      *  - `radiusPx` — visual radius of the circular button (80px diameter).
      *  - `hitPadPx` — extra radius added to the hit area for thumb
      *    tolerance. Total hit-circle radius = `radiusPx + hitPadPx`.
-     *  - `footerClearancePx` — vertical gap between the BOTTOM of the
+     *  - `gutterClearancePx` — vertical gap between the BOTTOM of the
      *    button's hit area and the top of the canvas bottom gutter
-     *    (`attributionFooterHeightPx`). Bumped to 16 (was 8) in sprint 0.6
+     *    (`canvasBottomGutterPx`). Bumped to 16 (was 8) in sprint 0.6
      *    when the footer was in-canvas, to keep the hit-circle out of the
      *    Source-URL click zone. Since sprint 2.5.2 the footer is a DOM strip
      *    below the canvas, so this is just thumb-room spacing.
@@ -1065,7 +1104,7 @@ export const config = {
     touchFire: {
       radiusPx: 40,
       hitPadPx: 14,
-      footerClearancePx: 16,
+      gutterClearancePx: 16,
     },
   },
 } as const;

@@ -24,16 +24,16 @@ export interface TouchFireButtonOpts {
 /**
  * Layout constants. These are anchored to the bottom-right of the design
  * canvas (1280×720). The button sits above the canvas bottom gutter
- * (`attributionFooterHeightPx`) with `footerClearancePx` of thumb room.
+ * (`canvasBottomGutterPx`) with `gutterClearancePx` of thumb room.
  * The AGPL §7(b) footer itself is a DOM strip laid out BELOW the canvas
  * (sprint 2.5.2), so the button's hit-circle can never reach the footer's
- * Source link — the sprint 0.6 wrap-up bug is now ruled out by layout.
+ * Source link — the sprint 0.6 pre-release bug is now ruled out by layout.
  *
  * All values come from `config.layout` so a playtest-driven tweak is a
  * 1-line config edit, not a source change here.
  */
-const FOOTER_HEIGHT = config.layout.attributionFooterHeightPx;
-const FOOTER_CLEARANCE = config.layout.touchFire.footerClearancePx;
+const BOTTOM_GUTTER = config.layout.canvasBottomGutterPx;
+const GUTTER_CLEARANCE = config.layout.touchFire.gutterClearancePx;
 const RADIUS = config.layout.touchFire.radiusPx;
 const HIT_PAD = config.layout.touchFire.hitPadPx;
 
@@ -67,7 +67,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   private readonly label: Phaser.GameObjects.Text;
   private readonly removeTouchListener: () => void;
   /**
-   * Sprint 2.4.1 story 2 (post-audit) — locked state for the FIRE
+   * Sprint 2.4.1 story 2 (post-review) — locked state for the FIRE
    * input cooldown after a wrong shot. Asteroid Field calls
    * `setLocked(true)` when the cooldown starts and `setLocked(false)`
    * after it expires. While locked, the rest visual is a dim grey
@@ -85,7 +85,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
     const { width: w, height: h } = scene.scale;
     const padding = config.layout.safeAreaPaddingPx;
     const x = w - padding - RADIUS;
-    const y = h - FOOTER_HEIGHT - FOOTER_CLEARANCE - RADIUS;
+    const y = h - BOTTOM_GUTTER - GUTTER_CLEARANCE - RADIUS;
     super(scene, x, y);
     scene.add.existing(this);
 
@@ -133,6 +133,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
         // going to call InputSystem.fire() ourselves via opts.onFire() —
         // letting the canvas listener also fire would be a wasted cooldown
         // attempt.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Phaser types stopPropagation as `Function`
         event.stopPropagation();
         // Sprint 0.7.5 Story 4 — emit BEFORE onFire() so the event still
         // fires even if onFire() throws. `ButtonClicked` is the UI-intent
@@ -181,7 +182,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   private applyPressedVisual(): void {
     // Smaller + more opaque = "I'm being pressed." Snappy, no tween;
     // tweens delay the visual feedback by a frame and feel laggy on touch.
-    // Sprint 2.4.1 audit fix — while locked, suppress the press visual
+    // Sprint 2.4.1 review fix — while locked, suppress the press visual
     // so the kid doesn't see the button momentarily look active when it
     // isn't. The cooldown-locked state stays uniformly dim.
     if (this.locked) return;
@@ -190,7 +191,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   }
 
   private applyRestVisual(): void {
-    // Sprint 2.4.1 audit fix — preserve the locked dim if active.
+    // Sprint 2.4.1 review fix — preserve the locked dim if active.
     if (this.locked) {
       this.applyLockedVisual();
       return;
@@ -200,7 +201,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Sprint 2.4.1 audit fix — visual treatment for the cooldown-locked
+   * Sprint 2.4.1 review fix — visual treatment for the cooldown-locked
    * state. Dim alpha + dim grey fill so the button reads as "not
    * available right now" without leaving the playfield (the kid still
    * needs to know WHERE FIRE is so they can tap it once the cooldown
@@ -214,7 +215,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Sprint 2.4.1 audit fix — switch the button between normal and
+   * Sprint 2.4.1 review fix — switch the button between normal and
    * cooldown-locked visual state. Called by AsteroidFieldScene around
    * the wrong-shot FIRE-cooldown window. Idempotent — calling with
    * the current state is a no-op so the scene can be loose about

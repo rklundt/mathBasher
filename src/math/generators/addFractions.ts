@@ -46,7 +46,7 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
   const out = arr.slice();
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j]!, out[i]!];
+    [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
 }
@@ -158,8 +158,8 @@ const addFractions: QuestionGenerator = {
     const choices = shuffled.map((c) => decimalValue(c.num, c.den));
     const choiceDisplays = shuffled.map((c) => formatFraction(c.num, c.den));
     const correctIdx = shuffled.findIndex((c) => c.isCorrect);
-    const correctAnswer = choices[correctIdx]!;
-    const correctDisplay = choiceDisplays[correctIdx]!;
+    const correctAnswer = choices[correctIdx];
+    const correctDisplay = choiceDisplays[correctIdx];
 
     return {
       prompt: result.prompt,

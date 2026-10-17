@@ -1,0 +1,33 @@
+name: I have an idea
+description: A new game, a new kind of math, or something that would make it more fun.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas from kids are welcome. Tell us in their words!
+
+        **Please keep it anonymous.** This page is public. Don't include a child's name, age, school, photos, or anything else that could identify them.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's the idea?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What would it make better or more fun? (optional)
+  - type: dropdown
+    id: game
+    attributes:
+      label: Is it about a game that's already there? (optional)
+      options:
+        - It's a new game
+        - Alien Shoot
+        - Asteroid Field
+        - Space Escape!
+        - Math-a-lotl
+        - Frog Splash
+        - Space Shooter
+        - Menus, settings or the math

@@ -222,9 +222,12 @@ mathBasher/
 ├── src/                 BROWSER-SIDE TYPESCRIPT
 │   ├── main.ts          thin entry; wires splash click handler → calls bootGame()
 │   ├── main.test.ts     static contract tests: main.ts has no Phaser import; boot.ts has no top-level Phaser.Game
-│   ├── app/             top-of-graph orchestration (composes core + services + game/scenes)
-│   │   └── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
-│   ├── game/            rendering layer (the only folder that imports phaser)
+│   ├── app/             browser shell, top of the graph (composes core + services + game/scenes)
+│   │   ├── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
+│   │   ├── fullscreen.ts           mobile fullscreen request + the footer's "Full screen" button
+│   │   └── attributionFooter.ts    fills the DOM license footer (AGPL §7(b)) from core/attribution.ts
+│   ├── shared/          pure modules shared with server/ (telemetry-core, assertNever); imports nothing
+│   ├── game/            rendering layer (imports phaser; boot.ts is the only other file allowed to)
 │   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay,
 │   │   │                Settings, HeroChooser, Background (parallax stars + nebula behind everything)
 │   │   │                (sceneSetup.ts — shared lifecycle helper for owning scenes)
@@ -235,7 +238,8 @@ mathBasher/
 │   │   │   └── PhaserAudioManager.ts  scene-bound audio playback + loop tracking
 │   │   └── ui/          PlaceholderButton, IconButton, KeyboardNavigator, EscBackHandler,
 │   │                    TouchFireButton (on-screen fire btn for touch devices),
-│   │                    MenuLayout (+ pure menuLayoutGeometry.ts), typography, uiPalette
+│   │                    MenuLayout (+ pure menuLayoutGeometry.ts), typography, uiPalette,
+│   │                    callouts (tap hint / notes / banners, + pure calloutGeometry.ts)
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
 │   │   ├── distractors.ts       distractor-picking helpers
@@ -299,20 +303,33 @@ mathBasher/
 │       ├── README.md            ADR index + format
 │       └── ADR-XXXX-*.md        one ADR per significant decision
 │
+├── .githooks/          committed git hooks (pre-commit, commit-msg); `pnpm install` enables them
+│                        (gitignored .githooks/local/ holds optional machine-only checks)
+├── eslint.config.js     lint rules incl. the folder rules below (ADR-0013)
+├── .prettierrc.json     formatting (code + config only; see .prettierignore)
+├── .nvmrc               Node major for CI and version managers
+│
 └── .github/             repo metadata GitHub recognizes
-    └── workflows/
-        └── deploy.yml   GitHub Actions — builds + deploys to Azure Static Web Apps
+    ├── workflows/
+    │   ├── ci.yml       pull-request check "Typecheck, test, build" (lint, typecheck, tests, build; required)
+    │   └── deploy.yml   GitHub Actions — builds + deploys to Azure Static Web Apps
+    ├── ISSUE_TEMPLATE/  bug + idea forms (privacy note), config (private security link)
+    └── PULL_REQUEST_TEMPLATE.md
 ```
 
-### Folder discipline (enforced)
+### Folder discipline (enforced by lint)
 
-- **`src/game/`** — the only folder that imports `phaser`. Visual concerns only.
+Each folder imports only from the layers below it. The full map, with the two known exceptions, is in [ADR-0006](docs/adrs/ADR-0006-folder-discipline.md).
+
+- **`src/shared/`** — pure, shared with the server. Imports nothing from the app.
+- **`src/core/`** — types, `config.ts`, keys, telemetry wrapper, attribution text. May import `shared` only.
 - **`src/math/`** — pure TypeScript. No Phaser, no DOM, no `window`.
 - **`src/services/`** — pure TypeScript. No Phaser. May read `localStorage`.
-- **`src/core/`** — types and `config.ts`. No imports from `/game`, `/math`, or `/services` (it's at the bottom of the dependency arrow).
-- **`server/`** — Express server. No imports from `/src/game`. May import from `/src/math` and `/src/services` if pure.
+- **`src/game/`** — scenes, entities, systems, Phaser UI. Imports Phaser.
+- **`src/app/`** — the browser shell (boot, fullscreen, DOM footer). Only `src/main.ts` imports it; `boot.ts` is the one file outside `src/game/` that may import Phaser.
+- **`server/`** — Express server. Never imports `src/game/` or `src/app/`.
 
-These boundaries are checked at every code review. Adding a Phaser import to `/src/math/` is a hard violation.
+ESLint (`eslint.config.js`) checks these on every commit and in CI, for both `@/…` and relative imports. A Phaser import in `src/math/` fails the build.
 
 ---
 
@@ -398,6 +415,27 @@ function startRound(mathId: string, speed: SpeedKey): void {
 | `pnpm typecheck` | tsc strict-mode check, no emit (client + server) |
 | `pnpm audio:encode <in> <out> [--kind sfx\|music] [--no-trim]` | Encode raw audio (WAV/FLAC) → properly trimmed, loudness-normalized, metadata-stripped MP3. SFX profile = 96 kbps mono; music = 160 kbps stereo. |
 | `pnpm audio:probe <file>` | Inspect an audio file: duration, sample rate, channels, mean/peak dB. Use to sanity-check encode output. |
+| `pnpm lint` | ESLint, full type-aware run (what CI runs). `pnpm exec eslint --fix <file>` fixes what it can. |
+| `pnpm format` / `pnpm format:check` | Prettier: rewrite / check code and config files (not Markdown, HTML, workflows or infra). |
+
+### Lint, format and commit hooks
+
+Set up in sprint 2.6.4; the reasoning is in [ADR-0013](docs/adrs/ADR-0013-lint-and-format-toolchain.md).
+
+- **ESLint** (`eslint.config.js`) runs typescript-eslint's recommended type-aware rules plus project rules:
+  - the folder import rules from [ADR-0006](docs/adrs/ADR-0006-folder-discipline.md) (e.g. Phaser only in `src/game/` and `src/app/boot.ts`)
+  - no `innerHTML` / `outerHTML`
+  - no `console` outside the telemetry helper
+- **Prettier** (`.prettierrc.json`): single quotes, 120 columns.
+- **Git hooks** live in `.githooks/`; `pnpm install` turns them on for your clone (`git config --local core.hooksPath .githooks`).
+  - `pre-commit` runs a fast lint (no type info) on the staged files.
+  - `commit-msg` passes the message on to your local checks.
+  - Both then run any `*.sh` you put in the gitignored `.githooks/local/`, which is the place for your own machine-only checks.
+  - Skip once with `git commit --no-verify`; CI still runs everything.
+  - A checked-out branch runs *its own* hooks, lint config and `prepare` script. Review someone else's pull request on GitHub or in a throwaway clone; don't install or commit on it in your main clone.
+- **CI's required check** ("Typecheck, test, build") runs lint, typecheck, tests and build. Don't rename that job: branch protection waits for it by name.
+- **Node version:** `.nvmrc` (22) is the single source for CI and version managers. `engines` keeps the `>=22.13.0` floor.
+- **New packages must be at least a day old** (`minimumReleaseAge` in `pnpm-workspace.yaml`). For an urgent security fix that's newer, add it to `minimumReleaseAgeExclude` for that update.
 
 ---
 
@@ -541,7 +579,7 @@ mathBasher is **dual-licensed**:
 1. **GNU Affero General Public License v3 or later (AGPL-3.0-or-later)** — the default. Anyone may use, modify, and redistribute under the AGPL terms, **including** the AGPL §7(b) requirement that the running app prominently display the project's attribution notice with a link to the corresponding source.
 2. **Commercial license** — available from the copyright holder. Waives both the AGPL copyleft AND the §7(b) UI attribution requirement. See `COMMERCIAL.md` for the inquiry process.
 
-The single source of truth for the UI attribution text is `src/core/attribution.ts`. Since sprint 2.5.2 the notice is a persistent DOM footer (`#app-footer` in `index.html`, filled at page load by `mountAttributionFooter()` in `src/game/ui/domAttributionFooter.ts`), laid out directly below the game canvas so nothing in the game can cover it and it stays above a phone's URL bar. It wraps to a second line on narrow screens rather than truncating. The source URL is read from the `VITE_SOURCE_URL` environment variable at build time. `src/attributionFooter.test.ts` guards the markup, the mount call, and the single-source rule.
+The single source of truth for the UI attribution text is `src/core/attribution.ts`. Since sprint 2.5.2 the notice is a persistent DOM footer (`#app-footer` in `index.html`, filled at page load by `mountAttributionFooter()` in `src/app/attributionFooter.ts`), laid out directly below the game canvas so nothing in the game can cover it and it stays above a phone's URL bar. It wraps to a second line on narrow screens rather than truncating. The source URL is read from the `VITE_SOURCE_URL` environment variable at build time. `src/attributionFooter.test.ts` guards the markup, the mount call, and the single-source rule.
 
 A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is used when the env var is unset, so a misconfigured deployment surfaces immediately as a broken link.
 
@@ -566,7 +604,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | What's the test strategy? | Pure modules in `/math` and `/services` get Vitest tests; gameplay code is verified by manual playtest. Generators inject an RNG (`rng?: () => number`) so tests pin determinism by passing a seeded sequence — see `src/test-utils/mulberry32.ts` |
 | How do I add a new scene? | New file in `src/game/scenes/<Name>Scene.ts` extending `Phaser.Scene`; register its key in `src/core/sceneKeys.ts`; add the class to the scene array in `src/main.ts`. Scenes that should render on top of others (HUD, overlays, attribution) are registered LAST. |
 | Where does the cross-scene round selection live? | `src/services/Settings.ts` — module-level singleton with `setMathId`/`setSpeed`/`isReady`. Scenes read on `create`. |
-| Where is the AGPL §7(b) attribution display implemented? | A DOM footer: markup + CSS in `index.html` (`#app-footer`), filled by `mountAttributionFooter()` (`src/game/ui/domAttributionFooter.ts`) from `src/core/attribution.ts` (the single source of truth). Mounted at page load in `src/main.ts` and stacked above the boot splash, so it's visible from first paint. (Before sprint 2.5.2 this was a Phaser `AttributionScene`.) |
+| Where is the AGPL §7(b) attribution display implemented? | A DOM footer: markup + CSS in `index.html` (`#app-footer`), filled by `mountAttributionFooter()` (`src/app/attributionFooter.ts`) from `src/core/attribution.ts` (the single source of truth). Mounted at page load in `src/main.ts` and stacked above the boot splash, so it's visible from first paint. (Before sprint 2.5.2 this was a Phaser `AttributionScene`.) |
 | How does a question round play out? | `src/game/scenes/GameScene.ts` is the round loop: `startNextQuestion()` calls into the math registry to get a `Question`, `WaveSystem.spawnWave(q)` creates one alien per lane carrying the choices, `update(dt)` advances the hero/aliens/projectile, `HitSystem.findHit(...)` runs every frame against the active projectile. Branches: correct shot → record + advance, wrong shot → `WaveSystem.applyWrongShotPenalty()` and continue, alien reaches hero → record `wasCorrect: false` and advance. After 20 questions, `endRound()` transitions to GameOverScene. |
 | Where is the wrong-shot speed penalty? | `src/game/systems/WaveSystem.ts#applyWrongShotPenalty` — idempotent, boosts every live alien to `config.scoring.speed[speed].penaltyPxPerSec`. Also flags `usedWrongShot: true` for `ScoreCalculator` so the eventual correct answer awards half points. |
 | Where is the per-frame collision check? | `src/game/systems/HitSystem.ts#findHit(projectile, aliens)` — pure helper using AABB intersect. No Phaser physics body needed at this scale (one projectile vs four aliens). Returns the hit alien or `null`. |
@@ -575,7 +613,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | How is the test strategy split? | Vitest covers pure logic (`src/math/`, `src/services/`); Phaser-coupled gameplay code is verified by the manual playtest in `src/game/PLAYTEST.md`. Run that checklist before every gameplay-touching sprint closes. |
 | How is scoring computed? | `src/services/ScoreCalculator.ts` — construct with `(mathId, speed)`, feed it per-question outcomes via `recordOutcome()`, then read `score` / `correctCount` / `passed` / `stars` getters at round end. All multipliers come from `src/core/config.ts`. |
 | How do I add a new score backend? | Implement `IScoreStore` (in `src/services/`), then change the single line in `src/services/scoreStoreFactory.ts` to return your new instance. No game code changes. |
-| How does pause / Esc / Quit-to-Menu work mid-round? | Esc and the on-screen Pause icon (top-right of `HudScene`) both call into `HudScene.openPauseOverlay()`, which calls `GameScene.pause()` (freezes WaveSystem, gates InputSystem fire, pauses tweens, pauses HudScene) and launches `PauseOverlay` (parallel scene). Resume and Quit-to-Menu callbacks are passed in via `init` data. Quit fires `RoundAbandoned` telemetry and routes to `MenuScene` without saving the score. |
+| How does pause / Esc / Quit-to-Menu work mid-round? | Esc and the on-screen Pause icon (top-right of `HudScene`) both call into `HudScene.openPauseOverlay()`, which calls `GameScene.pause()` (freezes WaveSystem, gates InputSystem fire, pauses tweens, pauses HudScene) and launches `PauseOverlay` (parallel scene). Resume and quit callbacks are passed in via `init` data. The overlay offers Resume, Settings, Change Game and Quit to Menu (sprint 2.6.5). Both quits go through the game's `quitToMenu(destination)` → `GameSceneLifecycle.quitToMenu`: `RoundAbandoned` telemetry (destination in `sceneKey`), then `MenuScene` or, for Change Game, `GameSelectScene` (math type and difficulty kept). No score is saved. |
 | Where is the Esc back-stack on menu scenes? | `src/game/ui/EscBackHandler.ts#wireEscBack(scene, onBack)` — small helper that registers a `keydown-ESC` handler with paired cleanup on `shutdown` + `destroy`. Used by `GameSelectScene` (→ Menu), `DifficultyScene` (→ GameSelect), `GameOverScene` (→ Menu). MenuScene is the top of the stack — Esc is intentionally not bound there. |
 | Where is the pause-aware kinematics math? | `src/game/systems/waveKinematics.ts` — pure module exporting `advanceY(currentY, dt, speedPxPerSec)` and `simulatePauseAwareAdvance(...)`. Used by `Alien.advance` for production motion, and by `src/game/systems/__tests__/waveKinematics.test.ts` for verifying that pause freezes Y and resume continues from the same position with no drift. |
 | How do I prepare a new audio file? | See the **Audio** section above. Short version: drop raw WAV in `.audio-source/raw/<topic>/`, run `pnpm audio:encode <in> public/assets/audio/sfx/<name>.mp3`, run `pnpm audio:probe` on both ends to sanity-check, add a `public/assets/CREDITS.md` line. The encoder lives at `scripts/audio/encode.mjs`; the supply-chain reasoning for `ffmpeg-static` is in [ADR-0008](docs/adrs/ADR-0008-ffmpeg-static-as-dev-dependency.md). |
@@ -597,7 +635,7 @@ A deliberately invalid placeholder URL (`https://example.invalid/mathbasher`) is
 | Where do I add a new audio asset? | One line in `src/core/audioKeys.ts` — add the key to `SfxKeys` (or `MidgroundKeys` / `MusicKeys`). The `AUDIO_MANIFEST` const at the bottom of the same file derives URLs programmatically, and `BootScene.preload` iterates the manifest with no per-kind branching. Adding a new sound is a 1-file change; BootScene needs zero edits. |
 | How does the canvas scale to different viewports? | `Phaser.Scale.FIT` mode against a fixed 1280×720 (16:9) design canvas — letterboxes anything off-ratio. The page CSS in `index.html` paints body + html in `#0b1020` (matches in-game backdrop) so letterbox bands look intentional. Configured in `src/app/boot.ts` (`scale: { mode: FIT, autoCenter: NO_CENTER, parent: 'game', expandParent: false, width: 1280, height: 720 }` — the page CSS does the centering; `#game` gets its height from the page's visible-viewport flex column, so Phaser must not resize the parent). Full rationale + when-to-revisit guidance in [`src/core/SCALE.md`](src/core/SCALE.md). RESIZE was deliberately rejected — every entity, HUD position, and gameplay tuning constant is anchored to design-space coordinates; switching to RESIZE would require per-scene layout recomputation for no real win on a fixed-aspect arcade game. |
 | How does the portrait-rotate prompt work on phones? | Pure DOM, no Phaser. `index.html` declares `<div id="rotate-overlay">` with the rotate prompt + a CSS-only animated phone glyph. A media query (`@media (orientation: portrait) and (max-width: 900px)`) toggles `display: flex`. The 900px max-width gates it to phone-sized viewports — a desktop user resizing into a portrait window pose isn't pestered. When the kid rotates back to landscape the media query stops matching, the overlay disappears, and `boot.ts` registers an `orientationchange` listener that calls `game.scale.refresh()` belt-and-braces in case a quirky mobile browser (older iOS Safari) doesn't fire a paired resize event. |
-| Where does the on-screen FIRE button live? | `src/game/ui/TouchFireButton.ts` — a circular amber button anchored bottom-right, sized for one-handed thumb use in landscape (80px diameter visual + ~108px hit area). Constructed in `GameScene.create`. Visibility gated by touch detection: hidden when `navigator.maxTouchPoints === 0` AND no `touchstart` has ever fired on the page; shown if either flips (so a Surface / Chromebook with both keyboard and touch always gets the button after the first touch). Pointer-down stops event propagation so the canvas-wide tap-to-fire listener in `InputSystem` doesn't double-count, then calls `InputSystem.fire()` (the cooldown still applies — same code path as Space / mouse-click). Positioned above the canvas's bottom gutter (`config.layout.attributionFooterHeightPx`) with `footerClearancePx` of thumb room. The AGPL footer itself is a DOM strip laid out below the canvas, so the button can never overlap its Source link. |
+| Where does the on-screen FIRE button live? | `src/game/ui/TouchFireButton.ts` — a circular amber button anchored bottom-right, sized for one-handed thumb use in landscape (80px diameter visual + ~108px hit area). Constructed in `GameScene.create`. Visibility gated by touch detection: hidden when `navigator.maxTouchPoints === 0` AND no `touchstart` has ever fired on the page; shown if either flips (so a Surface / Chromebook with both keyboard and touch always gets the button after the first touch). Pointer-down stops event propagation so the canvas-wide tap-to-fire listener in `InputSystem` doesn't double-count, then calls `InputSystem.fire()` (the cooldown still applies — same code path as Space / mouse-click). Positioned above the canvas's bottom gutter (`config.layout.canvasBottomGutterPx`) with `gutterClearancePx` of thumb room. The AGPL footer itself is a DOM strip laid out below the canvas, so the button can never overlap its Source link. |
 | Where does touch input enter the game? | `src/game/systems/InputSystem.ts` is the single funnel. Three input pathways converge: (1) keyboard Space, (2) canvas-wide pointerdown (mouse or touch), (3) `TouchFireButton.onFire` calling `InputSystem.fire()` programmatically. All three pass through the same cooldown gate (`config.hero.fireCooldownMs`). InputSystem is instantiated in `GameScene.create` and destroyed on scene shutdown — it doesn't listen during menus, so a Tab/Enter on a menu button never fires a shot. |
 | Where do I add a new sprite asset? | `src/core/spriteKeys.ts` — for **non-alien** kinds (hero/ui/particle/bg/projectile), add the basename to the relevant `*SpriteKeys` const object (e.g. `HeroSpriteKeys.Speeder4 = 'speeder-4'`). `SPRITE_MANIFEST` derives + BootScene auto-preloads. For **alien** batches (multi-frame video extracts), add a row to `ALIEN_SPRITE_BATCHES` (`{ prefix: 'alienN', rows, cols }`) and `ALIEN_SPRITE_KEYS` derives. The shipping pipeline lives in `scripts/sprites/process.mjs` (single PNG) or `scripts/sprites/extract-from-video.mjs` (video grid). Drop raw inputs in `.sprite-source/raw/`. |
 | How do I prepare a new sprite file? | `pnpm sprite:process --kind <kind> --name <basename> .sprite-source/raw/<file.png>` for a single PNG (resizes per-kind, palette-quantizes, strips metadata, writes to `public/assets/sprites/<kind-folder>/<basename>.png`). For a video grid: `pnpm sprite:extract --rows R --cols C --margin auto --name-prefix <prefix> .sprite-source/raw/<file.mp4>` (see the sprite-pipeline workflow doc for the V1-V9 interactive flow with verify-grid pause-points). Per-kind size caps + paletting decisions documented in `process.mjs` PROFILES. Supply-chain reasoning for the `sharp` dependency in [ADR-0009](docs/adrs/ADR-0009-sharp-as-dev-dependency.md). |

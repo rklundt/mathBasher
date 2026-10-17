@@ -38,9 +38,9 @@ const layout = riverLayout({
 describe('riverLayout', () => {
   it('has one row per question, evenly spaced, between the shorelines', () => {
     expect(layout.rowY).toHaveLength(12);
-    for (let i = 1; i < 12; i++) expect(layout.rowY[i - 1]! - layout.rowY[i]!).toBe(cfg.rowSpacingPx);
-    expect(layout.nearShoreY - layout.rowY[0]!).toBe(cfg.shoreGapPx);
-    expect(layout.rowY[11]! - layout.farShoreY).toBe(cfg.shoreGapPx);
+    for (let i = 1; i < 12; i++) expect(layout.rowY[i - 1] - layout.rowY[i]).toBe(cfg.rowSpacingPx);
+    expect(layout.nearShoreY - layout.rowY[0]).toBe(cfg.shoreGapPx);
+    expect(layout.rowY[11] - layout.farShoreY).toBe(cfg.shoreGapPx);
   });
 
   it('starts the frog on the near bank and finishes it on the far bank', () => {
@@ -120,7 +120,7 @@ describe('camera + hop', () => {
   it('keeps the frog at the configured screen height, clamped to the world', () => {
     expect(cameraScrollY(layout.startY, 720, 0.7, layout.worldHeight)).toBe(layout.worldHeight - 720);
     expect(cameraScrollY(layout.finishY, 720, 0.7, layout.worldHeight)).toBe(0);
-    const mid = layout.rowY[5]!;
+    const mid = layout.rowY[5];
     expect(cameraScrollY(mid, 720, 0.7, layout.worldHeight)).toBeCloseTo(mid - 504);
   });
 

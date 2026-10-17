@@ -187,7 +187,7 @@ export function buildFractionDistractors(
   // Fisher-Yates shuffle in place.
   for (let i = picked.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [picked[i], picked[j]] = [picked[j]!, picked[i]!];
+    [picked[i], picked[j]] = [picked[j], picked[i]];
   }
   return picked;
 }
