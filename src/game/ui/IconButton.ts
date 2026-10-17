@@ -6,12 +6,7 @@ import Phaser from 'phaser';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import type { Focusable } from '@/game/ui/KeyboardNavigator';
-import {
-  SLATE_BG,
-  SLATE_HOVER,
-  BORDER_GREY,
-  FOCUS_BLUE,
-} from '@/game/ui/uiPalette';
+import { SLATE_BG, SLATE_HOVER, BORDER_GREY, FOCUS_BLUE } from '@/game/ui/uiPalette';
 
 export interface IconButtonOpts {
   scene: Phaser.Scene;

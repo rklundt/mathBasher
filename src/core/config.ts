@@ -803,11 +803,31 @@ export const config = {
      */
     window: { top: 176, bottom: 540 },
     windowEdge: [
-      [120, 304, 983], [140, 275, 1014], [160, 256, 1034], [180, 241, 1046], [200, 230, 1053],
-      [220, 225, 1057], [240, 223, 1060], [260, 222, 1061], [280, 224, 1061], [300, 229, 1059],
-      [320, 234, 1054], [340, 239, 1049], [360, 245, 1042], [380, 250, 1036], [400, 256, 1030],
-      [420, 262, 1024], [440, 267, 1018], [460, 273, 1012], [480, 279, 1006], [500, 286, 1000],
-      [520, 291, 994], [540, 297, 988], [560, 303, 983], [580, 313, 972], [600, 331, 953],
+      [120, 304, 983],
+      [140, 275, 1014],
+      [160, 256, 1034],
+      [180, 241, 1046],
+      [200, 230, 1053],
+      [220, 225, 1057],
+      [240, 223, 1060],
+      [260, 222, 1061],
+      [280, 224, 1061],
+      [300, 229, 1059],
+      [320, 234, 1054],
+      [340, 239, 1049],
+      [360, 245, 1042],
+      [380, 250, 1036],
+      [400, 256, 1030],
+      [420, 262, 1024],
+      [440, 267, 1018],
+      [460, 273, 1012],
+      [480, 279, 1006],
+      [500, 286, 1000],
+      [520, 291, 994],
+      [540, 297, 988],
+      [560, 303, 983],
+      [580, 313, 972],
+      [600, 331, 953],
     ] as ReadonlyArray<readonly [number, number, number]>,
     edgeHalfWidthPx: 76,
     edgeReachPx: 40,
@@ -1175,7 +1195,5 @@ export function isTouchPrimary(): boolean {
 
 /** Sprint 2.2 — pick the floor-spacing value for the current viewport. */
 export function pickFloorSpacingPx(): number {
-  return isDesktopViewport()
-    ? config.numberClimb.floorSpacingPx.desktop
-    : config.numberClimb.floorSpacingPx.mobile;
+  return isDesktopViewport() ? config.numberClimb.floorSpacingPx.desktop : config.numberClimb.floorSpacingPx.mobile;
 }

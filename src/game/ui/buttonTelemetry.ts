@@ -34,11 +34,7 @@ export type ButtonClickSource = 'pointer' | 'keyboard';
  * this directly to lock the contract; the emit wrappers below add the
  * side effect on top.
  */
-export function buildButtonClickedProps(
-  label: string,
-  sceneKey: string,
-  source: ButtonClickSource,
-): TelemetryProps {
+export function buildButtonClickedProps(label: string, sceneKey: string, source: ButtonClickSource): TelemetryProps {
   const dict: TelemetryProps = {};
   dict['label'] = label;
   dict['sceneKey'] = sceneKey;
@@ -51,10 +47,6 @@ export function buildButtonClickedProps(
  * — button clicks are normal flow, not errors. Disabled buttons should
  * NEVER reach this function (callers short-circuit before invoking).
  */
-export function emitButtonClicked(
-  label: string,
-  sceneKey: string,
-  source: ButtonClickSource,
-): void {
+export function emitButtonClicked(label: string, sceneKey: string, source: ButtonClickSource): void {
   _th.logToAi('ButtonClicked', SeverityLevel.Information, buildButtonClickedProps(label, sceneKey, source));
 }

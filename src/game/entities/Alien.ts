@@ -231,13 +231,12 @@ export class Alien extends Phaser.GameObjects.Container {
       for (const layer of config.alien.plateLayers) {
         const w = Math.round(Alien.WIDTH * layer.widthScale);
         riderBackdrop.fillStyle(0x0b1020, layer.alpha);
-        riderBackdrop.fillRoundedRect(
-          -w / 2,
-          chassisTopY - layer.heightPx,
-          w,
-          layer.heightPx,
-          { tl: 8, tr: 8, bl: 0, br: 0 },
-        );
+        riderBackdrop.fillRoundedRect(-w / 2, chassisTopY - layer.heightPx, w, layer.heightPx, {
+          tl: 8,
+          tr: 8,
+          bl: 0,
+          br: 0,
+        });
       }
       // Z-order: chassis (back) → riderBackdrop → riderSprite → answerText (front).
       // answerText must stay on top so the number is always readable even

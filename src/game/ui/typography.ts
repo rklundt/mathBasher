@@ -188,13 +188,7 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
  * below to get the style object and pass it to `this.add.text(...)`
  * directly so the Container's own transform applies.
  */
-export function text(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  str: string,
-  kind: TextKind,
-): Phaser.GameObjects.Text {
+export function text(scene: Phaser.Scene, x: number, y: number, str: string, kind: TextKind): Phaser.GameObjects.Text {
   return scene.add.text(x, y, str, textStyle(kind));
 }
 

@@ -43,14 +43,10 @@ export function computeStackSlots(
   if (items.length === 0) return [];
 
   const widths = items.map((it) =>
-    (it.kind ?? 'primary') === 'primary'
-      ? config.layout.button.primaryW
-      : config.layout.button.secondaryW,
+    (it.kind ?? 'primary') === 'primary' ? config.layout.button.primaryW : config.layout.button.secondaryW,
   );
   const heights = items.map((it) =>
-    (it.kind ?? 'primary') === 'primary'
-      ? config.layout.button.primaryH
-      : config.layout.button.secondaryH,
+    (it.kind ?? 'primary') === 'primary' ? config.layout.button.primaryH : config.layout.button.secondaryH,
   );
   const totalHeight = heights.reduce((sum, h) => sum + h, 0) + gap * (items.length - 1);
 
@@ -85,5 +81,10 @@ export function computeRowSlots(
   const height = kind === 'primary' ? config.layout.button.primaryH : config.layout.button.secondaryH;
   const total = width * count + gap * (count - 1);
   const left = centerX - total / 2;
-  return Array.from({ length: count }, (_, i) => ({ x: left + width / 2 + i * (width + gap), y: centerY, width, height }));
+  return Array.from({ length: count }, (_, i) => ({
+    x: left + width / 2 + i * (width + gap),
+    y: centerY,
+    width,
+    height,
+  }));
 }

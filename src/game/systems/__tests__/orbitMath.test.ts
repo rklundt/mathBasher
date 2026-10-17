@@ -3,11 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, expect, it } from 'vitest';
-import {
-  computeOrbitParams,
-  pointOnEllipse,
-  type PlayfieldBounds,
-} from '@/game/systems/orbitMath';
+import { computeOrbitParams, pointOnEllipse, type PlayfieldBounds } from '@/game/systems/orbitMath';
 
 /**
  * Tests for the pure orbit-math helpers extracted from

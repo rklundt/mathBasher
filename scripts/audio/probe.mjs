@@ -98,11 +98,9 @@ function collectMetadataFields(s) {
 
 // Pass 2: volumedetect filter — gives mean and peak volume in dBFS, useful
 // for verifying loudness-normalization landed in the expected range.
-const vol = spawnSync(
-  ffmpegPath,
-  ['-hide_banner', '-nostats', '-i', file, '-af', 'volumedetect', '-f', 'null', '-'],
-  { encoding: 'utf8' },
-);
+const vol = spawnSync(ffmpegPath, ['-hide_banner', '-nostats', '-i', file, '-af', 'volumedetect', '-f', 'null', '-'], {
+  encoding: 'utf8',
+});
 const volLines = (vol.stderr || '')
   .split('\n')
   .filter((l) => /mean_volume|max_volume|n_samples/.test(l))

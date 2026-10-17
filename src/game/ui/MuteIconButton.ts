@@ -26,11 +26,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
  * already muted at the moment of activation, the visual flip is the
  * confirmation).
  */
-export function createMuteIconButton(
-  scene: Phaser.Scene,
-  centerX: number,
-  centerY: number,
-): IconButtonInstance {
+export function createMuteIconButton(scene: Phaser.Scene, centerX: number, centerY: number): IconButtonInstance {
   const audio = getAudioManager();
   return createIconButton({
     scene,

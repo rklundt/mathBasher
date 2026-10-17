@@ -109,7 +109,13 @@ export interface FadeNoteOptions {
 export function fadeNote(scene: Phaser.Scene, x: number, y: number, msg: string, opts: FadeNoteOptions): void {
   const note = text(scene, x, y, msg, 'rowLabel').setOrigin(0.5).setDepth(C.textDepth);
   note.setStroke(CALLOUT_INK_CSS, C.noteStrokePx);
-  scene.tweens.add({ targets: note, alpha: 0, delay: opts.holdMs, duration: opts.fadeMs, onComplete: () => note.destroy() });
+  scene.tweens.add({
+    targets: note,
+    alpha: 0,
+    delay: opts.holdMs,
+    duration: opts.fadeMs,
+    onComplete: () => note.destroy(),
+  });
 }
 
 export interface ScreenBannerOptions {
@@ -123,7 +129,11 @@ export interface ScreenBannerOptions {
  * A banner centred on the screen. Returns the text so the caller decides
  * when it goes (and can restyle it, like Frog Splash's finish banner).
  */
-export function screenBanner(scene: Phaser.Scene, msg: string, opts: ScreenBannerOptions = {}): Phaser.GameObjects.Text {
+export function screenBanner(
+  scene: Phaser.Scene,
+  msg: string,
+  opts: ScreenBannerOptions = {},
+): Phaser.GameObjects.Text {
   const banner = text(scene, scene.scale.width / 2, scene.scale.height / 2, msg, opts.style ?? 'warning')
     .setOrigin(0.5)
     .setDepth(C.textDepth);

@@ -66,7 +66,10 @@ function backdropSvg() {
     return `<circle cx="${f(rng() * BG_W)}" cy="${f(rng() * (skyH - 14))}" r="${f(r)}" fill="#fff" opacity="${f(0.45 + rng() * 0.55)}"/>`;
   }).join('');
   // Gentle wave along the waterline.
-  const waveTop = Array.from({ length: BG_W / 40 }, (_, i) => `Q${i * 40 + 20},${f(skyH + (i % 2 ? -7 : 7))} ${i * 40 + 40},${skyH}`).join(' ');
+  const waveTop = Array.from(
+    { length: BG_W / 40 },
+    (_, i) => `Q${i * 40 + 20},${f(skyH + (i % 2 ? -7 : 7))} ${i * 40 + 40},${skyH}`,
+  ).join(' ');
   const wave = `M0,${skyH} ${waveTop} V${BG_H} H0 Z`;
   const rays = Array.from({ length: 6 }, (_, i) => {
     const x = 60 + i * 215 + rng() * 40;
@@ -136,9 +139,18 @@ function branchCoralSvg() {
     }
   };
   grow(W / 2, H - 6, -Math.PI / 2, 62, 20, 3);
-  const outline = strokes.map((s) => `<path d="${s.d}" fill="none" stroke="#b9405d" stroke-width="${f(s.wd + 5)}" stroke-linecap="round"/>`).join('');
-  const fill = strokes.map((s) => `<path d="${s.d}" fill="none" stroke="#ff7f95" stroke-width="${f(s.wd)}" stroke-linecap="round"/>`).join('');
-  const shine = strokes.map((s) => `<path d="${s.d}" fill="none" stroke="#ffb3c0" stroke-width="${f(s.wd * 0.3)}" stroke-linecap="round" transform="translate(-${f(s.wd * 0.18)},0)"/>`).join('');
+  const outline = strokes
+    .map((s) => `<path d="${s.d}" fill="none" stroke="#b9405d" stroke-width="${f(s.wd + 5)}" stroke-linecap="round"/>`)
+    .join('');
+  const fill = strokes
+    .map((s) => `<path d="${s.d}" fill="none" stroke="#ff7f95" stroke-width="${f(s.wd)}" stroke-linecap="round"/>`)
+    .join('');
+  const shine = strokes
+    .map(
+      (s) =>
+        `<path d="${s.d}" fill="none" stroke="#ffb3c0" stroke-width="${f(s.wd * 0.3)}" stroke-linecap="round" transform="translate(-${f(s.wd * 0.18)},0)"/>`,
+    )
+    .join('');
   const tipDots = tips.map(([x, y, r]) => `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="#ffd0d8"/>`).join('');
   return svg(W, H, outline + fill + shine + tipDots);
 }
@@ -192,7 +204,12 @@ function brainCoralSvg() {
   }).join('');
   const dome = `<path d="M18,124 C18,40 162,40 162,124 Z" fill="#5fc9b8" stroke="#2f8f86" stroke-width="4" stroke-linejoin="round"/>`;
   const clip = `<clipPath id="dome"><path d="M18,124 C18,40 162,40 162,124 Z"/></clipPath>`;
-  return svg(W, H, `${tentacles}${dome}<g clip-path="url(#dome)">${grooves}</g><ellipse cx="62" cy="70" rx="22" ry="8" fill="#fff" opacity="0.25"/>`, clip);
+  return svg(
+    W,
+    H,
+    `${tentacles}${dome}<g clip-path="url(#dome)">${grooves}</g><ellipse cx="62" cy="70" rx="22" ry="8" fill="#fff" opacity="0.25"/>`,
+    clip,
+  );
 }
 
 // ---------- seaweed ----------
@@ -215,7 +232,11 @@ function seaweedSvg(phase) {
       return `<path d="M${f(x)},${f(y)} Q${f(x + side * 14)},${f(y - 26)} ${f(lx)},${f(y - 18)} Q${f(x + side * 12)},${f(y + 4)} ${f(x)},${f(y)} Z" fill="#46c27f" stroke="#1f7d4c" stroke-width="2.2" stroke-linejoin="round"/>`;
     })
     .join('');
-  return svg(W, H, `${leaves}<polygon points="${[...left, ...right].join(' ')}" fill="#46c27f" stroke="#1f7d4c" stroke-width="2.6" stroke-linejoin="round"/>`);
+  return svg(
+    W,
+    H,
+    `${leaves}<polygon points="${[...left, ...right].join(' ')}" fill="#46c27f" stroke="#1f7d4c" stroke-width="2.6" stroke-linejoin="round"/>`,
+  );
 }
 
 // ---------- fish (white; the game tints + fades it) ----------
@@ -252,12 +273,13 @@ function refuseOverwrite(paths, force) {
   process.exit(1);
 }
 
-
 const png = (s) => sharp(Buffer.from(s)).png().toBuffer();
 
 async function sheet(frames, w, h) {
   const bufs = await Promise.all(frames.map(png));
-  return sharp({ create: { width: w * bufs.length, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+  return sharp({
+    create: { width: w * bufs.length, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
     .composite(bufs.map((input, i) => ({ input, left: i * w, top: 0 })))
     .png()
     .toBuffer();
@@ -278,11 +300,19 @@ async function main() {
     coral2: [await png(fanCoralSvg()), resolve(BG_DIR, 'reef-coral-2.webp')],
     coral3: [await png(brainCoralSvg()), resolve(BG_DIR, 'reef-coral-3.webp')],
     seaweed: [
-      await sheet(Array.from({ length: SEAWEED_FRAMES }, (_, i) => seaweedSvg(i / SEAWEED_FRAMES)), SEAWEED_W, SEAWEED_H),
+      await sheet(
+        Array.from({ length: SEAWEED_FRAMES }, (_, i) => seaweedSvg(i / SEAWEED_FRAMES)),
+        SEAWEED_W,
+        SEAWEED_H,
+      ),
       resolve(BG_DIR, 'reef-seaweed.webp'),
     ],
     fish: [
-      await sheet(Array.from({ length: FISH_FRAMES }, (_, i) => fishSvg(i / FISH_FRAMES)), FISH_W, FISH_H),
+      await sheet(
+        Array.from({ length: FISH_FRAMES }, (_, i) => fishSvg(i / FISH_FRAMES)),
+        FISH_W,
+        FISH_H,
+      ),
       resolve(BG_DIR, 'reef-fish.webp'),
     ],
   };

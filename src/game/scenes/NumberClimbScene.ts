@@ -93,7 +93,6 @@ const HERO_JUMP_DELAY_MS = 200;
  */
 const TIMER_OUT_BANNER_HOLD_MS = 600;
 
-
 export class NumberClimbScene extends Phaser.Scene implements GameSceneContract {
   static readonly key = SceneKeys.NumberClimb;
   private readonly gameId = 'number-climb' as const;
@@ -436,10 +435,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   }
 
   private handleWrongPick(): void {
-    this.remainingTimeMs = Math.max(
-      0,
-      this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000,
-    );
+    this.remainingTimeMs = Math.max(0, this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000);
     // Sprint 2.2.1 story 1 — surface the time cost: the HUD listens for
     // `timePenalty` and floats a red "−Ns" popup at the countdown timer
     // so the kid registers that the wrong rung cost them time.

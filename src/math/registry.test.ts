@@ -96,5 +96,4 @@ describe('registry', () => {
       expect(implemented).toEqual(configIds);
     });
   });
-
 });

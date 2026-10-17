@@ -44,14 +44,8 @@ export class ScoreCalculator {
       return;
     }
     this._correctCount += 1;
-    const wrongShotMult = outcome.usedWrongShot
-      ? config.scoring.afterWrongShotMultiplier
-      : 1;
-    this._score +=
-      config.scoring.basePerCorrect *
-      this.mathMultiplier *
-      this.speedMultiplier *
-      wrongShotMult;
+    const wrongShotMult = outcome.usedWrongShot ? config.scoring.afterWrongShotMultiplier : 1;
+    this._score += config.scoring.basePerCorrect * this.mathMultiplier * this.speedMultiplier * wrongShotMult;
   }
 
   get score(): number {

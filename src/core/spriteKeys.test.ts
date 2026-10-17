@@ -71,7 +71,7 @@ describe('pickSpriteTier', () => {
       expect(pickSpriteTier(0, 1)).toBe(128);
     });
 
-    it('zero DPR → 128 (effective 0 < 1920; defensive — DPR shouldn\'t be 0 in practice)', () => {
+    it("zero DPR → 128 (effective 0 < 1920; defensive — DPR shouldn't be 0 in practice)", () => {
       expect(pickSpriteTier(2000, 0)).toBe(128);
     });
 
@@ -154,9 +154,7 @@ describe('spritePath extension resolution', () => {
   });
 
   it('alien kind resolves to .webp (tiered path)', () => {
-    expect(spritePath('alien', 'alien1-r0c0', 192)).toBe(
-      '/assets/sprites/aliens/192/alien1-r0c0.webp',
-    );
+    expect(spritePath('alien', 'alien1-r0c0', 192)).toBe('/assets/sprites/aliens/192/alien1-r0c0.webp');
   });
 
   it('ui kind stays .png', () => {
@@ -164,15 +162,11 @@ describe('spritePath extension resolution', () => {
   });
 
   it('particle kind stays .png', () => {
-    expect(spritePath('particle', 'circle_03')).toBe(
-      '/assets/sprites/particles/circle_03.png',
-    );
+    expect(spritePath('particle', 'circle_03')).toBe('/assets/sprites/particles/circle_03.png');
   });
 
   it('projectile kind stays .png', () => {
-    expect(spritePath('projectile', 'laser')).toBe(
-      '/assets/sprites/projectiles/laser.png',
-    );
+    expect(spritePath('projectile', 'laser')).toBe('/assets/sprites/projectiles/laser.png');
   });
 
   it('asteroid kind is .webp in its own folder (sprint 2.6.3)', () => {
@@ -222,11 +216,7 @@ describe('asteroid sprites', () => {
  */
 describe('pickNextHeroSpriteKey — speeder round-robin (Alien Shoot)', () => {
   it('cycles through Speeder1/2/3 in strict round-robin', () => {
-    const picks = [
-      pickNextHeroSpriteKey(),
-      pickNextHeroSpriteKey(),
-      pickNextHeroSpriteKey(),
-    ];
+    const picks = [pickNextHeroSpriteKey(), pickNextHeroSpriteKey(), pickNextHeroSpriteKey()];
     const speeders = [HeroSpriteKeys.Speeder1, HeroSpriteKeys.Speeder2, HeroSpriteKeys.Speeder3];
     expect(picks.every((p) => (speeders as string[]).includes(p))).toBe(true);
     expect(new Set(picks).size).toBe(3); // all distinct in 3 consecutive picks
@@ -238,10 +228,8 @@ describe('pickNextHeroSpriteKey — speeder round-robin (Alien Shoot)', () => {
     // consulted, a 'space-robot' override would produce all-same.
     const picks = Array.from({ length: 6 }, () => pickNextHeroSpriteKey());
     // Every pick must be one of the three speeders.
-    const allSpeeders = picks.every((p) =>
-      p === HeroSpriteKeys.Speeder1 ||
-      p === HeroSpriteKeys.Speeder2 ||
-      p === HeroSpriteKeys.Speeder3,
+    const allSpeeders = picks.every(
+      (p) => p === HeroSpriteKeys.Speeder1 || p === HeroSpriteKeys.Speeder2 || p === HeroSpriteKeys.Speeder3,
     );
     expect(allSpeeders).toBe(true);
     // Cycle of length 3 means picks[i] === picks[i+3] across all i.

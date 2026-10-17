@@ -65,7 +65,8 @@ export function extendChoices(
   const hi = Math.max(...choices);
   for (const inRangeOnly of [true, false]) {
     for (let k = 1; choices.length < count && k < 200; k++) {
-      const pair = rng() < 0.5 ? [q.correctAnswer - k, q.correctAnswer + k] : [q.correctAnswer + k, q.correctAnswer - k];
+      const pair =
+        rng() < 0.5 ? [q.correctAnswer - k, q.correctAnswer + k] : [q.correctAnswer + k, q.correctAnswer - k];
       for (const v of pair) {
         if (choices.length >= count) break;
         if (v < 0 || !Number.isInteger(v) || taken(v)) continue;

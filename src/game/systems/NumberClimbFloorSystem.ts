@@ -101,9 +101,7 @@ export interface NumberClimbFloorSystemOpts {
  *                           same wrong rung). Scene should ignore.
  */
 export type RungPickOutcome =
-  | { kind: 'correct'; rung: NumberClimbRung }
-  | { kind: 'wrong'; rung: NumberClimbRung }
-  | { kind: 'rung-consumed' };
+  { kind: 'correct'; rung: NumberClimbRung } | { kind: 'wrong'; rung: NumberClimbRung } | { kind: 'rung-consumed' };
 
 export class NumberClimbFloorSystem {
   private rungs: NumberClimbRung[] = [];
@@ -247,12 +245,7 @@ export class NumberClimbFloorSystem {
     // the correct answer is included. Choices is 4 per the math
     // generator contract; if Easy/Medium subset accidentally omits
     // the correct answer, replace a random slot with it.
-    const pickedAnswers = pickSubsetWithCorrect(
-      question.choices,
-      question.correctAnswer,
-      targetRungCount,
-      rng,
-    );
+    const pickedAnswers = pickSubsetWithCorrect(question.choices, question.correctAnswer, targetRungCount, rng);
 
     // Sprint 2.4 story 5 — map each numeric choice back to its parallel
     // display string. For integer generators `choiceDisplays` is undefined;
@@ -377,12 +370,7 @@ export class NumberClimbFloorSystem {
    * Stashes the escape frame in `this.escapeFrame` so the scene can
    * later call `playEscapeWinAnimation()`.
    */
-  private makeFloorFrame(
-    floorY: number,
-    isTopFloor: boolean,
-    alpha: number,
-    rng: () => number,
-  ): NumberClimbFloorFrame {
+  private makeFloorFrame(floorY: number, isTopFloor: boolean, alpha: number, rng: () => number): NumberClimbFloorFrame {
     let bgKey: ClimbFloorBgKey;
     let frameHeight: number;
     let centerY: number;

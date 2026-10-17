@@ -80,9 +80,7 @@ describe('RoundController', () => {
       const rc = new RoundController('add-to-10', 'medium');
       const cleanResult = rc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
       const wrongShotResult = rc.recordOutcome({ wasCorrect: true, usedWrongShot: true });
-      expect(wrongShotResult.scoreDelta).toBe(
-        cleanResult.scoreDelta * config.scoring.afterWrongShotMultiplier,
-      );
+      expect(wrongShotResult.scoreDelta).toBe(cleanResult.scoreDelta * config.scoring.afterWrongShotMultiplier);
     });
   });
 

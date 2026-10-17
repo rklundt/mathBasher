@@ -134,8 +134,7 @@ export class Asteroid extends Phaser.GameObjects.Container {
     // Per-instance variation: scale (applied uniformly to whichever
     // visual variant renders).
     const cfg = config.asteroidField;
-    this.instanceScale =
-      cfg.asteroidScaleMin + this.rng() * (cfg.asteroidScaleMax - cfg.asteroidScaleMin);
+    this.instanceScale = cfg.asteroidScaleMin + this.rng() * (cfg.asteroidScaleMax - cfg.asteroidScaleMin);
 
     this.usingImageVariant = opts.useImageVariant === true;
     this.visual = this.buildVisual(this.usingImageVariant);

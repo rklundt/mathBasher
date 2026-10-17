@@ -42,21 +42,18 @@ describe('subtractFractions generator', () => {
   // Cross-band invariant: result is NEVER negative.
   // --------------------------------------------------------------------
 
-  describe.each(['slow', 'medium', 'fast'] as const)(
-    '%s band — non-negative result invariant',
-    (speed) => {
-      it('correctAnswer is >= 0 for all samples', () => {
-        const rng = mulberry32(speed === 'slow' ? 1000 : speed === 'medium' ? 2000 : 3000);
-        for (let i = 0; i < SAMPLE_COUNT; i++) {
-          const q = subtractFractions.generate(rng, speed);
-          expect(
-            q.correctAnswer,
-            `${speed} sample ${i}: prompt "${q.prompt}" produced negative answer ${q.correctAnswer}`,
-          ).toBeGreaterThanOrEqual(0);
-        }
-      });
-    },
-  );
+  describe.each(['slow', 'medium', 'fast'] as const)('%s band — non-negative result invariant', (speed) => {
+    it('correctAnswer is >= 0 for all samples', () => {
+      const rng = mulberry32(speed === 'slow' ? 1000 : speed === 'medium' ? 2000 : 3000);
+      for (let i = 0; i < SAMPLE_COUNT; i++) {
+        const q = subtractFractions.generate(rng, speed);
+        expect(
+          q.correctAnswer,
+          `${speed} sample ${i}: prompt "${q.prompt}" produced negative answer ${q.correctAnswer}`,
+        ).toBeGreaterThanOrEqual(0);
+      }
+    });
+  });
 
   // --------------------------------------------------------------------
   // Shape invariants — apply to all three bands.
@@ -64,9 +61,7 @@ describe('subtractFractions generator', () => {
 
   describe.each(['slow', 'medium', 'fast'] as const)('%s band — shape invariants', (speed) => {
     const rng = mulberry32(speed === 'slow' ? 100 : speed === 'medium' ? 200 : 300);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      subtractFractions.generate(rng, speed),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => subtractFractions.generate(rng, speed));
 
     it('every Question has CHOICE_COUNT (4) choices', () => {
       for (const q of samples) {
@@ -132,9 +127,7 @@ describe('subtractFractions generator', () => {
 
   describe('Easy band — like fractions', () => {
     const rng = mulberry32(101);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      subtractFractions.generate(rng, 'slow'),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => subtractFractions.generate(rng, 'slow'));
 
     it('prompt is two like fractions: a/d − b/d, with a >= b', () => {
       const re = /^(\d+)\/(\d+) − (\d+)\/(\d+) = \?$/;
@@ -167,9 +160,7 @@ describe('subtractFractions generator', () => {
 
   describe('Medium band — mixed numbers', () => {
     const rng = mulberry32(201);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      subtractFractions.generate(rng, 'medium'),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => subtractFractions.generate(rng, 'medium'));
 
     it('prompt is two mixed numbers: W1 a/d − W2 b/d, with first >= second', () => {
       const re = /^(\d+) (\d+)\/(\d+) − (\d+) (\d+)\/(\d+) = \?$/;
@@ -209,9 +200,7 @@ describe('subtractFractions generator', () => {
 
   describe('Hard band — unlike fractions', () => {
     const rng = mulberry32(301);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      subtractFractions.generate(rng, 'fast'),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => subtractFractions.generate(rng, 'fast'));
 
     it('prompt is two unlike fractions: a/d1 − b/d2, denominators in expected ratio', () => {
       const re = /^(\d+)\/(\d+) − (\d+)\/(\d+) = \?$/;

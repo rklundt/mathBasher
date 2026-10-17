@@ -197,7 +197,10 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
 
     this.water = this.add.tileSprite(0, 0, width, L.worldHeight, PondSpriteKeys.Water).setOrigin(0, 0).setDepth(0);
     this.add.image(0, 0, PondSpriteKeys.BankFar).setOrigin(0, 0).setDepth(1);
-    this.add.image(0, L.worldHeight - this.cfg.bankHeightPx, PondSpriteKeys.BankNear).setOrigin(0, 0).setDepth(1);
+    this.add
+      .image(0, L.worldHeight - this.cfg.bankHeightPx, PondSpriteKeys.BankNear)
+      .setOrigin(0, 0)
+      .setDepth(1);
 
     const speedCfg = this.cfg.speed[this.speed];
     for (let i = 0; i < totalRows; i++) {
@@ -232,7 +235,10 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       duration: this.cfg.finish.flyOrbitMs,
       repeat: -1,
       onUpdate: () => {
-        this.fly?.setPosition(fx + Math.cos(orbit.a) * this.cfg.finish.flyOrbitPx, fy + Math.sin(orbit.a * 2) * this.cfg.finish.flyBobPx);
+        this.fly?.setPosition(
+          fx + Math.cos(orbit.a) * this.cfg.finish.flyOrbitPx,
+          fy + Math.sin(orbit.a * 2) * this.cfg.finish.flyBobPx,
+        );
       },
     });
 
@@ -352,7 +358,10 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     row.sink(padIndex);
     this.frog.splashDown();
     getAudioManager().play(pickRandomFrogSplashSfx(), 'sfx');
-    const splash = this.add.sprite(at.x, at.y + 10, SPLASH_SHEET.key, 0).setDepth(12).setScale(1.2);
+    const splash = this.add
+      .sprite(at.x, at.y + 10, SPLASH_SHEET.key, 0)
+      .setDepth(12)
+      .setScale(1.2);
     splash.play(`${SPLASH_SHEET.key}/play`);
     this.splashes.add(splash);
     splash.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
