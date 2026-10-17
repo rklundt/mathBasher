@@ -1,6 +1,8 @@
 # Contributing to mathBasher
 
-> ⚠ **Status: contributions are not yet open.**
+> **Bug reports and ideas are welcome now.** See the first section below; anyone can send them.
+>
+> ⚠ **Status: code contributions are not yet open.**
 >
 > mathBasher is in early development and authored solely by the copyright holder. The Contributor License Agreement (CLA) mechanism that the dual-license model requires is **not yet in place**. Until that lands, third-party pull requests will be politely declined.
 >
@@ -21,7 +23,7 @@ When third-party code contributions are accepted, this document will describe:
 
 ### 1. Contributor License Agreement (CLA)
 
-Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. A plain "Signed-off-by" (DCO) line isn't enough on its own: it covers the AGPL, not the commercial license. The agreement's terms, how it's signed and stored, and how contributors under 18 are handled are being worked out with legal advice; nothing is accepted until that is settled. See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
+Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. A plain "Signed-off-by" (DCO) line isn't enough on its own: it covers the AGPL, not the commercial license. The agreement's terms, how it's signed and stored, and how contributors under 18 are handled will be settled, with legal advice, before any outside contribution is accepted. See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
 
 ### 2. Code of conduct
 
@@ -70,8 +72,8 @@ Contributions must respect the architecture documented in [docs/adrs/](docs/adrs
 By submitting a contribution, you confirm:
 
 - You have the legal right to license your contribution under AGPL-3.0-or-later.
-- You agree to the terms of the project's CLA (being drafted), which permits the copyright holder to relicense your contribution commercially.
+- You agree to the terms of the project's CLA (to be published here before contributions open), which permits the copyright holder to relicense your contribution commercially.
 
 ## Asking questions
 
-Open a GitHub Discussion (when enabled) or an issue tagged `question`. The project maintainer is the primary responder; response times are best-effort.
+Use the [idea form](https://github.com/rklundt/mathBasher/issues/new?template=idea.yml); a question is fine there too. The project maintainer answers when they can; response times are best-effort.

@@ -415,6 +415,7 @@ Set up in sprint 2.6.4; the reasoning is in [ADR-0013](docs/adrs/ADR-0013-lint-a
   - `commit-msg` passes the message on to your local checks.
   - Both then run any `*.sh` you put in the gitignored `.githooks/local/`, which is the place for your own machine-only checks.
   - Skip once with `git commit --no-verify`; CI still runs everything.
+  - A checked-out branch runs *its own* hooks, lint config and `prepare` script. Review someone else's pull request on GitHub or in a throwaway clone; don't install or commit on it in your main clone.
 - **CI's required check** ("Typecheck, test, build") runs lint, typecheck, tests and build. Don't rename that job: branch protection waits for it by name.
 - **Node version:** `.nvmrc` (22) is the single source for CI and version managers. `engines` keeps the `>=22.13.0` floor.
 - **New packages must be at least a day old** (`minimumReleaseAge` in `pnpm-workspace.yaml`). For an urgent security fix that's newer, add it to `minimumReleaseAgeExclude` for that update.

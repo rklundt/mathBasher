@@ -10,8 +10,8 @@ import { CALLOUT_BORDER, CALLOUT_INK, CALLOUT_INK_CSS } from '@/game/ui/uiPalett
 
 /**
  * Sprint 2.6.3 — the callouts the tap-to-answer games share, moved here from
- * copies in Frog Splash, Math-a-lotl and Space Shooter (Number Climb uses
- * `applyBannerLegibility`):
+ * copies in Frog Splash, Math-a-lotl and Space Shooter. Number Climb and
+ * Asteroid Field use `screenBanner` / `applyBannerLegibility` for their banners:
  *
  *  - `createTapHint`: the pulsing "👆 …" pill shown on question 1.
  *  - `floatNote`: a note that rises while it fades ("Splash! Try again!").

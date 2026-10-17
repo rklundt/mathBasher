@@ -13,13 +13,20 @@
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 # A branch must never be able to plant local checks: refuse tracked files there.
-if [ -n "$(git ls-files .githooks/local)" ]; then
+# ':(icase)' also catches .githooks/Local/ etc., which Windows treats as the same folder.
+if [ -n "$(git ls-files ':(icase).githooks/local')" ]; then
   echo "pre-commit: .githooks/local/ contains tracked files; refusing to run. Remove them from git." >&2
   exit 1
 fi
 
 # Pathspecs stay quoted so the shell can't expand them against the repo root.
 if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.mjs' '*.js' '*.cjs')" ]; then
+  if [ ! -f node_modules/eslint/bin/eslint.js ]; then
+    echo "pre-commit: dependencies aren't installed; run 'pnpm install' first." >&2
+    exit 1
+  fi
+  # Lints each file as it is in the working tree (a partly staged file is
+  # checked with its unstaged edits too).
   git diff --cached --name-only --diff-filter=ACMR -z -- '*.ts' '*.mjs' '*.js' '*.cjs' |
     MATHBASHER_LINT_FAST=1 xargs -0 node ./node_modules/eslint/bin/eslint.js \
       --cache --cache-location node_modules/.cache/eslint-fast/ --no-warn-ignored -- || {

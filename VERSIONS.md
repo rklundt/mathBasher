@@ -31,7 +31,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - Code shared between games now lives in one place: the "tap here" hint, the floating "Try again!" notes and the big banners. Everything looks and sounds the same.
 - Math-a-lotl's scoring rules are checked by automatic tests.
 - New forms for reporting a problem or suggesting an idea, with a reminder not to post anything that identifies a child. Security problems can be reported privately.
-- Automatic code checks (lint) run on every proposed change and before each commit.
+- Automatic checks now run before any change is accepted.
 
 ## [2.6.2] - 2026-10-15 — Behind-the-scenes hardening
 

@@ -50,7 +50,8 @@ jobs:
 
       # Machine-local hook checks must never come from the repository.
       - name: No tracked files in .githooks/local
-        run: test -z "$(git ls-files .githooks/local)"
+        # Case-insensitive, so .githooks/Local/ can't slip past on Windows clones.
+        run: test -z "$(git ls-files ':(icase).githooks/local')"
 
       - name: Lint
         run: pnpm lint

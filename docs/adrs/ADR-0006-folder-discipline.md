@@ -46,8 +46,8 @@ Two folders grew up after this ADR and weren't listed. Here is the whole map, lo
 - **`/src/test-utils/`** is for tests only; production code never imports it.
 - **`/server/`** may import `/src/shared/` and pure `/src/math/` / `/src/services/` modules, never `/src/game/` or `/src/app/`.
 
-**Known exceptions today** (found while writing this map; to be fixed or explicitly allowed when the lint check lands):
+**Known exceptions today** (found while writing this map; allowed explicitly, file by file, in `eslint.config.js`):
 - `core/{assetScope,audioKeys,sceneKeys,spriteKeys}.ts` import the `GameId` *type* from `services/Settings.ts`. It's type-only, so nothing runs, but the type belongs in `core`.
 - `services/audioManagerFactory.ts` imports `PhaserAudioManager` from `game/services/`. The factory is where the Phaser-backed implementation gets wired to the Phaser-free interface, so it belongs in `game` or `app`.
 
-Checked at review today; an import-rule lint check is planned (sprint 2.6.4) so CI enforces it.
+Since sprint 2.6.4 ESLint enforces this map in CI and in the commit hook (`no-restricted-imports` per folder, matching both `@/…` aliases and relative paths; see ADR-0013). The fix for the exceptions, when convenient: move `GameId` into `core`, and move `audioManagerFactory.ts` into `game/services/`. Each fix removes its exception block from the lint config.

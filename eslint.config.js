@@ -31,26 +31,35 @@ const NODE_GLOBALS = {
 };
 
 /** Raw HTML injection is banned everywhere: the game renders text only. */
+const HTML_MSG = 'Set textContent or build DOM nodes instead; raw HTML is not allowed (XSS).';
 const NO_HTML_INJECTION = [
+  // el.innerHTML = …, el.outerHTML = …
+  { selector: 'AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML)$/]', message: HTML_MSG },
+  // el['innerHTML'] = …
+  { selector: 'AssignmentExpression > MemberExpression.left[computed=true][property.value=/^(innerHTML|outerHTML)$/]', message: HTML_MSG },
+  // el.insertAdjacentHTML(…), range.createContextualFragment(…), el.setHTMLUnsafe(…), new DOMParser().parseFromString(…)
   {
-    selector: "AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML)$/]",
-    message: 'Set textContent instead; raw HTML is not allowed (XSS).',
+    selector: 'CallExpression[callee.property.name=/^(insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseFromString)$/]',
+    message: HTML_MSG,
   },
-  {
-    selector: "CallExpression[callee.property.name='insertAdjacentHTML']",
-    message: 'Build DOM nodes or set textContent instead; raw HTML is not allowed (XSS).',
-  },
+  // document.write(…), document.writeln(…)
+  { selector: "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]", message: HTML_MSG },
 ];
 
-/** ADR-0006: a folder imports only from the layers below it. */
-const banImports = (patterns, paths = [], allowTypeImports = false) => ({
-  '@typescript-eslint/no-restricted-imports': [
-    'error',
-    {
-      paths: paths.map((name) => ({ name, message: 'ADR-0006: Phaser is only imported in src/game/ and src/app/boot.ts.', allowTypeImports })),
-      patterns: patterns.map((group) => ({ group: [group], message: 'ADR-0006: this folder may not import from that layer.', allowTypeImports })),
-    },
-  ],
+/**
+ * ADR-0006: a folder imports only from the layers below it. Each banned layer
+ * is matched both as an alias (`@/game/…`) and as a relative path
+ * (`../game/…`, `../../src/game/…`), since the server imports relatively.
+ */
+const LAYER_MSG = 'ADR-0006: this folder may not import from that layer (see the folder map).';
+const layer = (name, allowTypeImports = false) => ({
+  group: [`@/${name}/*`, `**/${name}/**`],
+  message: LAYER_MSG,
+  allowTypeImports,
+});
+const PHASER = { name: 'phaser', message: 'ADR-0006: Phaser is only imported in src/game/ and src/app/boot.ts.' };
+const banImports = (patterns, { phaser = true } = {}) => ({
+  '@typescript-eslint/no-restricted-imports': ['error', { paths: phaser ? [PHASER] : [], patterns }],
 });
 
 export default tseslint.config(
@@ -113,39 +122,54 @@ export default tseslint.config(
   },
 
   // ----- ADR-0006 folder rules -------------------------------------------
+  // Later blocks override earlier ones for the same file, so each known
+  // exception is a narrow block right after its folder's rule.
   {
     files: ['src/shared/**/*.ts'],
-    rules: banImports(['@/*'], ['phaser']),
+    // Nothing from the app's other folders, by alias or by climbing out with '../'.
+    rules: banImports([{ regex: '^(@/(?!shared/)|\\.\\./)', message: 'ADR-0006: src/shared/ imports nothing from the app.' }]),
   },
   {
-    // core's `GameId` type import from services is a known exception (ADR-0006).
     files: ['src/core/**/*.ts'],
-    rules: banImports(['@/math/*', '@/services/*', '@/game/*', '@/app/*'], ['phaser'], true),
+    rules: banImports([layer('math'), layer('services'), layer('game'), layer('app')]),
+  },
+  {
+    // Known exception (ADR-0006): these four take the `GameId` type from services.
+    files: ['src/core/{assetScope,audioKeys,sceneKeys,spriteKeys}.ts'],
+    rules: banImports([layer('math'), layer('services', true), layer('game'), layer('app')]),
   },
   {
     files: ['src/math/**/*.ts'],
     rules: {
-      ...banImports(['@/services/*', '@/game/*', '@/app/*'], ['phaser']),
+      ...banImports([layer('services'), layer('game'), layer('app')]),
       'no-restricted-globals': ['error', 'window', 'document', 'localStorage', 'sessionStorage', 'navigator'],
     },
   },
   {
     files: ['src/services/**/*.ts'],
-    ignores: ['src/services/audioManagerFactory.ts'], // known exception (ADR-0006)
-    rules: banImports(['@/game/*', '@/app/*'], ['phaser']),
+    rules: banImports([layer('game'), layer('app')]),
+  },
+  {
+    // Known exception (ADR-0006): the factory wires in the Phaser-backed audio manager.
+    files: ['src/services/audioManagerFactory.ts'],
+    rules: banImports([
+      // Any game/ import except that one module (alias or relative path).
+      { regex: '(^@/|/)game/(?!services/PhaserAudioManager$)', message: LAYER_MSG },
+      layer('app'),
+    ]),
   },
   {
     files: ['src/game/**/*.ts'],
-    rules: banImports(['@/app/*']),
+    rules: banImports([layer('app')], { phaser: false }),
   },
   {
     files: ['src/app/**/*.ts', 'src/main.ts'],
     ignores: ['src/app/boot.ts'],
-    rules: banImports([], ['phaser']),
+    rules: banImports([]),
   },
   {
     files: ['server/**/*.ts'],
-    rules: banImports(['@/game/*', '@/app/*'], ['phaser']),
+    rules: banImports([layer('game'), layer('app')]),
   },
 
   prettier,
