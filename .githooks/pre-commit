@@ -4,8 +4,9 @@
 # mathBasher is also available under a commercial license — see COMMERCIAL.md
 #
 # Pre-commit checks (sprint 2.6.4, ADR-0013). Enabled by `pnpm install`.
-#  1. Fast ESLint (no type info) on the staged code files. CI runs the full,
-#     type-aware lint plus typecheck, tests and build.
+#  1. Prettier check, then fast ESLint (no type info), on the staged code
+#     files. CI runs the format check and the full, type-aware lint plus
+#     typecheck, tests and build.
 #  2. Optional machine-local checks: every *.sh in .githooks/local/
 #     (gitignored), run with `sh`.
 # Skip once with `git commit --no-verify` (CI still checks everything).
@@ -21,11 +22,19 @@ if [ -n "$tracked" ]; then
 fi
 
 # Pathspecs stay quoted so the shell can't expand them against the repo root.
-if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.mjs' '*.js' '*.cjs')" ]; then
-  if [ ! -f node_modules/eslint/bin/eslint.js ]; then
+if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.mjs' '*.js' '*.cjs' '*.json' '*.yml' '*.yaml')" ]; then
+  if [ ! -f node_modules/eslint/bin/eslint.js ] || [ ! -f node_modules/prettier/bin/prettier.cjs ]; then
     echo "pre-commit: dependencies aren't installed; run 'pnpm install' first." >&2
     exit 1
   fi
+  # Formatting first (.prettierignore decides what's covered).
+  git diff --cached --name-only --diff-filter=ACMR -z -- '*.ts' '*.mjs' '*.js' '*.cjs' '*.json' '*.yml' '*.yaml' |
+    xargs -0 node ./node_modules/prettier/bin/prettier.cjs --check --ignore-unknown --log-level warn -- || {
+    echo "pre-commit: formatting differs (run 'pnpm format', then stage the result)." >&2
+    exit 1
+  }
+fi
+if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.mjs' '*.js' '*.cjs')" ]; then
   # Lints each file as it is in the working tree (a partly staged file is
   # checked with its unstaged edits too).
   git diff --cached --name-only --diff-filter=ACMR -z -- '*.ts' '*.mjs' '*.js' '*.cjs' |

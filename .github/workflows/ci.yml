@@ -58,6 +58,9 @@ jobs:
           shortnames=$(git ls-files | grep -E '(^|/)[^/]*~[0-9]+(/|$)' || true)
           test -z "$shortnames"
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Lint
         run: pnpm lint
 
