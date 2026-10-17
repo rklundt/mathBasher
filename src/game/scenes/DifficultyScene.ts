@@ -49,6 +49,7 @@ function speedSectionTitleFor(gameId: GameId): string {
     case 'frog-splash':
     case 'space-shooter':
     case 'penguin-slide':
+    case 'bunny-garden':
       return 'Difficulty';
   }
 }
@@ -130,6 +131,13 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       const { fishCount } = config.penguinSlide.speed[key];
       const countdownSec = questionSeconds(key, mathId);
       return { label: labels[key], subtitle: `${fishCount} fish · ${countdownSec}s` };
+    }
+    case 'bunny-garden': {
+      // Sprint 2.8 — difficulty = holes in the patch + time per question.
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { holeCount } = config.bunnyGarden.speed[key];
+      const countdownSec = questionSeconds(key, mathId);
+      return { label: labels[key], subtitle: `${holeCount} holes · ${countdownSec}s` };
     }
   }
 }

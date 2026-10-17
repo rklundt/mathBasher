@@ -971,6 +971,133 @@ export const config = {
     slideSound: { minGapMs: 2500, maxGapMs: 5500 },
   },
   /**
+   * Sprint 2.8 — Bunny Garden. A bunny on the front grass, a row of holes
+   * in the vegetable patch, one carrot per hole. The carrots sinking back
+   * into their holes is the countdown. Positions are canvas px (1280 × 720).
+   */
+  bunnyGarden: {
+    maxLives: 3,
+    speed: {
+      // Time per question: the shared `round.baseQuestionSec`, stretched for harder math.
+      slow: { holeCount: 3 },
+      medium: { holeCount: 4 },
+      fast: { holeCount: 5 },
+    },
+    /** The patch span the holes share (the basket sits left of it). 5 holes → 190 px lanes. */
+    lanes: { left: 230, right: 1180 },
+    /** The holes' centre line; must sit inside PATCH_TOP / PATCH_BOTTOM of `scripts/sprites/garden.mjs` (tested). */
+    holeY: 486,
+    /** Carrots and moles are hidden below this line (the hole's front lip). */
+    cropLineY: 494,
+    carrot: {
+      displayPx: 140,
+      /** Fully up: this much of the carrot (display px) shows above the lip. */
+      upVisiblePx: 118,
+      /** Fully sunk: only the leaf tips show. */
+      sunkVisiblePx: 4,
+      /**
+       * The countdown: the carrots sink on an ease-in curve to `peekDepth`
+       * (faces still peeking out) until the last `hideSec`, then duck in.
+       */
+      peekDepth: 0.4,
+      hideSec: 0.8,
+      /** "Hurry": in the last `hurryFrac` of the time the leaves shiver. */
+      hurryFrac: 0.25,
+      shiverPx: 7,
+      shiverHz: 4,
+      /** A new row pops up (Back.Out); a wrong pick's carrot ducks. */
+      popUpMs: 250,
+      duckMs: 180,
+      /** The right carrot: out of the ground, then an arc into the basket. */
+      pullRisePx: 70,
+      pullRiseMs: 160,
+      tossMs: 420,
+      tossArcPx: 120,
+    },
+    mole: {
+      displayPx: 130,
+      /** How far up it peeks (0 = fully up), the wave, and how long it stays. */
+      peekDepth: 0.12,
+      riseMs: 200,
+      waveAfterMs: 200,
+      stayMs: 400,
+    },
+    /** The answer sign: a dark pill on a garden stake, fixed above its hole (it never moves while the carrot sinks). */
+    sign: {
+      y: 326,
+      textScale: 1.05,
+      padPx: 12,
+      heightPadPx: 10,
+      /** Never wider than the lane minus this. */
+      laneMarginPx: 14,
+      labelStrokePx: 6,
+      fill: 0x1f3550,
+      fillAlpha: 0.96,
+      rimPx: 4,
+      rim: 0xfff4dc,
+      rimAlpha: 1,
+      stakeWidthPx: 12,
+      stakeColor: 0xc68a52,
+      stakeInk: 0x3a2420,
+    },
+    hole: { scale: 1 },
+    bunny: { y: 628, displayPx: 190 },
+    /** The bunny's hop to a hole: the same time whatever the distance. */
+    hop: { ms: 260, heightPx: 46 },
+    /** The bunny's little moves: the pull's squash, the oops wobble, the finish cheer's bounces. */
+    bunnyMotion: {
+      pullSquash: { x: 1.06, y: 0.94 },
+      oopsWobbleDeg: 4,
+      oopsWobbleMs: 90,
+      cheerBouncePx: 24,
+      cheerBounceMs: 180,
+      cheerBounces: 2,
+    },
+    /** Where the bunny cheers at the finish: right beside the basket. */
+    finishX: 230,
+    /** The pull: the bunny tugs before the carrot comes up. */
+    pullMs: 160,
+    /** The bunny's lane: a soft ring under it (shape, not colour, so keyboard players can see it). */
+    laneRing: { rx: 70, ry: 16, alpha: 0.35, belowFrac: 0.42, strokePx: 3, stroke: 0x2f5a2a, strokeAlpha: 0.6 },
+    basket: {
+      x: 125,
+      y: 618,
+      scale: 1,
+      /** Carrots in the basket: little icons in two rows of six. */
+      iconScale: 0.3,
+      perRow: 6,
+      rowStartX: -58,
+      stepX: 23,
+      rowY: [-22, -38],
+    },
+    /**
+     * Taps only count over the patch's lanes: never on the HUD bar, the Q1
+     * hint (in the sky) or the basket. The top is under the hint.
+     */
+    tapWindow: { top: 200, bottom: 720, left: 230, right: 1180 },
+    /**
+     * A new row: the carrots pop up, then taps and the clock start together
+     * (a fast second tap after a mole can't cost another life, and no time is
+     * lost to the lock).
+     */
+    inputLockMs: 500,
+    nextQuestionDelayMs: 150,
+    happyMs: 200,
+    /** The right answer's reward: the bunny's happy hop, the basket's bounce, a bright sparkle. */
+    reward: { hopPx: 28, hopMs: 150, basketBounce: 1.12, basketBounceMs: 120, sparkleCount: 22, sparkleScale: 0.55 },
+    timeoutBannerMs: 900,
+    outOfLivesBannerMs: 1300,
+    /** The finish: the bunny hops to the basket and cheers. */
+    finishHopMs: 420,
+    celebrateMs: 1800,
+    finishBannerStrokePx: 10,
+    finishBannerPop: { fromScale: 0.6, ms: 300 },
+    fx: { sparkleAbovePx: 30, noteAboveSignPx: 70 },
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+    /** Q1 "👆 Tap the carrot with the right answer!" hint: in the sky, under the HUD and above the signs. */
+    tapHint: { y: 160, heightPx: 60, backdropAlpha: 0.6 },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
