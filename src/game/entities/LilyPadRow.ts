@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { POND_PAD_KEYS } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { labelShiftX, nudgeIntoView, padXs, pickPadLooks, wrapPeerX } from '@/game/systems/frogSplashMath';
 
 /** Gap kept between a pad's number and the screen edge. */
@@ -13,7 +14,7 @@ const LABEL_EDGE_PX = 4;
 
 interface Pad {
   readonly container: Phaser.GameObjects.Container;
-  readonly label: Phaser.GameObjects.Text;
+  readonly label: MathText;
   /**
    * The same pad drawn one screen width away, seen while it straddles an
    * edge. No label: the number shows once, on the main copy. (A container
@@ -56,7 +57,7 @@ export class LilyPadRow {
       const angle = rng() * 360;
       const padImage = (): Phaser.GameObjects.Image =>
         scene.add.image(0, 0, POND_PAD_KEYS[looks[i]]).setDisplaySize(size, size).setAngle(angle);
-      const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
+      const label = new MathText(scene, 0, 0, '', textStyle('alienAnswer'));
       // Same dark outline as the other games' answer labels (readable on any pad shade).
       label.setStroke('#0b1020', 7);
       const container = scene.add.container(0, y, [padImage(), label]).setDepth(2);

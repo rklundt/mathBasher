@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { SLIDE_FISH_SHEET, SNOWBALL_SHEET } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { CALLOUT_INK_CSS } from '@/game/ui/uiPalette';
 
 /** The wiggle animation key for a fish colour. */
@@ -41,7 +42,7 @@ export class SlideFish {
     });
 
     const { padPx, heightPadPx, maxWidthPx } = this.cfg.badge;
-    const label = scene.add.text(0, 0, display, textStyle('alienAnswer')).setOrigin(0.5);
+    const label = new MathText(scene, 0, 0, display, textStyle('alienAnswer'));
     label.setStroke(CALLOUT_INK_CSS, 6);
     const fit = Math.min(1, (maxWidthPx - padPx * 2) / label.width);
     label.setScale(fit);

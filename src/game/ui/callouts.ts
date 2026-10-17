@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { clampNoteX } from '@/game/ui/calloutGeometry';
 import { text, type TextKind } from '@/game/ui/typography';
+import type { MathText } from '@/game/ui/MathText';
 import { CALLOUT_BORDER, CALLOUT_INK, CALLOUT_INK_CSS } from '@/game/ui/uiPalette';
 
 /**
@@ -147,7 +148,7 @@ export function screenBanner(
  * (HUD score, question, timer; Game Over headline and score), so it reads
  * on any game's backdrop, light or dark.
  */
-export function applyTextOutline(t: Phaser.GameObjects.Text): void {
+export function applyTextOutline(t: Phaser.GameObjects.Text | MathText): void {
   t.setStroke(CALLOUT_INK_CSS, C.textStrokePx);
   t.setShadow(0, C.textShadowOffsetY, CALLOUT_INK_CSS, C.textShadowBlur, true, true);
 }

@@ -123,8 +123,9 @@ describe('Penguin Slide assets', () => {
     for (const e of audio) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('placeholder gulp is an existing boot-loaded effect (until the owner sound arrives)', () => {
-    for (const key of [pickRandomPenguinGulpSfx()]) {
+  it('the gulp borrows the frog fly slurps, which load at boot so both games have them', () => {
+    for (let i = 0; i < 20; i++) expect(pickRandomPenguinGulpSfx()).toMatch(/^frog-slurp-[12]$/);
+    for (const key of ['frog-slurp-1', 'frog-slurp-2']) {
       expect(AUDIO_MANIFEST.find((e) => e.key === key)?.scope, key).toBe('eager');
     }
   });

@@ -14,7 +14,8 @@ import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { Settings } from '@/services/Settings';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
-import { text } from '@/game/ui/typography';
+import { text, textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { SLATE_BG } from '@/game/ui/uiPalette';
 
@@ -99,7 +100,7 @@ export class HudScene extends Phaser.Scene {
 
   private roundScoreText!: Phaser.GameObjects.Text;
   private totalScoreText!: Phaser.GameObjects.Text;
-  private promptText!: Phaser.GameObjects.Text;
+  private promptText!: MathText;
   private counterText!: Phaser.GameObjects.Text;
   /**
    * Sprint 0.7 Story 8 — per-question progress dots. One per question;
@@ -252,7 +253,7 @@ export class HudScene extends Phaser.Scene {
     this.repositionTotalLabel();
     this.animateVisitCountUpIfNeeded();
 
-    this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
+    this.promptText = new MathText(this, width / 2, barHeight / 2, '— + — = ?', textStyle('prompt'));
     applyTextOutline(this.promptText);
 
     // Sprint 2.1 — countdown text just BELOW the prompt, only visible in
