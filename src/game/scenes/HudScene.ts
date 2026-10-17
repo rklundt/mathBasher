@@ -646,8 +646,7 @@ export class HudScene extends Phaser.Scene {
     // strikesChanged listener so the call is cheap if no strikes
     // have been taken yet.
     if (this.livesDots.length > 0) {
-      const remaining =
-        gameScene.getStrikesRemaining?.() ?? this.livesDots.length;
+      const remaining = gameScene.getStrikesRemaining?.() ?? this.livesDots.length;
       this.applyLivesState(remaining);
     }
   }

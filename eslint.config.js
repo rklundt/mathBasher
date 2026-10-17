@@ -34,18 +34,28 @@ const NODE_GLOBALS = {
 const HTML_MSG = 'Set textContent or build DOM nodes instead; raw HTML is not allowed (XSS).';
 const NO_HTML_INJECTION = [
   // el.innerHTML = …, el.outerHTML = …
-  { selector: 'AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML)$/]', message: HTML_MSG },
+  {
+    selector: 'AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML)$/]',
+    message: HTML_MSG,
+  },
   // el['innerHTML'] = …
-  { selector: 'AssignmentExpression > MemberExpression.left[computed=true][property.value=/^(innerHTML|outerHTML)$/]', message: HTML_MSG },
+  {
+    selector: 'AssignmentExpression > MemberExpression.left[computed=true][property.value=/^(innerHTML|outerHTML)$/]',
+    message: HTML_MSG,
+  },
   // el.insertAdjacentHTML(…), range.createContextualFragment(…), el.setHTMLUnsafe(…), new DOMParser().parseFromString(…)
   {
-    selector: 'CallExpression[callee.property.name=/^(insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseFromString)$/]',
+    selector:
+      'CallExpression[callee.property.name=/^(insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseFromString)$/]',
     message: HTML_MSG,
   },
   // iframe.srcdoc = …
   { selector: 'AssignmentExpression > MemberExpression.left[property.name="srcdoc"]', message: HTML_MSG },
   // document.write(…), document.writeln(…)
-  { selector: "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]", message: HTML_MSG },
+  {
+    selector: "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
+    message: HTML_MSG,
+  },
 ];
 
 /**
@@ -103,7 +113,10 @@ export default tseslint.config(
       // A `let` read by a closure before its one assignment can't be const.
       'prefer-const': ['error', { ignoreReadBeforeAssign: true }],
       // `_`-prefixed names mark intentionally unused parameters.
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
+      ],
     },
   },
   {
@@ -132,7 +145,9 @@ export default tseslint.config(
   {
     files: ['src/shared/**/*.ts'],
     // Nothing from the app's other folders, by alias or by climbing out with '../'.
-    rules: banImports([{ regex: '^(@/(?!shared/)|\\.\\./)', message: 'ADR-0006: src/shared/ imports nothing from the app.' }]),
+    rules: banImports([
+      { regex: '^(@/(?!shared/)|\\.\\./)', message: 'ADR-0006: src/shared/ imports nothing from the app.' },
+    ]),
   },
   {
     files: ['src/core/**/*.ts'],

@@ -33,7 +33,14 @@ export class Frog {
     textureKey: FrogSpriteKey,
   ) {
     this.baseScale = this.cfg.displayPx / FROG_SHEET.frame;
-    this.shadow = scene.add.ellipse(x, y + this.cfg.displayPx * 0.38, this.cfg.displayPx * 0.7, this.cfg.displayPx * 0.22, 0x0b2a3a, 0.28);
+    this.shadow = scene.add.ellipse(
+      x,
+      y + this.cfg.displayPx * 0.38,
+      this.cfg.displayPx * 0.7,
+      this.cfg.displayPx * 0.22,
+      0x0b2a3a,
+      0.28,
+    );
     this.shadow.setDepth(9);
     this.sprite = scene.add.sprite(x, y, textureKey, FROG_SHEET.poses.sit);
     this.sprite.setScale(this.baseScale).setDepth(10);

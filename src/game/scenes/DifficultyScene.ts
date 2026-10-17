@@ -236,10 +236,7 @@ export class DifficultyScene extends Phaser.Scene {
     // Keyboard nav: math tiles in registry order, then speed tiles slow→fast,
     // then Start, then Back. Disabled stubs are skipped automatically by
     // KeyboardNavigator.
-    const tabOrder: PlaceholderButton[] = [
-      ...this.mathButtons.values(),
-      ...this.speedButtons.values(),
-    ];
+    const tabOrder: PlaceholderButton[] = [...this.mathButtons.values(), ...this.speedButtons.values()];
     if (this.startButton) tabOrder.push(this.startButton);
     if (this.backButton) tabOrder.push(this.backButton);
     new KeyboardNavigator(this, tabOrder);
@@ -254,13 +251,7 @@ export class DifficultyScene extends Phaser.Scene {
   private readonly speedSubtitles = new Map<SpeedKey, Phaser.GameObjects.Text>();
 
   private renderEmptyState(cx: number, height: number): void {
-    const msg = text(
-      this,
-      cx,
-      height * 0.45,
-      'No math types available yet — check back soon!',
-      'accent',
-    );
+    const msg = text(this, cx, height * 0.45, 'No math types available yet — check back soon!', 'accent');
     msg.setOrigin(0.5);
     msg.setStyle({ align: 'center' });
 
@@ -281,9 +272,7 @@ export class DifficultyScene extends Phaser.Scene {
     // config.layout.difficultyTile. See the tuning-history comment
     // on that config block for the back-and-forth that landed us here.
     const dt = config.layout.difficultyTile;
-    text(this, cx, firstRowY - dt.mathSectionLabelOffsetY, 'Math Type', 'sectionLabel').setOrigin(
-      0.5,
-    );
+    text(this, cx, firstRowY - dt.mathSectionLabelOffsetY, 'Math Type', 'sectionLabel').setOrigin(0.5);
 
     const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
     const implemented = new Set(getImplementedIds());
@@ -417,7 +406,10 @@ export class DifficultyScene extends Phaser.Scene {
       // button. Not interactive; purely descriptive. Phaser destroys
       // these automatically on scene shutdown alongside the rest of
       // the scene's display list.
-      this.speedSubtitles.set(key, text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0));
+      this.speedSubtitles.set(
+        key,
+        text(this, buttonX, subtitleY, display.subtitle, 'buttonSubtitle').setOrigin(0.5, 0),
+      );
     });
   }
 

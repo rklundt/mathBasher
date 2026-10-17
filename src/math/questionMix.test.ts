@@ -75,8 +75,7 @@ describe('weighted tables', () => {
       () => 1,
       (p) => (p.id === 'x' ? 2 : 1),
     );
-    const total = (answer: number) =>
-      t.filter((e) => e.value.answer === answer).reduce((s, e) => s + e.weight, 0);
+    const total = (answer: number) => t.filter((e) => e.value.answer === answer).reduce((s, e) => s + e.weight, 0);
     expect(total(2)).toBeCloseTo(1);
     expect(total(3)).toBeCloseTo(1);
     expect(t.find((e) => e.value.id === 'x')!.weight).toBeCloseTo(0.5);
@@ -199,8 +198,10 @@ describe('Add / Subtract to 20 wrong answers', () => {
     const spread = config.questionMix.nearDistractorSpread;
     for (const id of ['add-to-20', 'sub-to-20'] as const) {
       for (const s of sample(id, 5000)) {
-        for (const c of s.choices) expect(Math.abs(c - s.answer), `${id} ${s.answer}: ${c}`).toBeLessThanOrEqual(spread);
-        if (id === 'add-to-20') expect(Math.max(...s.choices)).toBeLessThanOrEqual(20 + config.questionMix.addTo20.distractorOverflow);
+        for (const c of s.choices)
+          expect(Math.abs(c - s.answer), `${id} ${s.answer}: ${c}`).toBeLessThanOrEqual(spread);
+        if (id === 'add-to-20')
+          expect(Math.max(...s.choices)).toBeLessThanOrEqual(20 + config.questionMix.addTo20.distractorOverflow);
       }
     }
   });

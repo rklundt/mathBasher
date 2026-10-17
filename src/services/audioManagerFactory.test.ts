@@ -3,11 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  createAudioManager,
-  getAudioManager,
-  _resetAudioManagerForTests,
-} from '@/services/audioManagerFactory';
+import { createAudioManager, getAudioManager, _resetAudioManagerForTests } from '@/services/audioManagerFactory';
 
 /**
  * The factory promises one AudioManager instance per page lifetime. Mute

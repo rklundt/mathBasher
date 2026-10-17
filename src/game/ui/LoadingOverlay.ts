@@ -90,12 +90,8 @@ export function attachLoadingOverlay(opts: AttachLoadingOverlayOpts): void {
   const caption = opts.caption ?? 'Loading…';
 
   const label = text(scene, W / 2, H / 2 - 32, caption, 'bodyLarge').setOrigin(0.5);
-  const bg = scene.add
-    .rectangle(W / 2, H / 2, BAR_W, BAR_H, 0x1e293b)
-    .setStrokeStyle(2, 0x475569);
-  const fill = scene.add
-    .rectangle(W / 2 - FILL_MAX / 2, H / 2, 0, BAR_H - BAR_PAD * 2, 0xfbbf24)
-    .setOrigin(0, 0.5);
+  const bg = scene.add.rectangle(W / 2, H / 2, BAR_W, BAR_H, 0x1e293b).setStrokeStyle(2, 0x475569);
+  const fill = scene.add.rectangle(W / 2 - FILL_MAX / 2, H / 2, 0, BAR_H - BAR_PAD * 2, 0xfbbf24).setOrigin(0, 0.5);
 
   const onProgress = (value: number): void => {
     fill.width = FILL_MAX * value;

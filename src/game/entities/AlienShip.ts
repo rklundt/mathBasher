@@ -64,7 +64,9 @@ export class AlienShip {
       const { width, height } = layout.pill;
       const pill = scene.add.graphics();
       pill.fillStyle(0x121a35, 0.94).fillRoundedRect(-width / 2, portholeY - height / 2, width, height, height / 2);
-      pill.lineStyle(3, 0xcfe6ff, 0.75).strokeRoundedRect(-width / 2, portholeY - height / 2, width, height, height / 2);
+      pill
+        .lineStyle(3, 0xcfe6ff, 0.75)
+        .strokeRoundedRect(-width / 2, portholeY - height / 2, width, height, height / 2);
       parts.push(pill);
     }
     parts.push(label);

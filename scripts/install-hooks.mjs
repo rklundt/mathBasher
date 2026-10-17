@@ -27,7 +27,9 @@ const set = (key, value) => spawnSync('git', ['config', '--local', key, value], 
 
 const previous = get('core.hooksPath');
 if (previous && previous !== '.githooks') {
-  console.log(`install-hooks: replacing your core.hooksPath ("${previous}") with .githooks; set it back with git config --local core.hooksPath "${previous}".`);
+  console.log(
+    `install-hooks: replacing your core.hooksPath ("${previous}") with .githooks; set it back with git config --local core.hooksPath "${previous}".`,
+  );
 }
 if (!set('core.hooksPath', '.githooks')) skip('could not write git config');
 // Deliberately not setting blame.ignoreRevsFile: git then refuses to blame

@@ -65,10 +65,7 @@ export interface StackOpts {
  * Y-positions on stacked menus may drift up to ~15px from pre-refactor
  * values because total stack height is now slightly smaller.
  */
-export function stackButtons(
-  scene: Phaser.Scene,
-  opts: StackOpts,
-): PlaceholderButton[] {
+export function stackButtons(scene: Phaser.Scene, opts: StackOpts): PlaceholderButton[] {
   const { width: sceneW } = scene.scale;
   const cx = opts.centerX ?? sceneW / 2;
   const gap = opts.gap ?? config.layout.button.stackGapPx;
@@ -109,7 +106,13 @@ export interface RowOpts {
  */
 export function rowButtons(scene: Phaser.Scene, opts: RowOpts): PlaceholderButton[] {
   const cx = opts.centerX ?? scene.scale.width / 2;
-  const slots = computeRowSlots(cx, opts.centerY, opts.gap ?? config.layout.button.rowGapPx, opts.items.length, opts.kind ?? 'secondary');
+  const slots = computeRowSlots(
+    cx,
+    opts.centerY,
+    opts.gap ?? config.layout.button.rowGapPx,
+    opts.items.length,
+    opts.kind ?? 'secondary',
+  );
   return opts.items.map(
     (item, i) =>
       new PlaceholderButton({

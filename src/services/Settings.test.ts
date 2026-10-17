@@ -31,7 +31,9 @@ function makeMockStorage(opts: { throwOn?: 'getItem' | 'setItem' | 'both' } = {}
     throw new Error(`localStorage.${op} blocked (test simulation)`);
   };
   return {
-    get length(): number { return data.size; },
+    get length(): number {
+      return data.size;
+    },
     clear: () => data.clear(),
     key: (i: number) => Array.from(data.keys())[i] ?? null,
     getItem: (k: string): string | null => {
@@ -42,7 +44,9 @@ function makeMockStorage(opts: { throwOn?: 'getItem' | 'setItem' | 'both' } = {}
       if (opts.throwOn === 'setItem' || opts.throwOn === 'both') fail('setItem');
       data.set(k, v);
     },
-    removeItem: (k: string) => { data.delete(k); },
+    removeItem: (k: string) => {
+      data.delete(k);
+    },
   };
 }
 

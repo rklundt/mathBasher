@@ -5,12 +5,7 @@
 import type Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { audioGainFor } from '@/core/audioKeys';
-import {
-  AudioManager,
-  type AudioKind,
-  type LoopHandle,
-  type MinimalStorage,
-} from '@/services/AudioManager';
+import { AudioManager, type AudioKind, type LoopHandle, type MinimalStorage } from '@/services/AudioManager';
 
 /**
  * Phaser-coupled AudioManager. Holds a reference to whichever scene most

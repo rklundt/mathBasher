@@ -74,7 +74,7 @@ function waterSvg() {
       const x = x0 + (len * k) / 24;
       const y = y0 + amp * Math.sin((2 * Math.PI * x) / period + phase);
       d += `${k === 0 ? 'M' : 'L'}${f(x % T)},${f(y)} `;
-      if (k < 24 && (x0 + (len * (k + 1)) / 24) % T < x % T) d += `M${f(((x0 + (len * (k + 1)) / 24) % T))},${f(y)} `;
+      if (k < 24 && (x0 + (len * (k + 1)) / 24) % T < x % T) d += `M${f((x0 + (len * (k + 1)) / 24) % T)},${f(y)} `;
     }
     lines += `<path d="${d}" fill="none" stroke="#bfeaf7" stroke-width="3" stroke-linecap="round" opacity="${f(0.35 + rng() * 0.25)}"/>`;
   }
@@ -127,7 +127,8 @@ function petals(fx, fy, n, { len, wid, fill, stroke, pointed = false, turn = 0 }
   }).join('');
 }
 
-const flowerHeart = (fx, fy) => `<circle cx="${f(fx)}" cy="${f(fy)}" r="5" fill="#ffe066" stroke="#d9a400" stroke-width="1.5"/>`;
+const flowerHeart = (fx, fy) =>
+  `<circle cx="${f(fx)}" cy="${f(fy)}" r="5" fill="#ffe066" stroke="#d9a400" stroke-width="1.5"/>`;
 
 function padDeco(kind, c, r, rng) {
   const fx = c + r * 0.62;
@@ -242,7 +243,9 @@ function splashSvg(frame) {
     const x = cx + Math.cos(a) * spread;
     const y = cy - rise * (0.6 + 0.4 * Math.sin((i / 8) * Math.PI)) + t * 18;
     const r = 7 - t * 3.5;
-    return r > 0.5 ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="#dff6ff" stroke="#7cc6e0" stroke-width="1.5" opacity="${f(1 - t * 0.5)}"/>` : '';
+    return r > 0.5
+      ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="#dff6ff" stroke="#7cc6e0" stroke-width="1.5" opacity="${f(1 - t * 0.5)}"/>`
+      : '';
   }).join('');
   const column =
     t < 0.7
@@ -260,7 +263,8 @@ function bankSvg(far) {
   // Shoreline wave along the water-side edge.
   const edgeY = far ? H - SHORE_INSET : SHORE_INSET;
   let shore = `M0,${edgeY}`;
-  for (let x = 0; x <= W; x += 64) shore += ` Q${x + 32},${f(edgeY + (far ? 1 : -1) * (6 + rng() * 8))} ${x + 64},${edgeY}`;
+  for (let x = 0; x <= W; x += 64)
+    shore += ` Q${x + 32},${f(edgeY + (far ? 1 : -1) * (6 + rng() * 8))} ${x + 64},${edgeY}`;
   const grass = far ? `${shore} V0 H0 Z` : `${shore} V${H} H0 Z`;
   // Sand strip just inside the shoreline.
   const sand = `<path d="${shore} V${edgeY + (far ? -18 : 18)} H0 Z" fill="#e7cf98" opacity="0.95"/>`;
@@ -296,7 +300,12 @@ function bankSvg(far) {
     : '';
   const defs = `<linearGradient id="gr" x1="0" y1="${far ? 1 : 0}" x2="0" y2="${far ? 0 : 1}">
       <stop offset="0" stop-color="#8ad35c"/><stop offset="1" stop-color="#4f9e33"/></linearGradient>`;
-  return svg(W, H, `<path d="${grass}" fill="url(#gr)" stroke="#3b7d26" stroke-width="4"/>${sand}${pebbles}${blades}${flowers}${reeds}`, defs);
+  return svg(
+    W,
+    H,
+    `<path d="${grass}" fill="url(#gr)" stroke="#3b7d26" stroke-width="4"/>${sand}${pebbles}${blades}${flowers}${reeds}`,
+    defs,
+  );
 }
 
 // ---------- render ----------
@@ -321,7 +330,12 @@ async function main() {
 
   const splashFrames = await Promise.all(Array.from({ length: SPLASH_FRAMES }, (_, i) => png(splashSvg(i))));
   const splashSheet = await sharp({
-    create: { width: SPLASH_W * SPLASH_FRAMES, height: SPLASH_H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    create: {
+      width: SPLASH_W * SPLASH_FRAMES,
+      height: SPLASH_H,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
   })
     .composite(splashFrames.map((input, i) => ({ input, left: i * SPLASH_W, top: 0 })))
     .png()
@@ -338,7 +352,8 @@ async function main() {
   // Menu backdrop (Difficulty / Loading screens): the river at a glance.
   {
     const tiles = [];
-    for (let y = 0; y < 720; y += WATER_TILE) for (let x = 0; x < 1280; x += WATER_TILE) tiles.push({ input: outputs.water[0], left: x, top: y });
+    for (let y = 0; y < 720; y += WATER_TILE)
+      for (let x = 0; x < 1280; x += WATER_TILE) tiles.push({ input: outputs.water[0], left: x, top: y });
     const backdrop = await sharp({ create: { width: 1280, height: 720, channels: 4, background: '#2f9cc4' } })
       .composite([
         ...tiles,
@@ -369,7 +384,11 @@ async function main() {
     const o = outputs;
     const water = await sharp({ create: { width: 1280, height: 900, channels: 4, background: '#2f9cc4' } })
       .composite([
-        ...Array.from({ length: 20 }, (_, i) => ({ input: o.water[0], left: (i % 5) * 256, top: Math.floor(i / 5) * 256 })),
+        ...Array.from({ length: 20 }, (_, i) => ({
+          input: o.water[0],
+          left: (i % 5) * 256,
+          top: Math.floor(i / 5) * 256,
+        })),
       ])
       .png()
       .toBuffer();

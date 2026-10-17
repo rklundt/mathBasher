@@ -35,12 +35,7 @@ export class SessionScoreStore implements IScoreStore {
       speed: filter.speed,
     });
     const best = this.entries
-      .filter(
-        (e) =>
-          e.gameId === filter.gameId &&
-          e.mathId === filter.mathId &&
-          e.speed === filter.speed,
-      )
+      .filter((e) => e.gameId === filter.gameId && e.mathId === filter.mathId && e.speed === filter.speed)
       .sort((a, b) => b.score - a.score)
       .slice(0, n);
     return Promise.resolve(best);

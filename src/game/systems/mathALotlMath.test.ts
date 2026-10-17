@@ -361,6 +361,8 @@ describe('resolveBubbleEvent', () => {
 
   it('between questions (no answer) nothing counts as correct', () => {
     expect(resolveBubbleEvent(state({ correctAnswer: null }), { type: 'catch', answer: 8 }).kind).toBe('wrong');
-    expect(resolveBubbleEvent(state({ correctAnswer: null }), { type: 'escaped', answer: 8 }).kind).toBe('escaped-wrong');
+    expect(resolveBubbleEvent(state({ correctAnswer: null }), { type: 'escaped', answer: 8 }).kind).toBe(
+      'escaped-wrong',
+    );
   });
 });

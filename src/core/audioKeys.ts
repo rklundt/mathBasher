@@ -101,24 +101,18 @@ const HIT_WRONG_KEYS = ['hit-wrong-1', 'hit-wrong-2', 'hit-wrong-3'] as const;
 // Sprint 0.7 Story 13 — RNG injection (optional) for tournament/replay
 // determinism. Defaults to Math.random; production callers don't need
 // to pass anything.
-export function pickRandomHitCorrectSfx(
-  rng: () => number = Math.random,
-): (typeof HIT_CORRECT_KEYS)[number] {
+export function pickRandomHitCorrectSfx(rng: () => number = Math.random): (typeof HIT_CORRECT_KEYS)[number] {
   return HIT_CORRECT_KEYS[Math.floor(rng() * HIT_CORRECT_KEYS.length)];
 }
 
-export function pickRandomHitWrongSfx(
-  rng: () => number = Math.random,
-): (typeof HIT_WRONG_KEYS)[number] {
+export function pickRandomHitWrongSfx(rng: () => number = Math.random): (typeof HIT_WRONG_KEYS)[number] {
   return HIT_WRONG_KEYS[Math.floor(rng() * HIT_WRONG_KEYS.length)];
 }
 
 const BUBBLE_POP_KEYS = ['bubble-pop-1', 'bubble-pop-2', 'bubble-pop-3'] as const;
 
 /** Sprint 2.5.4 — random Math-a-lotl correct-catch pop. */
-export function pickRandomBubblePopSfx(
-  rng: () => number = Math.random,
-): (typeof BUBBLE_POP_KEYS)[number] {
+export function pickRandomBubblePopSfx(rng: () => number = Math.random): (typeof BUBBLE_POP_KEYS)[number] {
   return BUBBLE_POP_KEYS[Math.floor(rng() * BUBBLE_POP_KEYS.length)];
 }
 
@@ -128,7 +122,12 @@ const FROG_HOP_KEYS = ['frog-hop-1', 'frog-hop-2', 'frog-hop-3', 'frog-hop-4'] a
 const FROG_SLURP_KEYS = ['frog-slurp-1', 'frog-slurp-2'] as const;
 const FROG_SPLASH_KEYS = ['frog-splash-1', 'frog-splash-2', 'frog-splash-3'] as const;
 const FROG_RIBBIT_KEYS = ['frog-ribbit-1', 'frog-ribbit-2', 'frog-ribbit-3', 'frog-ribbit-4'] as const;
-const FROG_SFX_KEYS: ReadonlySet<string> = new Set([...FROG_HOP_KEYS, ...FROG_SLURP_KEYS, ...FROG_SPLASH_KEYS, ...FROG_RIBBIT_KEYS]);
+const FROG_SFX_KEYS: ReadonlySet<string> = new Set([
+  ...FROG_HOP_KEYS,
+  ...FROG_SLURP_KEYS,
+  ...FROG_SPLASH_KEYS,
+  ...FROG_RIBBIT_KEYS,
+]);
 
 /** Sprint 2.5.6 — random Frog Splash right-pad ribbit. */
 export function pickRandomFrogRibbitSfx(rng: () => number = Math.random): (typeof FROG_RIBBIT_KEYS)[number] {
@@ -151,9 +150,7 @@ export function pickRandomFrogSlurpSfx(rng: () => number = Math.random): (typeof
 }
 
 /** Sprint 2.5.4 — random Math-a-lotl wrong-catch sound. */
-export function pickRandomBubbleWrongSfx(
-  rng: () => number = Math.random,
-): (typeof BUBBLE_WRONG_KEYS)[number] {
+export function pickRandomBubbleWrongSfx(rng: () => number = Math.random): (typeof BUBBLE_WRONG_KEYS)[number] {
   return BUBBLE_WRONG_KEYS[Math.floor(rng() * BUBBLE_WRONG_KEYS.length)];
 }
 

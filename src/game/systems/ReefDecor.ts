@@ -18,7 +18,12 @@ const FISH: ReefSheetKey = 'reef-fish';
  */
 
 /** Coral + seaweed placement along the floor: x as a fraction of width, display height in px. */
-const FLOOR_PIECES: ReadonlyArray<{ key: ReefSpriteKey | ReefSheetKey; xFrac: number; heightPx: number; sway?: boolean }> = [
+const FLOOR_PIECES: ReadonlyArray<{
+  key: ReefSpriteKey | ReefSheetKey;
+  xFrac: number;
+  heightPx: number;
+  sway?: boolean;
+}> = [
   { key: ReefSpriteKeys.Coral2, xFrac: 0.09, heightPx: 120 },
   { key: ReefSpriteKeys.Coral1, xFrac: 0.22, heightPx: 150 },
   { key: SEAWEED, xFrac: 0.36, heightPx: 210, sway: true },

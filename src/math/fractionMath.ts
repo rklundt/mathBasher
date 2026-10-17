@@ -88,11 +88,7 @@ export function decimalValue(num: number, den: number): number {
  *
  * - `mixedToImproper(1, 1, 2) → { num: 3, den: 2 }` (1 1/2 = 3/2)
  */
-export function mixedToImproper(
-  whole: number,
-  num: number,
-  den: number,
-): { num: number; den: number } {
+export function mixedToImproper(whole: number, num: number, den: number): { num: number; den: number } {
   if (den <= 0) throw new Error('mixedToImproper: denominator must be > 0');
   return { num: whole * den + num, den };
 }
@@ -138,9 +134,7 @@ export function buildFractionDistractors(
     { num: correctNum + 1, den: correctDen },
     { num: Math.max(1, correctNum - 1), den: correctDen },
     { num: correctNum, den: correctDen + 1 },
-    correctDen > 1
-      ? { num: correctNum, den: correctDen - 1 }
-      : { num: correctNum + 2, den: correctDen },
+    correctDen > 1 ? { num: correctNum, den: correctDen - 1 } : { num: correctNum + 2, den: correctDen },
     // "Added/subtracted the denominators" kid error: (a±b)/(d+d) =
     // (a±b)/(2d) — produces the half-value.
     { num: correctNum, den: correctDen * 2 },

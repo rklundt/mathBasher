@@ -122,12 +122,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
 
     this.bg.on(
       'pointerdown',
-      (
-        _pointer: Phaser.Input.Pointer,
-        _localX: number,
-        _localY: number,
-        event: Phaser.Types.Input.EventData,
-      ) => {
+      (_pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
         // Carve-out (sprint 0.6 Story 4): block the canvas-wide pointerdown
         // handler in InputSystem from also receiving this event. We're
         // going to call InputSystem.fire() ourselves via opts.onFire() —

@@ -89,7 +89,13 @@ export interface FlightTuning {
  * Afterwards every ship is inside `bounds` (centres) and no two overlap
  * by more than a hair.
  */
-export function stepShips(ships: ShipBody[], dtSec: number, bounds: FlightBounds, t: FlightTuning, rng: () => number): void {
+export function stepShips(
+  ships: ShipBody[],
+  dtSec: number,
+  bounds: FlightBounds,
+  t: FlightTuning,
+  rng: () => number,
+): void {
   for (const s of ships) {
     s.turn += (rng() * 2 - 1) * t.turnJitter * dtSec;
     s.turn = Math.max(-t.maxTurn, Math.min(t.maxTurn, s.turn));

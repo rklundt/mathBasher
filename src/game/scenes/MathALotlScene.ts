@@ -207,7 +207,10 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     // Catch: the axolotl only catches the bubble it was sent after, so
     // swimming past a wrong bubble on the way never costs a heart.
     const target = this.chasing;
-    if (target?.alive && isWithinCatch(this.axolotl.headPoint(), target, target.radius, this.cfg.axolotl.catchRadiusPx)) {
+    if (
+      target?.alive &&
+      isWithinCatch(this.axolotl.headPoint(), target, target.radius, this.cfg.axolotl.catchRadiusPx)
+    ) {
       this.handleCatch(target);
       return;
     }
@@ -362,7 +365,10 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     // below the hint, so they don't overlap.
     for (const b of this.bubbles) b.popQuiet();
     const { holdMs, fadeMs, belowWaterlinePx } = this.cfg.escapeNote;
-    fadeNote(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', { holdMs, fadeMs });
+    fadeNote(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', {
+      holdMs,
+      fadeMs,
+    });
     this.time.delayedCall(this.cfg.respawnDelayMs, () => {
       this.spawnWave();
       this.transitioning = false;

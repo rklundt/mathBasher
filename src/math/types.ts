@@ -98,4 +98,3 @@ export interface QuestionGenerator {
    */
   generate(rng?: () => number, speed?: SpeedKey): Question;
 }
-
