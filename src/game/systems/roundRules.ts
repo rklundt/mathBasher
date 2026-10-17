@@ -169,7 +169,8 @@ export interface RetryRoundState {
 
 export type RetryDecision =
   | { kind: 'correct'; record: OutcomeRecord }
-  | { kind: 'wrong' | 'timeout'; livesUsed: number; livesRemaining: number; usedWrong: true }
+  | { kind: 'wrong'; livesUsed: number; livesRemaining: number; usedWrong: true }
+  | { kind: 'timeout'; livesUsed: number; livesRemaining: number; usedWrong: true }
   | {
       kind: 'out-of-lives';
       cause: 'wrong' | 'timeout';
@@ -212,5 +213,6 @@ export function resolveRetryEvent(
       record: { wasCorrect: false, usedWrongShot: true },
     };
   }
-  return { kind: cause, livesUsed: strike.strikesAfter, livesRemaining: strike.remaining, usedWrong: true };
+  const spent = { livesUsed: strike.strikesAfter, livesRemaining: strike.remaining, usedWrong: true } as const;
+  return cause === 'wrong' ? { kind: 'wrong', ...spent } : { kind: 'timeout', ...spent };
 }

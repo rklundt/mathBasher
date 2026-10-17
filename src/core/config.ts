@@ -876,6 +876,66 @@ export const config = {
     tapHint: { aboveBottomPx: 62, heightPx: 60, backdropAlpha: 0.75 },
   },
   /**
+   * Sprint 2.7 — Penguin Slide. A penguin sledges down a long snowy hill
+   * toward its igloo (the camera sits just behind it). Each question sends a
+   * row of fish up the screen toward it, one per lane, each carrying an
+   * answer. Tap a fish (or its lane): the penguin swoops over and gulps it.
+   * A wrong "fish" is a snowball — BONK, a life lost, the same question with
+   * a fresh row. The row reaching the penguin is time's up: it tumbles, a
+   * life is lost, same question again. 3 lives; 12 questions; the igloo at
+   * the end. Speed key doubles as the difficulty: 3 / 4 / 5 fish per row.
+   * Rules: `resolveRetryEvent` (roundRules.ts); geometry: penguinSlideMath.ts.
+   */
+  penguinSlide: {
+    maxLives: 3,
+    speed: {
+      // Time per question: the shared `round.baseQuestionSec`, stretched for harder math.
+      slow: { fishCount: 3 },
+      medium: { fishCount: 4 },
+      fast: { fishCount: 5 },
+    },
+    /** The run of the hill the lanes span (screen px); the pines line the edges outside it. */
+    lanes: { left: 150, right: 1130 },
+    /**
+     * Must match HORIZON_Y in scripts/sprites/snowhill.mjs (tested). A new
+     * row appears `rowStartBelowHorizonPx` below it and slides down to the
+     * catch line, where the penguin waits.
+     */
+    horizonY: 228,
+    rowStartBelowHorizonPx: 40,
+    catchY: 560,
+    /** The penguin sits this far below the catch line, sprite size in px. */
+    penguin: { y: 640, displayPx: 150 },
+    fish: { displayPx: 104, farScale: 0.62, nearScale: 1, wiggleFps: 4 },
+    /** Answer badge: the dark pill. Never smaller than `floorScale` (readable on a phone), never wider than `maxWidthPx`. */
+    badge: { offsetY: -56, floorScale: 0.85, maxWidthPx: 176, padPx: 14, heightPadPx: 8 },
+    /** Taps only count on the hill, never on the HUD bar along the top. */
+    tapWindow: { top: 86, bottom: 720, left: 110, right: 1170 },
+    /** The penguin's lane: a soft ring under it (shape, not colour, so keyboard players can see it). */
+    laneRing: { rx: 70, ry: 16, alpha: 0.35 },
+    /** Swoop: glide across to the lane, then up to the fish; the outcome plays on arrival. */
+    swoopMs: 250,
+    reachMs: 220,
+    /** Back to the catch line before the next row appears. */
+    returnMs: 320,
+    /** Keyboard lane change (the penguin glides one lane). */
+    laneGlideMs: 140,
+    /** After a row appears, taps wait this long (a fast second tap after a BONK can't cost another life). */
+    inputLockMs: 250,
+    gulpMs: 520,
+    bonkSpinMs: 520,
+    nextQuestionDelayMs: 650,
+    timeoutBannerMs: 900,
+    outOfLivesBannerMs: 1300,
+    /** The finish: slide off toward the igloo, then "You made it!". */
+    iglooSlideMs: 1300,
+    celebrateMs: 1800,
+    finishBannerStrokePx: 10,
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+    /** Q1 "👆 Tap the fish with the right answer!" hint: in the sky, under the HUD and above where rows start. */
+    tapHint: { y: 160, heightPx: 60, backdropAlpha: 0.6 },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
@@ -993,6 +1053,13 @@ export const config = {
       bannerStrokePx: 8,
       bannerShadowOffsetY: 3,
       bannerShadowBlur: 6,
+      /**
+       * Sprint 2.7 — the lighter outline for HUD and Game Over text (score,
+       * question, timer, headline) so it reads on any backdrop, bright snow included.
+       */
+      textStrokePx: 5,
+      textShadowOffsetY: 2,
+      textShadowBlur: 4,
       /** The tap hint pulses down to this alpha and back, every `pulseMs`. */
       pulseMs: 800,
       pulseMinAlpha: 0.6,

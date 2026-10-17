@@ -14,10 +14,15 @@
  * This file IS the source of the art: edit and re-run, never hand-edit the
  * shipped image.
  *
+ * Two outputs: `penguin-slide-hill.webp` (full brightness, the game scene)
+ * and `penguin-slide.webp` (darkened, the menu backdrop behind Difficulty /
+ * Loading / Game Over, so their light text reads on it; snow is much
+ * brighter than water, so it is darkened more than the other backdrops).
+ *
  * Usage:
- *   pnpm sprite:snowhill                       # writes public/assets/sprites/bg/penguin-slide.webp
+ *   pnpm sprite:snowhill                       # writes public/assets/sprites/bg/penguin-slide{,-hill}.webp
  *   pnpm sprite:snowhill --preview <png> --dry # review image only, ships nothing
- *   pnpm sprite:snowhill --force               # re-render over the shipped image
+ *   pnpm sprite:snowhill --force               # re-render over the shipped images
  */
 
 import sharp from 'sharp';
@@ -26,7 +31,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const OUT = resolve(ROOT, 'public/assets/sprites/bg/penguin-slide.webp');
+const HILL_OUT = resolve(ROOT, 'public/assets/sprites/bg/penguin-slide-hill.webp');
+const MENU_OUT = resolve(ROOT, 'public/assets/sprites/bg/penguin-slide.webp');
+/** Menu backdrop brightness: white menu text must read on it (about 5:1 or better on the snow). */
+export const MENU_BRIGHTNESS = 0.42;
 
 export const W = 1280;
 export const H = 720;
@@ -135,15 +143,17 @@ async function main() {
   const dry = args.includes('--dry');
   const buf = await sharp(Buffer.from(snowhillSvg())).png().toBuffer();
   if (!dry) {
-    if (existsSync(OUT) && !args.includes('--force')) {
+    const existing = [HILL_OUT, MENU_OUT].filter((o) => existsSync(o));
+    if (existing.length && !args.includes('--force')) {
       console.error(
-        `Refusing to overwrite ${OUT} (pass --force). A visible change should ship under a new filename (week-long cache).`,
+        `Refusing to overwrite ${existing.join(', ')} (pass --force). A visible change should ship under a new filename (week-long cache).`,
       );
       process.exit(1);
     }
-    mkdirSync(dirname(OUT), { recursive: true });
-    await sharp(buf).webp({ quality: 88, effort: 6 }).toFile(OUT);
-    console.log(`wrote ${OUT}`);
+    mkdirSync(dirname(HILL_OUT), { recursive: true });
+    await sharp(buf).webp({ quality: 88, effort: 6 }).toFile(HILL_OUT);
+    await sharp(buf).modulate({ brightness: MENU_BRIGHTNESS }).webp({ quality: 88, effort: 6 }).toFile(MENU_OUT);
+    console.log(`wrote ${HILL_OUT}\nwrote ${MENU_OUT}`);
   }
   if (previewPath) {
     await sharp(buf).png().toFile(previewPath);
