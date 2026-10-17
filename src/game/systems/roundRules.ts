@@ -10,6 +10,9 @@
  * `pickSubsetWithCorrect` is covered in `mathALotlMath.test.ts`.
  */
 
+import { extendChoices } from '@/math/extendChoices';
+import type { Question } from '@/math/types';
+
 /**
  * Pick `count` answers from the `choices` array such that
  * `correctAnswer` is guaranteed to be among them. Choices is 4 (per
@@ -124,4 +127,92 @@ export class QuestionClock {
   get remainingSec(): number {
     return this.remainingMs / 1000;
   }
+}
+
+/**
+ * Sprint 2.7 — the answers for one row of targets (lily pads, ships,
+ * fish): `count` values including the right one, no duplicates, in random
+ * order, each with its display label. A question carries 4 choices; when
+ * a row has more slots than that (Space Shooter and Penguin Slide on
+ * Hard), extra wrong answers are added first (`extendChoices`). Replaces
+ * the identical `rowAnswers` (Frog Splash) and `shipAnswers` (Space
+ * Shooter).
+ */
+export function pickRowAnswers(
+  q: Pick<Question, 'choices' | 'correctAnswer' | 'correctDisplay' | 'choiceDisplays'>,
+  count: number,
+  rng: () => number,
+): Array<{ answer: number; display: string }> {
+  const { choices, choiceDisplays } = count > q.choices.length ? extendChoices(q, count, rng) : q;
+  const n = Math.max(1, Math.min(count, choices.length));
+  return pickSubsetWithCorrect(choices, q.correctAnswer, n, rng).map((answer) => ({
+    answer,
+    display: choiceDisplays?.[choices.indexOf(answer)] ?? String(answer),
+  }));
+}
+
+/** What `RoundController.recordOutcome` should be told about a question. */
+export interface OutcomeRecord {
+  wasCorrect: boolean;
+  usedWrongShot: boolean;
+}
+
+/** The round as the retry rules (`resolveRetryEvent`) see it. */
+export interface RetryRoundState {
+  /** The current question's answer; null between questions (nothing matches). */
+  correctAnswer: number | null;
+  livesUsed: number;
+  maxLives: number;
+  /** A wrong pick or a time-out already happened on this question (the right answer then scores half). */
+  usedWrong: boolean;
+}
+
+export type RetryDecision =
+  | { kind: 'correct'; record: OutcomeRecord }
+  | { kind: 'wrong'; livesUsed: number; livesRemaining: number; usedWrong: true }
+  | { kind: 'timeout'; livesUsed: number; livesRemaining: number; usedWrong: true }
+  | {
+      kind: 'out-of-lives';
+      cause: 'wrong' | 'timeout';
+      livesUsed: number;
+      livesRemaining: 0;
+      usedWrong: true;
+      record: OutcomeRecord;
+    };
+
+/**
+ * Sprint 2.7 — the "a wrong pick or a time-out costs a life and the same
+ * question comes back" rules (Penguin Slide; Frog Splash and Space Shooter
+ * run the same rules inline today). Pure: the scene keeps every side
+ * effect, the clock, and resetting `usedWrong` when the next question
+ * starts.
+ *
+ *  - Right answer → `correct`, half points if this question already had
+ *    a wrong pick or a time-out.
+ *  - Wrong answer, or the clock runs out → `wrong` / `timeout`: a life is
+ *    spent and the question comes back.
+ *  - Either of those on the last life → `out-of-lives` (with its cause, so
+ *    the scene plays the right beat first): the round ends.
+ */
+export function resolveRetryEvent(
+  state: RetryRoundState,
+  event: { type: 'pick'; answer: number } | { type: 'timeout' },
+): RetryDecision {
+  if (event.type === 'pick' && event.answer === state.correctAnswer) {
+    return { kind: 'correct', record: { wasCorrect: true, usedWrongShot: state.usedWrong } };
+  }
+  const cause = event.type === 'pick' ? 'wrong' : 'timeout';
+  const strike = resolveStrike(state.livesUsed, state.maxLives);
+  if (strike.exhausted) {
+    return {
+      kind: 'out-of-lives',
+      cause,
+      livesUsed: strike.strikesAfter,
+      livesRemaining: 0,
+      usedWrong: true,
+      record: { wasCorrect: false, usedWrongShot: true },
+    };
+  }
+  const spent = { livesUsed: strike.strikesAfter, livesRemaining: strike.remaining, usedWrong: true } as const;
+  return cause === 'wrong' ? { kind: 'wrong', ...spent } : { kind: 'timeout', ...spent };
 }

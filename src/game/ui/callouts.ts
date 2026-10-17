@@ -143,6 +143,16 @@ export function screenBanner(
 }
 
 /**
+ * Sprint 2.7 — a lighter dark outline + shadow for everyday on-screen text
+ * (HUD score, question, timer; Game Over headline and score), so it reads
+ * on any game's backdrop, light or dark.
+ */
+export function applyTextOutline(t: Phaser.GameObjects.Text): void {
+  t.setStroke(CALLOUT_INK_CSS, C.textStrokePx);
+  t.setShadow(0, C.textShadowOffsetY, CALLOUT_INK_CSS, C.textShadowBlur, true, true);
+}
+
+/**
  * The heavy dark outline + soft shadow every banner uses, so it stays
  * readable on bright backdrops (Number Climb's fire floor, the sunny river).
  */

@@ -2,8 +2,6 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
-
 /**
  * Pure helpers for Frog Splash (sprint 2.5.6) — the river layout, drifting
  * pad rows, and answer assignment, with no Phaser so they're unit-testable.
@@ -129,25 +127,6 @@ export function pickPadLooks(count: number, lookCount: number, rng: () => number
 /** Is a pad (by centre x) at least partly on screen? */
 export function isPadOnScreen(x: number, radius: number, screenWidth: number): boolean {
   return x + radius > 0 && x - radius < screenWidth;
-}
-
-/**
- * Answers for one row: `count` values including the correct one (no
- * duplicates), in random order, each with its display label.
- */
-export function rowAnswers(input: {
-  choices: readonly number[];
-  correctAnswer: number;
-  choiceDisplays?: readonly string[];
-  count: number;
-  rng: () => number;
-}): Array<{ answer: number; display: string }> {
-  const { choices, correctAnswer, choiceDisplays, rng } = input;
-  const count = Math.max(1, Math.min(input.count, choices.length));
-  return pickSubsetWithCorrect(choices, correctAnswer, count, rng).map((answer) => ({
-    answer,
-    display: choiceDisplays?.[choices.indexOf(answer)] ?? String(answer),
-  }));
 }
 
 /** Nearest on-screen pad within `radius × slop` of a tap, or -1 for open water. */

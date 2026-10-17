@@ -32,15 +32,25 @@ interface SpeedDisplay {
 }
 
 /**
- * Per-game section title for the speed-selector row. Climb's setting
- * controls rung count + cumulative timer (genuinely a difficulty axis),
- * so "Difficulty" reads better than "Speed". The arcade modes keep
- * "Speed" since they're really controlling enemy descent / drift rate.
+ * Per-game section title for the speed-selector row. Most games' setting
+ * changes how many targets there are and the time (genuinely a difficulty
+ * axis), so "Difficulty" reads better than "Speed". Alien Shoot and
+ * Asteroid Field keep "Speed": they really change descent / drift rate.
+ * An exhaustive switch (sprint 2.7), so a new game can't silently fall
+ * back to "Speed".
  */
 function speedSectionTitleFor(gameId: GameId): string {
-  return gameId === 'number-climb' || gameId === 'math-a-lotl' || gameId === 'frog-splash' || gameId === 'space-shooter'
-    ? 'Difficulty'
-    : 'Speed';
+  switch (gameId) {
+    case 'alien-shoot':
+    case 'asteroid-field':
+      return 'Speed';
+    case 'number-climb':
+    case 'math-a-lotl':
+    case 'frog-splash':
+    case 'space-shooter':
+    case 'penguin-slide':
+      return 'Difficulty';
+  }
 }
 
 /**
@@ -113,6 +123,13 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       const { shipCount } = config.spaceShooter.speed[key];
       const countdownSec = questionSeconds(key, mathId);
       return { label: labels[key], subtitle: `${shipCount} ships · ${countdownSec}s` };
+    }
+    case 'penguin-slide': {
+      // Sprint 2.7 — difficulty = fish per row + time per question.
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { fishCount } = config.penguinSlide.speed[key];
+      const countdownSec = questionSeconds(key, mathId);
+      return { label: labels[key], subtitle: `${fishCount} fish · ${countdownSec}s` };
     }
   }
 }

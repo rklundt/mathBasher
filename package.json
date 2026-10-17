@@ -39,6 +39,9 @@
     "sprite:pond": "node scripts/sprites/pond.mjs",
     "sprite:alienships": "node scripts/sprites/alienships.mjs",
     "sprite:cockpit": "node scripts/sprites/cockpit.mjs",
+    "sprite:penguin": "node scripts/sprites/penguin.mjs",
+    "sprite:fish": "node scripts/sprites/fish.mjs",
+    "sprite:snowhill": "node scripts/sprites/snowhill.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {
