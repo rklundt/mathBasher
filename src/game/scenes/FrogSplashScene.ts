@@ -202,7 +202,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     const speedCfg = this.cfg.speed[this.speed];
     for (let i = 0; i < totalRows; i++) {
       this.rows.push(
-        new LilyPadRow(this, L.rowY[i]!, rowDirection(i), speedCfg.padCount, speedCfg.driftPxPerSec, width, Math.random),
+        new LilyPadRow(this, L.rowY[i], rowDirection(i), speedCfg.padCount, speedCfg.driftPxPerSec, width, Math.random),
       );
     }
 
@@ -263,7 +263,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       this.cfg.pad.tapSlop,
       this.scale.width,
     );
-    if (hit >= 0) this.hopTo(targets[hit]!.i);
+    if (hit >= 0) this.hopTo(targets[hit].i);
   }
 
   /** Keyboard: 1–4 pick the active row's on-screen pads, left to right. */
@@ -296,7 +296,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   }
 
   private onLand(padIndex: number): void {
-    const answer = this.rows[this.activeRow]!.answerAt(padIndex);
+    const answer = this.rows[this.activeRow].answerAt(padIndex);
     if (answer !== null && answer === this.currentQuestion?.correctAnswer) {
       this.handleCorrect(padIndex);
     } else {
@@ -308,7 +308,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
 
   private handleCorrect(padIndex: number): void {
     this.clock.stop();
-    const row = this.rows[this.activeRow]!;
+    const row = this.rows[this.activeRow];
     row.stop();
     // The finished row's other pads shouldn't keep showing old answers.
     row.setAnswers(null);
@@ -347,7 +347,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   private handleSplash(padIndex: number): void {
     this.clock.stop();
     this.usedWrongThisQuestion = true;
-    const row = this.rows[this.activeRow]!;
+    const row = this.rows[this.activeRow];
     const at = row.padPosition(padIndex);
     row.sink(padIndex);
     this.frog.splashDown();
@@ -411,11 +411,11 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       // Back to where the frog last sat: its pad on the last row, or the bank.
       const back =
         this.sitRow >= 0
-          ? this.rows[this.sitRow]!.padPosition(this.sitPad)
+          ? this.rows[this.sitRow].padPosition(this.sitPad)
           : { x: this.scale.width / 2, y: this.layout.startY };
       this.frog.reappear(back.x, back.y);
     }
-    const row = this.rows[this.activeRow]!;
+    const row = this.rows[this.activeRow];
     row.restore();
     row.release();
     row.setAnswers(this.answersFor(q));
@@ -533,7 +533,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     }
     this.currentQuestion = question;
     this.usedWrongThisQuestion = false;
-    this.rows[this.activeRow]!.setAnswers(this.answersFor(question));
+    this.rows[this.activeRow].setAnswers(this.answersFor(question));
     this.clock.start(this.countdownMs());
     this.busy = false;
     if (this.roundController.questionIndex === 0) this.tapHint?.show();
@@ -550,7 +550,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
       choices: q.choices,
       correctAnswer: q.correctAnswer,
       choiceDisplays: q.choiceDisplays,
-      count: this.rows[this.activeRow]!.count,
+      count: this.rows[this.activeRow].count,
       rng: Math.random,
     });
   }

@@ -133,6 +133,7 @@ export class TouchFireButton extends Phaser.GameObjects.Container {
         // going to call InputSystem.fire() ourselves via opts.onFire() —
         // letting the canvas listener also fire would be a wasted cooldown
         // attempt.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Phaser types stopPropagation as `Function`
         event.stopPropagation();
         // Sprint 0.7.5 Story 4 — emit BEFORE onFire() so the event still
         // fires even if onFire() throws. `ButtonClicked` is the UI-intent

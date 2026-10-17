@@ -398,6 +398,26 @@ function startRound(mathId: string, speed: SpeedKey): void {
 | `pnpm typecheck` | tsc strict-mode check, no emit (client + server) |
 | `pnpm audio:encode <in> <out> [--kind sfx\|music] [--no-trim]` | Encode raw audio (WAV/FLAC) → properly trimmed, loudness-normalized, metadata-stripped MP3. SFX profile = 96 kbps mono; music = 160 kbps stereo. |
 | `pnpm audio:probe <file>` | Inspect an audio file: duration, sample rate, channels, mean/peak dB. Use to sanity-check encode output. |
+| `pnpm lint` | ESLint, full type-aware run (what CI runs). `pnpm exec eslint --fix <file>` fixes what it can. |
+| `pnpm format` / `pnpm format:check` | Prettier: rewrite / check code and config files (not Markdown, HTML, workflows or infra). |
+
+### Lint, format and commit hooks
+
+Set up in sprint 2.6.4; the reasoning is in [ADR-0013](docs/adrs/ADR-0013-lint-and-format-toolchain.md).
+
+- **ESLint** (`eslint.config.js`) runs typescript-eslint's recommended type-aware rules plus project rules:
+  - the folder import rules from [ADR-0006](docs/adrs/ADR-0006-folder-discipline.md) (e.g. Phaser only in `src/game/` and `src/app/boot.ts`)
+  - no `innerHTML` / `outerHTML`
+  - no `console` outside the telemetry helper
+- **Prettier** (`.prettierrc.json`): single quotes, 120 columns.
+- **Git hooks** live in `.githooks/`; `pnpm install` turns them on for your clone (`git config --local core.hooksPath .githooks`).
+  - `pre-commit` runs a fast lint (no type info) on the staged files.
+  - `commit-msg` passes the message on to your local checks.
+  - Both then run any `*.sh` you put in the gitignored `.githooks/local/`, which is the place for your own machine-only checks.
+  - Skip once with `git commit --no-verify`; CI still runs everything.
+- **CI's required check** ("Typecheck, test, build") runs lint, typecheck, tests and build. Don't rename that job: branch protection waits for it by name.
+- **Node version:** `.nvmrc` (22) is the single source for CI and version managers. `engines` keeps the `>=22.13.0` floor.
+- **New packages must be at least a day old** (`minimumReleaseAge` in `pnpm-workspace.yaml`). For an urgent security fix that's newer, add it to `minimumReleaseAgeExclude` for that update.
 
 ---
 

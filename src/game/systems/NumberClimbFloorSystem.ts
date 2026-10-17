@@ -279,7 +279,7 @@ export class NumberClimbFloorSystem {
     for (let i = 0; i < targetRungCount; i++) {
       // Center of the i-th band, in world coords.
       const x = this.opts.leftBound + bandWidth * (i + 0.5);
-      const answer = pickedAnswers[i]!;
+      const answer = pickedAnswers[i];
       const rung = new NumberClimbRung({
         scene: this.opts.scene,
         x,

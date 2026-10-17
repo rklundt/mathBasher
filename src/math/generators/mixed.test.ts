@@ -100,14 +100,14 @@ describe('mixed generator', () => {
         const q = mixed.generate(rng);
         for (const op of ['+', '−', '×', '÷']) {
           if (q.prompt.includes(op)) {
-            counts[op]! += 1;
+            counts[op] += 1;
             break;
           }
         }
       }
       const expectedShare = 0.25;
       for (const op of ['+', '−', '×', '÷']) {
-        const share = counts[op]! / ITERATIONS;
+        const share = counts[op] / ITERATIONS;
         expect(
           share,
           `operator ${op} appeared ${counts[op]} times = ${(share * 100).toFixed(1)}% (expected ~25%)`,

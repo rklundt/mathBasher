@@ -47,7 +47,7 @@ describe('pickMultiplicationDistractors', () => {
         const a = 2 + Math.floor(rng() * 9); // [2, 10]
         const b = 2 + Math.floor(rng() * 9);
         const result = pickMultiplicationDistractors({ a, b, ...MULT100, rng });
-        expect(new Set(result).size, `dups in ${result} for ${a}×${b}`).toBe(result.length);
+        expect(new Set(result).size, `dups in ${result.join(", ")} for ${a}×${b}`).toBe(result.length);
       }
     });
 

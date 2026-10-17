@@ -61,7 +61,7 @@
  */
 
 import { argv, exit } from 'node:process';
-import { readFile, writeFile, stat } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, basename, extname } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 

@@ -565,7 +565,7 @@ export class HudScene extends Phaser.Scene {
    */
   private applyLivesState(remaining: number): void {
     for (let i = 0; i < this.livesDots.length; i++) {
-      const dot = this.livesDots[i]!;
+      const dot = this.livesDots[i];
       if (i < remaining) {
         dot.setFillStyle(0x22c55e); // green — still available
         dot.setStrokeStyle(2, 0x16a34a);

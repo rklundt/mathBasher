@@ -245,7 +245,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
       this.cfg.bubble.tapSlop,
     );
     if (i >= 0) {
-      this.chaseBubble(live[i]!);
+      this.chaseBubble(live[i]);
       return;
     }
     // Open water (taps in the sky band just swim to the top of the water).

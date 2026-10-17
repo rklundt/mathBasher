@@ -63,7 +63,7 @@ describe('buildBubbleWave', () => {
       // Jitter keeps neighbours at least a lane minus both jitters apart.
       const xs = wave.map((b) => b.x).sort((a, b) => a - b);
       for (let i = 1; i < xs.length; i++) {
-        expect(xs[i]! - xs[i - 1]!).toBeGreaterThanOrEqual(laneW - 2 * baseWave.jitterPx);
+        expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(laneW - 2 * baseWave.jitterPx);
       }
     }
   });

@@ -62,7 +62,7 @@ export function buildBubbleWave(input: BubbleWaveInput): BubbleSpec[] {
     answer,
     display: displayOf(answer),
     x: input.leftX + laneWidth * (lane + 0.5) + (rng() * 2 - 1) * input.jitterPx,
-    y: input.startY + order[lane]! * input.staggerPx,
+    y: input.startY + order[lane] * input.staggerPx,
   }));
 }
 
@@ -294,7 +294,7 @@ export function wrongNoteY(
 function shuffled<T>(arr: T[], rng: () => number): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
 }

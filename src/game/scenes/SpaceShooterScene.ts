@@ -207,7 +207,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
       this.cfg.ship.tapSlop,
       this.cfg.tapWindow,
     );
-    if (i >= 0) this.fireAt(flying[i]!);
+    if (i >= 0) this.fireAt(flying[i]);
   }
 
   /** Keyboard: 1–5 pick the flying ships, left to right. */
@@ -456,8 +456,8 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     const points = spawnPoints(answers.length, this.bounds, r * this.cfg.ship.spawnGapFrac, Math.random);
     const frames = pickShipFrames(answers.length, ALIEN_SHIP_SHEET.count, Math.random);
     answers.forEach((a, i) => {
-      const p = points[i]!;
-      const ship = new AlienShip(this, p.x, p.y, frames[i]!, Math.random() * Math.PI * 2, a.answer, a.display);
+      const p = points[i];
+      const ship = new AlienShip(this, p.x, p.y, frames[i], Math.random() * Math.PI * 2, a.answer, a.display);
       ship.warpIn();
       this.ships.push(ship);
     });

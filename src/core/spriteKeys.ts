@@ -323,7 +323,7 @@ export function pickNextHeroSpriteKey(): string {
   // The hero-skin picker now lives on Number Climb (see
   // `NumberClimbHero` for the Settings consumer).
   const keys = Object.values(HeroSpriteKeys);
-  const key = keys[_heroPickIndex % keys.length]!;
+  const key = keys[_heroPickIndex % keys.length];
   _heroPickIndex += 1;
   return key;
 }
@@ -386,7 +386,7 @@ export const AsteroidSpriteKeys = {
  */
 export function pickRandomAsteroidSpriteKey(rng: () => number = Math.random): string {
   const keys = Object.values(AsteroidSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /**
@@ -537,7 +537,7 @@ export const FROG_POSE_COUNT = Object.keys(FROG_SHEET.poses).length;
 /** Pick one colorway at random (one frog per round). */
 export function pickRandomFrogSpriteKey(rng: () => number = Math.random): FrogSpriteKey {
   const keys = Object.values(FrogSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /** The fly the frog catches at the far bank (wing-flap sheet, `frog.mjs`). */
@@ -631,7 +631,7 @@ export const AXOLOTL_SHEET = {
 /** Pick one colorway at random (one axolotl per round). */
 export function pickRandomAxolotlSpriteKey(rng: () => number = Math.random): AxolotlSpriteKey {
   const keys = Object.values(AxolotlSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /**
@@ -959,7 +959,7 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
     scope: 'game:asteroid-field',
   })),
-  ...(Object.values(ProjectileSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+  ...Object.values<string>(ProjectileSpriteKeys).map<SpriteManifestEntry>((key) => ({
     kind: 'projectile',
     key,
     url: spritePath('projectile', key),
@@ -1147,12 +1147,13 @@ export function pickRandomClimbFloorBgKey(
   const exclSet = new Set(exclusions);
   const available = CLIMB_RANDOM_FLOOR_KEYS.filter((k) => !exclSet.has(k));
   const pool = available.length > 0 ? available : CLIMB_RANDOM_FLOOR_KEYS;
-  return pool[Math.floor(rng() * pool.length)]! as ClimbFloorBgKey;
+  return pool[Math.floor(rng() * pool.length)] as ClimbFloorBgKey;
 }
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */
 export type NonAlienSpriteKey =
   | HeroSpriteKey
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- empty until the first projectile sprite ships
   | ProjectileSpriteKey
   | UiSpriteKey
   | ParticleSpriteKey

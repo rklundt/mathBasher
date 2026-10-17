@@ -102,7 +102,6 @@ describe('getCachedSpriteTier', () => {
     (globalThis as unknown as { window: WindowShim }).window = { innerWidth, devicePixelRatio };
   };
   const clearWindow = (): void => {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete (globalThis as unknown as { window?: WindowShim }).window;
   };
 

@@ -114,7 +114,7 @@ describe('distractor quality across all implemented generators', () => {
 
       it('choices always include the correct answer', () => {
         for (const q of samples) {
-          expect(q.choices, `missing correctAnswer ${q.correctAnswer} from ${q.choices}`).toContain(
+          expect(q.choices, `missing correctAnswer ${q.correctAnswer} from ${q.choices.join(", ")}`).toContain(
             q.correctAnswer,
           );
         }
@@ -123,7 +123,7 @@ describe('distractor quality across all implemented generators', () => {
       it('every choice is distinct (no duplicates)', () => {
         for (const q of samples) {
           const distinctCount = new Set(q.choices).size;
-          expect(distinctCount, `duplicate choice in ${q.choices} (prompt: ${q.prompt})`).toBe(
+          expect(distinctCount, `duplicate choice in ${q.choices.join(", ")} (prompt: ${q.prompt})`).toBe(
             q.choices.length,
           );
         }

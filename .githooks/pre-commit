@@ -1,0 +1,33 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright 2026 Ray Klundt
+# mathBasher is also available under a commercial license — see COMMERCIAL.md
+#
+# Pre-commit checks (sprint 2.6.4, ADR-0013). Enabled by `pnpm install`.
+#  1. Fast ESLint (no type info) on the staged code files. CI runs the full,
+#     type-aware lint plus typecheck, tests and build.
+#  2. Optional machine-local checks: every *.sh in .githooks/local/
+#     (gitignored), run with `sh`.
+# Skip once with `git commit --no-verify` (CI still checks everything).
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# A branch must never be able to plant local checks: refuse tracked files there.
+if [ -n "$(git ls-files .githooks/local)" ]; then
+  echo "pre-commit: .githooks/local/ contains tracked files; refusing to run. Remove them from git." >&2
+  exit 1
+fi
+
+PATTERNS="*.ts *.mjs *.js *.cjs"
+# shellcheck disable=SC2086
+if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- $PATTERNS)" ]; then
+  # shellcheck disable=SC2086
+  git diff --cached --name-only --diff-filter=ACMR -z -- $PATTERNS |
+    MATHBASHER_LINT_FAST=1 xargs -0 node ./node_modules/eslint/bin/eslint.js \
+      --cache --cache-location node_modules/.cache/eslint-fast/ --no-warn-ignored -- || {
+    echo "pre-commit: lint failed (fix it, or 'pnpm exec eslint --fix <file>')." >&2
+    exit 1
+  }
+fi
+
+exec sh .githooks/run-local.sh pre-commit

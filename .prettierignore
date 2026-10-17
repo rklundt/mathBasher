@@ -1,0 +1,19 @@
+# Prettier formats code and config only (ts / js / mjs / json / yml).
+# Prose, generated files, assets and deploy configuration are left alone.
+node_modules/
+.pnpm-store/
+dist/
+server/dist/
+coverage/
+pnpm-lock.yaml
+public/
+infra/
+.github/workflows/
+.sprints/
+.sprite-source/
+.audio-source/
+*.md
+*.html
+*.css
+LICENSE
+NOTICE

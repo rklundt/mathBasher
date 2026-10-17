@@ -117,11 +117,11 @@ export function pickPadLooks(count: number, lookCount: number, rng: () => number
   const looks: number[] = [];
   for (let i = 0; i < count; i++) {
     const avoid = new Set<number>();
-    if (i > 0) avoid.add(looks[i - 1]!);
-    if (i === count - 1 && count > 2) avoid.add(looks[0]!);
+    if (i > 0) avoid.add(looks[i - 1]);
+    if (i === count - 1 && count > 2) avoid.add(looks[0]);
     const options = Array.from({ length: lookCount }, (_, k) => k).filter((k) => !avoid.has(k));
     const pool = options.length > 0 ? options : [0];
-    looks.push(pool[Math.floor(rng() * pool.length)]!);
+    looks.push(pool[Math.floor(rng() * pool.length)]);
   }
   return looks;
 }

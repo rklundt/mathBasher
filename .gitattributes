@@ -20,6 +20,7 @@
 *.yaml      text eol=lf
 *.toml      text eol=lf
 *.sh        text eol=lf
+.githooks/** text eol=lf
 *.bicep     text eol=lf
 *.bicepparam text eol=lf
 .env.example text eol=lf

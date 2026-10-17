@@ -3,7 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, expect, it } from 'vitest';
-import { isBootScope, isGameScope, type AssetScope } from '@/core/assetScope';
+import { isBootScope, isGameScope } from '@/core/assetScope';
 
 /**
  * Sprint 2.1.6 — partition-helper contracts. Tiny pure functions; the
@@ -20,10 +20,10 @@ describe('assetScope partition helpers', () => {
       expect(isBootScope('always')).toBe(true);
     });
     it('game:alien-shoot → NOT boot-loaded', () => {
-      expect(isBootScope('game:alien-shoot' as AssetScope)).toBe(false);
+      expect(isBootScope('game:alien-shoot')).toBe(false);
     });
     it('game:asteroid-field → NOT boot-loaded', () => {
-      expect(isBootScope('game:asteroid-field' as AssetScope)).toBe(false);
+      expect(isBootScope('game:asteroid-field')).toBe(false);
     });
   });
 

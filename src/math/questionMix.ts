@@ -39,7 +39,7 @@ export function pickWeighted<T>(table: readonly Weighted<T>[], rng: () => number
     if (r < 0) return e.value;
   }
   // Floating-point leftovers (r landed exactly on the total): the last entry.
-  return table[table.length - 1]!.value;
+  return table[table.length - 1].value;
 }
 
 /**
