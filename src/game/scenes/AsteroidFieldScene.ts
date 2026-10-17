@@ -8,7 +8,7 @@ import { config, isTouchPrimary, questionSeconds, type MathId, type SpeedKey } f
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AsteroidHero } from '@/game/entities/AsteroidHero';
 import { AsteroidProjectile } from '@/game/entities/AsteroidProjectile';
@@ -795,10 +795,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.lifecycle.resume();
   }
 
-  quitToMenu(): void {
+  quitToMenu(destination?: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
     // scene.start(Menu) consolidated in lifecycle helper.
-    this.lifecycle.quitToMenu();
+    this.lifecycle.quitToMenu(destination);
   }
 
   /** Convenience getter for the HUD's countdown ring. */

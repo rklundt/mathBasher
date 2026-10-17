@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
 import type { Question } from '@/math/types';
-import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, HudSceneInit, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
@@ -421,7 +421,7 @@ export class HudScene extends Phaser.Scene {
     gameScene.pause();
     const init: PauseOverlayInit = {
       resumeFn: () => this.closePauseOverlay(),
-      quitFn: () => this.handleQuitFromOverlay(),
+      quitFn: (destination) => this.handleQuitFromOverlay(destination),
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -434,7 +434,7 @@ export class HudScene extends Phaser.Scene {
     gameScene?.resume();
   }
 
-  private handleQuitFromOverlay(): void {
+  private handleQuitFromOverlay(destination: QuitDestination): void {
     const gameScene = this.getGameScene();
     if (this.scene.isActive(SceneKeys.PauseOverlay)) {
       this.scene.stop(SceneKeys.PauseOverlay);
@@ -442,7 +442,7 @@ export class HudScene extends Phaser.Scene {
     // Resume before quit so any frozen tweens don't carry over to the next
     // round if the user starts a new game from MenuScene.
     gameScene?.resume();
-    gameScene?.quitToMenu();
+    gameScene?.quitToMenu(destination);
   }
 
   /**

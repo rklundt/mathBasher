@@ -11,7 +11,7 @@ import { Settings } from '@/services/Settings';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { RoundController } from '@/game/services/RoundController';
 import { computeClimbStars } from '@/services/ScoreCalculator';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import { text } from '@/game/ui/typography';
@@ -681,7 +681,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.lifecycle.resume();
   }
 
-  quitToMenu(): void {
-    this.lifecycle.quitToMenu();
+  quitToMenu(destination?: QuitDestination): void {
+    this.lifecycle.quitToMenu(destination);
   }
 }

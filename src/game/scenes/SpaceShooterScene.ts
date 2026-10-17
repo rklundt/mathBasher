@@ -9,7 +9,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AlienShip } from '@/game/entities/AlienShip';
 import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
@@ -537,8 +537,8 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     this.lifecycle.resume();
   }
 
-  quitToMenu(): void {
+  quitToMenu(destination?: QuitDestination): void {
     this.time.paused = false;
-    this.lifecycle.quitToMenu();
+    this.lifecycle.quitToMenu(destination);
   }
 }
