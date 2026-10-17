@@ -101,6 +101,9 @@ export const SfxKeys = {
   PenguinYummy1: 'penguin-yummy-1',
   PenguinYummy2: 'penguin-yummy-2',
   PenguinYummy3: 'penguin-yummy-3',
+  /** Sprint 2.7 — Penguin Slide: its own two gulps (mixed with Frog Splash's fly slurps). */
+  PenguinGulp1: 'penguin-gulp-1',
+  PenguinGulp2: 'penguin-gulp-2',
 } as const;
 
 /**
@@ -158,10 +161,11 @@ export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof F
 
 /**
  * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes, hops, splats and
- * yummies are its own (`game:penguin-slide`). The gulp borrows Frog Splash's
- * fly slurps (eager); the owner's own gulps join this list when they arrive.
+ * yummies are its own (`game:penguin-slide`). The gulp mixes its own two
+ * gulps with Frog Splash's fly slurps (eager, shared).
  */
-const PENGUIN_GULP_KEYS = FROG_SLURP_KEYS;
+const PENGUIN_OWN_GULP_KEYS = ['penguin-gulp-1', 'penguin-gulp-2'] as const;
+const PENGUIN_GULP_KEYS = [...PENGUIN_OWN_GULP_KEYS, ...FROG_SLURP_KEYS] as const;
 const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-3'] as const;
 const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
 const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
@@ -171,6 +175,7 @@ const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
   ...PENGUIN_HOP_KEYS,
   ...PENGUIN_BONK_KEYS,
   ...PENGUIN_YUMMY_KEYS,
+  ...PENGUIN_OWN_GULP_KEYS,
 ]);
 
 /**
@@ -503,7 +508,7 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
   if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
-  // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp borrows the frog slurps, eager).
+  // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp mix also uses the frog slurps, eager).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   return 'eager';
