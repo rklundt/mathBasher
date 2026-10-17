@@ -20,6 +20,7 @@ import { MathALotlScene } from '@/game/scenes/MathALotlScene';
 import { FrogSplashScene } from '@/game/scenes/FrogSplashScene';
 import { SpaceShooterScene } from '@/game/scenes/SpaceShooterScene';
 import { PenguinSlideScene } from '@/game/scenes/PenguinSlideScene';
+import { BunnyGardenScene } from '@/game/scenes/BunnyGardenScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
@@ -135,6 +136,7 @@ export function bootGame(): void {
       FrogSplashScene,
       SpaceShooterScene,
       PenguinSlideScene,
+      BunnyGardenScene,
       HudScene,
       GameOverScene,
       PauseOverlay,

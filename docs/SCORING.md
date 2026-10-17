@@ -91,9 +91,9 @@ Source: `config.round.starThresholds` (currently `[8, 10, 11]`).
 | 10 | 2 ★★ |
 | 11–12 | 3 ★★★ |
 
-### Number Climb (ships as "Space Escape!"), Frog Splash and Penguin Slide — by floor / row / question reached
+### Number Climb (ships as "Space Escape!"), Frog Splash, Penguin Slide and Bunny Garden — by floor / row / question reached
 
-Frog Splash uses the same ladder with rows crossed in place of floors (`computeClimbStars(rowsCrossed, 12)`); reaching the far bank is 12 of 12. Penguin Slide uses it with questions answered (`computeClimbStars(answeredCount, 12)`): a wrong fish or a time-out retries the same question, so the count only grows on a right answer, and running out of lives ends the slide early.
+Frog Splash uses the same ladder with rows crossed in place of floors (`computeClimbStars(rowsCrossed, 12)`); reaching the far bank is 12 of 12. Penguin Slide uses it with questions answered (`computeClimbStars(answeredCount, 12)`): a wrong fish or a time-out retries the same question, so the count only grows on a right answer, and running out of lives ends the slide early. Bunny Garden counts the same way (carrots in the basket, `computeClimbStars(answeredCount, 12)`).
 
 Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCalculator.ts`. Thresholds derive from `totalFloors` via `floor(totalFloors × 0.4 / 0.7 / 1.0)`, so a future round-size change auto-scales.
 

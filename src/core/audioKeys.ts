@@ -222,6 +222,40 @@ export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typ
   return nextPenguinYummy(rng);
 }
 
+/**
+ * Sprint 2.8 — Bunny Garden's sounds. PLACEHOLDERS: they reuse boot-loaded
+ * sounds until the owner's arrive (a hop, a carrot pop, a mole squeak and a
+ * "hide"); then only these lists change, to new game-scoped keys.
+ */
+const BUNNY_HOP_KEYS = ['button-click-1'] as const;
+const BUNNY_POP_KEYS = HIT_CORRECT_KEYS;
+const BUNNY_MOLE_KEYS = HIT_WRONG_KEYS;
+const BUNNY_HIDE_KEYS = ['timeout-fail-1'] as const;
+const nextBunnyHop = noRepeatPicker(BUNNY_HOP_KEYS);
+const nextBunnyPop = noRepeatPicker(BUNNY_POP_KEYS);
+const nextBunnyMole = noRepeatPicker(BUNNY_MOLE_KEYS);
+const nextBunnyHide = noRepeatPicker(BUNNY_HIDE_KEYS);
+
+/** The bunny hops to a hole. */
+export function pickRandomBunnyHopSfx(rng: () => number = Math.random): (typeof BUNNY_HOP_KEYS)[number] {
+  return nextBunnyHop(rng);
+}
+
+/** The right carrot pops out of the ground. */
+export function pickRandomBunnyPopSfx(rng: () => number = Math.random): (typeof BUNNY_POP_KEYS)[number] {
+  return nextBunnyPop(rng);
+}
+
+/** A wrong hole: the mole peeks up. */
+export function pickRandomBunnyMoleSfx(rng: () => number = Math.random): (typeof BUNNY_MOLE_KEYS)[number] {
+  return nextBunnyMole(rng);
+}
+
+/** Time's up: the carrots hide. */
+export function pickRandomBunnyHideSfx(rng: () => number = Math.random): (typeof BUNNY_HIDE_KEYS)[number] {
+  return nextBunnyHide(rng);
+}
+
 /** The hop up to grab a fish (right or wrong). */
 export function pickRandomPenguinHopSfx(rng: () => number = Math.random): (typeof PENGUIN_HOP_KEYS)[number] {
   return nextPenguinHop(rng);
@@ -365,6 +399,8 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'frog-splash': MusicKeys.PondLoop1,
   'space-shooter': MusicKeys.CockpitLoop1,
   'penguin-slide': MusicKeys.SnowLoop1,
+  // Sprint 2.8 — PLACEHOLDER (Alien Shoot's boot-loaded loop) until the owner's garden loop arrives.
+  'bunny-garden': MusicKeys.Loop1,
 };
 
 /**
@@ -392,6 +428,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'space-shooter': [],
   // Sprint 2.7 — none yet (an optional sliding-on-snow loop may come from the owner).
   'penguin-slide': [],
+  // Sprint 2.8 — none yet.
+  'bunny-garden': [],
 };
 
 /**

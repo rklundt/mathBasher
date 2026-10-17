@@ -42,6 +42,9 @@
     "sprite:penguin": "node scripts/sprites/penguin.mjs",
     "sprite:fish": "node scripts/sprites/fish.mjs",
     "sprite:snowhill": "node scripts/sprites/snowhill.mjs",
+    "sprite:bunny": "node scripts/sprites/bunny.mjs",
+    "sprite:carrot": "node scripts/sprites/carrot.mjs",
+    "sprite:garden": "node scripts/sprites/garden.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
   },
   "engines": {

@@ -22,6 +22,7 @@ describe('extendChoices', () => {
     const target = Math.max(
       ...Object.values(config.spaceShooter.speed).map((s) => s.shipCount),
       ...Object.values(config.penguinSlide.speed).map((s) => s.fishCount),
+      ...Object.values(config.bunnyGarden.speed).map((s) => s.holeCount),
     );
     const rng = mulberry32(2026);
     for (const id of getImplementedIds()) {
