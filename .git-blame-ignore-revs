@@ -1,0 +1,9 @@
+# Formatting-only commits for `git blame` to skip (ADR-0013).
+# GitHub's blame view reads this file automatically. Locally:
+#   git blame --ignore-revs-file .git-blame-ignore-revs <file>
+
+# 2026-10-16 — one-time Prettier reformat (sprint 2.6.4)
+# on development (the reformat commit itself):
+0f7fbaff55b590daba416de7761273cdb0ab8648
+# on main (its release, tag format-2026-10):
+2ed5712b0c1d698fe313035f9d932bb529528f18

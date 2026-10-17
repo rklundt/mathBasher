@@ -428,12 +428,13 @@ Set up in sprint 2.6.4; the reasoning is in [ADR-0013](docs/adrs/ADR-0013-lint-a
   - no `console` outside the telemetry helper
 - **Prettier** (`.prettierrc.json`): single quotes, 120 columns.
 - **Git hooks** live in `.githooks/`; `pnpm install` turns them on for your clone (`git config --local core.hooksPath .githooks`).
-  - `pre-commit` runs a fast lint (no type info) on the staged files.
+  - `pre-commit` checks formatting, then runs a fast lint (no type info), on the staged files. If formatting differs, run `pnpm format` and stage the result.
   - `commit-msg` passes the message on to your local checks.
   - Both then run any `*.sh` you put in the gitignored `.githooks/local/`, which is the place for your own machine-only checks.
   - Skip once with `git commit --no-verify`; CI still runs everything.
   - A checked-out branch runs *its own* hooks, lint config and `prepare` script. Review someone else's pull request on GitHub or in a throwaway clone; don't install or commit on it in your main clone.
-- **CI's required check** ("Typecheck, test, build") runs lint, typecheck, tests and build. Don't rename that job: branch protection waits for it by name.
+- **Blame:** the one-time reformat is listed in `.git-blame-ignore-revs`. GitHub's blame view skips it automatically; locally run `git blame --ignore-revs-file .git-blame-ignore-revs <file>`. Don't set `blame.ignoreRevsFile` in your git config: git then refuses to blame any checkout that lacks the file (older tags).
+- **CI's required check** ("Typecheck, test, build") runs the format check, lint, typecheck, tests and build. Don't rename that job: branch protection waits for it by name.
 - **Node version:** `.nvmrc` (22) is the single source for CI and version managers. `engines` keeps the `>=22.13.0` floor.
 - **New packages must be at least a day old** (`minimumReleaseAge` in `pnpm-workspace.yaml`). For an urgent security fix that's newer, add it to `minimumReleaseAgeExclude` for that update.
 
