@@ -58,7 +58,12 @@ describe('extendChoices', () => {
   });
 
   it('a fraction answer of 0 still gets a labelled extra', () => {
-    const q = { choices: [0, 0.25, 0.5, 0.75], correctAnswer: 0, correctDisplay: '0', choiceDisplays: ['0', '1/4', '1/2', '3/4'] };
+    const q = {
+      choices: [0, 0.25, 0.5, 0.75],
+      correctAnswer: 0,
+      correctDisplay: '0',
+      choiceDisplays: ['0', '1/4', '1/2', '3/4'],
+    };
     const out = extendChoices(q, 5, mulberry32(4));
     expect(out.choices).toHaveLength(5);
     expect(out.choiceDisplays).toHaveLength(5);

@@ -71,9 +71,7 @@ export function getGenerator(id: MathId): QuestionGenerator {
  * The difficulty-select UI uses this to decide which tiles are enabled.
  */
 export function getImplementedIds(): MathId[] {
-  return (Object.keys(config.scoring.mathDifficulty) as MathId[]).filter(
-    (id) => !generators[id].isStub,
-  );
+  return (Object.keys(config.scoring.mathDifficulty) as MathId[]).filter((id) => !generators[id].isStub);
 }
 
 // Sprint 1.5 — wire up the Mixed generator's delegate picker. This MUST
@@ -94,18 +92,14 @@ export function getImplementedIds(): MathId[] {
  * directly. Add new entries here if a future math type's output shape
  * doesn't compose with integer Mixed.
  */
-const MIXED_EXCLUDED_IDS: ReadonlySet<MathId> = new Set<MathId>([
-  'mixed',
-  'add-fractions',
-  'subtract-fractions',
-]);
+const MIXED_EXCLUDED_IDS: ReadonlySet<MathId> = new Set<MathId>(['mixed', 'add-fractions', 'subtract-fractions']);
 
 setMixedDelegate((rng, speed) => {
   const delegateIds = getImplementedIds().filter((id) => !MIXED_EXCLUDED_IDS.has(id));
   if (delegateIds.length === 0) {
     throw new Error(
-      "mixed delegate picker: no non-excluded implemented generators in the registry " +
-        "— cannot delegate. This is a registry-setup bug.",
+      'mixed delegate picker: no non-excluded implemented generators in the registry ' +
+        '— cannot delegate. This is a registry-setup bug.',
     );
   }
   const idx = Math.floor(rng() * delegateIds.length);

@@ -150,9 +150,7 @@ describe('addFractions generator', () => {
 
   describe('Medium band — mixed numbers', () => {
     const rng = mulberry32(201);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      addFractions.generate(rng, 'medium'),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => addFractions.generate(rng, 'medium'));
 
     it('prompt is two mixed numbers: W1 a/d + W2 b/d', () => {
       const re = /^(\d+) (\d+)\/(\d+) \+ (\d+) (\d+)\/(\d+) = \?$/;
@@ -184,9 +182,7 @@ describe('addFractions generator', () => {
 
   describe('Hard band — unlike fractions', () => {
     const rng = mulberry32(301);
-    const samples = Array.from({ length: SAMPLE_COUNT }, () =>
-      addFractions.generate(rng, 'fast'),
-    );
+    const samples = Array.from({ length: SAMPLE_COUNT }, () => addFractions.generate(rng, 'fast'));
 
     it('prompt is two unlike fractions: a/d1 + b/d2 (different denominators)', () => {
       const re = /^(\d+)\/(\d+) \+ (\d+)\/(\d+) = \?$/;

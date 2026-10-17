@@ -255,12 +255,16 @@ function printHelp() {
   pnpm sprite:process [--kind <kind>] --name <basename> <input.png>
 
 Kinds:
-${Object.entries(PROFILES).map(([k, p]) => `  ${k.padEnd(11)} ${p.description}`).join('\n')}
+${Object.entries(PROFILES)
+  .map(([k, p]) => `  ${k.padEnd(11)} ${p.description}`)
+  .join('\n')}
 
 Output path resolution (in priority order):
   1. Positional <output.png> arg — explicit override.
   2. --name <basename> derives <kind-folder>/<basename>.png. Folder per kind:
-${Object.entries(PROFILES).map(([k, p]) => `       ${k.padEnd(11)} ${p.folder}/`).join('\n')}
+${Object.entries(PROFILES)
+  .map(([k, p]) => `       ${k.padEnd(11)} ${p.folder}/`)
+  .join('\n')}
 
 Defaults to --kind alien if --kind is omitted.
 --format <png|webp|webp-lossless> picks the output encoder (default png).
@@ -304,9 +308,7 @@ async function main() {
   // compress better in JPG, so we accept JPG for bg inputs too.
   const allowedExts = opts.kind === 'bg' ? ['.png', '.jpg', '.jpeg'] : ['.png'];
   if (!allowedExts.includes(ext)) {
-    console.error(
-      `Input extension ${ext} not allowed for --kind ${opts.kind}. Allowed: ${allowedExts.join(', ')}.`,
-    );
+    console.error(`Input extension ${ext} not allowed for --kind ${opts.kind}. Allowed: ${allowedExts.join(', ')}.`);
     exit(1);
   }
 
@@ -405,13 +407,11 @@ async function main() {
 
   console.log(`✓ ${basename(opts.input)} → ${opts.output}`);
   console.log(`  Kind: ${opts.kind} (${profile.description})`);
+  console.log(`  Dimensions: ${inputMeta.width}×${inputMeta.height} → ${outputMeta.width}×${outputMeta.height}`);
+  console.log(`  Size: ${formatBytes(inputBytes)} → ${formatBytes(outputBytes)} (${sizeReduction}% smaller)`);
   console.log(
-    `  Dimensions: ${inputMeta.width}×${inputMeta.height} → ${outputMeta.width}×${outputMeta.height}`,
+    `  Format: ${outputMeta.format}, palette=${outputMeta.paletteBitDepth ? 'yes' : 'no'}, alpha=${outputMeta.hasAlpha ? 'yes' : 'no'}`,
   );
-  console.log(
-    `  Size: ${formatBytes(inputBytes)} → ${formatBytes(outputBytes)} (${sizeReduction}% smaller)`,
-  );
-  console.log(`  Format: ${outputMeta.format}, palette=${outputMeta.paletteBitDepth ? 'yes' : 'no'}, alpha=${outputMeta.hasAlpha ? 'yes' : 'no'}`);
   if (!hasAlpha) {
     console.log(`  ⚠  Input was opaque — output is opaque too. Re-export with transparency if shipping.`);
   }

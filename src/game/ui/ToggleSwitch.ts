@@ -3,11 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
-import {
-  BORDER_GREY,
-  FOCUS_BLUE,
-  SELECTED_AMBER,
-} from '@/game/ui/uiPalette';
+import { BORDER_GREY, FOCUS_BLUE, SELECTED_AMBER } from '@/game/ui/uiPalette';
 
 /**
  * OFF-state track fill. Brighter than the canonical `SLATE_BG` (#1f2740)
@@ -218,21 +214,9 @@ export class ToggleSwitch extends Phaser.GameObjects.Container implements Focusa
     const baseColor = this.value ? SELECTED_AMBER : TOGGLE_TRACK_OFF;
     const trackColor = this.hovered ? this.brighten(baseColor) : baseColor;
     g.fillStyle(trackColor, 1);
-    g.fillRoundedRect(
-      -TRACK_WIDTH / 2,
-      -TRACK_HEIGHT / 2,
-      TRACK_WIDTH,
-      TRACK_HEIGHT,
-      TRACK_RADIUS,
-    );
+    g.fillRoundedRect(-TRACK_WIDTH / 2, -TRACK_HEIGHT / 2, TRACK_WIDTH, TRACK_HEIGHT, TRACK_RADIUS);
     g.lineStyle(2, BORDER_GREY, 0.8);
-    g.strokeRoundedRect(
-      -TRACK_WIDTH / 2,
-      -TRACK_HEIGHT / 2,
-      TRACK_WIDTH,
-      TRACK_HEIGHT,
-      TRACK_RADIUS,
-    );
+    g.strokeRoundedRect(-TRACK_WIDTH / 2, -TRACK_HEIGHT / 2, TRACK_WIDTH, TRACK_HEIGHT, TRACK_RADIUS);
 
     // Thumb — white circle on the right (ON) or left (OFF).
     const thumbX = this.value ? THUMB_OFFSET : -THUMB_OFFSET;

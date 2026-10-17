@@ -151,8 +151,7 @@ function parseArgs(args) {
       // mixing "auto" with explicit overrides is more confusing than helpful.
       const next = args[++i];
       opts.margin = next === 'auto' ? 'auto' : parseInt(next, 10);
-    }
-    else if (a === '--margin-top') opts.marginTop = parseInt(args[++i], 10);
+    } else if (a === '--margin-top') opts.marginTop = parseInt(args[++i], 10);
     else if (a === '--margin-bottom') opts.marginBottom = parseInt(args[++i], 10);
     else if (a === '--margin-left') opts.marginLeft = parseInt(args[++i], 10);
     else if (a === '--margin-right') opts.marginRight = parseInt(args[++i], 10);
@@ -358,9 +357,12 @@ async function extractFrames(ffmpegPath, videoPath, fps, outputDir) {
       ffmpegPath,
       [
         '-y', // overwrite
-        '-i', videoPath,
-        '-vf', `fps=${fps}`,
-        '-pix_fmt', 'rgba', // ensure alpha capacity even though src is opaque
+        '-i',
+        videoPath,
+        '-vf',
+        `fps=${fps}`,
+        '-pix_fmt',
+        'rgba', // ensure alpha capacity even though src is opaque
         join(outputDir, 'frame-%04d.png'),
       ],
       { stdio: ['ignore', 'ignore', 'pipe'] },
@@ -646,7 +648,7 @@ function parseHexColor(hex) {
 function removeBackgroundInPlace(buf, width, height, keyColor, tolerance, feather) {
   // Resolve transition zone in color-distance space. Clamp the inner
   // bound at 0 to avoid negative thresholds when feather > tolerance.
-  const innerDist = Math.max(0, (tolerance - feather)) * 4.41;
+  const innerDist = Math.max(0, tolerance - feather) * 4.41;
   const outerDist = (tolerance + feather) * 4.41;
   const innerDistSq = innerDist * innerDist;
   const outerDistSq = outerDist * outerDist;
@@ -783,10 +785,10 @@ function decontaminateInPlace(buf, width, height, keyColor) {
     // prior `* invAlphaScale / 255 * 255` had a redundant /255*255
     // cancellation that made the math harder to read without affecting
     // output (x/255*255 === x for floats). Simplified.
-    const r = (buf[p * 4]     - bgR * bgFrac) * invAlphaScale;
+    const r = (buf[p * 4] - bgR * bgFrac) * invAlphaScale;
     const g = (buf[p * 4 + 1] - bgG * bgFrac) * invAlphaScale;
     const b = (buf[p * 4 + 2] - bgB * bgFrac) * invAlphaScale;
-    buf[p * 4]     = Math.max(0, Math.min(255, Math.round(r)));
+    buf[p * 4] = Math.max(0, Math.min(255, Math.round(r)));
     buf[p * 4 + 1] = Math.max(0, Math.min(255, Math.round(g)));
     buf[p * 4 + 2] = Math.max(0, Math.min(255, Math.round(b)));
     modified++;
@@ -813,7 +815,9 @@ async function main() {
   console.log(`\nProbing ${opts.video}...`);
   const probe = await probeVideo(ffmpegPath, opts.video);
 
-  console.log(`  Source: ${probe.width}×${probe.height}, ${probe.fps ?? '?'} fps, ${probe.duration?.toFixed(2) ?? '?'}s`);
+  console.log(
+    `  Source: ${probe.width}×${probe.height}, ${probe.fps ?? '?'} fps, ${probe.duration?.toFixed(2) ?? '?'}s`,
+  );
 
   // ---- Step 1b: if --margin auto, run pre-detection on a single frame ----
   // Both verify-grid and main extract need margin + bg color resolved before
@@ -823,11 +827,9 @@ async function main() {
     await mkdir(TEMP_DIR, { recursive: true });
     const probeFramePath = join(TEMP_DIR, 'probe-frame.png');
     await new Promise((res, rej) => {
-      const p = spawn(
-        ffmpegPath,
-        ['-y', '-i', opts.video, '-vframes', '1', probeFramePath],
-        { stdio: ['ignore', 'ignore', 'pipe'] },
-      );
+      const p = spawn(ffmpegPath, ['-y', '-i', opts.video, '-vframes', '1', probeFramePath], {
+        stdio: ['ignore', 'ignore', 'pipe'],
+      });
       p.on('close', (code) => (code === 0 ? res() : rej(new Error('frame 0 extract failed'))));
       p.on('error', rej);
     });
@@ -854,7 +856,10 @@ async function main() {
       opts.right = opts.marginRight !== null ? opts.marginRight : auto.right;
       console.log(
         `  Auto-detected margins: top=${auto.top}, right=${auto.right}, bottom=${auto.bottom}, left=${auto.left}px` +
-          (opts.marginTop !== null || opts.marginRight !== null || opts.marginBottom !== null || opts.marginLeft !== null
+          (opts.marginTop !== null ||
+          opts.marginRight !== null ||
+          opts.marginBottom !== null ||
+          opts.marginLeft !== null
             ? ' (some sides overridden by explicit --margin-* flags)'
             : ''),
       );
@@ -1022,12 +1027,7 @@ async function main() {
         // skips it (useful for A/B comparison or when sprites have
         // intentional bg-colored regions).
         if (opts.decontaminate) {
-          const decon = decontaminateInPlace(
-            cellBuffer.data,
-            cellBuffer.info.width,
-            cellBuffer.info.height,
-            bgColor,
-          );
+          const decon = decontaminateInPlace(cellBuffer.data, cellBuffer.info.width, cellBuffer.info.height, bgColor);
           totalDecontaminated += decon;
         }
 
@@ -1089,7 +1089,9 @@ async function main() {
       const restoreInfo = restorations > 0 ? `, ${restorations}px restored` : '';
       const deconInfo = totalDecontaminated > 0 ? `, ${totalDecontaminated}px decon` : '';
       process.stdout.write(
-        `\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed${deconInfo}${restoreInfo}`.padEnd(90),
+        `\r  [${cellIdx}/${cellsToProcess}] r${r}c${c}: ${formatBytes(outBuf.length)}, ${removedPct}% bg removed${deconInfo}${restoreInfo}`.padEnd(
+          90,
+        ),
       );
     }
     if (cellIdx >= cellsToProcess) break;
@@ -1136,22 +1138,19 @@ async function runVerifyGrid(ffmpegPath, sharp, opts, probe) {
   const outDir = '.sprite-source/working';
   await mkdir(outDir, { recursive: true });
   const rawFramePath = join(outDir, '.frame0-raw.png');
-  const overlayPath = join(
-    outDir,
-    `frame0-grid-${opts.gridRows}x${opts.gridCols}.png`,
-  );
+  const overlayPath = join(outDir, `frame0-grid-${opts.gridRows}x${opts.gridCols}.png`);
 
   console.log(`\nVerify-grid mode: extracting frame 0 of ${opts.video}...`);
 
   // ffmpeg one-shot: pull frame 0 only.
   await new Promise((res, rej) => {
-    const p = spawn(
-      ffmpegPath,
-      ['-y', '-i', opts.video, '-vframes', '1', rawFramePath],
-      { stdio: ['ignore', 'ignore', 'pipe'] },
-    );
+    const p = spawn(ffmpegPath, ['-y', '-i', opts.video, '-vframes', '1', rawFramePath], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
     let stderr = '';
-    p.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    p.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
     p.on('close', (code) => {
       if (code !== 0) rej(new Error(`ffmpeg frame 0 extract failed:\n${stderr}`));
       else res();
@@ -1200,7 +1199,10 @@ async function runVerifyGrid(ffmpegPath, sharp, opts, probe) {
   const svg = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${probe.width}" height="${probe.height}">${overlayParts.join('')}</svg>`,
   );
-  await sharp(rawFramePath).composite([{ input: svg }]).png().toFile(overlayPath);
+  await sharp(rawFramePath)
+    .composite([{ input: svg }])
+    .png()
+    .toFile(overlayPath);
 
   // Clean up the raw frame; the overlay is what the human inspects.
   await rm(rawFramePath, { force: true });

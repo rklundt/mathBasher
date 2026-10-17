@@ -134,9 +134,7 @@ describe('ScoreCalculator', () => {
     const calc = new ScoreCalculator(MATH_ID, SPEED);
     calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
     const fromConfig =
-      config.scoring.basePerCorrect *
-      config.scoring.mathDifficulty[MATH_ID] *
-      config.scoring.speed[SPEED].multiplier;
+      config.scoring.basePerCorrect * config.scoring.mathDifficulty[MATH_ID] * config.scoring.speed[SPEED].multiplier;
     expect(calc.score).toBe(fromConfig);
   });
 
@@ -343,14 +341,11 @@ describe('fraction math calibration (story 7)', () => {
     // Fractions follow the same +0.5 step. A future re-calibration that
     // breaks this should be deliberate.
     expect(
-      config.scoring.mathDifficulty['subtract-fractions'] -
-        config.scoring.mathDifficulty['add-fractions'],
+      config.scoring.mathDifficulty['subtract-fractions'] - config.scoring.mathDifficulty['add-fractions'],
     ).toBeCloseTo(0.5, 10);
   });
 
   it('add-fractions multiplier matches div-to-144 (both = hardest-tier peer)', () => {
-    expect(config.scoring.mathDifficulty['add-fractions']).toBe(
-      config.scoring.mathDifficulty['div-to-144'],
-    );
+    expect(config.scoring.mathDifficulty['add-fractions']).toBe(config.scoring.mathDifficulty['div-to-144']);
   });
 });

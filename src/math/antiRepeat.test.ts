@@ -39,11 +39,7 @@ interface AntiRepeatOpts {
 }
 
 /** Pure re-implementation of GameScene.startNextQuestion's draw loop. */
-function drawRound(
-  id: MathId,
-  roundSize: number,
-  opts: AntiRepeatOpts,
-): string[] {
+function drawRound(id: MathId, roundSize: number, opts: AntiRepeatOpts): string[] {
   const gen = generators[id];
   const history: string[] = [];
   const prompts: string[] = [];

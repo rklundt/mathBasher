@@ -155,7 +155,11 @@ function frogSvg(c, pose) {
 
   const head = `<ellipse cx="${CX}" cy="${f(headCy)}" rx="60" ry="${f(34 * Math.min(1.05, p.sy + 0.05))}" fill="${c.body}" ${stroke}/>
     ${[
-      [-34, -6, 6], [36, -10, 5], [-10, -22, 4.5], [18, -24, 4], [44, 8, 4],
+      [-34, -6, 6],
+      [36, -10, 5],
+      [-10, -22, 4.5],
+      [18, -24, 4],
+      [44, 8, 4],
     ]
       .map(([dx, dy, r]) => `<circle cx="${f(CX + dx)}" cy="${f(headCy + dy)}" r="${r}" fill="${c.spot}"/>`)
       .join('')}
@@ -224,7 +228,9 @@ const png = (svg) => sharp(Buffer.from(svg)).png().toBuffer();
 
 async function sheet(svgs, w, h) {
   const bufs = await Promise.all(svgs.map(png));
-  return sharp({ create: { width: w * bufs.length, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+  return sharp({
+    create: { width: w * bufs.length, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
     .composite(bufs.map((input, i) => ({ input, left: i * w, top: 0 })))
     .png()
     .toBuffer();
@@ -235,24 +241,38 @@ async function main() {
   const previewIdx = args.indexOf('--preview');
   const previewPath = previewIdx >= 0 ? args[previewIdx + 1] : null;
   mkdirSync(OUT_DIR, { recursive: true });
-  const outs = [
-    ...Object.keys(COLORWAYS).map((n) => resolve(OUT_DIR, `frog-${n}.webp`)),
-    resolve(OUT_DIR, 'fly.webp'),
-  ];
+  const outs = [...Object.keys(COLORWAYS).map((n) => resolve(OUT_DIR, `frog-${n}.webp`)), resolve(OUT_DIR, 'fly.webp')];
   refuseOverwrite(outs, args.includes('--force'));
 
   const rows = [];
   for (const [name, c] of Object.entries(COLORWAYS)) {
-    const buf = await sheet(POSES.map((p) => frogSvg(c, p)), FRAME, FRAME);
-    await sharp(buf).webp({ quality: 90, alphaQuality: 100, effort: 6 }).toFile(resolve(OUT_DIR, `frog-${name}.webp`));
+    const buf = await sheet(
+      POSES.map((p) => frogSvg(c, p)),
+      FRAME,
+      FRAME,
+    );
+    await sharp(buf)
+      .webp({ quality: 90, alphaQuality: 100, effort: 6 })
+      .toFile(resolve(OUT_DIR, `frog-${name}.webp`));
     rows.push(buf);
   }
-  const fly = await sheet(Array.from({ length: FLY_FRAMES }, (_, i) => flySvg(i)), FLY_W, FLY_H);
+  const fly = await sheet(
+    Array.from({ length: FLY_FRAMES }, (_, i) => flySvg(i)),
+    FLY_W,
+    FLY_H,
+  );
   await sharp(fly).webp({ quality: 90, alphaQuality: 100, effort: 6 }).toFile(resolve(OUT_DIR, 'fly.webp'));
   for (const o of outs) console.log(`wrote ${o}`);
 
   if (previewPath) {
-    await sharp({ create: { width: FRAME * POSES.length, height: FRAME * rows.length + FLY_H + 20, channels: 4, background: '#3aa6c9' } })
+    await sharp({
+      create: {
+        width: FRAME * POSES.length,
+        height: FRAME * rows.length + FLY_H + 20,
+        channels: 4,
+        background: '#3aa6c9',
+      },
+    })
       .composite([
         ...rows.map((input, i) => ({ input, left: 0, top: i * FRAME })),
         { input: fly, left: 20, top: FRAME * rows.length + 10 },

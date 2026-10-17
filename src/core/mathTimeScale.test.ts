@@ -43,7 +43,12 @@ describe('shared base time per question', () => {
   });
 
   it('no timed game keeps its own countdown (the shared base is the only source)', () => {
-    for (const block of [config.asteroidField.speed, config.mathALotl.speed, config.frogSplash.speed, config.spaceShooter.speed]) {
+    for (const block of [
+      config.asteroidField.speed,
+      config.mathALotl.speed,
+      config.frogSplash.speed,
+      config.spaceShooter.speed,
+    ]) {
       for (const s of Object.values(block)) expect('countdownSec' in s).toBe(false);
     }
     expect('speed' in config.numberClimb).toBe(false);

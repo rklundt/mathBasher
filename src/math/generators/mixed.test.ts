@@ -65,10 +65,10 @@ describe('mixed generator', () => {
       // generator has a known prompt regex. The union covers all valid
       // outputs Mixed can produce.
       const PROMPT_PATTERNS = [
-        /^\d+ \+ \d+ = \?$/,    // addTo10, addTo20
-        /^\d+ − \d+ = \?$/,     // subTo10, subTo20 (Unicode minus U+2212)
-        /^\d+ × \d+ = \?$/,     // multTo100, multTo144 (Unicode times U+00D7)
-        /^\d+ ÷ \d+ = \?$/,     // divTo100, divTo144 (Unicode div U+00F7)
+        /^\d+ \+ \d+ = \?$/, // addTo10, addTo20
+        /^\d+ − \d+ = \?$/, // subTo10, subTo20 (Unicode minus U+2212)
+        /^\d+ × \d+ = \?$/, // multTo100, multTo144 (Unicode times U+00D7)
+        /^\d+ ÷ \d+ = \?$/, // divTo100, divTo144 (Unicode div U+00F7)
       ];
       for (const q of samples) {
         const matches = PROMPT_PATTERNS.some((re) => re.test(q.prompt));

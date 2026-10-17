@@ -18,11 +18,7 @@ import { AsteroidHitSystem } from '@/game/systems/AsteroidHitSystem';
 import { AsteroidInputSystem } from '@/game/systems/AsteroidInputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
-import {
-  SfxKeys,
-  pickRandomHitCorrectSfx,
-  pickRandomHitWrongSfx,
-} from '@/core/audioKeys';
+import { SfxKeys, pickRandomHitCorrectSfx, pickRandomHitWrongSfx } from '@/core/audioKeys';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 import { text } from '@/game/ui/typography';
@@ -384,13 +380,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
 
     // Projectile motion + collision.
     if (this.projectile) {
-      const stillAlive = this.projectile.advance(
-        dt,
-        this.leftBound,
-        this.rightBound,
-        this.topBound,
-        this.bottomBound,
-      );
+      const stillAlive = this.projectile.advance(dt, this.leftBound, this.rightBound, this.topBound, this.bottomBound);
       if (!stillAlive) {
         this.projectile.kill();
         this.projectile = null;

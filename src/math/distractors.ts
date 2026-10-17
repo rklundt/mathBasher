@@ -98,11 +98,7 @@ export function pickDistractors(correct: number, opts: PickDistractorsOpts): num
  * Return a new array containing `correct` plus all `distractors`, shuffled.
  * Uses Fisher-Yates with the injected RNG for deterministic tests.
  */
-export function shuffleAnswers(
-  correct: number,
-  distractors: number[],
-  rng?: () => number,
-): number[] {
+export function shuffleAnswers(correct: number, distractors: number[], rng?: () => number): number[] {
   const rand = rng ?? defaultRng;
   const out = [correct, ...distractors];
   for (let i = out.length - 1; i > 0; i--) {

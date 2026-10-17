@@ -31,7 +31,10 @@ if (existing.length > 0 && !process.argv.includes('--force')) {
   process.exit(1);
 }
 
-await sharp(svg, { density: 600 }).resize(32, 32).png({ compressionLevel: 9 }).toFile(resolve(PUBLIC, 'favicon-32.png'));
+await sharp(svg, { density: 600 })
+  .resize(32, 32)
+  .png({ compressionLevel: 9 })
+  .toFile(resolve(PUBLIC, 'favicon-32.png'));
 
 const ICON = 180;
 const INSET = 132; // leave a margin so the rounded iOS mask doesn't clip the blaster

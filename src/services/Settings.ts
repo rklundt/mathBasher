@@ -22,12 +22,7 @@ import { createObservable } from '@/services/observable';
  * updates across scenes, we'll add that intentionally.
  */
 export type GameId =
-  | 'alien-shoot'
-  | 'asteroid-field'
-  | 'number-climb'
-  | 'math-a-lotl'
-  | 'frog-splash'
-  | 'space-shooter';
+  'alien-shoot' | 'asteroid-field' | 'number-climb' | 'math-a-lotl' | 'frog-splash' | 'space-shooter';
 
 /**
  * Sprint 2.4.1 story 3 — Alien Shoot hero skin selector. First time
@@ -58,11 +53,7 @@ export type HeroSkin = 'space-robot' | 'og-yellow';
  * Adding a 5th hero = extend this union + `HeroChooserKeys` in
  * `spriteKeys.ts` + the picker grid in `HeroChooserScene`.
  */
-export type ChosenHero =
-  | 'hero-chooser-1'
-  | 'hero-chooser-2'
-  | 'hero-chooser-3'
-  | 'hero-chooser-4';
+export type ChosenHero = 'hero-chooser-1' | 'hero-chooser-2' | 'hero-chooser-3' | 'hero-chooser-4';
 
 export interface RoundSettings {
   gameId: GameId;
@@ -128,12 +119,7 @@ const CHOSEN_HERO_STORAGE_KEY = 'mathbasher.chosenHero';
 function readPersistedChosenHero(): ChosenHero | null {
   try {
     const raw = globalThis.localStorage?.getItem(CHOSEN_HERO_STORAGE_KEY);
-    if (
-      raw === 'hero-chooser-1' ||
-      raw === 'hero-chooser-2' ||
-      raw === 'hero-chooser-3' ||
-      raw === 'hero-chooser-4'
-    ) {
+    if (raw === 'hero-chooser-1' || raw === 'hero-chooser-2' || raw === 'hero-chooser-3' || raw === 'hero-chooser-4') {
       return raw;
     }
   } catch {

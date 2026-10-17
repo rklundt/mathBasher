@@ -110,7 +110,11 @@ describe('flight', () => {
     const rng = mulberry32(26);
     const pts = spawnPoints(cfg.speed.fast.shipCount, bounds, r * cfg.ship.spawnGapFrac, rng);
     const ships = pts.map((p) => ship(p.x, p.y, rng() * Math.PI * 2));
-    const tuning = { speed: cfg.speed.fast.flyPxPerSec, maxTurn: cfg.ship.maxTurnRadPerSec, turnJitter: cfg.ship.turnJitterPerSec };
+    const tuning = {
+      speed: cfg.speed.fast.flyPxPerSec,
+      maxTurn: cfg.ship.maxTurnRadPerSec,
+      turnJitter: cfg.ship.turnJitterPerSec,
+    };
     const headings = new Set<number>();
     for (let step = 0; step < 60 * 60; step++) {
       stepShips(ships, 1 / 60, bounds, tuning, rng);
@@ -167,7 +171,13 @@ describe('taps', () => {
 });
 
 describe('answer labels', () => {
-  const base = { textHeight: 46, portholeDiameter: 100, maxWidth: cfg.label.maxWidthPx, pillPad: 12, pillHeightPad: 10 };
+  const base = {
+    textHeight: 46,
+    portholeDiameter: 100,
+    maxWidth: cfg.label.maxWidthPx,
+    pillPad: 12,
+    pillHeightPad: 10,
+  };
   it('a short answer sits in the porthole, full size, no pill', () => {
     expect(shipLabelLayout({ ...base, textWidth: 40 })).toEqual({ scale: 1, pill: null });
   });
@@ -197,7 +207,13 @@ describe('waves', () => {
   it('each wave has the right answer once, no duplicates, with display labels', () => {
     const rng = mulberry32(9);
     for (let n = 0; n < 200; n++) {
-      const out = shipAnswers({ choices: [3, 5, 7, 9], correctAnswer: 7, choiceDisplays: ['3', '5', '7', '9'], count: 3, rng });
+      const out = shipAnswers({
+        choices: [3, 5, 7, 9],
+        correctAnswer: 7,
+        choiceDisplays: ['3', '5', '7', '9'],
+        count: 3,
+        rng,
+      });
       expect(out).toHaveLength(3);
       expect(out.filter((a) => a.answer === 7)).toHaveLength(1);
       expect(new Set(out.map((a) => a.answer)).size).toBe(3);

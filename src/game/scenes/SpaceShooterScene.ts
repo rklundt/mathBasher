@@ -292,7 +292,13 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     _th.logToAi('WrongShip', SeverityLevel.Information, this.questionProps());
     const outOfLives = this.loseLife();
     // No "Try again!" when that was the last life — "Out of lives!" follows.
-    floatNote(this, ship.body.x, ship.body.y - 70, outOfLives ? 'Shields up!' : 'Shields up! Try again!', this.cfg.note);
+    floatNote(
+      this,
+      ship.body.x,
+      ship.body.y - 70,
+      outOfLives ? 'Shields up!' : 'Shields up! Try again!',
+      this.cfg.note,
+    );
     // Out of play at once (no second shot at it). Taps stay locked until the
     // shield flash ends, so a frantic double-tap can't cost a second life.
     ship.state = 'leaving';
@@ -324,8 +330,12 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     shooters.forEach((ship, i) => {
       this.time.delayedCall(i * 110, () => {
         const hit = {
-          x: this.cfg.tapWindow.left + (0.2 + Math.random() * 0.6) * (this.cfg.tapWindow.right - this.cfg.tapWindow.left),
-          y: this.cfg.tapWindow.top + (0.35 + Math.random() * 0.5) * (this.cfg.tapWindow.bottom - this.cfg.tapWindow.top),
+          x:
+            this.cfg.tapWindow.left +
+            (0.2 + Math.random() * 0.6) * (this.cfg.tapWindow.right - this.cfg.tapWindow.left),
+          y:
+            this.cfg.tapWindow.top +
+            (0.35 + Math.random() * 0.5) * (this.cfg.tapWindow.bottom - this.cfg.tapWindow.top),
         };
         const bolt = this.add.graphics().setDepth(9);
         const p = { t: 0 };

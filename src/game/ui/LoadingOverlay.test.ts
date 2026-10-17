@@ -92,7 +92,17 @@ function makeMockScene(loader: MockLoader): MockScene {
   // need a Scene + display list; here we return stubs that record
   // `destroy()` calls so the test can assert cleanup happens.
   const destroyed: string[] = [];
-  const makeStub = (label: string): { destroy: () => void; setOrigin: () => unknown; setStrokeStyle: () => unknown; setInteractive: () => unknown; on: () => unknown; setColor: () => unknown; width: number } => ({
+  const makeStub = (
+    label: string,
+  ): {
+    destroy: () => void;
+    setOrigin: () => unknown;
+    setStrokeStyle: () => unknown;
+    setInteractive: () => unknown;
+    on: () => unknown;
+    setColor: () => unknown;
+    width: number;
+  } => ({
     destroy: () => destroyed.push(label),
     setOrigin: () => makeStub(label),
     setStrokeStyle: () => makeStub(label),
@@ -144,8 +154,8 @@ describe('attachLoadingOverlay', () => {
     // No event handlers registered.
     expect(events.handlers.size).toBe(0);
     // No GameObjects created.
-    expect((scene.add.text).mock.calls.length).toBe(0);
-    expect((scene.add.rectangle).mock.calls.length).toBe(0);
+    expect(scene.add.text.mock.calls.length).toBe(0);
+    expect(scene.add.rectangle.mock.calls.length).toBe(0);
   });
 
   it('attaches progress + complete + loaderror listeners when totalToLoad > 0', () => {
@@ -161,8 +171,8 @@ describe('attachLoadingOverlay', () => {
     expect(events.handlers.has(EVT_COMPLETE)).toBe(true);
     expect(events.handlers.has(EVT_FILE_LOAD_ERROR)).toBe(true);
     // 1 label + 1 rectangle bg + 1 rectangle fill = 3 GameObjects.
-    expect((scene.add.text).mock.calls.length).toBe(1);
-    expect((scene.add.rectangle).mock.calls.length).toBe(2);
+    expect(scene.add.text.mock.calls.length).toBe(1);
+    expect(scene.add.rectangle.mock.calls.length).toBe(2);
   });
 
   it('on COMPLETE removes the PROGRESS + FILE_LOAD_ERROR listeners (no leak)', () => {
@@ -200,7 +210,7 @@ describe('attachLoadingOverlay', () => {
     const { loader, events } = makeMockLoader(3);
     const scene = makeMockScene(loader);
     // Simulate scene shutdown between attach and COMPLETE.
-    (scene.scene.isActive).mockReturnValue(false);
+    scene.scene.isActive.mockReturnValue(false);
 
     attachLoadingOverlay({ scene: asScene(scene) });
     const destroyed = (scene as unknown as { __destroyedItems: string[] }).__destroyedItems;

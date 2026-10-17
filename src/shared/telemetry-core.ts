@@ -103,8 +103,7 @@ export function makeTelemetry(opts: TelemetryFactoryOpts): TelemetryHelper {
         cloudRoleName,
         ...(props ?? {}),
       };
-      const isError =
-        severity === SeverityLevel.Error || severity === SeverityLevel.Critical;
+      const isError = severity === SeverityLevel.Error || severity === SeverityLevel.Critical;
       // eslint-disable-next-line no-console -- the telemetry helper is the one allowed console site
       const channel = isError ? console.error : console.log;
       channel(`[telemetry] [${severity}] ${eventName}`, enriched);

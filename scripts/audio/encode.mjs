@@ -218,30 +218,38 @@ const limiter = 'alimiter=limit=0.7:level=disabled:attack=5:release=50';
 // loudnorm free to push peaks past the TP ceiling on quiet inputs (real bug
 // hit during the bloop encode in v0.5.2+; mean was -39 dB, loudnorm boosted
 // 23 dB to hit -16 LUFS target, peaks went to 0 dB unchecked).
-const filters = trim
-  ? `${silenceTrim},${loudnorm},${limiter}`
-  : `${loudnorm},${limiter}`;
+const filters = trim ? `${silenceTrim},${loudnorm},${limiter}` : `${loudnorm},${limiter}`;
 
 // --- Build ffmpeg arg list ---------------------------------------------------
 
 const args = [
   '-y', // overwrite output if it exists (the script is idempotent by design)
-  '-i', input,
-  '-af', filters,
+  '-i',
+  input,
+  '-af',
+  filters,
   // Strip ALL input-side metadata (generator names, prompts, timestamps).
-  '-map_metadata', '-1',
+  '-map_metadata',
+  '-1',
   // Suppress ffmpeg's own muxer-side metadata. By default the mp3 muxer
   // writes an ID3v2 TSSE/`encoder` tag identifying the libavformat version
   // that produced the file ("Lavf60.3.100"). That's not generator info but
   // it IS metadata, and the project policy is "no metadata in shipped audio."
   // The three flags below disable Xing VBR header tagging, ID3v2, and ID3v1.
-  '-write_xing', '0',
-  '-id3v2_version', '0',
-  '-write_id3v1', '0',
-  '-codec:a', 'libmp3lame',
-  '-b:a', profile.bitrate,
-  '-ac', String(profile.channels),
-  '-ar', String(profile.sampleRate),
+  '-write_xing',
+  '0',
+  '-id3v2_version',
+  '0',
+  '-write_id3v1',
+  '0',
+  '-codec:a',
+  'libmp3lame',
+  '-b:a',
+  profile.bitrate,
+  '-ac',
+  String(profile.channels),
+  '-ar',
+  String(profile.sampleRate),
   output,
 ];
 

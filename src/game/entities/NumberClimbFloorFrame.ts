@@ -74,7 +74,6 @@ export interface NumberClimbFloorFrameOpts {
   escapeShipKey?: string;
 }
 
-
 export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
   /** Optional escape-ship overlay — set when `opts.escapeShipKey` provided. */
   private escapeShip: Phaser.GameObjects.Image | null = null;
@@ -98,42 +97,18 @@ export class NumberClimbFloorFrame extends Phaser.GameObjects.Container {
     this.add(bg);
 
     // === Side bars — left + right vertical black strips ===
-    const leftBar = opts.scene.add.rectangle(
-      -halfW + SIDE_BAR_WIDTH / 2,
-      0,
-      SIDE_BAR_WIDTH,
-      opts.floorHeight,
-      BLACK,
-    );
-    const rightBar = opts.scene.add.rectangle(
-      halfW - SIDE_BAR_WIDTH / 2,
-      0,
-      SIDE_BAR_WIDTH,
-      opts.floorHeight,
-      BLACK,
-    );
+    const leftBar = opts.scene.add.rectangle(-halfW + SIDE_BAR_WIDTH / 2, 0, SIDE_BAR_WIDTH, opts.floorHeight, BLACK);
+    const rightBar = opts.scene.add.rectangle(halfW - SIDE_BAR_WIDTH / 2, 0, SIDE_BAR_WIDTH, opts.floorHeight, BLACK);
     this.add(leftBar);
     this.add(rightBar);
 
     // === Top separator — horizontal bar at the ceiling of this floor ===
-    const topSeparator = opts.scene.add.rectangle(
-      0,
-      -halfH,
-      opts.playfieldWidth,
-      SEPARATOR_THICKNESS,
-      BLACK,
-    );
+    const topSeparator = opts.scene.add.rectangle(0, -halfH, opts.playfieldWidth, SEPARATOR_THICKNESS, BLACK);
     this.add(topSeparator);
 
     // === Ground bar — only on the bottom floor ===
     if (opts.drawGroundBar) {
-      const groundBar = opts.scene.add.rectangle(
-        0,
-        halfH,
-        opts.playfieldWidth,
-        SEPARATOR_THICKNESS,
-        BLACK,
-      );
+      const groundBar = opts.scene.add.rectangle(0, halfH, opts.playfieldWidth, SEPARATOR_THICKNESS, BLACK);
       this.add(groundBar);
     }
 
