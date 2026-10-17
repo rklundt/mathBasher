@@ -404,6 +404,13 @@ Code was moved and shared; nothing should look or sound different. Phone landsca
 - [ ] **Asteroid Field:** all 8 rock images load (no missing-texture boxes), on a warm cache and a cold load. The aim hint and "Out of shots!" look the same. Settings → Asteroid Images still switches live.
 - [ ] **All games:** the footer text and Source link are unchanged, and the fire button and touch areas haven't moved.
 
+## Change Game in the pause menu (sprint 2.6.5)
+
+- [ ] In each of the six games: Pause shows Resume, Settings, Change Game, Quit to Menu, all on screen (phone too).
+- [ ] Change Game opens Game Select; pick another game and the math type and difficulty are the same as before.
+- [ ] Quit to Menu still goes to the main menu. Music from the paused game stops in both cases.
+- [ ] Keyboard: arrow / Tab through the four pause buttons, Enter on Change Game works; Esc still resumes.
+
 ## Logging the run
 
 ```

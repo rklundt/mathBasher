@@ -11,6 +11,7 @@ import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { GAME_MIDGROUND_MAP, GAME_MUSIC_MAP } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { RoundController } from '@/game/services/RoundController';
 
@@ -232,21 +233,25 @@ export class GameSceneLifecycle {
 
   /**
    * Called from the scene's `quitToMenu()`. Fires `RoundAbandoned`
-   * telemetry, resumes tweens (so the Menu scene doesn't inherit
-   * paused tweens — they'd freeze the Menu's animations), starts
-   * Menu. Does NOT call `SessionTotalScore.add` — partial-round
+   * telemetry, resumes tweens (so the next scene doesn't inherit
+   * paused tweens — they'd freeze its animations), starts Menu or, for
+   * the pause menu's "Change Game" (sprint 2.6.5), Game Select. Does
+   * NOT call `SessionTotalScore.add` — partial-round
    * abandonment doesn't earn points per the existing convention
    * (mirrors the score-store's policy on incomplete rounds).
    */
-  quitToMenu(): void {
+  quitToMenu(destination: QuitDestination = 'menu'): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
+    const target = destination === 'game-select' ? SceneKeys.GameSelect : SceneKeys.Menu;
     _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
       gameId,
       mathId,
       speed,
       questionsCompleted: String(roundController.questionIndex),
+      // Where the player went: the menu or Game Select (pause → Change Game).
+      sceneKey: target,
     });
     scene.tweens.resumeAll();
-    scene.scene.start(SceneKeys.Menu);
+    scene.scene.start(target);
   }
 }

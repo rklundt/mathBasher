@@ -10,7 +10,7 @@ import { Settings } from '@/services/Settings';
 import { computeClimbStars } from '@/services/ScoreCalculator';
 import { RoundController } from '@/game/services/RoundController';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { Frog } from '@/game/entities/Frog';
 import { LilyPadRow } from '@/game/entities/LilyPadRow';
@@ -670,8 +670,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     return [...(this.fly ? [this.fly] : []), ...this.splashes];
   }
 
-  quitToMenu(): void {
+  quitToMenu(destination?: QuitDestination): void {
     this.time.paused = false;
-    this.lifecycle.quitToMenu();
+    this.lifecycle.quitToMenu(destination);
   }
 }
