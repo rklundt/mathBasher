@@ -170,9 +170,10 @@ const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-
 const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
 const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
 const PENGUIN_YUMMY_KEYS = ['penguin-yummy-1', 'penguin-yummy-2', 'penguin-yummy-3'] as const;
+// The hops are shared with Bunny Garden (sprint 2.8), so they load at boot
+// (~23 KB): an asset scope names one game.
 const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
   ...PENGUIN_SWISH_KEYS,
-  ...PENGUIN_HOP_KEYS,
   ...PENGUIN_BONK_KEYS,
   ...PENGUIN_YUMMY_KEYS,
   ...PENGUIN_OWN_GULP_KEYS,
@@ -223,11 +224,12 @@ export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typ
 }
 
 /**
- * Sprint 2.8 — Bunny Garden's sounds. PLACEHOLDERS: they reuse boot-loaded
- * sounds until the owner's arrive (a hop, a carrot pop, a mole squeak and a
- * "hide"); then only these lists change, to new game-scoped keys.
+ * Sprint 2.8 — Bunny Garden's sounds. The hop is Penguin Slide's hop to a
+ * fish (owner's choice). The pop, mole and hide are PLACEHOLDERS that reuse
+ * boot-loaded sounds until the owner's arrive (a carrot pluck is coming);
+ * then only those lists change, to new game-scoped keys.
  */
-const BUNNY_HOP_KEYS = ['button-click-1'] as const;
+const BUNNY_HOP_KEYS = PENGUIN_HOP_KEYS;
 const BUNNY_POP_KEYS = HIT_CORRECT_KEYS;
 const BUNNY_MOLE_KEYS = HIT_WRONG_KEYS;
 const BUNNY_HIDE_KEYS = ['timeout-fail-1'] as const;
@@ -366,6 +368,11 @@ export const MusicKeys = {
    * `--kind music --no-trim` for a clean loop seam.
    */
   SnowLoop1: 'loop-8',
+  /**
+   * Bunny Garden gameplay loop (sprint 2.8). 60 s stereo track, encoded
+   * `--kind music --no-trim` for a clean loop seam.
+   */
+  GardenLoop1: 'loop-9',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -399,8 +406,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'frog-splash': MusicKeys.PondLoop1,
   'space-shooter': MusicKeys.CockpitLoop1,
   'penguin-slide': MusicKeys.SnowLoop1,
-  // Sprint 2.8 — PLACEHOLDER (Alien Shoot's boot-loaded loop) until the owner's garden loop arrives.
-  'bunny-garden': MusicKeys.Loop1,
+  'bunny-garden': MusicKeys.GardenLoop1,
 };
 
 /**
@@ -553,6 +559,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp mix also uses the frog slurps, eager).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
+  // Sprint 2.8 — Bunny Garden's music (its hop is the shared penguin hop; its other sounds are eager placeholders).
+  if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
   return 'eager';
 }
 
