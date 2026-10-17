@@ -216,16 +216,16 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     //     a safe-area-pad gap.
     //   - bottomBound: just above the TouchFireButton's hit-circle TOP
     //     edge. TouchFireButton sits with its CENTER at
-    //     `h - footerHeight - footerClearance - radius`; the top of
+    //     `h - bottomGutter - gutterClearance - radius`; the top of
     //     its hit area is one diameter + hit-pad higher than its
     //     center. Subtracting that whole stack leaves the playfield
     //     stopping cleanly above the FIRE button.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
     const hudBarHeight = config.layout.hudBarHeightPx;
-    const footerHeight = config.layout.attributionFooterHeightPx;
+    const bottomGutter = config.layout.canvasBottomGutterPx;
     const fire = config.layout.touchFire;
-    const fireStackHeight = footerHeight + fire.footerClearancePx + fire.radiusPx * 2 + fire.hitPadPx;
+    const fireStackHeight = bottomGutter + fire.gutterClearancePx + fire.radiusPx * 2 + fire.hitPadPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
     this.topBound = hudBarHeight + padding;

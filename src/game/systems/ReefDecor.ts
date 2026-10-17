@@ -143,7 +143,7 @@ export class ReefDecor {
     f.obj.x = x;
     f.obj.y = Phaser.Math.Between(waterlineY + 60, floorY - 160);
     f.obj.setFlipX(dir < 0);
-    f.obj.setTint(FISH_TINTS[Phaser.Math.Between(0, FISH_TINTS.length - 1)]!);
+    f.obj.setTint(FISH_TINTS[Phaser.Math.Between(0, FISH_TINTS.length - 1)]);
   }
 
   private buildMiniBubbles(): void {

@@ -21,13 +21,19 @@ import {
   hasEscaped,
   isWithinCatch,
   pickTappedBubble,
+  resolveBubbleEvent,
   visibleBubbles,
+  wrongNoteY,
+  type BubbleRoundState,
+  type CatchDecision,
+  type OutcomeRecord,
 } from '@/game/systems/mathALotlMath';
-import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
+import { QuestionClock } from '@/game/systems/roundRules';
+import { assertNever } from '@/shared/assertNever';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { pickRandomBubblePopSfx, pickRandomBubbleWrongSfx, SfxKeys } from '@/core/audioKeys';
 import { ParticleSpriteKeys, pickRandomAxolotlSpriteKey } from '@/core/spriteKeys';
-import { text } from '@/game/ui/typography';
+import { createTapHint, fadeNote, floatNote, screenBanner, type TapHint } from '@/game/ui/callouts';
 
 const NUMBER_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR'] as const;
 
@@ -79,7 +85,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private keyHandlers: Array<{ event: string; fn: () => void }> = [];
   private transitioning = false;
   private paused = false;
-  private tapHint?: Phaser.GameObjects.Container;
+  private tapHint?: TapHint;
 
   private waterlineY = 0;
   private water = { left: 0, right: 0, top: 0, bottom: 0 };
@@ -207,15 +213,20 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     }
 
     // Escapes at the surface.
-    const correct = this.currentQuestion?.correctAnswer;
     for (const b of this.bubbles) {
       if (!b.alive || !hasEscaped(b.y, b.radius, this.waterlineY)) continue;
-      if (b.answer === correct) {
-        this.handleCorrectEscaped();
-        return;
+      const escape = resolveBubbleEvent(this.bubbleState(), { type: 'escaped', answer: b.answer });
+      switch (escape.kind) {
+        case 'escaped-correct':
+          this.handleCorrectEscaped();
+          return;
+        case 'escaped-wrong':
+          // (A chased bubble never gets here — it's held below the escape line.)
+          b.popQuiet();
+          break;
+        default:
+          assertNever(escape, 'escape outcome');
       }
-      // (A chased bubble never gets here — it's held below the escape line.)
-      b.popQuiet();
     }
     this.bubbles = this.bubbles.filter((b) => b.alive);
   }
@@ -234,7 +245,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
       this.cfg.bubble.tapSlop,
     );
     if (i >= 0) {
-      this.chaseBubble(live[i]!);
+      this.chaseBubble(live[i]);
       return;
     }
     // Open water (taps in the sky band just swim to the top of the water).
@@ -273,22 +284,36 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
   // ----- Outcomes ----------------------------------------------------------
 
+  /** The round's state as the pure outcome rules (`resolveBubbleEvent`) see it. */
+  private bubbleState(): BubbleRoundState {
+    return {
+      correctAnswer: this.currentQuestion?.correctAnswer ?? null,
+      livesUsed: this.livesUsed,
+      maxLives: this.cfg.maxLives,
+      usedWrongCatch: this.usedWrongCatch,
+    };
+  }
+
   private handleCatch(b: AnswerBubble): void {
     this.stopChase();
-    if (b.answer === this.currentQuestion?.correctAnswer) {
-      this.handleCorrectCatch(b);
-    } else {
-      this.handleWrongCatch(b);
+    const decision = resolveBubbleEvent(this.bubbleState(), { type: 'catch', answer: b.answer });
+    switch (decision.kind) {
+      case 'correct':
+        this.handleCorrectCatch(b, decision.record);
+        break;
+      case 'wrong':
+      case 'out-of-lives':
+        this.handleWrongCatch(b, decision);
+        break;
+      default:
+        assertNever(decision, 'catch outcome');
     }
   }
 
-  private handleCorrectCatch(b: AnswerBubble): void {
+  private handleCorrectCatch(b: AnswerBubble, record: OutcomeRecord): void {
     this.transitioning = true;
     this.clock.stop();
-    const { scoreDelta } = this.roundController.recordOutcome({
-      wasCorrect: true,
-      usedWrongShot: this.usedWrongCatch,
-    });
+    const { scoreDelta } = this.roundController.recordOutcome(record);
     this.events.emit('correctHit', { x: b.x, y: b.y, scoreDelta });
     getAudioManager().play(pickRandomBubblePopSfx(), 'sfx');
     this.playSparkle(b.x, b.y);
@@ -298,45 +323,33 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.time.delayedCall(this.cfg.nextQuestionDelayMs, () => this.afterQuestion(true));
   }
 
-  private handleWrongCatch(b: AnswerBubble): void {
-    this.usedWrongCatch = true;
+  /** A wrong catch; on the last life it also ends the round (`out-of-lives`). */
+  private handleWrongCatch(b: AnswerBubble, decision: Exclude<CatchDecision, { kind: 'correct' }>): void {
+    this.usedWrongCatch = decision.usedWrongCatch;
     getAudioManager().play(pickRandomBubbleWrongSfx(), 'sfx');
     b.popWrong();
     this.cameras.main.shake(120, 0.004);
-    const strike = resolveStrike(this.livesUsed, this.cfg.maxLives);
-    this.livesUsed = strike.strikesAfter;
+    this.livesUsed = decision.livesUsed;
     this.events.emit('strikesChanged', {
       strikesUsed: this.livesUsed,
       maxStrikes: this.cfg.maxLives,
-      remaining: strike.remaining,
+      remaining: decision.livesRemaining,
     });
     _th.logToAi('WrongCatch', SeverityLevel.Information, {
       ...this.questionProps(),
       strikesUsed: String(this.livesUsed),
       maxStrikes: String(this.cfg.maxLives),
     });
-    if (strike.exhausted) {
-      this.handleOutOfLives();
+    if (decision.kind === 'out-of-lives') {
+      this.handleOutOfLives(decision.record);
       return;
     }
     // A wrong catch needs words too — a sound + a dot turning red in the
-    // corner is easy for a 6-year-old to miss.
-    // Below the bubble when it fits (so a catch near the surface stays in the
-    // water, clear of the HUD); above it for a catch near the floor, where
-    // "below" would start off screen.
-    const below = b.y + b.radius + this.cfg.wrongNote.risePx;
-    const y0 = below <= this.scale.height - this.cfg.wrongNote.floorMarginPx ? below : b.y - b.radius;
-    const oops = text(this, b.x, y0, 'Oops! Try again!', 'rowLabel').setOrigin(0.5).setDepth(100);
-    oops.setStroke('#0b1020', 6);
-    const { durationMs, risePx } = this.cfg.wrongNote;
-    this.tweens.add({
-      targets: oops,
-      y: oops.y - risePx,
-      alpha: { from: 1, to: 0 },
-      duration: durationMs,
-      ease: 'Quad.In',
-      onComplete: () => oops.destroy(),
-    });
+    // corner is easy for a 6-year-old to miss. Placement: `wrongNoteY`.
+    const { durationMs, risePx, floorMarginPx } = this.cfg.wrongNote;
+    const y0 = wrongNoteY(b.y, b.radius, risePx, this.scale.height, floorMarginPx);
+    // No edge clamp: the bubble is always inside the water.
+    floatNote(this, b.x, y0, 'Oops! Try again!', { risePx, durationMs });
   }
 
   /** The right answer floated to the surface: no penalty, same problem again. */
@@ -349,11 +362,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     // below the hint, so they don't overlap.
     for (const b of this.bubbles) b.popQuiet();
     const { holdMs, fadeMs, belowWaterlinePx } = this.cfg.escapeNote;
-    const note = text(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', 'rowLabel')
-      .setOrigin(0.5)
-      .setDepth(100);
-    note.setStroke('#0b1020', 6);
-    this.tweens.add({ targets: note, alpha: 0, delay: holdMs, duration: fadeMs, onComplete: () => note.destroy() });
+    fadeNote(this, this.scale.width / 2, this.waterlineY + belowWaterlinePx, 'Floated away! Try again!', { holdMs, fadeMs });
     this.time.delayedCall(this.cfg.respawnDelayMs, () => {
       this.spawnWave();
       this.transitioning = false;
@@ -364,26 +373,22 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private handleTimeout(): void {
     this.transitioning = true;
     this.stopChase();
-    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: this.usedWrongCatch });
+    this.roundController.recordOutcome(resolveBubbleEvent(this.bubbleState(), { type: 'timeout' }).record);
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
     for (const b of this.bubbles) b.popQuiet();
-    const banner = text(this, this.scale.width / 2, this.scale.height / 2, 'Out of time!', 'warning')
-      .setOrigin(0.5)
-      .setDepth(100);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+    const banner = screenBanner(this, 'Out of time!');
     this.time.delayedCall(this.cfg.timeoutBannerMs, () => {
       banner.destroy();
       this.afterQuestion(false);
     });
   }
 
-  private handleOutOfLives(): void {
+  private handleOutOfLives(record: OutcomeRecord): void {
     this.transitioning = true;
     this.clock.stop();
     this.stopChase();
     _th.logToAi('MathALotl.outOfLives', SeverityLevel.Information, this.questionProps());
-    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
+    this.roundController.recordOutcome(record);
     this.events.emit('questionEnded', {
       wasCorrect: false,
       score: this.roundController.score,
@@ -393,11 +398,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     // just played; stacking the timeout sound on it would be noise.
     for (const b of this.bubbles) b.popQuiet();
     // "lives" (not "hearts") to match the HUD's "Lives:" row.
-    const banner = text(this, this.scale.width / 2, this.scale.height / 2, 'Out of lives!', 'warning')
-      .setOrigin(0.5)
-      .setDepth(100);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+    screenBanner(this, 'Out of lives!');
     this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound());
   }
 
@@ -491,29 +492,27 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
 
   /** "Tap a bubble!" pill on Q1 only; dismissed by the first tap. */
   private buildTapHint(): void {
-    const W = 240;
-    const H = 64;
-    const container = this.add.container(this.scale.width / 2, this.waterlineY + 70);
-    const bg = this.add.rectangle(0, 0, W, H, 0x0b1020, 0.5).setStrokeStyle(2, 0xffffff, 0.7);
-    const label = text(this, 0, 0, '👆 Tap a bubble!', 'rowLabel').setOrigin(0.5);
-    container.add([bg, label]);
-    container.setDepth(50).setVisible(false);
-    this.tweens.add({ targets: container, alpha: { from: 1, to: 0.6 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    this.tapHint = container;
+    const { belowWaterlinePx, widthPx, heightPx, backdropAlpha } = this.cfg.tapHint;
+    this.tapHint = createTapHint(this, {
+      x: this.scale.width / 2,
+      y: this.waterlineY + belowWaterlinePx,
+      label: '👆 Tap a bubble!',
+      widthPx,
+      heightPx,
+      backdropAlpha,
+    });
   }
 
   private showTapHint(): void {
-    this.tapHint?.setVisible(true);
+    this.tapHint?.show();
   }
 
-  /** Q1-only, so hiding it is final: stop its pulse tween and free it. */
   private hideTapHint(): void {
-    if (!this.tapHint) return;
-    this.tweens.killTweensOf(this.tapHint);
-    this.tapHint.destroy();
+    this.tapHint?.destroy();
     this.tapHint = undefined;
   }
 
+  /** Q1-only, so hiding it is final: stop its pulse tween and free it. */
   // ----- End / cleanup -----------------------------------------------------
 
   private endRound(): void {

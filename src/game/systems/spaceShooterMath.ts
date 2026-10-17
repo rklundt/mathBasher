@@ -99,7 +99,7 @@ export function stepShips(ships: ShipBody[], dtSec: number, bounds: FlightBounds
     bounceOffWalls(s, bounds);
   }
   for (let i = 0; i < ships.length; i++) {
-    for (let j = i + 1; j < ships.length; j++) collide(ships[i]!, ships[j]!);
+    for (let j = i + 1; j < ships.length; j++) collide(ships[i], ships[j]);
   }
   // A collision push can nudge a ship past a wall; settle it back in.
   for (const s of ships) bounceOffWalls(s, bounds);
@@ -210,7 +210,7 @@ export function spawnPoints(
   }
   for (let i = grid.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [grid[i], grid[j]] = [grid[j]!, grid[i]!];
+    [grid[i], grid[j]] = [grid[j], grid[i]];
   }
   return grid.slice(0, count);
 }
@@ -299,7 +299,7 @@ export function pickShipFrames(count: number, total: number, rng: () => number):
   const all = Array.from({ length: total }, (_, i) => i);
   for (let i = all.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [all[i], all[j]] = [all[j]!, all[i]!];
+    [all[i], all[j]] = [all[j], all[i]];
   }
   return all.slice(0, Math.min(count, total));
 }

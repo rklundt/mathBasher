@@ -107,7 +107,7 @@ export function shuffleAnswers(
   const out = [correct, ...distractors];
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    const tmp = out[i]!;
+    const tmp = out[i];
     out[i] = out[j]!;
     out[j] = tmp;
   }

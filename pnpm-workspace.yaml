@@ -29,6 +29,16 @@ preferFrozenLockfile: true
 fund: false
 audit: false
 
+# --- Supply-chain guard (sprint 2.6.4) ---
+
+# Only install package versions published at least a day ago (in minutes),
+# so a freshly hijacked release (like eslint-config-prettier 10.1.6 / 10.1.7
+# in 2025) is usually caught and pulled before it can land here. pnpm also
+# checks the lockfile against this, so a longer wait would hold up CI after
+# every update. For an urgent security fix that is newer than a day, list
+# the package under `minimumReleaseAgeExclude` for that one update.
+minimumReleaseAge: 1440
+
 # --- Dependency overrides (was package.json "pnpm".overrides) ---
 
 overrides:

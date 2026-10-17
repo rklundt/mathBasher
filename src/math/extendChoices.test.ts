@@ -31,8 +31,8 @@ describe('extendChoices', () => {
           expect(out.choices.slice(0, q.choices.length)).toEqual(q.choices);
           if (q.choiceDisplays) {
             expect(out.choiceDisplays).toHaveLength(target);
-            const extra = parseFractionDisplay(out.choiceDisplays![target - 1]!)!;
-            expect(extra.num / extra.den).toBeCloseTo(out.choices[target - 1]!, 9);
+            const extra = parseFractionDisplay(out.choiceDisplays![target - 1])!;
+            expect(extra.num / extra.den).toBeCloseTo(out.choices[target - 1], 9);
           } else {
             for (const c of out.choices) expect(c).toBeGreaterThanOrEqual(0);
           }

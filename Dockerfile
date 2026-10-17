@@ -15,6 +15,9 @@ RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 # pnpm-workspace.yaml carries the settings pnpm 11 needs at install time
 # (nodeLinker, overrides, allowBuilds) — must be present BEFORE the install.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# The `prepare` script runs on install; it only enables git hooks and skips
+# itself here (no .git in the image), but the file has to exist.
+COPY scripts/install-hooks.mjs ./scripts/
 RUN pnpm install --frozen-lockfile
 
 # Copy sources and build both client (Vite -> dist/) and server (tsc -> server/dist/).

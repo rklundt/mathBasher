@@ -10,7 +10,7 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = readFileSync(resolve(__dirname, '..', 'index.html'), 'utf8');
 const MAIN_SOURCE = readFileSync(resolve(__dirname, 'main.ts'), 'utf8');
-const FOOTER_SOURCE = readFileSync(resolve(__dirname, 'game/ui/domAttributionFooter.ts'), 'utf8');
+const FOOTER_SOURCE = readFileSync(resolve(__dirname, 'app/attributionFooter.ts'), 'utf8');
 const ATTRIBUTION_SOURCE = readFileSync(resolve(__dirname, 'core/attribution.ts'), 'utf8');
 const NOTICE = readFileSync(resolve(__dirname, '..', 'NOTICE'), 'utf8').replace(/\r\n/g, '\n');
 

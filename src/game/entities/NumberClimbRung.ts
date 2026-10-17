@@ -140,8 +140,8 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
 
   /**
    * Mark the rung as consumed (post-pick) — visually dimmer + no
-   * longer interactive. Used by FloorSystem after a wrong-rung
-   * mulligan to prevent the kid re-tapping the same wrong rung
+   * longer interactive. Used by FloorSystem after a wrong
+   * pick to prevent the kid re-tapping the same wrong rung
    * (which would be wasted clicks without advancing state).
    */
   consume(): void {

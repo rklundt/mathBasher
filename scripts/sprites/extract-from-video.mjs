@@ -87,9 +87,9 @@
 
 import { argv, exit } from 'node:process';
 import { spawn } from 'node:child_process';
-import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, basename, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,7 @@ const KIND_FOLDERS = {
   ui: 'public/assets/sprites/ui',
   particle: 'public/assets/sprites/particles',
   bg: 'public/assets/sprites/bg',
+  asteroid: 'public/assets/sprites/asteroids',
 };
 
 const TEMP_DIR = '.sprite-source/working/.extract-temp';

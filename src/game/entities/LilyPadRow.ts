@@ -55,7 +55,7 @@ export class LilyPadRow {
       const size = this.cfg.displayPx * (1 + (rng() * 2 - 1) * this.cfg.sizeJitter);
       const angle = rng() * 360;
       const padImage = (): Phaser.GameObjects.Image =>
-        scene.add.image(0, 0, POND_PAD_KEYS[looks[i]!]!).setDisplaySize(size, size).setAngle(angle);
+        scene.add.image(0, 0, POND_PAD_KEYS[looks[i]]).setDisplaySize(size, size).setAngle(angle);
       const label = scene.add.text(0, 0, '', textStyle('alienAnswer')).setOrigin(0.5);
       // Same dark outline as the other games' answer labels (readable on any pad shade).
       label.setStroke('#0b1020', 7);
@@ -78,7 +78,7 @@ export class LilyPadRow {
 
   /** Centre of pad `i` — the copy showing more of it (always the main one). */
   padPosition(i: number): { x: number; y: number } {
-    const c = this.pads[i]!.container;
+    const c = this.pads[i].container;
     return { x: c.x, y: c.y };
   }
 
@@ -158,7 +158,7 @@ export class LilyPadRow {
 
   /** The pad under a wrong landing sinks out of sight. */
   sink(i: number): void {
-    const p = this.pads[i]!;
+    const p = this.pads[i];
     this.scene.tweens.add({
       targets: [p.container, p.peer],
       scale: 0.55,
@@ -191,7 +191,7 @@ export class LilyPadRow {
   private layout(): void {
     const xs = padXs(this.pads.length, this.screenWidth, this.offset);
     this.pads.forEach((p, i) => {
-      const x = xs[i]!;
+      const x = xs[i];
       p.container.setX(x);
       p.peer.setX(wrapPeerX(x, this.screenWidth));
       // Keep the whole number on screen while its pad straddles an edge.

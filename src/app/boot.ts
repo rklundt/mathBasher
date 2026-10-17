@@ -215,7 +215,7 @@ export function bootGame(): void {
   };
   window.addEventListener('orientationchange', onOrientationChange);
 
-  // Sprint 0.7 Story 13 (D3 from sprint 0.6.3 wrap-up review) —
+  // Sprint 0.7 Story 13 (D3 from sprint 0.6.3 pre-release review) —
   // viewport-tier-class telemetry. ADR-0010 D4 says "no mid-session
   // re-tier" because the loaded textures are baked into the GPU atlas
   // at boot. This listener validates that decision empirically: if the

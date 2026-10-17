@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security problem? Report it privately
+    url: https://github.com/rklundt/mathBasher/security/advisories/new
+    about: Please don't post security problems publicly. This private form goes only to the project owner.
+  - name: Security policy (and email contact)
+    url: https://github.com/rklundt/mathBasher/blob/main/SECURITY.md
+    about: How security reports are handled, and how to email instead.

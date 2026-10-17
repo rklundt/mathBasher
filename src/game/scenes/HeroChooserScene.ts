@@ -212,6 +212,7 @@ export class HeroChooserScene extends Phaser.Scene {
     // container's local space; Phaser applies the container transform.
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Phaser types stopPropagation as `Function`
       event.stopPropagation();
       this.handlePick(heroKey, card);
     });

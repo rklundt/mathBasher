@@ -6,13 +6,22 @@
 >
 > This file exists as a placeholder so the contribution workflow is visible early. Watch the repository or check back here for the "open" announcement.
 
-## What this file will cover when contributions open
+## Found a bug or have an idea? (anyone can do this)
 
-When third-party contributions are accepted, this document will describe:
+You don't need to sign anything or know how to code.
+
+- **Something's not working:** open the [bug report form](https://github.com/rklundt/mathBasher/issues/new?template=bug.yml). It asks which game, math type, difficulty, device and browser, then what happened. A version or commit number isn't needed; add one only if you know it.
+- **An idea:** use the [idea form](https://github.com/rklundt/mathBasher/issues/new?template=idea.yml). Kids' ideas are welcome, in their own words.
+- **Please keep reports anonymous:** issues are public. Don't include a child's name, age, school or photos, and crop screenshots to the game screen.
+- **A security problem:** don't post it publicly. See [SECURITY.md](SECURITY.md) for the private form.
+
+## Code contributions (not open yet)
+
+When third-party code contributions are accepted, this document will describe:
 
 ### 1. Contributor License Agreement (CLA)
 
-Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. The mechanism (CLA Assistant, DCO sign-off, or signed file) will be selected and documented before the first PR is accepted. See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
+Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. A plain "Signed-off-by" (DCO) line isn't enough on its own: it covers the AGPL, not the commercial license. The agreement's terms, how it's signed and stored, and how contributors under 18 are handled are being worked out with legal advice; nothing is accepted until that is settled. See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
 
 ### 2. Code of conduct
 
@@ -20,7 +29,7 @@ All contributors are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md
 
 ### 3. SPDX headers and license headers
 
-Every new source file (`.ts`, `.tsx`, `.html`) will be required to start with:
+Every new source file (`.ts`, `.mjs`, `.html`, and `.yml` workflows, using that format's comment style) must start with:
 
 ```ts
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -34,7 +43,7 @@ Modifying a file inherited from another AGPL/GPL project requires adding a `Modi
 
 Contributions must respect the architecture documented in [docs/adrs/](docs/adrs/), notably:
 
-- **Folder discipline** ([ADR-0006](docs/adrs/ADR-0006-folder-discipline.md)) — `/src/game/` is the only folder that imports Phaser; `/src/math/` and `/src/services/` are pure TypeScript with no DOM.
+- **Folder discipline** ([ADR-0006](docs/adrs/ADR-0006-folder-discipline.md)) — each folder imports only from the layers below it (the ADR has the full map). Phaser is imported only in `/src/game/` and `/src/app/boot.ts`; `/src/math/` and `/src/services/` are pure TypeScript with no DOM.
 - **Configurability** ([ADR-0003](docs/adrs/ADR-0003-central-config-file.md)) — every gameplay number lives in `src/core/config.ts`. Magic numbers in code are not accepted.
 - **UI attribution** ([ADR-0004](docs/adrs/ADR-0004-agpl-commercial-dual-license.md)) — the AGPL §7(b) attribution display is a hard architectural requirement; PRs may not weaken or remove it.
 
@@ -49,7 +58,7 @@ Contributions must respect the architecture documented in [docs/adrs/](docs/adrs
 
 - Pure modules under `/src/math/` and `/src/services/` need Vitest tests.
 - Game logic under `/src/game/` is tested manually via the playtest checklist.
-- `pnpm typecheck` and `pnpm test` must pass before requesting review.
+- `pnpm typecheck`, `pnpm test` and `pnpm build` must pass; the pull-request check runs them and must be green before merging.
 
 ### 7. Versioning
 
@@ -61,19 +70,7 @@ Contributions must respect the architecture documented in [docs/adrs/](docs/adrs
 By submitting a contribution, you confirm:
 
 - You have the legal right to license your contribution under AGPL-3.0-or-later.
-- You agree to the terms of the project's CLA (mechanism TBD), which permits the copyright holder to relicense your contribution commercially.
-
-## Reporting bugs (no CLA needed)
-
-Bug reports are welcome from anyone, regardless of CLA status. Open an issue with:
-
-- mathBasher version (commit SHA or release tag)
-- Browser + device + OS
-- Steps to reproduce
-- What you expected vs what happened
-- Screenshots if visual
-
-For **security** issues, do not open a public issue. See [SECURITY.md](SECURITY.md).
+- You agree to the terms of the project's CLA (being drafted), which permits the copyright holder to relicense your contribution commercially.
 
 ## Asking questions
 

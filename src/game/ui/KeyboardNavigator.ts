@@ -141,7 +141,7 @@ export class KeyboardNavigator {
     for (let i = 0; i < this.buttons.length; i++) {
       this.focusedIndex =
         (this.focusedIndex + direction + this.buttons.length) % this.buttons.length;
-      if (!this.buttons[this.focusedIndex]!.isDisabled()) break;
+      if (!this.buttons[this.focusedIndex].isDisabled()) break;
     }
     this.applyFocusState();
   }

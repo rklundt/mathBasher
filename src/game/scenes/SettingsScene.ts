@@ -234,7 +234,7 @@ export class SettingsScene extends Phaser.Scene {
     const tabYStart = height * 0.30;
     const tabGap = 72;
     for (let i = 0; i < tabs.length; i++) {
-      const tabId = tabs[i]!;
+      const tabId = tabs[i];
       const btn = new PlaceholderButton({
         scene: this,
         x: tabX,

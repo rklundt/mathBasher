@@ -17,7 +17,7 @@ import type { IScoreStore, ScoreEntry, ScoreFilter } from '@/services/IScoreStor
 export class SessionScoreStore implements IScoreStore {
   private readonly entries: ScoreEntry[] = [];
 
-  async save(entry: ScoreEntry): Promise<void> {
+  save(entry: ScoreEntry): Promise<void> {
     this.entries.push(entry);
     _th.logToAi('SessionScoreStore.save', SeverityLevel.Information, {
       gameId: entry.gameId,
@@ -25,15 +25,16 @@ export class SessionScoreStore implements IScoreStore {
       speed: entry.speed,
       roundScore: String(entry.score),
     });
+    return Promise.resolve();
   }
 
-  async top(filter: ScoreFilter, n: number): Promise<ScoreEntry[]> {
+  top(filter: ScoreFilter, n: number): Promise<ScoreEntry[]> {
     _th.logToAi('SessionScoreStore.top', SeverityLevel.Information, {
       gameId: filter.gameId,
       mathId: filter.mathId,
       speed: filter.speed,
     });
-    return this.entries
+    const best = this.entries
       .filter(
         (e) =>
           e.gameId === filter.gameId &&
@@ -42,6 +43,7 @@ export class SessionScoreStore implements IScoreStore {
       )
       .sort((a, b) => b.score - a.score)
       .slice(0, n);
+    return Promise.resolve(best);
   }
 
   async bestForCombo(filter: ScoreFilter): Promise<ScoreEntry | null> {

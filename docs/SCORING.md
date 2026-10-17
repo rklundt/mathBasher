@@ -104,7 +104,7 @@ Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCal
 | 8–11 | 2 ★★ |
 | 12 | 3 ★★★ |
 
-(Climb's rating is **height-based**, not correct-count-based — a kid who reaches the top with the maximum allowed mulligans still earns ★★★.)
+(Climb's rating is **height-based**, not correct-count-based — a kid who reaches the top with the maximum allowed wrong picks still earns ★★★.)
 
 ## Where to edit
 

@@ -130,7 +130,7 @@ export class AsteroidWaveSystem {
 
     // Pick a physics mode for this wave from the enabled set.
     const modes = config.asteroidField.enabledPhysicsModes;
-    this.currentMode = modes[Math.floor(rng() * modes.length)] as AsteroidPhysicsMode;
+    this.currentMode = modes[Math.floor(rng() * modes.length)];
 
     // Sprint 2.1 wrap-up — geometry delegated to `computeOrbitParams`
     // (pure, unit-tested helper in `orbitMath.ts`). Centralizes the
@@ -190,7 +190,7 @@ export class AsteroidWaveSystem {
         // was never read, since the `tries`/rejection loop only runs
         // for straight/bounce).
         orbitTheta = thetaBase + i * thetaStep + (rng() * 2 - 1) * thetaJitter;
-        const pt = pointOnEllipse(this.orbitParams!, orbitTheta);
+        const pt = pointOnEllipse(this.orbitParams, orbitTheta);
         x = pt.x;
         y = pt.y;
         // (theta is assigned to the asteroid after construction below.)
