@@ -102,9 +102,6 @@ describe('Penguin Slide assets', () => {
         'loop-8',
         'penguin-gulp-1',
         'penguin-gulp-2',
-        'penguin-hop-1',
-        'penguin-hop-2',
-        'penguin-hop-3',
         'penguin-splat-1',
         'penguin-splat-2',
         'penguin-splat-3',
@@ -118,7 +115,8 @@ describe('Penguin Slide assets', () => {
     const scopeOf = (k: string) => AUDIO_MANIFEST.find((e) => e.key === k)?.scope;
     for (let i = 0; i < 20; i++) {
       expect(scopeOf(pickRandomPenguinSwishSfx())).toBe('game:penguin-slide');
-      expect(scopeOf(pickRandomPenguinHopSfx())).toBe('game:penguin-slide');
+      // The hops are shared with Bunny Garden, so they load at boot.
+      expect(scopeOf(pickRandomPenguinHopSfx())).toBe('eager');
       expect(scopeOf(pickRandomPenguinBonkSfx())).toBe('game:penguin-slide');
       expect(scopeOf(pickRandomPenguinYummySfx())).toBe('game:penguin-slide');
     }
