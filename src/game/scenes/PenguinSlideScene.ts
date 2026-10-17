@@ -44,7 +44,12 @@ import { CALLOUT_INK_CSS } from '@/game/ui/uiPalette';
 import { createTapHint, floatNote, screenBanner, type TapHint } from '@/game/ui/callouts';
 import { NUMBER_KEYS } from '@/game/ui/numberKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { pickRandomPenguinBonkSfx, pickRandomPenguinGulpSfx, pickRandomPenguinSwishSfx } from '@/core/audioKeys';
+import {
+  pickRandomPenguinBonkSfx,
+  pickRandomPenguinGulpSfx,
+  pickRandomPenguinHopSfx,
+  pickRandomPenguinSwishSfx,
+} from '@/core/audioKeys';
 import { assertNever } from '@/shared/assertNever';
 
 /**
@@ -93,6 +98,8 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
   private roundOver = false;
   /** Taps are ignored until this scene time (just after a row appears). */
   private inputOpenAt = 0;
+  /** Sliding time left until the next ski-slide swoosh (counts only while the row is coming down). */
+  private slideSoundInMs = 0;
   /** The game-loop frame the scene last resumed on: keys pressed to close Pause don't also grab. */
   private resumedFrame = -1;
   private readonly clock = new QuestionClock();
@@ -235,6 +242,20 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
       return;
     }
     this.placeRow();
+    this.tickSlideSound(dt);
+  }
+
+  /** Now and then while sliding, a ski-slide swoosh (pauses with the countdown). */
+  private tickSlideSound(dt: number): void {
+    this.slideSoundInMs -= dt;
+    if (this.slideSoundInMs > 0) return;
+    getAudioManager().play(pickRandomPenguinSwishSfx(), 'sfx');
+    this.resetSlideSound();
+  }
+
+  private resetSlideSound(): void {
+    const { minGapMs, maxGapMs } = this.cfg.slideSound;
+    this.slideSoundInMs = Phaser.Math.Between(minGapMs, maxGapMs);
   }
 
   /** The row's position comes straight from the clock (so the picture can't disagree with the timer). */
@@ -274,6 +295,7 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     if (next === this.lane) return;
     this.lane = next;
     getAudioManager().play(pickRandomPenguinSwishSfx(), 'sfx');
+    this.resetSlideSound();
     this.penguin.glideTo(this.lanes[next], this.cfg.laneGlideMs);
   }
 
@@ -296,7 +318,7 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     this.hideTapHint();
     const decision = resolveRetryEvent(this.retryState(), { type: 'pick', answer: fish.answer });
     fish.squish();
-    if (lane !== this.lane) getAudioManager().play(pickRandomPenguinSwishSfx(), 'sfx');
+    getAudioManager().play(pickRandomPenguinHopSfx(), 'sfx');
     this.lane = lane;
     this.penguin.swoop(this.lanes[lane], fish.y, () => this.applyPick(decision, fish));
   }
@@ -486,6 +508,7 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
       (a, i) => new SlideFish(this, this.lanes[i], this.rowStartY(), looks[i], a.answer, a.display),
     );
     this.clock.start(this.totalSec() * 1000);
+    this.resetSlideSound();
     this.placeRow();
     this.inputOpenAt = this.time.now + this.cfg.inputLockMs;
     this.busy = false;

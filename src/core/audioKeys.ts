@@ -86,6 +86,13 @@ export const SfxKeys = {
   FrogRibbit2: 'frog-ribbit-2',
   FrogRibbit3: 'frog-ribbit-3',
   FrogRibbit4: 'frog-ribbit-4',
+  /** Sprint 2.7 — Penguin Slide: two ski-slide swooshes (lane changes, and now and then while sliding). */
+  SnowSlide1: 'snow-slide-1',
+  SnowSlide2: 'snow-slide-2',
+  /** Sprint 2.7 — Penguin Slide: the hop up to grab a fish, one of three at random. */
+  PenguinHop1: 'penguin-hop-1',
+  PenguinHop2: 'penguin-hop-2',
+  PenguinHop3: 'penguin-hop-3',
 } as const;
 
 /**
@@ -145,14 +152,16 @@ export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof F
 }
 
 /**
- * Sprint 2.7 — Penguin Slide's sounds. PLACEHOLDERS: these reuse existing
- * (eager) sounds until the owner's gulp / bonk / swish arrive; then only
- * these lists change, to the new `penguin-…` keys scoped
- * `game:penguin-slide` (the existing files are never touched).
+ * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes and hops are its
+ * own (`game:penguin-slide`). The gulp and bonk are PLACEHOLDERS that reuse
+ * existing (eager) sounds until the owner's arrive; then only these lists
+ * change, to new `penguin-…` keys (the existing files are never touched).
  */
 const PENGUIN_GULP_KEYS = HIT_CORRECT_KEYS;
 const PENGUIN_BONK_KEYS = ['hit-wrong-1', 'hit-wrong-2', 'hit-wrong-3'] as const;
-const PENGUIN_SWISH_KEYS = ['button-click-1'] as const;
+const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
+const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
+const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([...PENGUIN_SWISH_KEYS, ...PENGUIN_HOP_KEYS]);
 
 /** Right fish caught. */
 export function pickRandomPenguinGulpSfx(rng: () => number = Math.random): (typeof PENGUIN_GULP_KEYS)[number] {
@@ -164,9 +173,14 @@ export function pickRandomPenguinBonkSfx(rng: () => number = Math.random): (type
   return PENGUIN_BONK_KEYS[Math.floor(rng() * PENGUIN_BONK_KEYS.length)];
 }
 
-/** A lane change. */
+/** A lane change, or the slide sound now and then while sliding. */
 export function pickRandomPenguinSwishSfx(rng: () => number = Math.random): (typeof PENGUIN_SWISH_KEYS)[number] {
   return PENGUIN_SWISH_KEYS[Math.floor(rng() * PENGUIN_SWISH_KEYS.length)];
+}
+
+/** The hop up to grab a fish (right or wrong). */
+export function pickRandomPenguinHopSfx(rng: () => number = Math.random): (typeof PENGUIN_HOP_KEYS)[number] {
+  return PENGUIN_HOP_KEYS[Math.floor(rng() * PENGUIN_HOP_KEYS.length)];
 }
 
 /** Sprint 2.5.6 — random Frog Splash fly-catch sound. */
@@ -454,8 +468,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
   if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
-  // Sprint 2.7 — Penguin Slide's music (its sounds are placeholders shared with other games, eager, until the owner's arrive).
+  // Sprint 2.7 — Penguin Slide's music, slides and hops (its gulp and bonk are eager placeholders for now).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
+  if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   return 'eager';
 }
 

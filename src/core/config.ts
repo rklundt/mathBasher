@@ -934,6 +934,8 @@ export const config = {
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
     /** Q1 "👆 Tap the fish with the right answer!" hint: in the sky, under the HUD and above where rows start. */
     tapHint: { y: 160, heightPx: 60, backdropAlpha: 0.6 },
+    /** The ski-slide swoosh now and then while the row comes down: a random gap in this range. */
+    slideSound: { minGapMs: 2500, maxGapMs: 5500 },
   },
   /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see

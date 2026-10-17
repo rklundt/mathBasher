@@ -25,6 +25,7 @@ import {
   GAME_MUSIC_MAP,
   pickRandomPenguinBonkSfx,
   pickRandomPenguinGulpSfx,
+  pickRandomPenguinHopSfx,
   pickRandomPenguinSwishSfx,
 } from '@/core/audioKeys';
 import { config } from '@/core/config';
@@ -91,16 +92,23 @@ describe('Penguin Slide assets', () => {
     for (const e of sprites) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('plays its own music (game-scoped, no ambience yet) and the file exists', () => {
+  it('plays its own music, slides and hops (game-scoped, no ambience yet) and the files exist', () => {
     expect(GAME_MUSIC_MAP['penguin-slide']).toBe('loop-8');
     expect(GAME_MIDGROUND_MAP['penguin-slide']).toEqual([]);
     const audio = AUDIO_MANIFEST.filter((e) => e.scope === 'game:penguin-slide');
-    expect(audio.map((e) => e.key)).toEqual(['loop-8']);
+    expect(audio.map((e) => e.key).sort()).toEqual(
+      ['loop-8', 'penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3', 'snow-slide-1', 'snow-slide-2'].sort(),
+    );
+    const scopeOf = (k: string) => AUDIO_MANIFEST.find((e) => e.key === k)?.scope;
+    for (let i = 0; i < 20; i++) {
+      expect(scopeOf(pickRandomPenguinSwishSfx())).toBe('game:penguin-slide');
+      expect(scopeOf(pickRandomPenguinHopSfx())).toBe('game:penguin-slide');
+    }
     for (const e of audio) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('placeholder sounds are existing boot-loaded effects (until the owner sounds arrive)', () => {
-    for (const key of [pickRandomPenguinGulpSfx(), pickRandomPenguinBonkSfx(), pickRandomPenguinSwishSfx()]) {
+  it('placeholder gulp and bonk are existing boot-loaded effects (until the owner sounds arrive)', () => {
+    for (const key of [pickRandomPenguinGulpSfx(), pickRandomPenguinBonkSfx()]) {
       expect(AUDIO_MANIFEST.find((e) => e.key === key)?.scope, key).toBe('eager');
     }
   });
