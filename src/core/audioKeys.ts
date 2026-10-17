@@ -93,6 +93,10 @@ export const SfxKeys = {
   PenguinHop1: 'penguin-hop-1',
   PenguinHop2: 'penguin-hop-2',
   PenguinHop3: 'penguin-hop-3',
+  /** Sprint 2.7 — Penguin Slide: the SPLAT of a snowball (wrong fish, or the row arriving), one of three at random. */
+  PenguinSplat1: 'penguin-splat-1',
+  PenguinSplat2: 'penguin-splat-2',
+  PenguinSplat3: 'penguin-splat-3',
 } as const;
 
 /**
@@ -152,16 +156,20 @@ export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof F
 }
 
 /**
- * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes and hops are its
- * own (`game:penguin-slide`). The gulp and bonk are PLACEHOLDERS that reuse
- * existing (eager) sounds until the owner's arrive; then only these lists
- * change, to new `penguin-…` keys (the existing files are never touched).
+ * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes, hops and splats
+ * are its own (`game:penguin-slide`). The gulp is a PLACEHOLDER that reuses
+ * existing (eager) sounds until the owner's arrives; then only its list
+ * changes, to new `penguin-…` keys (the existing files are never touched).
  */
 const PENGUIN_GULP_KEYS = HIT_CORRECT_KEYS;
-const PENGUIN_BONK_KEYS = ['hit-wrong-1', 'hit-wrong-2', 'hit-wrong-3'] as const;
+const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-3'] as const;
 const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
 const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
-const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([...PENGUIN_SWISH_KEYS, ...PENGUIN_HOP_KEYS]);
+const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
+  ...PENGUIN_SWISH_KEYS,
+  ...PENGUIN_HOP_KEYS,
+  ...PENGUIN_BONK_KEYS,
+]);
 
 /** Right fish caught. */
 export function pickRandomPenguinGulpSfx(rng: () => number = Math.random): (typeof PENGUIN_GULP_KEYS)[number] {
@@ -468,7 +476,7 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
   if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
-  // Sprint 2.7 — Penguin Slide's music, slides and hops (its gulp and bonk are eager placeholders for now).
+  // Sprint 2.7 — Penguin Slide's music, slides, hops and splats (its gulp is an eager placeholder for now).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   return 'eager';
