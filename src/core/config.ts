@@ -876,6 +876,101 @@ export const config = {
     tapHint: { aboveBottomPx: 62, heightPx: 60, backdropAlpha: 0.75 },
   },
   /**
+   * Sprint 2.7 — Penguin Slide. A penguin sledges down a long snowy hill
+   * toward its igloo (the camera sits just behind it). Each question sends a
+   * row of fish up the screen toward it, one per lane, each carrying an
+   * answer. Tap a fish (or its lane): the penguin swoops over and gulps it.
+   * A wrong "fish" is a snowball — BONK, a life lost, the same question with
+   * a fresh row. The row reaching the penguin is time's up: it tumbles, a
+   * life is lost, same question again. 3 lives; 12 questions; the igloo at
+   * the end. Speed key doubles as the difficulty: 3 / 4 / 5 fish per row.
+   * Rules: `resolveRetryEvent` (roundRules.ts); geometry: penguinSlideMath.ts.
+   */
+  penguinSlide: {
+    maxLives: 3,
+    speed: {
+      // Time per question: the shared `round.baseQuestionSec`, stretched for harder math.
+      slow: { fishCount: 3 },
+      medium: { fishCount: 4 },
+      fast: { fishCount: 5 },
+    },
+    /** The run of the hill the lanes span (screen px); the pines line the edges outside it. */
+    lanes: { left: 150, right: 1130 },
+    /**
+     * Must match HORIZON_Y in scripts/sprites/snowhill.mjs (tested). A new
+     * row appears `rowStartBelowHorizonPx` below it and slides down to the
+     * catch line, where the penguin waits.
+     */
+    horizonY: 228,
+    rowStartBelowHorizonPx: 40,
+    catchY: 560,
+    /** The penguin sits this far below the catch line, sprite size in px. */
+    penguin: { y: 640, displayPx: 150 },
+    fish: { displayPx: 104, farScale: 0.62, nearScale: 1, wiggleFps: 4 },
+    /** Answer badge: the dark pill. Never smaller than `floorScale` (readable on a phone), never wider than `maxWidthPx`. */
+    badge: {
+      offsetY: -56,
+      floorScale: 0.85,
+      maxWidthPx: 176,
+      padPx: 14,
+      heightPadPx: 8,
+      labelStrokePx: 6,
+      fill: 0x1f3550,
+      fillAlpha: 0.95,
+      rimPx: 3,
+      rim: 0xcfe6ff,
+      rimAlpha: 0.8,
+    },
+    /** Fish motion: the tap squish, and the swim-away (the rest of a row, or the right fish at time-out). */
+    fishMotion: { squishMs: 90, swimDropPx: 60, swimMs: 380 },
+    /**
+     * Taps only count on the hill: never on the HUD bar or the sky, where the
+     * Q1 tap hint sits (a tap on the hint must not pick the middle lane).
+     * The top is under the hint and above the far badges (~y 233).
+     */
+    tapWindow: { top: 200, bottom: 720, left: 110, right: 1170 },
+    /** The penguin's lane: a soft ring under it (shape, not colour, so keyboard players can see it). */
+    laneRing: { rx: 70, ry: 16, alpha: 0.35, belowFrac: 0.42, strokePx: 3, stroke: 0x1f3550, strokeAlpha: 0.6 },
+    /** Dashed marks between lanes, from just above where rows start to the bottom (dark enough to see on snow). */
+    laneMarks: { widthPx: 3, color: 0x7fa8cc, alpha: 0.85, startAboveRowPx: 20, dashPx: 14, gapPx: 14 },
+    /** Swoop: glide across to the lane, then up to the fish; the outcome plays on arrival. */
+    swoopMs: 250,
+    reachMs: 220,
+    /** The swoop stops this far below the fish (the beak meets it). */
+    reachBelowFishPx: 40,
+    /** Back to the catch line before the next row appears. */
+    returnMs: 320,
+    /** Keyboard lane change (the penguin glides one lane). */
+    laneGlideMs: 140,
+    /** After a row appears, taps wait this long (a fast second tap after a BONK can't cost another life). */
+    inputLockMs: 250,
+    gulpMs: 520,
+    /** The gulp's happy squash (× the penguin's scale) and its length. */
+    gulpSquash: { x: 1.12, y: 0.92, ms: 120 },
+    bonkSpinMs: 520,
+    /** The time-out tumble spins this much longer than a bonk. */
+    tumbleSpinFactor: 1.4,
+    nextQuestionDelayMs: 400,
+    timeoutBannerMs: 900,
+    outOfLivesBannerMs: 1300,
+    /** The finish: slide off toward the igloo, then "You made it!". */
+    iglooSlideMs: 1300,
+    /** The penguin ends this far below the horizon (at the igloo door), this small. */
+    iglooStopBelowHorizonPx: 14,
+    iglooScale: 0.35,
+    celebrateMs: 1800,
+    finishBannerStrokePx: 10,
+    /** "You made it!" pops in from this scale. */
+    finishBannerPop: { fromScale: 0.6, ms: 300 },
+    /** Effects placed above the penguin's middle (screen px): where the fish is gulped, the sparkles, the snow puff. */
+    fx: { gulpAbovePx: 30, sparkleAbovePx: 20, finishSparkleAbovePx: 10, puffAbovePx: 40, noteAboveFishPx: 70 },
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
+    /** Q1 "👆 Tap the fish with the right answer!" hint: in the sky, under the HUD and above where rows start. */
+    tapHint: { y: 160, heightPx: 60, backdropAlpha: 0.6 },
+    /** The ski-slide swoosh now and then while the row comes down: a random gap in this range. */
+    slideSound: { minGapMs: 2500, maxGapMs: 5500 },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
@@ -976,6 +1071,12 @@ export const config = {
      */
     canvasBottomGutterPx: 32,
     /**
+     * Sprint 2.7 — mixed numbers in answers and prompts (`MathText`): the whole
+     * part is drawn this much bigger, with a gap (× font size) before its
+     * fraction, so "1 1/2" can't be misread as "11/2".
+     */
+    mixedNumber: { wholeScale: 1.3, gapEm: 0.35 },
+    /**
      * Sprint 2.6.3 — the shared look of game callouts (`src/game/ui/callouts.ts`):
      * the pulsing "👆 …" tap hint, floating notes ("Oops! Try again!") and
      * centred banners ("Out of lives!"). Colours live in `uiPalette.ts`;
@@ -993,6 +1094,13 @@ export const config = {
       bannerStrokePx: 8,
       bannerShadowOffsetY: 3,
       bannerShadowBlur: 6,
+      /**
+       * Sprint 2.7 — the lighter outline for HUD and Game Over text (score,
+       * question, timer, headline) so it reads on any backdrop, bright snow included.
+       */
+      textStrokePx: 5,
+      textShadowOffsetY: 2,
+      textShadowBlur: 4,
       /** The tap hint pulses down to this alpha and back, every `pulseMs`. */
       pulseMs: 800,
       pulseMinAlpha: 0.6,

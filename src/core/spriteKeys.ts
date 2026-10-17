@@ -511,6 +511,12 @@ export const BgSpriteKeys = {
    * owner's images. The game scene draws the full-brightness view itself.
    */
   SpaceShooter: 'space-shooter',
+  /**
+   * Penguin Slide backdrop (sprint 2.7) — the snowy hill and the igloo,
+   * drawn by `scripts/sprites/snowhill.mjs`. Also the game's own scene
+   * background (the lanes are drawn on top).
+   */
+  PenguinSlide: 'penguin-slide',
 } as const;
 
 /**
@@ -539,6 +545,50 @@ export function pickRandomFrogSpriteKey(rng: () => number = Math.random): FrogSp
   const keys = Object.values(FrogSpriteKeys);
   return keys[Math.floor(rng() * keys.length)];
 }
+
+/**
+ * Sprint 2.7 — Penguin Slide penguin sheets, one per colorway, drawn by
+ * `scripts/sprites/penguin.mjs` (source of truth for the frame geometry).
+ * Poses, in order: slide, lean left, lean right, gulp, bonk, cheer.
+ */
+export const PenguinSpriteKeys = {
+  Classic: 'penguin-classic',
+  Blueberry: 'penguin-blueberry',
+  Fluffy: 'penguin-fluffy',
+} as const;
+export type PenguinSpriteKey = (typeof PenguinSpriteKeys)[keyof typeof PenguinSpriteKeys];
+
+/** Frame geometry of the penguin sheets — must match `scripts/sprites/penguin.mjs`. */
+export const PENGUIN_SHEET = {
+  frame: 220,
+  poses: { slide: 0, leanLeft: 1, leanRight: 2, gulp: 3, bonk: 4, cheer: 5 },
+} as const;
+export const PENGUIN_POSE_COUNT = Object.keys(PENGUIN_SHEET.poses).length;
+
+/** Pick one penguin colorway at random (one penguin per round). */
+export function pickRandomPenguinSpriteKey(rng: () => number = Math.random): PenguinSpriteKey {
+  const keys = Object.values(PenguinSpriteKeys);
+  return keys[Math.floor(rng() * keys.length)];
+}
+
+/**
+ * Penguin Slide fish + snowball sheets (`scripts/sprites/fish.mjs`). Fish:
+ * one row per colour, `wiggleFrames` frames each; snowball: whole + burst.
+ */
+export const SlideFishKeys = {
+  Fish: 'slide-fish',
+  Snowball: 'snowball',
+} as const;
+export type SlideFishKey = (typeof SlideFishKeys)[keyof typeof SlideFishKeys];
+export const SLIDE_FISH_SHEET = { key: SlideFishKeys.Fish, frame: 120, colours: 5, wiggleFrames: 2 } as const;
+export const SNOWBALL_SHEET = { key: SlideFishKeys.Snowball, frame: 120, frames: 2 } as const;
+
+/**
+ * The full-brightness hill the game is played on (`snowhill.mjs`). The
+ * menu backdrop `BgSpriteKeys.PenguinSlide` is the same picture darkened.
+ */
+export const PenguinSlideSceneryKeys = { Hill: 'penguin-slide-hill' } as const;
+export type PenguinSlideSceneryKey = (typeof PenguinSlideSceneryKeys)[keyof typeof PenguinSlideSceneryKeys];
 
 /** The fly the frog catches at the far bank (wing-flap sheet, `frog.mjs`). */
 export const FLY_SHEET = { key: 'fly', frameWidth: 72, frameHeight: 56, frames: 2 } as const;
@@ -769,6 +819,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'math-a-lotl': BgSpriteKeys.MathALotl,
   'frog-splash': BgSpriteKeys.FrogSplash,
   'space-shooter': BgSpriteKeys.SpaceShooter,
+  'penguin-slide': BgSpriteKeys.PenguinSlide,
 };
 
 /**
@@ -785,6 +836,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'math-a-lotl': { stars: false, bottomFade: false },
   'frog-splash': { stars: false, bottomFade: false },
   'space-shooter': { stars: false, bottomFade: false },
+  'penguin-slide': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1089,6 +1141,38 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', SpaceShooterSpriteKeys.Cosmos),
     scope: 'game:space-shooter',
   },
+  // Sprint 2.7 — Penguin Slide penguins, fish and snowball (hero folder).
+  // The hill backdrop is a BgSpriteKeys entry (eager, like every backdrop).
+  ...(Object.values(PenguinSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth: PENGUIN_SHEET.frame,
+    frameHeight: PENGUIN_SHEET.frame,
+    scope: 'game:penguin-slide',
+  })),
+  {
+    kind: 'hero',
+    key: SLIDE_FISH_SHEET.key,
+    url: spritePath('hero', SLIDE_FISH_SHEET.key),
+    frameWidth: SLIDE_FISH_SHEET.frame,
+    frameHeight: SLIDE_FISH_SHEET.frame,
+    scope: 'game:penguin-slide',
+  },
+  {
+    kind: 'hero',
+    key: SNOWBALL_SHEET.key,
+    url: spritePath('hero', SNOWBALL_SHEET.key),
+    frameWidth: SNOWBALL_SHEET.frame,
+    frameHeight: SNOWBALL_SHEET.frame,
+    scope: 'game:penguin-slide',
+  },
+  {
+    kind: 'bg',
+    key: PenguinSlideSceneryKeys.Hill,
+    url: spritePath('bg', PenguinSlideSceneryKeys.Hill),
+    scope: 'game:penguin-slide',
+  },
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -1165,4 +1249,7 @@ export type NonAlienSpriteKey =
   | ReefSheetKey
   | FrogSpriteKey
   | PondSpriteKey
-  | SpaceShooterSpriteKey;
+  | SpaceShooterSpriteKey
+  | PenguinSpriteKey
+  | SlideFishKey
+  | PenguinSlideSceneryKey;

@@ -12,13 +12,11 @@ import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
 import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AlienShip } from '@/game/entities/AlienShip';
-import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
-import { extendChoices } from '@/math/extendChoices';
+import { pickRowAnswers, QuestionClock, resolveStrike } from '@/game/systems/roundRules';
 import {
   leanFor,
   pickShipFrames,
   pickTappedShip,
-  shipAnswers,
   spawnPoints,
   stepShips,
   windowXBounds,
@@ -454,14 +452,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
   private spawnWave(q: Question): void {
     const count = this.cfg.speed[this.speed].shipCount;
     // Questions carry 4 choices; Hard's 5th ship gets one more plausible wrong answer.
-    const extended = extendChoices(q, count, Math.random);
-    const answers = shipAnswers({
-      choices: extended.choices,
-      correctAnswer: q.correctAnswer,
-      choiceDisplays: extended.choiceDisplays,
-      count,
-      rng: Math.random,
-    });
+    const answers = pickRowAnswers(q, count, Math.random);
     const r = this.cfg.ship.displayPx * this.cfg.ship.radiusFrac;
     const points = spawnPoints(answers.length, this.bounds, r * this.cfg.ship.spawnGapFrac, Math.random);
     const frames = pickShipFrames(answers.length, ALIEN_SHIP_SHEET.count, Math.random);

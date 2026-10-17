@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 
 /**
  * One rung at a floor — a horizontal platform carrying one of the
@@ -71,7 +72,7 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
    */
   private readonly hitTarget: Phaser.GameObjects.Rectangle;
   /** The big answer text overlay. Rendered above the body in the container child order. */
-  private readonly answerText: Phaser.GameObjects.Text;
+  private readonly answerText: MathText;
   /** Tracks hover state so paint() chooses the right fill color. */
   private hovered = false;
   /** Tracks consumed state so visually-spent rungs render dimmer (post-pick). */
@@ -91,7 +92,7 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
     // labels so the visual rhythm matches Alien Shoot + Asteroid Field.
     // Sprint 2.4 story 5 — fraction display string if provided, else bare number.
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
-    this.answerText = opts.scene.add.text(0, 4, answerLabel, textStyle('alienAnswer'));
+    this.answerText = new MathText(opts.scene, 0, 4, answerLabel, textStyle('alienAnswer'));
     // Sprint 2.4 story 9 — defensive shrink
     // for long fraction labels. The rung is 180px wide (vs Alien's tighter
     // chassis), so this is more about typographic consistency than
@@ -102,7 +103,6 @@ export class NumberClimbRung extends Phaser.GameObjects.Container {
     } else if (answerLabel.length === 4) {
       this.answerText.setScale(0.85);
     }
-    this.answerText.setOrigin(0.5);
     this.add(this.answerText);
 
     // Small "N." prefix at the top-left as a keyboard-shortcut hint.

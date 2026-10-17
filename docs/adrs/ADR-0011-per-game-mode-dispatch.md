@@ -104,7 +104,7 @@ When sprint 2.X adds game mode `<id>`:
    ```
    TypeScript will now flag every `Record<GameId, X>` missing a row for `<id>` AND every `gameId === '<old>' ? A : B` switch.
 
-2. **Add a `BgSpriteKeys.<NewBg>`** entry + a row in `GAME_BG_MAP` (`src/core/spriteKeys.ts`). Ship the bg asset under `public/assets/sprites/bg/` via `pnpm sprite:process --kind bg --name <new-bg-name>`.
+2. **Add a `BgSpriteKeys.<NewBg>`** entry + a row in `GAME_BG_MAP` (`src/core/spriteKeys.ts`). Ship the bg asset under `public/assets/sprites/bg/` via `pnpm sprite:process --kind bg --name <new-bg-name>`. This is the backdrop behind Difficulty, Loading and Game Over: if the game's own scenery is bright, ship a darkened copy here and a game-scoped key for the bright one (Penguin Slide's `PenguinSlideSceneryKeys.Hill`, sprint 2.7). Add every new key type to the `SpriteKey` union.
 
 3. **Add `MusicKeys.<NewMusic>`** + a row in `GAME_MUSIC_MAP` (`src/core/audioKeys.ts`). Ship the music asset under `public/assets/audio/music/` via `pnpm audio:encode --kind music --no-trim` (loops should be `--no-trim`).
 
@@ -154,11 +154,13 @@ When sprint 2.X adds game mode `<id>`:
 9. **Add a `gameSceneKeyFor` arm** (`src/core/sceneKeys.ts`) returning the new scene key. It's an exhaustive switch, so step 1 already makes a missing arm a compile error; DifficultyScene and GameOverScene's Play Again both route through it.
    Also add a row to `GAME_BG_SPACE_LAYERS` (`src/core/spriteKeys.ts`) — whether BackgroundScene's parallax stars and bottom darkening band show over the new backdrop (TypeScript flags a missing row).
 
-10. **Update `LoadingScene` caption** switch — same one-line addition.
+10. **Update `LoadingScene` caption** switch — same one-line addition. In `DifficultyScene`, add the game's arm to `speedDisplayFor` and to `speedSectionTitleFor` (both exhaustive switches since sprint 2.7).
 
 11. **Add a "Game Select" tile** in `GameSelectScene.ts` that calls `Settings.setGameId('<id>')` + transitions to `SceneKeys.Difficulty`.
 
-12. **(Optional)** If the new game has its own `Settings` toggle (image asteroids style), add it via `createObservable<T>` (`src/services/observable.ts`) — don't hand-roll the listener Set + try/catch pattern.
+12. **Add the game's config block** to the lists in `src/core/mathTimeScale.test.ts` and `src/math/extendChoices.test.ts` (time scaling, and how many answers a row needs). Draw answer labels with `MathText` (`src/game/ui/MathText.ts`), so mixed numbers read clearly (sprint 2.7).
+
+13. **(Optional)** If the new game has its own `Settings` toggle (image asteroids style), add it via `createObservable<T>` (`src/services/observable.ts`) — don't hand-roll the listener Set + try/catch pattern.
 
 If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.
 

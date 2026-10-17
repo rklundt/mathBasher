@@ -18,7 +18,11 @@ describe('extendChoices', () => {
   });
 
   it('every math type, every difficulty: Hard gets enough distinct choices, the right one kept', () => {
-    const target = Math.max(...Object.values(config.spaceShooter.speed).map((s) => s.shipCount));
+    // The most targets any game puts on screen at once (Space Shooter ships, Penguin Slide fish).
+    const target = Math.max(
+      ...Object.values(config.spaceShooter.speed).map((s) => s.shipCount),
+      ...Object.values(config.penguinSlide.speed).map((s) => s.fishCount),
+    );
     const rng = mulberry32(2026);
     for (const id of getImplementedIds()) {
       for (const speed of ['slow', 'medium', 'fast'] as SpeedKey[]) {

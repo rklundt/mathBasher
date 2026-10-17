@@ -2,8 +2,6 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
-
 /**
  * Pure helpers for Space Shooter (sprint 2.6) — no Phaser, so the ships'
  * flight, bounces, spawning, taps and answer-label sizing are unit-tested
@@ -279,25 +277,6 @@ export function shipLabelLayout(input: {
 export function leanFor(turn: number, maxTurn: number, maxDeg: number): number {
   if (maxTurn <= 0) return 0;
   return Math.max(-maxDeg, Math.min(maxDeg, (turn / maxTurn) * maxDeg));
-}
-
-/**
- * The answers for one wave of ships: `count` values including the right
- * one (no duplicates), in random order, each with its display label.
- */
-export function shipAnswers(input: {
-  choices: readonly number[];
-  correctAnswer: number;
-  choiceDisplays?: readonly string[];
-  count: number;
-  rng: () => number;
-}): Array<{ answer: number; display: string }> {
-  const { choices, correctAnswer, choiceDisplays, rng } = input;
-  const count = Math.max(1, Math.min(input.count, choices.length));
-  return pickSubsetWithCorrect(choices, correctAnswer, count, rng).map((answer) => ({
-    answer,
-    display: choiceDisplays?.[choices.indexOf(answer)] ?? String(answer),
-  }));
 }
 
 /** `count` different ship looks out of `total`, in random order. */

@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { ALIEN_SHIP_SHEET, ParticleSpriteKeys } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { shipLabelLayout, type ShipBody } from '@/game/systems/spaceShooterMath';
 
 /** arriving = warping in (flies, can't be shot yet) · flying · leaving = hit / warping out. */
@@ -46,7 +47,7 @@ export class AlienShip {
 
     this.sprite = scene.add.image(0, 0, ALIEN_SHIP_SHEET.key, frame).setScale(this.scale);
     const portholeY = (ALIEN_SHIP_SHEET.porthole.y - ALIEN_SHIP_SHEET.frame / 2) * this.scale;
-    const label = scene.add.text(0, portholeY, display, textStyle('alienAnswer')).setOrigin(0.5);
+    const label = new MathText(scene, 0, portholeY, display, textStyle('alienAnswer'));
     // Same dark outline as every other game's answer labels.
     label.setStroke('#0b1020', 7);
     const layout = shipLabelLayout({

@@ -86,6 +86,24 @@ export const SfxKeys = {
   FrogRibbit2: 'frog-ribbit-2',
   FrogRibbit3: 'frog-ribbit-3',
   FrogRibbit4: 'frog-ribbit-4',
+  /** Sprint 2.7 — Penguin Slide: two ski-slide swooshes (lane changes, and now and then while sliding). */
+  SnowSlide1: 'snow-slide-1',
+  SnowSlide2: 'snow-slide-2',
+  /** Sprint 2.7 — Penguin Slide: the hop up to grab a fish, one of three at random. */
+  PenguinHop1: 'penguin-hop-1',
+  PenguinHop2: 'penguin-hop-2',
+  PenguinHop3: 'penguin-hop-3',
+  /** Sprint 2.7 — Penguin Slide: the SPLAT of a snowball (wrong fish, or the row arriving), one of three at random. */
+  PenguinSplat1: 'penguin-splat-1',
+  PenguinSplat2: 'penguin-splat-2',
+  PenguinSplat3: 'penguin-splat-3',
+  /** Sprint 2.7 — Penguin Slide: a kid's "Yummy!" for the round's last fish, one of three at random. */
+  PenguinYummy1: 'penguin-yummy-1',
+  PenguinYummy2: 'penguin-yummy-2',
+  PenguinYummy3: 'penguin-yummy-3',
+  /** Sprint 2.7 — Penguin Slide: its own two gulps (mixed with Frog Splash's fly slurps). */
+  PenguinGulp1: 'penguin-gulp-1',
+  PenguinGulp2: 'penguin-gulp-2',
 } as const;
 
 /**
@@ -122,12 +140,9 @@ const FROG_HOP_KEYS = ['frog-hop-1', 'frog-hop-2', 'frog-hop-3', 'frog-hop-4'] a
 const FROG_SLURP_KEYS = ['frog-slurp-1', 'frog-slurp-2'] as const;
 const FROG_SPLASH_KEYS = ['frog-splash-1', 'frog-splash-2', 'frog-splash-3'] as const;
 const FROG_RIBBIT_KEYS = ['frog-ribbit-1', 'frog-ribbit-2', 'frog-ribbit-3', 'frog-ribbit-4'] as const;
-const FROG_SFX_KEYS: ReadonlySet<string> = new Set([
-  ...FROG_HOP_KEYS,
-  ...FROG_SLURP_KEYS,
-  ...FROG_SPLASH_KEYS,
-  ...FROG_RIBBIT_KEYS,
-]);
+// The fly slurps are shared with Penguin Slide's gulp (sprint 2.7), so they
+// load at boot (~13 KB): an asset scope names one game.
+const FROG_SFX_KEYS: ReadonlySet<string> = new Set([...FROG_HOP_KEYS, ...FROG_SPLASH_KEYS, ...FROG_RIBBIT_KEYS]);
 
 /** Sprint 2.5.6 — random Frog Splash right-pad ribbit. */
 export function pickRandomFrogRibbitSfx(rng: () => number = Math.random): (typeof FROG_RIBBIT_KEYS)[number] {
@@ -142,6 +157,74 @@ export function pickRandomFrogSplashSfx(rng: () => number = Math.random): (typeo
 /** Sprint 2.5.6 — random Frog Splash hop sound. */
 export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof FROG_HOP_KEYS)[number] {
   return FROG_HOP_KEYS[Math.floor(rng() * FROG_HOP_KEYS.length)];
+}
+
+/**
+ * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes, hops, splats and
+ * yummies are its own (`game:penguin-slide`). The gulp mixes its own two
+ * gulps with Frog Splash's fly slurps (eager, shared).
+ */
+const PENGUIN_OWN_GULP_KEYS = ['penguin-gulp-1', 'penguin-gulp-2'] as const;
+const PENGUIN_GULP_KEYS = [...PENGUIN_OWN_GULP_KEYS, ...FROG_SLURP_KEYS] as const;
+const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-3'] as const;
+const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
+const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
+const PENGUIN_YUMMY_KEYS = ['penguin-yummy-1', 'penguin-yummy-2', 'penguin-yummy-3'] as const;
+const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
+  ...PENGUIN_SWISH_KEYS,
+  ...PENGUIN_HOP_KEYS,
+  ...PENGUIN_BONK_KEYS,
+  ...PENGUIN_YUMMY_KEYS,
+  ...PENGUIN_OWN_GULP_KEYS,
+]);
+
+/**
+ * Sprint 2.7 — a random pick that never repeats the one before it, so two
+ * sounds strictly alternate and three never play the same one twice running.
+ */
+function noRepeatPicker<T extends string>(keys: readonly T[]): (rng?: () => number) => T {
+  let last = -1;
+  return (rng = Math.random) => {
+    if (keys.length < 2) return keys[0];
+    let i: number;
+    if (last < 0) i = Math.floor(rng() * keys.length);
+    else {
+      i = Math.floor(rng() * (keys.length - 1));
+      if (i >= last) i += 1;
+    }
+    last = i;
+    return keys[i];
+  };
+}
+const nextPenguinGulp = noRepeatPicker(PENGUIN_GULP_KEYS);
+const nextPenguinBonk = noRepeatPicker(PENGUIN_BONK_KEYS);
+const nextPenguinSwish = noRepeatPicker(PENGUIN_SWISH_KEYS);
+const nextPenguinHop = noRepeatPicker(PENGUIN_HOP_KEYS);
+const nextPenguinYummy = noRepeatPicker(PENGUIN_YUMMY_KEYS);
+
+/** Right fish caught. */
+export function pickRandomPenguinGulpSfx(rng: () => number = Math.random): (typeof PENGUIN_GULP_KEYS)[number] {
+  return nextPenguinGulp(rng);
+}
+
+/** Snowball (wrong fish) or the row arriving (time's up). */
+export function pickRandomPenguinBonkSfx(rng: () => number = Math.random): (typeof PENGUIN_BONK_KEYS)[number] {
+  return nextPenguinBonk(rng);
+}
+
+/** A lane change, or the slide sound now and then while sliding. */
+export function pickRandomPenguinSwishSfx(rng: () => number = Math.random): (typeof PENGUIN_SWISH_KEYS)[number] {
+  return nextPenguinSwish(rng);
+}
+
+/** The round's last fish caught: "Yummy!" (in place of the gulp). */
+export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typeof PENGUIN_YUMMY_KEYS)[number] {
+  return nextPenguinYummy(rng);
+}
+
+/** The hop up to grab a fish (right or wrong). */
+export function pickRandomPenguinHopSfx(rng: () => number = Math.random): (typeof PENGUIN_HOP_KEYS)[number] {
+  return nextPenguinHop(rng);
 }
 
 /** Sprint 2.5.6 — random Frog Splash fly-catch sound. */
@@ -244,6 +327,11 @@ export const MusicKeys = {
    * `--kind music --no-trim` for a clean loop seam. No ambience under it.
    */
   CockpitLoop1: 'loop-7',
+  /**
+   * Penguin Slide gameplay loop (sprint 2.7). 60 s stereo track, encoded
+   * `--kind music --no-trim` for a clean loop seam.
+   */
+  SnowLoop1: 'loop-8',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -276,6 +364,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'math-a-lotl': MusicKeys.ReefLoop1,
   'frog-splash': MusicKeys.PondLoop1,
   'space-shooter': MusicKeys.CockpitLoop1,
+  'penguin-slide': MusicKeys.SnowLoop1,
 };
 
 /**
@@ -301,6 +390,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'frog-splash': [MidgroundKeys.RiverBrook1, MidgroundKeys.RiverCrickets1],
   // Sprint 2.6 — music only (the lasers and explosions are the action).
   'space-shooter': [],
+  // Sprint 2.7 — none yet (an optional sliding-on-snow loop may come from the owner).
+  'penguin-slide': [],
 };
 
 /**
@@ -421,6 +512,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
   if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
+  // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp mix also uses the frog slurps, eager).
+  if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
+  if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   return 'eager';
 }
 

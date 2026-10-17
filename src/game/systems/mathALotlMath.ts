@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { pickSubsetWithCorrect, resolveStrike } from '@/game/systems/roundRules';
+import { pickSubsetWithCorrect, resolveStrike, type OutcomeRecord } from '@/game/systems/roundRules';
 
 /**
  * Pure helpers for Math-a-lotl (sprint 2.5.4) — no Phaser, so the wave
@@ -214,11 +214,7 @@ export interface BubbleRoundState {
   usedWrongCatch: boolean;
 }
 
-/** What `RoundController.recordOutcome` should be told. */
-export interface OutcomeRecord {
-  wasCorrect: boolean;
-  usedWrongShot: boolean;
-}
+export type { OutcomeRecord } from '@/game/systems/roundRules';
 
 export type CatchDecision =
   | { kind: 'correct'; record: OutcomeRecord }
