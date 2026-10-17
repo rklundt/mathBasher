@@ -411,6 +411,28 @@ Code was moved and shared; nothing should look or sound different. Phone landsca
 - [ ] Quit to Menu still goes to the main menu. Music from the paused game stops in both cases.
 - [ ] Keyboard: arrow / Tab through the four pause buttons, Enter on Change Game works; Esc still resumes.
 
+## Penguin Slide + clearer mixed numbers (sprint 2.7)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows seven tiles: four on top, three below; Penguin Slide is bottom right. Keyboard order runs row by row.
+- [ ] Difficulty reads "3 fish · 25s", "4 fish · 18s", "5 fish · 12s" for Add to 10 (longer for harder math) over a dimmed snowy hill; the text reads clearly.
+- [ ] In game: a bright snowy hill, the igloo far away, one fish per lane, the penguin at the bottom in a lane ring. Q1 shows "👆 Tap the fish with the right answer!".
+- [ ] The fish slide up toward the penguin as the timer runs; badges grow as they get closer and stay readable, fractions included. Fish colour never gives the answer away.
+- [ ] Tap the right fish (or anywhere in its lane) → hop, gulp, sparkle, "+points", the other fish swim away, next question.
+- [ ] Tap a wrong fish → it turns into a snowball, splat, the penguin spins, "Bonk! Try again!", a Lives dot turns red, same question with a fresh row. A quick second tap costs nothing.
+- [ ] Let the timer run out → the penguin tumbles, "Out of time!", a life lost, same question with full time.
+- [ ] Third life lost → "Out of lives!" → Game Over (not a pass).
+- [ ] Answer all 12 → "Yummy!" on the last fish, the penguin slides to the igloo, "You made it!", Game Over.
+- [ ] Keyboard: ← / → move the lane, Space grabs, 1–5 jump to a lane (4–5 do nothing on Easy); Space on Resume doesn't grab.
+- [ ] Pause mid-row, mid-hop and mid-banner: everything freezes and resumes; Change Game keeps the math type and difficulty.
+- [ ] Sounds: slides now and then and on lane changes, hops, four different gulps, three splats; none repeats back to back. Levels comfortable on headphones.
+- [ ] All three penguins stand out on the snow.
+
+**All games:**
+- [ ] Add Fractions in each of the seven games: mixed numbers show a bigger whole number with a gap ("1 1/2", never "11/2"), on the answers and in the question. Long answers still fit their alien, rock, rung, bubble, pad, ship or fish.
+- [ ] The score, question, timer and Lives labels, and the Game Over headline and score, have a dark outline; Penguin Slide's Game Over reads clearly on the snow.
+
 ## Logging the run
 
 ```

@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { ReefSpriteKeys } from '@/core/spriteKeys';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 
 /**
  * One rising Math-a-lotl answer bubble (sprint 2.5.4): the glossy
@@ -46,7 +47,7 @@ export class AnswerBubble {
 
     const img = scene.add.image(0, 0, ReefSpriteKeys.Bubble);
     img.setDisplaySize(cfg.diameterPx, cfg.diameterPx);
-    const label = scene.add.text(0, 0, opts.display, textStyle('alienAnswer')).setOrigin(0.5);
+    const label = new MathText(scene, 0, 0, opts.display, textStyle('alienAnswer'));
     // Dark outline: the bubble is nearly clear, so without it white text
     // on the light upper water reads at ~1.8:1 (sprint 2.5.5).
     label.setStroke('#0b1020', 7);

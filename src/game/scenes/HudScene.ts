@@ -14,7 +14,9 @@ import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { Settings } from '@/services/Settings';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { createIconButton, type IconButtonInstance } from '@/game/ui/IconButton';
-import { text } from '@/game/ui/typography';
+import { text, textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
+import { applyTextOutline } from '@/game/ui/callouts';
 import { SLATE_BG } from '@/game/ui/uiPalette';
 
 /** Sprint 2.5.2 — HUD hero avatar: total vertical padding inside the bar (half above, half below). */
@@ -98,7 +100,7 @@ export class HudScene extends Phaser.Scene {
 
   private roundScoreText!: Phaser.GameObjects.Text;
   private totalScoreText!: Phaser.GameObjects.Text;
-  private promptText!: Phaser.GameObjects.Text;
+  private promptText!: MathText;
   private counterText!: Phaser.GameObjects.Text;
   /**
    * Sprint 0.7 Story 8 — per-question progress dots. One per question;
@@ -239,6 +241,7 @@ export class HudScene extends Phaser.Scene {
     // score text starts to its right by the width the avatar consumed.
     const heroAvatarInset = this.buildHudHeroAvatar(barHeight);
     this.roundScoreText = text(this, 16 + heroAvatarInset, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
+    applyTextOutline(this.roundScoreText);
     this.totalScoreText = text(
       this,
       0, // placeholder; repositioned by repositionTotalLabel below
@@ -246,10 +249,12 @@ export class HudScene extends Phaser.Scene {
       `This visit: ${String(SessionTotalScore.get())}`,
       'body',
     ).setOrigin(0, 0.5);
+    applyTextOutline(this.totalScoreText);
     this.repositionTotalLabel();
     this.animateVisitCountUpIfNeeded();
 
-    this.promptText = text(this, width / 2, barHeight / 2, '— + — = ?', 'prompt').setOrigin(0.5);
+    this.promptText = new MathText(this, width / 2, barHeight / 2, '— + — = ?', textStyle('prompt'));
+    applyTextOutline(this.promptText);
 
     // Sprint 2.1 — countdown text just BELOW the prompt, only visible in
     // game modes that expose getCountdownSec (Asteroid Field, Number
@@ -264,6 +269,7 @@ export class HudScene extends Phaser.Scene {
     // they shared the same y band. Stacked under the dots now —
     // dots fill +7..+13, timer fills +22..+36 with ~10px gap.
     this.countdownText = text(this, width / 2, barHeight + 22, '', 'body').setOrigin(0.5, 0);
+    applyTextOutline(this.countdownText);
     this.countdownText.setVisible(false);
 
     // Pause icon (top-right) and Mute icon (just left of it). Both are
@@ -537,6 +543,7 @@ export class HudScene extends Phaser.Scene {
     const dotGap = 8;
     const labelX = 16;
     const labelText = text(this, labelX, barHeight + 10, 'Lives:', 'rowLabel').setOrigin(0, 0.5);
+    applyTextOutline(labelText);
     const dotsStartX = labelX + labelText.width + 10 + dotRadius;
     const dotY = barHeight + 10;
     for (let i = 0; i < maxStrikes; i++) {

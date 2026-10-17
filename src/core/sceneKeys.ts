@@ -80,6 +80,12 @@ export const SceneKeys = {
    */
   SpaceShooter: 'space-shooter',
   /**
+   * Penguin Slide — sprint 2.7 seventh game mode. A penguin sledges down a
+   * snowy hill; tap the fish with the right answer. A wrong fish is a
+   * snowball (BONK) and a time-out a tumble; each costs one of 3 lives.
+   */
+  PenguinSlide: 'penguin-slide',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -125,5 +131,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.FrogSplash;
     case 'space-shooter':
       return SceneKeys.SpaceShooter;
+    case 'penguin-slide':
+      return SceneKeys.PenguinSlide;
   }
 }

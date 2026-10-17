@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { advanceY } from '@/game/systems/waveKinematics';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { alienAnimKey } from '@/core/spriteKeys';
 import { config } from '@/core/config';
 
@@ -83,7 +84,7 @@ export class Alien extends Phaser.GameObjects.Container {
   private descentSpeed: number;
   private destroyed = false;
   private readonly chassis: Phaser.GameObjects.Rectangle;
-  private readonly answerText: Phaser.GameObjects.Text;
+  private readonly answerText: MathText;
 
   /**
    * Optional animated rider-sprite layered ABOVE the chassis (negative y
@@ -134,8 +135,7 @@ export class Alien extends Phaser.GameObjects.Container {
     // Sprint 2.4 story 5 — render `answerDisplay` when present (fraction
     // generators), else fall back to the bare number for integer types.
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
-    this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
-    this.answerText.setOrigin(0.5);
+    this.answerText = new MathText(opts.scene, 0, 0, answerLabel, textStyle('alienAnswer'));
     // Sprint 2.4 story 9 — fraction labels
     // can be 5-7 chars ("1 1/2", "4 11/12") vs integer answers (1-3 chars).
     // The chassis is fixed-width, so long labels would clip / overflow

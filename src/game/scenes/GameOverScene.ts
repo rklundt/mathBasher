@@ -13,6 +13,7 @@ import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { rowButtons, stackButtons } from '@/game/ui/MenuLayout';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
+import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
 
 export interface GameOverData {
@@ -129,6 +130,7 @@ export class GameOverScene extends Phaser.Scene {
       headline,
       this.roundData.passed ? 'success' : 'warning',
     ).setOrigin(0.5);
+    applyTextOutline(headlineText);
     headlineText.setScale(0.7);
     headlineText.setAlpha(0);
     this.tweens.add({
@@ -151,6 +153,7 @@ export class GameOverScene extends Phaser.Scene {
     const scoreSummary = this.add
       .text(cx, height * 0.32, '', { ...textStyle('summary'), align: 'center' })
       .setOrigin(0.5);
+    applyTextOutline(scoreSummary);
     // Round size — Number Climb passes 10 here (10 floors); other modes
     // either pass the default 20 or omit, falling back to config. The
     // denominator on the Correct line reads dynamically so a 10-floor
@@ -317,6 +320,7 @@ export class GameOverScene extends Phaser.Scene {
       const { width, height } = this.scale;
       // TextKind 'badge' — 26px warm-amber bold (Sprint 0.7.5 Story 3).
       const badge = text(this, width / 2, height * 0.54, '★ New High Score! ★', 'badge').setOrigin(0.5);
+      applyTextOutline(badge);
       this.tweens.add({
         targets: badge,
         scale: { from: 0.5, to: 1 },

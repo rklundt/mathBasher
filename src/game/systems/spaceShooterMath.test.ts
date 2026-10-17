@@ -15,7 +15,6 @@ import {
   leanFor,
   pickShipFrames,
   pickTappedShip,
-  shipAnswers,
   shipLabelLayout,
   spawnPoints,
   stepShips,
@@ -204,24 +203,6 @@ describe('lean', () => {
 });
 
 describe('waves', () => {
-  it('each wave has the right answer once, no duplicates, with display labels', () => {
-    const rng = mulberry32(9);
-    for (let n = 0; n < 200; n++) {
-      const out = shipAnswers({
-        choices: [3, 5, 7, 9],
-        correctAnswer: 7,
-        choiceDisplays: ['3', '5', '7', '9'],
-        count: 3,
-        rng,
-      });
-      expect(out).toHaveLength(3);
-      expect(out.filter((a) => a.answer === 7)).toHaveLength(1);
-      expect(new Set(out.map((a) => a.answer)).size).toBe(3);
-    }
-    // More ships than choices: capped at the choices.
-    expect(shipAnswers({ choices: [1, 2, 3, 4], correctAnswer: 2, count: 5, rng })).toHaveLength(4);
-  });
-
   it('every ship in a wave looks different', () => {
     const rng = mulberry32(4);
     for (let n = 0; n < 100; n++) {
