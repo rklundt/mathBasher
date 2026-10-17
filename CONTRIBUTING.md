@@ -23,7 +23,13 @@ When third-party code contributions are accepted, this document will describe:
 
 ### 1. Contributor License Agreement (CLA)
 
-Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. A plain "Signed-off-by" (DCO) line isn't enough on its own: it covers the AGPL, not the commercial license. The agreement's terms, how it's signed and stored, and how contributors under 18 are handled will be settled, with legal advice, before any outside contribution is accepted. See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
+Because mathBasher is dual-licensed (AGPL-3.0-or-later **and** a separate commercial license), every contributor must grant the copyright holder the right to relicense their contribution commercially. A plain "Signed-off-by" (DCO) line isn't enough on its own: it covers the AGPL, not the commercial license. The agreement will be settled, with legal advice, before any outside contribution is accepted. The current plan, subject to that review:
+
+- **Ownership:** contributors assign the copyright in their contribution to the project's copyright holder, which keeps every file under one owner and one copyright line.
+- **Contributors must be 18 or older.** Agreements signed by minors aren't reliably binding, so the project can't accept code from under-18s. (Bug reports and ideas from anyone, kids included, are welcome.)
+- **Signing:** through a CLA bot on each pull request, with the project keeping its own copy of every signature.
+
+See [COMMERCIAL.md](COMMERCIAL.md) for the dual-license context.
 
 ### 2. Code of conduct
 
