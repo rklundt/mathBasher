@@ -87,9 +87,9 @@
 
 import { argv, exit } from 'node:process';
 import { spawn } from 'node:child_process';
-import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, basename, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,7 @@ const KIND_FOLDERS = {
   ui: 'public/assets/sprites/ui',
   particle: 'public/assets/sprites/particles',
   bg: 'public/assets/sprites/bg',
+  asteroid: 'public/assets/sprites/asteroids',
 };
 
 const TEMP_DIR = '.sprite-source/working/.extract-temp';
@@ -778,7 +779,7 @@ function decontaminateInPlace(buf, width, height, keyColor) {
     // (255 - α) / 255 → fraction of bg in the composited pixel.
     const bgFrac = (255 - alpha) / 255;
     const invAlphaScale = 255 / alpha;
-    // Sprint 0.7 Story 13 (D6 from sprint 0.6.3 wrap-up review): the
+    // Sprint 0.7 Story 13 (D6 from sprint 0.6.3 pre-release review): the
     // prior `* invAlphaScale / 255 * 255` had a redundant /255*255
     // cancellation that made the math harder to read without affecting
     // output (x/255*255 === x for floats). Simplified.

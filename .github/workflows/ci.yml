@@ -24,6 +24,8 @@ permissions:
 
 jobs:
   check:
+    # Branch protection requires this check BY NAME on main and development.
+    # Renaming it leaves pull requests waiting on a check that never reports.
     name: Typecheck, test, build
     runs-on: ubuntu-latest
     steps:
@@ -38,12 +40,26 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # pnpm 11 needs Node >= 22.13 (see deploy.yml).
-          node-version: 22
+          # .nvmrc is the one place the Node major lives (also the Dockerfile's
+          # node:22-alpine). pnpm 11 needs Node >= 22.13 (see deploy.yml).
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Machine-local hook checks must never come from the repository.
+      - name: No tracked files in .githooks/local
+        # Case-insensitive, so .githooks/Local/ can't slip past on Windows clones.
+        run: |
+          tracked=$(git ls-files ':(icase).githooks/local')
+          test -z "$tracked"
+          # Windows short names (GITHOO~1/…) can land in the same folder on checkout.
+          shortnames=$(git ls-files | grep -E '(^|/)[^/]*~[0-9]+(/|$)' || true)
+          test -z "$shortnames"
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck

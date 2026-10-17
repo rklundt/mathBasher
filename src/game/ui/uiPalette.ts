@@ -53,3 +53,16 @@ export const SELECTED_AMBER = 0xfacc15; // #facc15
 export const MUTE_ICON_BG = 0x2a2640; // amber-leaning slate
 /** Mute icon hover — slightly brighter than MUTE_ICON_BG. */
 export const MUTE_ICON_HOVER = 0x3a3454;
+
+// --- Callouts (tap hints, floating notes, banners) ---------------------------
+
+/**
+ * Deep navy "ink" behind and around game callouts (`callouts.ts`): the tap
+ * hint's pill and the heavy outline + shadow that keep notes and banners
+ * readable on any backdrop. Matches the page background in `index.html`.
+ */
+export const CALLOUT_INK = 0x0b1020; // #0b1020
+/** CSS form of `CALLOUT_INK`, for Phaser text stroke / shadow colours. */
+export const CALLOUT_INK_CSS = '#0b1020';
+/** Tap-hint pill border. */
+export const CALLOUT_BORDER = 0xffffff; // #ffffff

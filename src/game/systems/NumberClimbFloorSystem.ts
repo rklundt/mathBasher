@@ -17,6 +17,7 @@ import type { Question } from '@/math/types';
 import type { SpeedKey } from '@/core/config';
 import { resolveRungPick, RUNGS_PER_DIFFICULTY } from '@/game/systems/numberClimbFloorMath';
 import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
+import { assertNever } from '@/shared/assertNever';
 
 /**
  * Owns the per-floor lifecycle for Number Climb: spawning rungs at
@@ -27,7 +28,7 @@ import { pickSubsetWithCorrect } from '@/game/systems/roundRules';
  *   - **correctPicked(rung)** — kid picked the right rung; scene
  *     should award score, animate the hero up, scroll camera,
  *     advance to the next floor.
- *   - **wrongPickedMulligan(rung)** — a wrong pick; scene deducts
+ *   - **wrongPick(rung)** — a wrong pick; scene deducts
  *     timer + plays wrong SFX + spends one cumulative life + falls the
  *     hero back to this floor's base, then keeps this floor up for
  *     another try (as long as lives remain). Sprint 2.5.2 removed the
@@ -91,7 +92,7 @@ export interface NumberClimbFloorSystemOpts {
  * The discrete outcomes a `pickRung` call can produce. The scene
  * dispatches on the outcome:
  *   - 'correct'           → award score, advance floor
- *   - 'wrong-mulligan'    → a wrong pick; time penalty + spend a life +
+ *   - 'wrong'             → a wrong pick; time penalty + spend a life +
  *                           fall back to retry (round ends only when the
  *                           scene's cumulative 3-life cap is exhausted —
  *                           sprint 2.5.2 removed the per-floor terminal)
@@ -101,7 +102,7 @@ export interface NumberClimbFloorSystemOpts {
  */
 export type RungPickOutcome =
   | { kind: 'correct'; rung: NumberClimbRung }
-  | { kind: 'wrong-mulligan'; rung: NumberClimbRung }
+  | { kind: 'wrong'; rung: NumberClimbRung }
   | { kind: 'rung-consumed' };
 
 export class NumberClimbFloorSystem {
@@ -278,7 +279,7 @@ export class NumberClimbFloorSystem {
     for (let i = 0; i < targetRungCount; i++) {
       // Center of the i-th band, in world coords.
       const x = this.opts.leftBound + bandWidth * (i + 0.5);
-      const answer = pickedAnswers[i]!;
+      const answer = pickedAnswers[i];
       const rung = new NumberClimbRung({
         scene: this.opts.scene,
         x,
@@ -322,14 +323,18 @@ export class NumberClimbFloorSystem {
         return { kind: 'rung-consumed' };
       case 'correct':
         _th.logToAi('NumberClimb.correctPick', SeverityLevel.Verbose, {
+          // `usedMulligan=` is a legacy label in this reason text, kept for existing report queries.
           reason: `answer=${String(rung.answer)} usedMulligan=${String(this.wrongsThisFloor > 0)}`,
         });
         return { kind: 'correct', rung };
-      case 'wrong-mulligan':
+      case 'wrong':
+        // Legacy event name, kept so existing reports keep matching.
         _th.logToAi('NumberClimb.wrongMulligan', SeverityLevel.Information, {
           reason: `wrongAnswer=${String(rung.answer)}`,
         });
-        return { kind: 'wrong-mulligan', rung };
+        return { kind: 'wrong', rung };
+      default:
+        return assertNever(decision.kind, 'rung pick decision');
     }
   }
 
@@ -338,7 +343,7 @@ export class NumberClimbFloorSystem {
    * ScoreCalculator convention: a floor-pass after a wrong pick scores half points
    * (matches the existing `usedWrongShot` flag from other modes).
    */
-  hasUsedMulligan(): boolean {
+  hadWrongPickThisFloor(): boolean {
     return this.wrongsThisFloor > 0;
   }
 

@@ -38,7 +38,7 @@ export const RUNGS_PER_DIFFICULTY: Readonly<Record<SpeedKey, number>> = {
  * every wrong pick is a retry that costs one cumulative life, and the
  * round ends ONLY when the 3-life cap is exhausted (owned by the scene).
  *  - `correct`        — the picked rung carries the right answer.
- *  - `wrong-mulligan` — a wrong pick; the kid retries (costs a life +
+ *  - `wrong` — a wrong pick; the kid retries (costs a life +
  *                       a time penalty). Repeats until the kid picks
  *                       correct or the cumulative life cap is hit.
  *  - `rung-consumed`  — defensive: the pick should be ignored (the
@@ -46,7 +46,7 @@ export const RUNGS_PER_DIFFICULTY: Readonly<Record<SpeedKey, number>> = {
  *                       current floor — e.g. a double-tap of an
  *                       already-spent rung).
  */
-export type RungPickKind = 'correct' | 'wrong-mulligan' | 'rung-consumed';
+export type RungPickKind = 'correct' | 'wrong' | 'rung-consumed';
 
 /**
  * Pure result of `resolveRungPick`. The FloorSystem applies these:
@@ -72,12 +72,12 @@ export interface RungPickDecision {
  * State machine (sprint 2.5.2 — per-floor terminal removed):
  *  - paused OR rung not in the current floor → `rung-consumed` (no-op).
  *  - rungAnswer === correctAnswer            → `correct`.
- *  - any wrong pick                          → `wrong-mulligan` (retry;
+ *  - any wrong pick                          → `wrong` (retry;
  *                                              costs a life via the
  *                                              scene's cumulative cap).
  *
  * `wrongsAfter` simply increments — it's the per-floor wrong counter
- * used only for the `hasUsedMulligan()` scoring flag (any wrong on a
+ * used only for the `hadWrongPickThisFloor()` scoring flag (any wrong on a
  * floor → half points for that floor's eventual correct). There is no
  * per-floor ceiling anymore; the climb-wide 3-life cap (in
  * `NumberClimbScene`) is the sole round-ender on a wrong pick.
@@ -102,5 +102,5 @@ export function resolveRungPick(input: {
   // Sprint 2.5.2 — every wrong pick is a retry that costs one cumulative
   // life (tracked by the scene). No per-floor terminal: the round ends
   // on a wrong pick ONLY when the climb-wide 3-life cap is exhausted.
-  return { kind: 'wrong-mulligan', wrongsAfter: wrongsSoFar + 1, consumeRung: true };
+  return { kind: 'wrong', wrongsAfter: wrongsSoFar + 1, consumeRung: true };
 }

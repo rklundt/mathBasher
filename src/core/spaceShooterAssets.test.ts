@@ -50,7 +50,7 @@ describe('Space Shooter assets', () => {
     const cosmos = await sharp(onDisk(spritePath('bg', SpaceShooterSpriteKeys.Cosmos))).metadata();
     expect([cosmos.width, cosmos.height]).toEqual([1280, 720]);
     const cockpit = await sharp(onDisk(spritePath('hero', SpaceShooterSpriteKeys.Cockpit))).metadata();
-    expect(cockpit.width! / cockpit.height!).toBeCloseTo(16 / 9, 2);
+    expect(cockpit.width / cockpit.height).toBeCloseTo(16 / 9, 2);
     expect(cockpit.hasAlpha).toBe(true);
   });
 
@@ -61,7 +61,7 @@ describe('Space Shooter assets', () => {
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
-    const clear = (x: number, y: number) => data[(y * info.width + x) * 4 + 3]! < 8;
+    const clear = (x: number, y: number) => data[(y * info.width + x) * 4 + 3] < 8;
     for (const [y, left, right] of config.spaceShooter.windowEdge) {
       // See-through just inside each edge, solid cockpit a few px outside it.
       expect(clear(left + 2, y), `y=${y} left`).toBe(true);

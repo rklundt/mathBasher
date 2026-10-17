@@ -95,3 +95,6 @@ docs/deployment-runbook.md
 
 # Local dev launcher (machine-specific, not committed)
 dev.bat
+
+# Optional machine-local commit checks, run by .githooks/ (never committed).
+.githooks/local/

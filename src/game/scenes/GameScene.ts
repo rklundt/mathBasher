@@ -8,7 +8,7 @@ import { config, mathTimeScale, type MathId, type SpeedKey } from '@/core/config
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { Hero } from '@/game/entities/Hero';
 import { Projectile } from '@/game/entities/Projectile';
@@ -545,9 +545,9 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
    * Cleanup is the same as scene shutdown — `cleanup()` runs via the
    * shutdown event when MenuScene takes over.
    */
-  quitToMenu(): void {
+  quitToMenu(destination?: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
     // scene.start(Menu) consolidated in the lifecycle helper.
-    this.lifecycle.quitToMenu();
+    this.lifecycle.quitToMenu(destination);
   }
 }

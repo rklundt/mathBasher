@@ -378,6 +378,39 @@ Content-Security-Policy is new, so check it on real phones (dev site), not only 
 - [ ] iPhone Safari and an Android phone: the game loads, the title font is the game font (not a fallback), music and sound effects play after the first tap, fullscreen works.
 - [ ] Desktop devtools console: no "Refused to load" / "Refused to connect" CSP errors from the game itself (one blocked inline script is expected: Cloudflare's injected bot-detection snippet, reported as an inline script refused by `script-src`).
 
+## No-change check (sprints 2.6.3 + 2.6.4)
+
+Code was moved and shared; nothing should look or sound different. Phone landscape, plus one tablet or desktop size, plus a hard reload. Compare with the production site (mathbasher.mykfam.com, still on the old code) at the same moments.
+
+- [ ] **Frog Splash:**
+  - The Q1 hint shows even though the camera starts scrolled, pulses, and goes on the first hop.
+  - "Splash! Try again!" stays on screen on the far-left / far-right pads.
+  - "Out of time!", "Out of lives!" and "You made it!" stay centred while the camera moves.
+- [ ] **Math-a-lotl:**
+  - The 240 × 64 hint sits below the waterline and stays up after an escaped bubble.
+  - "Oops!" shows below a bubble near the surface and above one near the floor.
+  - "Floated away!" holds, then fades without rising.
+  - Banners hold as long as before.
+  - A wrong catch costs one life; the last one ends the round; a timeout costs none.
+  - The hint goes on the first tap; the right bubble after a wrong catch scores half.
+- [ ] **Space Shooter:**
+  - The long hint fits on a narrow phone above the dashboard with its darker backdrop.
+  - "Out of time! You got blasted!" stays on one line.
+  - "Shields up! Try again!" stays on screen over ships near the edges; the hint goes on the first tap.
+- [ ] **Space Escape!:**
+  - "Lost a life! Try again!", "Out of time!" and "Escaped Safe!" read clearly on the bright fire floor.
+  - The first-life-lost hint shows once per tab.
+  - A wrong pick still takes the −3s penalty, and the next correct pick scores half.
+- [ ] **Asteroid Field:** all 8 rock images load (no missing-texture boxes), on a warm cache and a cold load. The aim hint and "Out of shots!" look the same. Settings → Asteroid Images still switches live.
+- [ ] **All games:** the footer text and Source link are unchanged, and the fire button and touch areas haven't moved.
+
+## Change Game in the pause menu (sprint 2.6.5)
+
+- [ ] In each of the six games: Pause shows Resume, Settings, Change Game, Quit to Menu, all on screen (phone too).
+- [ ] Change Game opens Game Select; pick another game and the math type and difficulty are the same as before.
+- [ ] Quit to Menu still goes to the main menu. Music from the paused game stops in both cases.
+- [ ] Keyboard: arrow / Tab through the four pause buttons, Enter on Change Game works; Esc still resumes.
+
 ## Logging the run
 
 ```

@@ -323,7 +323,7 @@ export function pickNextHeroSpriteKey(): string {
   // The hero-skin picker now lives on Number Climb (see
   // `NumberClimbHero` for the Settings consumer).
   const keys = Object.values(HeroSpriteKeys);
-  const key = keys[_heroPickIndex % keys.length]!;
+  const key = keys[_heroPickIndex % keys.length];
   _heroPickIndex += 1;
   return key;
 }
@@ -352,9 +352,8 @@ export function pickNextAsteroidHeroSpriteKey(): string {
  * Asteroid Field — image-variant asteroid sprite keys (sprint 2.1
  * playtest). Eight Midjourney-generated rock sprites that the Asteroid
  * entity can use INSTEAD of its procedural polygon rendering, gated
- * by the `Settings.imageAsteroidsEnabled` toggle. Default is OFF, so
- * the existing procedural look ships unchanged; users opt into the
- * image variant from the in-game Settings screen (only visible in
+ * by the `Settings.imageAsteroidsEnabled` toggle — ON by default since
+ * v2.1; players can switch back to polygons in Settings (only shown in
  * the Asteroid Field game mode).
  *
  * Visual contract: source PNGs are 192×192 RGBA palette with the
@@ -363,11 +362,10 @@ export function pickNextAsteroidHeroSpriteKey(): string {
  * wave matters more than guaranteed coverage across waves, unlike
  * heroes where one ship-per-round is the rhythm).
  *
- * Physical disk location: `public/assets/sprites/aliens/asteroid-N.png`.
- * Shares the `aliens/` folder by virtue of being processed with
- * `--kind alien` in the sprite pipeline (matches profile: 192×192
- * paletted PNG with alpha). Doesn't share `alien` SEMANTICS though —
- * these aren't enemies, they're targets in a different game mode.
+ * Physical disk location: `public/assets/sprites/asteroids/asteroid-N.webp`
+ * (`spritePath('asteroid', key)`), processed with `--kind asteroid`.
+ * Until sprint 2.6.3 they lived in `aliens/`; the move gave them new
+ * URLs, so the week-long asset cache can't serve stale copies.
  */
 export const AsteroidSpriteKeys = {
   Asteroid1: 'asteroid-1',
@@ -388,7 +386,7 @@ export const AsteroidSpriteKeys = {
  */
 export function pickRandomAsteroidSpriteKey(rng: () => number = Math.random): string {
   const keys = Object.values(AsteroidSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /**
@@ -539,7 +537,7 @@ export const FROG_POSE_COUNT = Object.keys(FROG_SHEET.poses).length;
 /** Pick one colorway at random (one frog per round). */
 export function pickRandomFrogSpriteKey(rng: () => number = Math.random): FrogSpriteKey {
   const keys = Object.values(FrogSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /** The fly the frog catches at the far bank (wing-flap sheet, `frog.mjs`). */
@@ -633,7 +631,7 @@ export const AXOLOTL_SHEET = {
 /** Pick one colorway at random (one axolotl per round). */
 export function pickRandomAxolotlSpriteKey(rng: () => number = Math.random): AxolotlSpriteKey {
   const keys = Object.values(AxolotlSpriteKeys);
-  return keys[Math.floor(rng() * keys.length)]!;
+  return keys[Math.floor(rng() * keys.length)];
 }
 
 /**
@@ -795,7 +793,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
  * 'alien' is special-cased (tiered, spritesheet); the others are
  * uniform single-image kinds.
  */
-export type SpriteKind = 'alien' | 'hero' | 'projectile' | 'ui' | 'particle' | 'bg';
+export type SpriteKind = 'alien' | 'hero' | 'projectile' | 'ui' | 'particle' | 'bg' | 'asteroid';
 
 /**
  * Map kind → public folder slug. The folder structure matches
@@ -810,6 +808,7 @@ const KIND_FOLDER: Record<SpriteKind, string> = {
   ui: 'ui',
   particle: 'particles',
   bg: 'bg',
+  asteroid: 'asteroids',
 };
 
 /**
@@ -818,8 +817,9 @@ const KIND_FOLDER: Record<SpriteKind, string> = {
  * (sprite art, lossless WebP) off PNG; `alien` spritesheets were
  * always WebP. `ui` + `particle` + `projectile` stay PNG — those are
  * already tiny paletted sprites where WebP saves almost nothing.
+ * `asteroid` (sprint 2.6.3) is lossless WebP, like `hero`.
  */
-const WEBP_KINDS: ReadonlySet<SpriteKind> = new Set<SpriteKind>(['alien', 'bg', 'hero']);
+const WEBP_KINDS: ReadonlySet<SpriteKind> = new Set<SpriteKind>(['alien', 'bg', 'hero', 'asteroid']);
 
 // Function overloads: alien REQUIRES a tier; other kinds don't accept one.
 export function spritePath(kind: 'alien', key: string, tier: SpriteTier): string;
@@ -830,7 +830,7 @@ export function spritePath(kind: Exclude<SpriteKind, 'alien'>, key: string): str
  * - For `kind === 'alien'`, includes the tier subfolder (`/128/` or `/192/`).
  *   Tier is REQUIRED.
  * - For other kinds, single resolution per kind (no tier subfolder).
- * - Extension: `.webp` for the kinds in `WEBP_KINDS` (alien / bg / hero),
+ * - Extension: `.webp` for the kinds in `WEBP_KINDS` (alien / bg / hero / asteroid),
  *   `.png` for the rest (ui / particle / projectile — Kenney-pack art
  *   kept as PNG, see story 6).
  *
@@ -959,7 +959,7 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
     scope: 'game:asteroid-field',
   })),
-  ...(Object.values(ProjectileSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+  ...Object.values<string>(ProjectileSpriteKeys).map<SpriteManifestEntry>((key) => ({
     kind: 'projectile',
     key,
     url: spritePath('projectile', key),
@@ -1099,27 +1099,14 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', key),
     scope: 'eager',
   })),
-  // Sprint 2.1 playtest — image-variant asteroid sprites. These ship in
-  // `public/assets/sprites/aliens/` (processed with `--kind alien` for
-  // the 192×192 profile match) but aren't `alien` SEMANTICS
-  // — they're target rocks in Asteroid Field, not enemy spritesheets.
-  // Tagged as `kind: 'particle'` in the manifest because (a) the
-  // SpriteManifestEntry type excludes `alien` (alien needs the
-  // tier + webp + spritesheet load path), and (b) particle is the
-  // closest match to "single-frame paletted PNG, no animation, no
-  // tier." The kind field is only used downstream for telemetry
-  // counts, so the semantic stretch doesn't affect loading. URL is
-  // hardcoded to the actual on-disk path. If the image-asteroid
-  // toggle survives playtest, future cleanup can promote this to a
-  // proper `asteroid` sprite kind (process.mjs profile + KIND_FOLDER
-  // entry + SpriteKind union expansion).
+  // Sprint 2.1 playtest — image-variant asteroid sprites (target rocks in
+  // Asteroid Field). Sprint 2.6.3 gave them their own `asteroid` kind and
+  // folder; before that they were tagged `particle` with a hard-coded URL
+  // into `aliens/`. Lossless WebP since sprint 2.2.1.
   ...(Object.values(AsteroidSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
-    kind: 'particle',
+    kind: 'asteroid',
     key,
-    // Sprint 2.2.1 story 6 — migrated to lossless WebP. URL is still
-    // hardcoded (these live in `aliens/` but aren't `alien`-kind, so
-    // `spritePath` doesn't cover them); the extension flipped .png → .webp.
-    url: `/assets/sprites/aliens/${key}.webp`,
+    url: spritePath('asteroid', key),
     // Sprint 2.1.6 — Asteroid-Field-only; deferred to that game's preload.
     scope: 'game:asteroid-field',
   })),
@@ -1160,12 +1147,13 @@ export function pickRandomClimbFloorBgKey(
   const exclSet = new Set(exclusions);
   const available = CLIMB_RANDOM_FLOOR_KEYS.filter((k) => !exclSet.has(k));
   const pool = available.length > 0 ? available : CLIMB_RANDOM_FLOOR_KEYS;
-  return pool[Math.floor(rng() * pool.length)]! as ClimbFloorBgKey;
+  return pool[Math.floor(rng() * pool.length)] as ClimbFloorBgKey;
 }
 
 /** Union over every non-alien sprite key. Aliens use plain `string` keys due to dynamic derivation. */
 export type NonAlienSpriteKey =
   | HeroSpriteKey
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- empty until the first projectile sprite ships
   | ProjectileSpriteKey
   | UiSpriteKey
   | ParticleSpriteKey

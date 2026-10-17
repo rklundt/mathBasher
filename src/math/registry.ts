@@ -109,7 +109,7 @@ setMixedDelegate((rng, speed) => {
     );
   }
   const idx = Math.floor(rng() * delegateIds.length);
-  const pickedId = delegateIds[idx]!;
+  const pickedId = delegateIds[idx];
   // Sprint 2.4 story 2 — forward the round's speed to the delegated
   // generator. Integer generators ignore it; speed-aware generators
   // (when added to the Mixed pool in the future) would read it.

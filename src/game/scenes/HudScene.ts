@@ -7,7 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { config } from '@/core/config';
 import type { Question } from '@/math/types';
-import type { GameSceneContract, HudSceneInit } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, HudSceneInit, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
@@ -421,7 +421,7 @@ export class HudScene extends Phaser.Scene {
     gameScene.pause();
     const init: PauseOverlayInit = {
       resumeFn: () => this.closePauseOverlay(),
-      quitFn: () => this.handleQuitFromOverlay(),
+      quitFn: (destination) => this.handleQuitFromOverlay(destination),
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -434,7 +434,7 @@ export class HudScene extends Phaser.Scene {
     gameScene?.resume();
   }
 
-  private handleQuitFromOverlay(): void {
+  private handleQuitFromOverlay(destination: QuitDestination): void {
     const gameScene = this.getGameScene();
     if (this.scene.isActive(SceneKeys.PauseOverlay)) {
       this.scene.stop(SceneKeys.PauseOverlay);
@@ -442,7 +442,7 @@ export class HudScene extends Phaser.Scene {
     // Resume before quit so any frozen tweens don't carry over to the next
     // round if the user starts a new game from MenuScene.
     gameScene?.resume();
-    gameScene?.quitToMenu();
+    gameScene?.quitToMenu(destination);
   }
 
   /**
@@ -565,7 +565,7 @@ export class HudScene extends Phaser.Scene {
    */
   private applyLivesState(remaining: number): void {
     for (let i = 0; i < this.livesDots.length; i++) {
-      const dot = this.livesDots[i]!;
+      const dot = this.livesDots[i];
       if (i < remaining) {
         dot.setFillStyle(0x22c55e); // green — still available
         dot.setStrokeStyle(2, 0x16a34a);
@@ -614,7 +614,7 @@ export class HudScene extends Phaser.Scene {
     // later, after fade-out of survivors).
     gameScene.events.on('correctHit', this.onCorrectHit, this);
     // Sprint 2.2.1 story 1 — Number Climb emits `timePenalty` on a
-    // wrong-rung mulligan. Harmless to bind for the arcade modes too
+    // wrong-rung pick. Harmless to bind for the arcade modes too
     // (they never emit it).
     gameScene.events.on('timePenalty', this.onTimePenalty, this);
     // Sprint 2.4.1 story 1 — Number Climb emits `strikesChanged` on
@@ -765,7 +765,7 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * Sprint 2.2.1 story 1 — floating "−Ns" popup at the countdown timer
-   * when a Number Climb wrong-rung mulligan costs cumulative-timer
+   * when a Number Climb wrong-rung pick costs cumulative-timer
    * seconds. Mirrors `popupScoreDelta` but red + anchored at the
    * timer (where the cost is paid) rather than at a hit position.
    * No-op if the countdown text isn't present (arcade modes never

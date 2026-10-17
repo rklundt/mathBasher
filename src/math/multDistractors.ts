@@ -111,7 +111,7 @@ export function pickMultiplicationDistractors(opts: PickMultDistractorsOpts): nu
   const arr = [...candidates];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    const tmp = arr[i]!;
+    const tmp = arr[i];
     arr[i] = arr[j]!;
     arr[j] = tmp;
   }
@@ -137,7 +137,7 @@ export function pickMultiplicationDistractors(opts: PickMultDistractorsOpts): nu
     // Shuffle the backfill so we don't always pick the smallest products.
     for (let i = backfill.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
-      const tmp = backfill[i]!;
+      const tmp = backfill[i];
       backfill[i] = backfill[j]!;
       backfill[j] = tmp;
     }

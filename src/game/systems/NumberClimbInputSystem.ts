@@ -25,7 +25,7 @@ import type { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSyst
  * Touch-cooldown gate: post-pick, ignore further input for ~500ms
  * so a kid mashing taps doesn't accidentally double-pick (and
  * burn through lives on a fat-finger sequence).
- * Scene calls `acceptInput()` after the floor advance / mulligan
+ * Scene calls `acceptInput()` after the floor advance / wrong pick
  * fall-back animations settle to re-enable input.
  */
 const POST_PICK_COOLDOWN_MS = 500;
@@ -107,7 +107,7 @@ export class NumberClimbInputSystem {
   /**
    * Re-enable input after the scene's cooldown completes. Scene
    * calls this once per pick after the corresponding animation
-   * settles (jump-up for correct, fall-back for mulligan).
+   * settles (jump-up for correct, fall-back for wrong pick).
    */
   acceptInput(): void {
     this.accepting = true;

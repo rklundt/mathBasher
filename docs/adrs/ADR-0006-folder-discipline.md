@@ -27,3 +27,27 @@ Tests for `/math` and `/services` run in Vitest's `node` environment (not jsdom)
 - **Pro:** When (if) we ever extract a piece for reuse (e.g. publish the math engine as a separate npm package), the boundaries are already clean.
 - **Con:** Some "convenient" cross-cutting helpers can't live in any one place (e.g. a function that needs both Phaser and a service). Solution: it lives in `/game/` and calls into the service via the service's interface.
 - **Con:** Review overhead — every sprint close cross-checks imports. Worth it; the cost of a single boundary breach (a Phaser type leaking into the math interface) is much higher than the review cost.
+
+## Amendment (2026-10-16, sprint 2.6.3): the full folder map
+
+Two folders grew up after this ADR and weren't listed. Here is the whole map, lowest layer first. A folder may import from the layers below it, never above.
+
+| Folder | What lives there | May import |
+|---|---|---|
+| `/src/shared/` | Pure modules shared with the server (`telemetry-core.ts`, `assertNever.ts`). | nothing |
+| `/src/core/` | Types, `config.ts`, sprite / audio / scene keys, telemetry wrapper, attribution text. | `shared` |
+| `/src/math/` | Question generators. Pure: no `phaser`, no DOM, no `window`. | `core`, `shared` |
+| `/src/services/` | Settings, scores, audio manager. No `phaser`; may read `localStorage`. | `core`, `math`, `shared` |
+| `/src/game/` | Scenes, entities, systems, Phaser UI widgets. | everything above |
+| `/src/app/` | The browser shell: `boot.ts` (constructs the Phaser game), `fullscreen.ts`, `attributionFooter.ts` (the DOM license footer). | everything above |
+
+- **`src/main.ts`** is the entry point and the only importer of `/src/app/`. It must not import Phaser itself; `main.test.ts` enforces this, so the splash paints before the engine loads.
+- **`/src/app/boot.ts`** is the one file outside `/src/game/` allowed to import `phaser`, because it constructs the game.
+- **`/src/test-utils/`** is for tests only; production code never imports it.
+- **`/server/`** may import `/src/shared/` and pure `/src/math/` / `/src/services/` modules, never `/src/game/` or `/src/app/`.
+
+**Known exceptions today** (found while writing this map; allowed explicitly, file by file, in `eslint.config.js`):
+- `core/{assetScope,audioKeys,sceneKeys,spriteKeys}.ts` import the `GameId` *type* from `services/Settings.ts`. It's type-only, so nothing runs, but the type belongs in `core`.
+- `services/audioManagerFactory.ts` imports `PhaserAudioManager` from `game/services/`. The factory is where the Phaser-backed implementation gets wired to the Phaser-free interface, so it belongs in `game` or `app`.
+
+Since sprint 2.6.4 ESLint enforces this map in CI and in the commit hook (`no-restricted-imports` per folder, matching both `@/…` aliases and relative paths; see ADR-0013). The fix for the exceptions, when convenient: move `GameId` into `core`, and move `audioManagerFactory.ts` into `game/services/`. Each fix removes its exception block from the lint config.

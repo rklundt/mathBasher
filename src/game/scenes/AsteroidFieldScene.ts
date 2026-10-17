@@ -8,7 +8,7 @@ import { config, isTouchPrimary, questionSeconds, type MathId, type SpeedKey } f
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { RoundController } from '@/game/services/RoundController';
-import type { GameSceneContract } from '@/game/scenes/gameSceneContract';
+import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { Question } from '@/math/types';
 import { AsteroidHero } from '@/game/entities/AsteroidHero';
 import { AsteroidProjectile } from '@/game/entities/AsteroidProjectile';
@@ -26,6 +26,7 @@ import {
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 import { text } from '@/game/ui/typography';
+import { screenBanner } from '@/game/ui/callouts';
 
 /**
  * Asteroid Field game scene — sprint 2.1's second game mode.
@@ -216,16 +217,16 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     //     a safe-area-pad gap.
     //   - bottomBound: just above the TouchFireButton's hit-circle TOP
     //     edge. TouchFireButton sits with its CENTER at
-    //     `h - footerHeight - footerClearance - radius`; the top of
+    //     `h - bottomGutter - gutterClearance - radius`; the top of
     //     its hit area is one diameter + hit-pad higher than its
     //     center. Subtracting that whole stack leaves the playfield
     //     stopping cleanly above the FIRE button.
     const { width, height } = this.scale;
     const padding = config.layout.safeAreaPaddingPx;
     const hudBarHeight = config.layout.hudBarHeightPx;
-    const footerHeight = config.layout.attributionFooterHeightPx;
+    const bottomGutter = config.layout.canvasBottomGutterPx;
     const fire = config.layout.touchFire;
-    const fireStackHeight = footerHeight + fire.footerClearancePx + fire.radiusPx * 2 + fire.hitPadPx;
+    const fireStackHeight = bottomGutter + fire.gutterClearancePx + fire.radiusPx * 2 + fire.hitPadPx;
     this.leftBound = padding + 8;
     this.rightBound = width - padding - 8;
     this.topBound = hudBarHeight + padding;
@@ -573,17 +574,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     // the kid keeps playing. The SFX + banner are enough signal.
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
 
-    const banner = text(
-      this,
-      this.scale.width / 2,
-      this.scale.height / 2,
-      'Out of shots!',
-      'warning',
-    ).setOrigin(0.5);
-    banner.setScrollFactor(0);
-    banner.setDepth(100);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+    const banner = screenBanner(this, 'Out of shots!', { fixedToCamera: true });
 
     // Fade the surviving asteroids in parallel so the playfield
     // visually settles before the next question's wave spawns.
@@ -804,10 +795,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.lifecycle.resume();
   }
 
-  quitToMenu(): void {
+  quitToMenu(destination?: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
     // scene.start(Menu) consolidated in lifecycle helper.
-    this.lifecycle.quitToMenu();
+    this.lifecycle.quitToMenu(destination);
   }
 
   /** Convenience getter for the HUD's countdown ring. */

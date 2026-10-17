@@ -94,7 +94,7 @@ export type TextKind =
   | 'headline' // primary — extra-large overlay headline (PauseOverlay "Paused")
   | 'summary' // primary — multi-line score summary (GameOverScene)
   | 'scorePopup' // green bold — the floating "+100" popup at alien hit position
-  | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb mulligan)
+  | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb wrong pick)
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
   | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)

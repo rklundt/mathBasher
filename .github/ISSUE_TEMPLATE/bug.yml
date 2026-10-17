@@ -1,0 +1,97 @@
+name: Something's not working
+description: A game gets stuck, looks wrong, sounds wrong, or the math seems off.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make mathBasher better!
+
+        **Please keep it anonymous.** This page is public. Don't include a child's name, age, school, photos, or anything else that could identify them. Crop screenshots to the game screen only. Never paste passwords or other private codes.
+
+        Found a security problem? Please don't post it here. [Report it privately](https://github.com/rklundt/mathBasher/security/advisories/new) instead.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game?
+      options:
+        - Alien Shoot
+        - Asteroid Field
+        - Space Escape!
+        - Math-a-lotl
+        - Frog Splash
+        - Space Shooter
+        - Menus or settings (not a game)
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: math
+    attributes:
+      label: Which math?
+      options:
+        - Add to 10
+        - Add to 20
+        - Subtract within 10
+        - Subtract within 20
+        - Multiply 10×10
+        - Multiply 12×12
+        - Divide 10×10
+        - Divide 12×12
+        - Add Fractions
+        - Subtract Fractions
+        - Mixed Math
+        - Not sure / doesn't matter
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Which difficulty (or speed)?
+      description: Alien Shoot and Asteroid Field call these Slow / Medium / Fast.
+      options:
+        - Easy (Slow)
+        - Medium
+        - Hard (Fast)
+        - Not sure
+  - type: dropdown
+    id: device
+    attributes:
+      label: What device?
+      options:
+        - Phone
+        - Tablet
+        - Chromebook
+        - Computer (Windows or Mac)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Which browser?
+      options:
+        - Safari
+        - Chrome
+        - Edge
+        - Firefox
+        - Other / not sure
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Step by step, if you can (for example "picked Frog Splash, Add to 20, Easy, then on the 3rd question…").
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (optional)
+      description: Drag an image here. Crop it to the game screen, with no names or faces.
+  - type: input
+    id: when
+    attributes:
+      label: About when did it happen? (optional)
+      placeholder: e.g. Oct 16, evening

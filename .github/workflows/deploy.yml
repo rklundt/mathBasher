@@ -54,7 +54,8 @@ jobs:
           # Node 22: pnpm 11 (sprint 2.5.1) requires Node >= 22.13 — it uses
           # the `node:sqlite` builtin, which doesn't exist on Node 20 and
           # crashes `setup-node`'s `cache: pnpm` step (ERR_UNKNOWN_BUILTIN_MODULE).
-          node-version: 22
+          # .nvmrc is the one place the Node major lives (also the Dockerfile).
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies

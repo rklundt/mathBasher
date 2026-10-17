@@ -29,6 +29,24 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.6.5] - 2026-10-16 — "Change Game" in the pause menu
+
+**"Change Game" in the pause menu**
+- Pausing a round now offers **Change Game**, which goes straight to Game Select (math type and difficulty carry over), like the button after a round. The paused round isn't scored.
+
+## [2.6.4] - 2026-10-16 — Project housekeeping
+
+**Project housekeeping** — no gameplay change
+- New forms for reporting a problem or suggesting an idea, with a reminder not to post anything that identifies a child. Security problems can be reported privately.
+- Automatic checks now run before any change is accepted, and before each commit on the developer's machine.
+- Clearer pages on how to report bugs and security problems, and on what the game collects.
+
+## [2.6.3] - 2026-10-16 — Code tidy-ups
+
+**Code tidy-ups** — no gameplay change
+- Code shared between games now lives in one place: the "tap here" hint, the floating "Try again!" notes and the big banners. Everything looks and sounds the same.
+- Math-a-lotl's scoring rules are checked by automatic tests.
+
 ## [2.6.2] - 2026-10-15 — Behind-the-scenes hardening
 
 **Behind-the-scenes hardening** — no gameplay change

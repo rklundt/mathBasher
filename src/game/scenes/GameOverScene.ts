@@ -227,7 +227,7 @@ export class GameOverScene extends Phaser.Scene {
         { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
       ],
     });
-    const buttons = [playAgain!, ...row];
+    const buttons = [playAgain, ...row];
 
     new KeyboardNavigator(this, buttons);
 

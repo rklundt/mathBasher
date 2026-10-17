@@ -120,6 +120,7 @@ export class MenuScene extends Phaser.Scene {
       _y: number,
       event: Phaser.Types.Input.EventData,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Phaser types stopPropagation as `Function`
       event.stopPropagation();
       const init: HeroChooserSceneInit = { fromMenu: true };
       this.scene.start(SceneKeys.HeroChooser, init);
