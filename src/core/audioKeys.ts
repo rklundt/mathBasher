@@ -104,6 +104,13 @@ export const SfxKeys = {
   /** Sprint 2.7 — Penguin Slide: its own two gulps (mixed with Frog Splash's fly slurps). */
   PenguinGulp1: 'penguin-gulp-1',
   PenguinGulp2: 'penguin-gulp-2',
+  /** Sprint 2.8 — Bunny Garden: a rising tune when the right carrot comes up (harp, two trombones), one of three. */
+  BunnySuccess1: 'bunny-success-1',
+  BunnySuccess2: 'bunny-success-2',
+  BunnySuccess3: 'bunny-success-3',
+  /** Sprint 2.8 — Bunny Garden: a sad-trombone "wah-wah" when the mole pops up (a wrong hole), one of two. */
+  BunnyFail1: 'bunny-fail-1',
+  BunnyFail2: 'bunny-fail-2',
 } as const;
 
 /**
@@ -225,14 +232,15 @@ export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typ
 
 /**
  * Sprint 2.8 — Bunny Garden's sounds. The hop is Penguin Slide's hop to a
- * fish (owner's choice). The pop, mole and hide are PLACEHOLDERS that reuse
- * boot-loaded sounds until the owner's arrive (a carrot pluck is coming);
- * then only those lists change, to new game-scoped keys.
+ * fish (owner's choice, shared and boot-loaded). The success and fail tunes
+ * are its own (`game:bunny-garden`). The hide (time's up) is a PLACEHOLDER
+ * that reuses a boot-loaded sound until the owner's arrives.
  */
 const BUNNY_HOP_KEYS = PENGUIN_HOP_KEYS;
-const BUNNY_POP_KEYS = HIT_CORRECT_KEYS;
-const BUNNY_MOLE_KEYS = HIT_WRONG_KEYS;
+const BUNNY_POP_KEYS = ['bunny-success-1', 'bunny-success-2', 'bunny-success-3'] as const;
+const BUNNY_MOLE_KEYS = ['bunny-fail-1', 'bunny-fail-2'] as const;
 const BUNNY_HIDE_KEYS = ['timeout-fail-1'] as const;
+const BUNNY_SFX_KEYS: ReadonlySet<string> = new Set([...BUNNY_POP_KEYS, ...BUNNY_MOLE_KEYS]);
 const nextBunnyHop = noRepeatPicker(BUNNY_HOP_KEYS);
 const nextBunnyPop = noRepeatPicker(BUNNY_POP_KEYS);
 const nextBunnyMole = noRepeatPicker(BUNNY_MOLE_KEYS);
@@ -559,8 +567,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp mix also uses the frog slurps, eager).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
-  // Sprint 2.8 — Bunny Garden's music (its hop is the shared penguin hop; its other sounds are eager placeholders).
+  // Sprint 2.8 — Bunny Garden's music and tunes (its hop is the shared penguin hop; its hide is an eager placeholder).
   if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
+  if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   return 'eager';
 }
 

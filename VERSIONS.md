@@ -32,7 +32,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - A wrong hole has a friendly mole in it: a life lost, and the same question again. If the carrots hide before an answer, a life is lost too. Three lives, 12 carrots fill the basket.
 - Easy / Medium / Hard = 3 / 4 / 5 holes. One of three bunnies at random.
 - Game Select shows all eight games (two rows of four).
-- Its own music; the bunny hops with Penguin Slide's hop sounds. The carrot and mole sounds are placeholders until the owner's arrive.
+- Its own music and sounds: a rising tune for the right carrot, a sad trombone for the mole, and Penguin Slide's hop sounds for the bunny. The time's-up sound is a placeholder until the owner's arrives.
 
 ## [2.7.0] - 2026-10-17 — Penguin Slide; clearer mixed numbers
 
