@@ -9,7 +9,7 @@ body:
 
         **Please keep it anonymous.** This page is public. Don't include a child's name, age, school, photos, or anything else that could identify them. Crop screenshots to the game screen only. Never paste passwords or other private codes.
 
-        Found a security problem? Please don't post it here. Report it privately instead (see the link on the previous page).
+        Found a security problem? Please don't post it here. [Report it privately](https://github.com/rklundt/mathBasher/security/advisories/new) instead.
   - type: dropdown
     id: game
     attributes:
@@ -45,8 +45,8 @@ body:
   - type: dropdown
     id: difficulty
     attributes:
-      label: Which difficulty?
-      description: Alien Shoot calls these Slow / Medium / Fast.
+      label: Which difficulty (or speed)?
+      description: Alien Shoot and Asteroid Field call these Slow / Medium / Fast.
       options:
         - Easy (Slow)
         - Medium

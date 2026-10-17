@@ -26,6 +26,7 @@ import {
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 import { text } from '@/game/ui/typography';
+import { screenBanner } from '@/game/ui/callouts';
 
 /**
  * Asteroid Field game scene — sprint 2.1's second game mode.
@@ -573,17 +574,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     // the kid keeps playing. The SFX + banner are enough signal.
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
 
-    const banner = text(
-      this,
-      this.scale.width / 2,
-      this.scale.height / 2,
-      'Out of shots!',
-      'warning',
-    ).setOrigin(0.5);
-    banner.setScrollFactor(0);
-    banner.setDepth(100);
-    banner.setStroke('#0b1020', 8);
-    banner.setShadow(0, 3, '#0b1020', 6, true, true);
+    const banner = screenBanner(this, 'Out of shots!', { fixedToCamera: true });
 
     // Fade the surviving asteroids in parallel so the playfield
     // visually settles before the next question's wave spawns.

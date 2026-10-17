@@ -551,7 +551,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       'warning',
     ).setOrigin(0.5);
     banner.setScrollFactor(0);
-    banner.setDepth(100);
+    banner.setDepth(config.layout.callout.textDepth);
     applyBannerLegibility(banner);
     this.time.delayedCall(config.numberClimb.lifeLostHint.holdMs, () => {
       this.tweens.add({
@@ -647,7 +647,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const bannerY = this.floor0Y - this.totalFloors * this.floorSpacingPx - this.floorSpacingPx / 2;
     const banner = text(this, bannerX, bannerY, 'Escaped Safe!', 'headline');
     banner.setOrigin(0.5);
-    banner.setDepth(100); // above the frame + hero z-order
+    banner.setDepth(config.layout.callout.textDepth); // above the frame + hero z-order
     applyBannerLegibility(banner);
 
     this.time.delayedCall(1000, () => {

@@ -8,7 +8,7 @@
 
 ## Checklist
 
-- [ ] `pnpm typecheck`, `pnpm test` and `pnpm build` pass (CI runs them too)
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass (CI runs them too)
 - [ ] New source files start with the SPDX header (see CONTRIBUTING.md)
 - [ ] No secrets, tokens or personal data in the code, commits or screenshots
 - [ ] Changes to `.github/`, `.githooks/`, `package.json` scripts, the lockfile, `pnpm-workspace.yaml` or the lint config are called out below for extra review

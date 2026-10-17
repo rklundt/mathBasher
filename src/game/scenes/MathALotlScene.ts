@@ -507,12 +507,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.tapHint?.show();
   }
 
+  /** Q1-only, so hiding it is final: stop its pulse tween and free it. */
   private hideTapHint(): void {
     this.tapHint?.destroy();
     this.tapHint = undefined;
   }
 
-  /** Q1-only, so hiding it is final: stop its pulse tween and free it. */
   // ----- End / cleanup -----------------------------------------------------
 
   private endRound(): void {

@@ -779,7 +779,7 @@ function decontaminateInPlace(buf, width, height, keyColor) {
     // (255 - α) / 255 → fraction of bg in the composited pixel.
     const bgFrac = (255 - alpha) / 255;
     const invAlphaScale = 255 / alpha;
-    // Sprint 0.7 Story 13 (D6 from sprint 0.6.3 wrap-up review): the
+    // Sprint 0.7 Story 13 (D6 from sprint 0.6.3 pre-release review): the
     // prior `* invAlphaScale / 255 * 255` had a redundant /255*255
     // cancellation that made the math harder to read without affecting
     // output (x/255*255 === x for floats). Simplified.

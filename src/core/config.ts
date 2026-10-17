@@ -771,6 +771,8 @@ export const config = {
     note: { edgeMarginPx: 150, risePx: 50, durationMs: 1200 },
     /** Q1 "👆 Tap the right lily pad!" hint: screen-fixed (the camera starts scrolled), this far from the top. */
     tapHint: { y: 150, heightPx: 60, backdropAlpha: 0.55 },
+    /** "You made it!" gets a heavier outline than other banners (gold reads poorly on blue water). */
+    finishBannerStrokePx: 10,
   },
   /**
    * Sprint 2.6 — Space Shooter. The kid sits in a cockpit looking out the

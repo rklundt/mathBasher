@@ -510,7 +510,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.frog.cheer();
     // Gold (not green) with a heavy outline — green reads poorly on blue water.
     const banner = screenBanner(this, 'You made it!', { style: 'stars', fixedToCamera: true });
-    banner.setStroke(CALLOUT_INK_CSS, 10);
+    banner.setStroke(CALLOUT_INK_CSS, this.cfg.finishBannerStrokePx);
     banner.setScale(0.6);
     this.tweens.add({ targets: banner, scale: 1, duration: 300, ease: 'Back.Out' });
     _th.logToAi('FrogSplash.crossed', SeverityLevel.Information, {

@@ -10,7 +10,7 @@ Only the live game at [mathbasher.mykfam.com](https://mathbasher.mykfam.com), bu
 
 **Please do not open a public issue for a security problem.** Report it privately:
 
-1. **Preferred:** use GitHub's private form: this repository's **Security** tab → **Report a vulnerability** ([direct link](https://github.com/rklundt/mathBasher/security/advisories/new)). Only the project owner sees it.
+1. **Preferred:** use GitHub's private form: this repository's **Security** tab → **Report a vulnerability** ([direct link](https://github.com/rklundt/mathBasher/security/advisories/new)). Only the project maintainers see it.
 2. **Or email** **rayklundt (at) Outlook (dot) com**. Put `[URGENT SECURITY]` in the subject if it's being actively exploited.
 
 Please include:
@@ -37,7 +37,7 @@ Out of scope:
 
 ## What the game does and doesn't collect
 
-The game has no accounts and asks for no personal information. Settings and high scores stay in your own browser. The hosting network counts visits with Cloudflare Web Analytics, which uses no cookies. If the game ever adds accounts or personal data, this policy will be updated first.
+The game has no accounts and asks for no personal information. Settings and high scores stay in your own browser. The hosting network counts visits with Cloudflare Web Analytics, which uses no cookies. Like any website, the services that deliver the game (Cloudflare, Microsoft Azure, and Google Fonts for the lettering) receive the ordinary details of each request, such as the IP address and browser type. If the game ever adds accounts or personal data, this policy will be updated first.
 
 ## Disclosure
 

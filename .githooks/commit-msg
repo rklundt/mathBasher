@@ -8,7 +8,8 @@
 # message is permanent once pushed, so it gets the same local checks as code.
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
-if [ -n "$(git ls-files .githooks/local)" ]; then
+# ':(icase)' also catches .githooks/Local/ etc., which Windows treats as the same folder.
+if [ -n "$(git ls-files ':(icase).githooks/local')" ]; then
   echo "commit-msg: .githooks/local/ contains tracked files; refusing to run. Remove them from git." >&2
   exit 1
 fi
