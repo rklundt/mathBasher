@@ -27,7 +27,11 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**"Change Game" in the pause menu** (sprint 2.6.5, in progress)
+_Nothing yet._
+
+## [2.6.5] - 2026-10-16 — "Change Game" in the pause menu
+
+**"Change Game" in the pause menu**
 - Pausing a round now offers **Change Game**, which goes straight to Game Select (math type and difficulty carry over), like the button after a round. The paused round isn't scored.
 
 ## [2.6.4] - 2026-10-16 — Project housekeeping
