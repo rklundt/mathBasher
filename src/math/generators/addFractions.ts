@@ -3,12 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type { SpeedKey } from '@/core/config';
-import {
-  buildFractionDistractors,
-  decimalValue,
-  formatFraction,
-  mixedToImproper,
-} from '@/math/fractionMath';
+import { buildFractionDistractors, decimalValue, formatFraction, mixedToImproper } from '@/math/fractionMath';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -140,12 +135,7 @@ const addFractions: QuestionGenerator = {
         break;
     }
 
-    const distractors = buildFractionDistractors(
-      rng,
-      result.correctNum,
-      result.correctDen,
-      CHOICE_COUNT - 1,
-    );
+    const distractors = buildFractionDistractors(rng, result.correctNum, result.correctDen, CHOICE_COUNT - 1);
 
     // Combine correct + distractors as a tagged list, then shuffle once so
     // the correct answer's position is randomized in the final choices.

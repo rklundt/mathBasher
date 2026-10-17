@@ -3,12 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type { SpeedKey } from '@/core/config';
-import {
-  buildFractionDistractors,
-  decimalValue,
-  formatFraction,
-  mixedToImproper,
-} from '@/math/fractionMath';
+import { buildFractionDistractors, decimalValue, formatFraction, mixedToImproper } from '@/math/fractionMath';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
 
@@ -95,7 +90,7 @@ function generateMedium(rng: () => number): OperandResult {
     candidates.push({ w, f, impNum: imp.num });
   }
   candidates.sort((x, y) => y.impNum - x.impNum); // larger first
-  const [first, second] = candidates as [typeof candidates[0], typeof candidates[0]];
+  const [first, second] = candidates as [(typeof candidates)[0], (typeof candidates)[0]];
   return {
     prompt: `${first.w} ${first.f}/${den} − ${second.w} ${second.f}/${den} = ?`,
     correctNum: first.impNum - second.impNum,
@@ -164,12 +159,7 @@ const subtractFractions: QuestionGenerator = {
       );
     }
 
-    const distractors = buildFractionDistractors(
-      rng,
-      result.correctNum,
-      result.correctDen,
-      CHOICE_COUNT - 1,
-    );
+    const distractors = buildFractionDistractors(rng, result.correctNum, result.correctDen, CHOICE_COUNT - 1);
 
     const combined: Array<{ num: number; den: number; isCorrect: boolean }> = [
       { num: result.correctNum, den: result.correctDen, isCorrect: true },

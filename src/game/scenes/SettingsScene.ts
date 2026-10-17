@@ -158,7 +158,7 @@ export class SettingsScene extends Phaser.Scene {
     backdrop.setOrigin(0, 0);
 
     // Title (persists across tab switches).
-    text(this, width / 2, height * 0.10, 'Settings', 'h2').setOrigin(0.5);
+    text(this, width / 2, height * 0.1, 'Settings', 'h2').setOrigin(0.5);
 
     // Build the tab strip (left side, vertical column). Only tabs with
     // content are shown — Alien Shoot rounds get no Game tab today
@@ -231,7 +231,7 @@ export class SettingsScene extends Phaser.Scene {
     // Vertical column on the left. Each tab is a wide-enough button
     // for kid touch targets (140×56). Stacked starting below the title.
     const tabX = width * 0.13;
-    const tabYStart = height * 0.30;
+    const tabYStart = height * 0.3;
     const tabGap = 72;
     for (let i = 0; i < tabs.length; i++) {
       const tabId = tabs[i];
@@ -297,10 +297,7 @@ export class SettingsScene extends Phaser.Scene {
     // (top → bottom), then Back. Keyboard Tab cycles through this
     // entire set; clicking a tab swaps content but keeps tab-strip
     // focus position consistent.
-    const focusables: Focusable[] = [
-      ...this.tabStripButtons.map((t) => t.button),
-      ...this.tabContentFocusables,
-    ];
+    const focusables: Focusable[] = [...this.tabStripButtons.map((t) => t.button), ...this.tabContentFocusables];
     if (this.backButton !== null) focusables.push(this.backButton);
     this.navigator = new KeyboardNavigator(this, focusables);
   }
@@ -316,7 +313,7 @@ export class SettingsScene extends Phaser.Scene {
     const { width, height } = this.scale;
     // Content is centered on the RIGHT-HAND area (left edge ~= 30%).
     // Use 60% width as the center for the audio rows.
-    const cx = width * 0.60;
+    const cx = width * 0.6;
     const sectionLabel = text(this, cx, height * 0.22, 'Volume', 'sectionLabel').setOrigin(0.5);
     this.tabContent.push(sectionLabel);
 
@@ -341,12 +338,7 @@ export class SettingsScene extends Phaser.Scene {
    * matters because mute or another control could change state between
    * renders.
    */
-  private renderVolumeRow(
-    audio: AudioManager,
-    kind: AudioKind,
-    cx: number,
-    y: number,
-  ): PlaceholderButton[] {
+  private renderVolumeRow(audio: AudioManager, kind: AudioKind, cx: number, y: number): PlaceholderButton[] {
     // TextKind 'rowLabel' — 26px primary, the canonical settings-row
     // label sizing (Sprint 0.7.5 Story 3). Origin (0, 0.5) for left
     // alignment relative to the slider controls to its right.
@@ -421,7 +413,7 @@ export class SettingsScene extends Phaser.Scene {
    */
   private renderGameTab(): void {
     const { width, height } = this.scale;
-    const cx = width * 0.60;
+    const cx = width * 0.6;
     if (Settings.round.gameId === 'asteroid-field') {
       const sectionLabel = text(this, cx, height * 0.22, 'Asteroid Field', 'sectionLabel').setOrigin(0.5);
       this.tabContent.push(sectionLabel);
@@ -528,9 +520,7 @@ export class SettingsScene extends Phaser.Scene {
     const ICON_Y_OFFSET = -18; // px ABOVE button center; label sits below
 
     if (this.textures.exists(ClimbHeroSkinKeys.SpaceRobot)) {
-      const robotIcon = this.add
-        .image(robotX, y + ICON_Y_OFFSET, ClimbHeroSkinKeys.SpaceRobot)
-        .setOrigin(0.5);
+      const robotIcon = this.add.image(robotX, y + ICON_Y_OFFSET, ClimbHeroSkinKeys.SpaceRobot).setOrigin(0.5);
       const robotTex = this.textures.get(ClimbHeroSkinKeys.SpaceRobot).getSourceImage();
       const robotMax = Math.max(robotTex.width, robotTex.height) || 1;
       robotIcon.setScale(ICON_SIZE / robotMax);
@@ -580,8 +570,7 @@ export class SettingsScene extends Phaser.Scene {
    * re-set inside the switch's onChange callback so it updates live.
    */
   private renderAsteroidImageToggleRow(cx: number, y: number): void {
-    const labelFor = (enabled: boolean): string =>
-      enabled ? 'Asteroid Images' : 'Rendered Asteroids';
+    const labelFor = (enabled: boolean): string => (enabled ? 'Asteroid Images' : 'Rendered Asteroids');
     // Positions: switch centered at (cx-80), label left-justified
     // starting at (cx-10). Switch is ~80px wide so its right edge is
     // around cx-40; label starts 30px right of that for breathing room.
@@ -606,13 +595,7 @@ export class SettingsScene extends Phaser.Scene {
     this.tabContent.push(toggle);
     this.tabContentFocusables.push(toggle);
 
-    const label = text(
-      this,
-      labelX,
-      y,
-      labelFor(Settings.getImageAsteroidsEnabled()),
-      'rowLabel',
-    ).setOrigin(0, 0.5);
+    const label = text(this, labelX, y, labelFor(Settings.getImageAsteroidsEnabled()), 'rowLabel').setOrigin(0, 0.5);
     this.tabContent.push(label);
   }
 

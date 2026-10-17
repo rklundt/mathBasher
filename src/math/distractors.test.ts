@@ -36,30 +36,20 @@ describe('pickDistractors', () => {
 
   it('throws when the available pool is too small', () => {
     // Range [0, 2] excluding 1 leaves 2 candidates; asking for 3 must throw.
-    expect(() =>
-      pickDistractors(1, { count: 3, min: 0, max: 2, rng: mulberry32(4) }),
-    ).toThrow(/cannot pick/i);
+    expect(() => pickDistractors(1, { count: 3, min: 0, max: 2, rng: mulberry32(4) })).toThrow(/cannot pick/i);
   });
 
   it('throws on non-integer min/max', () => {
-    expect(() =>
-      pickDistractors(5, { count: 1, min: 0.5, max: 10, rng: mulberry32(5) }),
-    ).toThrow(/integers/);
-    expect(() =>
-      pickDistractors(5, { count: 1, min: 0, max: 10.5, rng: mulberry32(5) }),
-    ).toThrow(/integers/);
+    expect(() => pickDistractors(5, { count: 1, min: 0.5, max: 10, rng: mulberry32(5) })).toThrow(/integers/);
+    expect(() => pickDistractors(5, { count: 1, min: 0, max: 10.5, rng: mulberry32(5) })).toThrow(/integers/);
   });
 
   it('throws when max < min', () => {
-    expect(() =>
-      pickDistractors(0, { count: 1, min: 10, max: 5, rng: mulberry32(6) }),
-    ).toThrow(/>= min/);
+    expect(() => pickDistractors(0, { count: 1, min: 10, max: 5, rng: mulberry32(6) })).toThrow(/>= min/);
   });
 
   it('throws when count is negative', () => {
-    expect(() =>
-      pickDistractors(0, { count: -1, min: 0, max: 10, rng: mulberry32(6) }),
-    ).toThrow(/count.*>=\s*0/i);
+    expect(() => pickDistractors(0, { count: -1, min: 0, max: 10, rng: mulberry32(6) })).toThrow(/count.*>=\s*0/i);
   });
 
   it('falls back to deterministic fill when the rng is degenerate', () => {

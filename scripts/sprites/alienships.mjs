@@ -102,8 +102,22 @@ const HULLS = [
       `<ellipse cx="${C}" cy="146" rx="114" ry="40" fill="${p.body}" ${ink()}/>` +
       `<ellipse cx="${C}" cy="158" rx="104" ry="24" fill="${p.shade}" opacity="0.35"/>` +
       shine(70, 132, 26, 9, -8) +
-      lights([[22, 150], [218, 150]], p),
-    alt ? '' : lights([[52, 170], [188, 170]], p),
+      lights(
+        [
+          [22, 150],
+          [218, 150],
+        ],
+        p,
+      ),
+    alt
+      ? ''
+      : lights(
+          [
+            [52, 170],
+            [188, 170],
+          ],
+          p,
+        ),
   ],
   // 1 rocket pod with fins and a flame
   (p, alt) => [
@@ -111,18 +125,41 @@ const HULLS = [
       `<path d="M66,150 L26,206 L72,196 Z" fill="${p.shade}" ${ink()}/><path d="M174,150 L214,206 L168,196 Z" fill="${p.shade}" ${ink()}/>` +
       `<rect x="62" y="22" width="116" height="186" rx="58" fill="${p.body}" ${ink()}/>` +
       `<rect x="72" y="40" width="22" height="150" rx="11" fill="#fff" opacity="0.14"/>` +
-      (alt ? spots([[150, 190, 9], [86, 186, 7]], p) : '') +
+      (alt
+        ? spots(
+            [
+              [150, 190, 9],
+              [86, 186, 7],
+            ],
+            p,
+          )
+        : '') +
       shine(92, 46, 14, 8),
     eyes(C, 66, 11, alt),
   ],
   // 2 beetle with horns and legs
   (p, alt) => [
-    [-1, 1].map((s) => [0, 1, 2].map((k) => limb(`M${C + s * 80},${120 + k * 30} l${s * 26},${10 + k * 4}`, p.shade, 6)).join('')).join('') +
-      limb('M92,48 Q70,14 50,22', p.shade) + limb('M148,48 Q170,14 190,22', p.shade) +
+    [-1, 1]
+      .map((s) =>
+        [0, 1, 2].map((k) => limb(`M${C + s * 80},${120 + k * 30} l${s * 26},${10 + k * 4}`, p.shade, 6)).join(''),
+      )
+      .join('') +
+      limb('M92,48 Q70,14 50,22', p.shade) +
+      limb('M148,48 Q170,14 190,22', p.shade) +
       `<circle cx="50" cy="22" r="8" fill="${p.trim}" ${ink(3)}/><circle cx="190" cy="22" r="8" fill="${p.trim}" ${ink(3)}/>` +
       `<circle cx="${C}" cy="134" r="92" fill="${p.body}" ${ink()}/>` +
       `<path d="M${C},44 L${C},226" ${ink(4)} opacity="0.6"/>` +
-      (alt ? spots([[66, 108, 10], [176, 112, 12], [70, 180, 9], [172, 182, 8]], p) : '') +
+      (alt
+        ? spots(
+            [
+              [66, 108, 10],
+              [176, 112, 12],
+              [70, 180, 9],
+              [172, 182, 8],
+            ],
+            p,
+          )
+        : '') +
       shine(80, 84, 22, 11),
     eyes(C, 66, 10, alt),
   ],
@@ -132,7 +169,15 @@ const HULLS = [
       `<path d="M8,124 Q52,60 120,68 Q188,60 232,124 Q190,150 156,196 L120,178 L84,196 Q50,150 8,124 Z" fill="${p.body}" ${ink()}/>` +
       `<path d="M30,124 Q70,96 104,104" fill="none" stroke="${p.shade}" stroke-width="5" stroke-linecap="round"/>` +
       `<path d="M210,124 Q170,96 136,104" fill="none" stroke="${p.shade}" stroke-width="5" stroke-linecap="round"/>` +
-      (alt ? lights([[36, 130], [204, 130]], p) : '') +
+      (alt
+        ? lights(
+            [
+              [36, 130],
+              [204, 130],
+            ],
+            p,
+          )
+        : '') +
       shine(70, 92, 20, 8, -20),
     eyes(C, 82, 10, alt),
   ],
@@ -140,28 +185,46 @@ const HULLS = [
   (p, alt) => [
     `<circle cx="${C}" cy="${BADGE.y}" r="100" fill="${p.body}" ${ink()}/>` +
       `<circle cx="${C}" cy="${BADGE.y}" r="70" fill="${p.shade}" ${ink(4)}/>` +
-      lights(Array.from({ length: 8 }, (_, i) => {
-        const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-        return [C + Math.cos(a) * 86, BADGE.y + Math.sin(a) * 86];
-      }), p) +
+      lights(
+        Array.from({ length: 8 }, (_, i) => {
+          const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+          return [C + Math.cos(a) * 86, BADGE.y + Math.sin(a) * 86];
+        }),
+        p,
+      ) +
       shine(72, 74, 20, 9),
     `<path d="M88,40 A32,32 0 0 1 152,40 L150,46 L90,46 Z" fill="${p.glass}" ${ink()}/>` + eyes(C, 30, 8, alt),
   ],
   // 5 crab with raised claws and eye stalks
   (p, alt) => [
-    limb('M50,130 Q22,104 34,72', p.shade, 9) + limb('M190,130 Q218,104 206,72', p.shade, 9) +
+    limb('M50,130 Q22,104 34,72', p.shade, 9) +
+      limb('M190,130 Q218,104 206,72', p.shade, 9) +
       `<path d="M34,72 m-22,0 a22,22 0 1 1 44,0 l-14,-4 l-8,10 z" fill="${p.body}" ${ink()}/>` +
       `<path d="M206,72 m-22,0 a22,22 0 1 1 44,0 l-14,-4 l-8,10 z" fill="${p.body}" ${ink()}/>` +
-      limb('M98,76 L94,46', p.shade, 5) + limb('M142,76 L146,46', p.shade, 5) +
+      limb('M98,76 L94,46', p.shade, 5) +
+      limb('M142,76 L146,46', p.shade, 5) +
       `<ellipse cx="${C}" cy="140" rx="92" ry="70" fill="${p.body}" ${ink()}/>` +
       `<path d="M44,170 Q120,214 196,170" fill="none" stroke="${p.shade}" stroke-width="6" stroke-linecap="round"/>` +
-      (alt ? spots([[62, 130, 8], [178, 128, 9]], p) : '') +
+      (alt
+        ? spots(
+            [
+              [62, 130, 8],
+              [178, 128, 9],
+            ],
+            p,
+          )
+        : '') +
       shine(78, 100, 20, 9),
     alt ? eyes(C, 40, 9, true) : `${eyes(94, 40, 8, true)}${eyes(146, 40, 8, true)}`,
   ],
   // 6 space jellyfish
   (p, alt) => [
-    [60, 90, 120, 150, 180].map((x, i) => `<path d="M${x},176 q${i % 2 ? 14 : -14},18 0,34 q${i % 2 ? -14 : 14},14 0,28" fill="none" stroke="${p.shade}" stroke-width="7" stroke-linecap="round"/>`).join('') +
+    [60, 90, 120, 150, 180]
+      .map(
+        (x, i) =>
+          `<path d="M${x},176 q${i % 2 ? 14 : -14},18 0,34 q${i % 2 ? -14 : 14},14 0,28" fill="none" stroke="${p.shade}" stroke-width="7" stroke-linecap="round"/>`,
+      )
+      .join('') +
       `<path d="M28,140 A92,92 0 0 1 212,140 Q196,156 180,146 Q166,166 150,150 Q136,170 120,152 Q104,170 90,150 Q74,166 60,146 Q44,156 28,140 Z" fill="${p.body}" ${ink()}/>` +
       `<path d="M28,140 A92,92 0 0 1 212,140" fill="none" stroke="${p.glass}" stroke-width="6" opacity="0.6"/>` +
       shine(76, 74, 22, 11),
@@ -169,35 +232,85 @@ const HULLS = [
   ],
   // 7 X-wing fighter
   (p, alt) => [
-    [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sy]) => {
-      const x2 = C + sx * 104;
-      const y2 = BADGE.y + sy * 78;
-      return `<path d="M${C},${BADGE.y} L${x2},${y2}" stroke="${INK}" stroke-width="30" stroke-linecap="round"/>` +
-        `<path d="M${C},${BADGE.y} L${x2},${y2}" stroke="${p.shade}" stroke-width="20" stroke-linecap="round"/>` +
-        `<circle cx="${x2}" cy="${y2}" r="13" fill="${p.trim}" ${ink(4)}/>`;
-    }).join('') +
+    [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ]
+      .map(([sx, sy]) => {
+        const x2 = C + sx * 104;
+        const y2 = BADGE.y + sy * 78;
+        return (
+          `<path d="M${C},${BADGE.y} L${x2},${y2}" stroke="${INK}" stroke-width="30" stroke-linecap="round"/>` +
+          `<path d="M${C},${BADGE.y} L${x2},${y2}" stroke="${p.shade}" stroke-width="20" stroke-linecap="round"/>` +
+          `<circle cx="${x2}" cy="${y2}" r="13" fill="${p.trim}" ${ink(4)}/>`
+        );
+      })
+      .join('') +
       `<circle cx="${C}" cy="${BADGE.y}" r="76" fill="${p.body}" ${ink()}/>` +
-      (alt ? spots([[76, 168, 8], [166, 170, 7]], p) : '') +
+      (alt
+        ? spots(
+            [
+              [76, 168, 8],
+              [166, 170, 7],
+            ],
+            p,
+          )
+        : '') +
       shine(86, 86, 20, 9),
     eyes(C, 72, 9, alt),
   ],
   // 8 teardrop squid
   (p, alt) => [
-    [[78, -1], [104, -1], [136, 1], [162, 1]].map(([x, s]) => `<path d="M${x},188 q${s * 10},20 ${s * -2},38" fill="none" stroke="${p.shade}" stroke-width="9" stroke-linecap="round"/>`).join('') +
+    [
+      [78, -1],
+      [104, -1],
+      [136, 1],
+      [162, 1],
+    ]
+      .map(
+        ([x, s]) =>
+          `<path d="M${x},188 q${s * 10},20 ${s * -2},38" fill="none" stroke="${p.shade}" stroke-width="9" stroke-linecap="round"/>`,
+      )
+      .join('') +
       `<path d="M120,10 C196,70 210,170 120,198 C30,170 44,70 120,10 Z" fill="${p.body}" ${ink()}/>` +
-      
-      (alt ? spots([[64, 150, 8], [178, 150, 8], [120, 196, 6]], p) : '') +
+      (alt
+        ? spots(
+            [
+              [64, 150, 8],
+              [178, 150, 8],
+              [120, 196, 6],
+            ],
+            p,
+          )
+        : '') +
       shine(92, 58, 13, 8, -40),
     eyes(C, 66, 11, alt),
   ],
   // 9 boxy drone with an antenna
   (p, alt) => [
-    limb(`M${C},34 L${C},10`, p.shade, 4) + `<circle cx="${C}" cy="8" r="8" fill="${p.trim}" ${ink(3)}/>` +
+    limb(`M${C},34 L${C},10`, p.shade, 4) +
+      `<circle cx="${C}" cy="8" r="8" fill="${p.trim}" ${ink(3)}/>` +
       `<rect x="10" y="108" width="24" height="56" rx="8" fill="${p.shade}" ${ink(4)}/><rect x="206" y="108" width="24" height="56" rx="8" fill="${p.shade}" ${ink(4)}/>` +
       `<rect x="28" y="34" width="184" height="184" rx="34" fill="${p.body}" ${ink()}/>` +
       `<rect x="54" y="56" width="132" height="38" rx="19" fill="${p.glass}" ${ink(4)}/>` +
-      lights([[48, 200], [192, 200]], p) +
-      (alt ? spots([[58, 120, 7], [182, 120, 7]], p) : '') +
+      lights(
+        [
+          [48, 200],
+          [192, 200],
+        ],
+        p,
+      ) +
+      (alt
+        ? spots(
+            [
+              [58, 120, 7],
+              [182, 120, 7],
+            ],
+            p,
+          )
+        : '') +
       shine(60, 48, 16, 6, -10),
     eyes(C, 75, 9, alt),
   ],
@@ -226,7 +339,10 @@ async function withHalo(svg) {
     .joinChannel(alpha)
     .png()
     .toBuffer();
-  return sharp(halo).composite([{ input: ship }]).png().toBuffer();
+  return sharp(halo)
+    .composite([{ input: ship }])
+    .png()
+    .toBuffer();
 }
 
 function refuseOverwrite(paths, force) {

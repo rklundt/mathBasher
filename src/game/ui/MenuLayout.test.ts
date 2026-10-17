@@ -89,11 +89,7 @@ describe('computeStackSlots', () => {
     //   slot 0 (primary):    y = 256 + 32 = 288
     //   slot 1 (secondary):  y = 288 + 32 (rest of primary) + 12 + 28 (half secondary) = 360
     //   slot 2 (primary):    y = 360 + 28 + 12 + 32 = 432
-    const slots = computeStackSlots(640, 360, 12, [
-      {},
-      { kind: 'secondary' },
-      {},
-    ]);
+    const slots = computeStackSlots(640, 360, 12, [{}, { kind: 'secondary' }, {}]);
     expect(slots[0].y).toBe(288);
     expect(slots[1].y).toBe(360);
     expect(slots[2].y).toBe(432);

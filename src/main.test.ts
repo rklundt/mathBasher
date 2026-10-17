@@ -51,12 +51,9 @@ const BOOT_SOURCE = readFileSync(resolve(__dirname, 'app/boot.ts'), 'utf8');
  * or no prefix" choice — `\s*` is NOT allowed between `^` and the prefix
  * group, so an indented (in-function) call does NOT match.
  */
-const TOP_LEVEL_PHASER_GAME =
-  /^(?:(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*)?new Phaser\.Game\s*\(/;
+const TOP_LEVEL_PHASER_GAME = /^(?:(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*)?new Phaser\.Game\s*\(/;
 
-function findTopLevelPhaserConstruction(
-  source: string,
-): { line: string; lineNumber: number }[] {
+function findTopLevelPhaserConstruction(source: string): { line: string; lineNumber: number }[] {
   return source
     .split('\n')
     .map((line, i) => ({ line, lineNumber: i + 1 }))

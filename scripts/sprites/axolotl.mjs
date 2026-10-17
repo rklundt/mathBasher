@@ -41,8 +41,16 @@ export const SWIM_FRAMES = 6;
 
 /** Freckles on the back of the head: [dx, dy, r] from the head centre. */
 const HEAD_SPOTS = [
-  [-44, -14, 3.2], [-34, -32, 2.6], [-16, -44, 3], [6, -46, 2.4], [26, -42, 3],
-  [44, -30, 2.4], [-52, 8, 2.6], [-40, 28, 3], [-22, 38, 2.4], [58, -12, 2.2],
+  [-44, -14, 3.2],
+  [-34, -32, 2.6],
+  [-16, -44, 3],
+  [6, -46, 2.4],
+  [26, -42, 3],
+  [44, -30, 2.4],
+  [-52, 8, 2.6],
+  [-40, 28, 3],
+  [-22, 38, 2.4],
+  [58, -12, 2.2],
 ];
 
 /** Small deterministic PRNG so the freckles land in the same place every frame. */
@@ -59,19 +67,37 @@ function mulberry32(seed) {
 /** Colorways — body / belly / outline / gills / fin / cheeks. */
 const COLORWAYS = {
   pink: {
-    body: '#ffb3c8', belly: '#ffe3ec', outline: '#b9476f',
-    gill: '#e8467c', gillLight: '#ff86ad', fin: '#ffd3e0', blush: '#ff6f9a',
-    bodyShade: '#f096b0', spot: '#de4f7f',
+    body: '#ffb3c8',
+    belly: '#ffe3ec',
+    outline: '#b9476f',
+    gill: '#e8467c',
+    gillLight: '#ff86ad',
+    fin: '#ffd3e0',
+    blush: '#ff6f9a',
+    bodyShade: '#f096b0',
+    spot: '#de4f7f',
   },
   gold: {
-    body: '#ffd65a', belly: '#fff4c8', outline: '#c06f16',
-    gill: '#ff6a24', gillLight: '#ffa04f', fin: '#ffeaa6', blush: '#ff8a4a',
-    bodyShade: '#efbb3c', spot: '#e8742a',
+    body: '#ffd65a',
+    belly: '#fff4c8',
+    outline: '#c06f16',
+    gill: '#ff6a24',
+    gillLight: '#ffa04f',
+    fin: '#ffeaa6',
+    blush: '#ff8a4a',
+    bodyShade: '#efbb3c',
+    spot: '#e8742a',
   },
   lilac: {
-    body: '#a7b3d2', belly: '#dfe4f3', outline: '#4c4384',
-    gill: '#9b5cff', gillLight: '#cfadff', fin: '#cdd4ec', blush: '#b98cff',
-    bodyShade: '#8c99be', spot: '#7a58d6',
+    body: '#a7b3d2',
+    belly: '#dfe4f3',
+    outline: '#4c4384',
+    gill: '#9b5cff',
+    gillLight: '#cfadff',
+    fin: '#cdd4ec',
+    blush: '#b98cff',
+    bodyShade: '#8c99be',
+    spot: '#7a58d6',
   },
 };
 
@@ -173,7 +199,8 @@ function axolotlSvg(c, phase, happy) {
       return { d: `M${f(wrist[0])},${f(wrist[1])} L${f(tipPt[0])},${f(tipPt[1])}`, tipPt };
     });
     const fill = far ? c.bodyShade : c.body;
-    const stroke = (d, wd, col) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${wd}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const stroke = (d, wd, col) =>
+      `<path d="${d}" fill="none" stroke="${col}" stroke-width="${wd}" stroke-linecap="round" stroke-linejoin="round"/>`;
     return `<g>
       ${fingers.map((g) => stroke(g.d, 6.2, c.outline)).join('')}
       ${fingers.map((g) => `<circle cx="${f(g.tipPt[0])}" cy="${f(g.tipPt[1])}" r="3.2" fill="${c.outline}"/>`).join('')}
@@ -184,8 +211,10 @@ function axolotlSvg(c, phase, happy) {
     </g>`;
   };
   const paddle = 24 * Math.sin(w);
-  const legsFar = leg(0.11, 150 - paddle, 22 + paddle * 0.4, true, 4) + leg(0.42, 150 + paddle, 22 - paddle * 0.4, true, 5);
-  const legsNear = leg(0.05, 138 + paddle, 26 - paddle * 0.5, false, 4) + leg(0.36, 138 - paddle, 26 + paddle * 0.5, false, 5);
+  const legsFar =
+    leg(0.11, 150 - paddle, 22 + paddle * 0.4, true, 4) + leg(0.42, 150 + paddle, 22 - paddle * 0.4, true, 5);
+  const legsNear =
+    leg(0.05, 138 + paddle, 26 - paddle * 0.5, false, 4) + leg(0.36, 138 - paddle, 26 + paddle * 0.5, false, 5);
 
   // Freckles: scattered along the body (they ride the spine, so they move
   // with the tail wave) and over the back of the head, clear of the face.
@@ -302,7 +331,6 @@ function refuseOverwrite(paths, force) {
   console.error('A visible change should ship under a new filename (week-long cache).');
   process.exit(1);
 }
-
 
 async function renderSheet(c) {
   const frames = [];

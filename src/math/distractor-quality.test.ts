@@ -77,10 +77,7 @@ const RANGES: Readonly<Record<MathId, RangeSpec>> = {
 };
 
 /** Math ids whose generator returns non-integer (decimal) choice values. */
-const FRACTIONAL_IDS: ReadonlySet<MathId> = new Set<MathId>([
-  'add-fractions',
-  'subtract-fractions',
-]);
+const FRACTIONAL_IDS: ReadonlySet<MathId> = new Set<MathId>(['add-fractions', 'subtract-fractions']);
 
 const SAMPLES_PER_GENERATOR = 200;
 
@@ -102,9 +99,7 @@ describe('distractor quality across all implemented generators', () => {
       const range = RANGES[id];
       const gen = generators[id];
       const rng = mulberry32(2026);
-      const samples = Array.from({ length: SAMPLES_PER_GENERATOR }, () =>
-        gen.generate(rng),
-      );
+      const samples = Array.from({ length: SAMPLES_PER_GENERATOR }, () => gen.generate(rng));
 
       it(`choices.length === config.layout.targetLanes (${config.layout.targetLanes}) for all ${SAMPLES_PER_GENERATOR} samples`, () => {
         for (const q of samples) {
@@ -114,7 +109,7 @@ describe('distractor quality across all implemented generators', () => {
 
       it('choices always include the correct answer', () => {
         for (const q of samples) {
-          expect(q.choices, `missing correctAnswer ${q.correctAnswer} from ${q.choices.join(", ")}`).toContain(
+          expect(q.choices, `missing correctAnswer ${q.correctAnswer} from ${q.choices.join(', ')}`).toContain(
             q.correctAnswer,
           );
         }
@@ -123,7 +118,7 @@ describe('distractor quality across all implemented generators', () => {
       it('every choice is distinct (no duplicates)', () => {
         for (const q of samples) {
           const distinctCount = new Set(q.choices).size;
-          expect(distinctCount, `duplicate choice in ${q.choices.join(", ")} (prompt: ${q.prompt})`).toBe(
+          expect(distinctCount, `duplicate choice in ${q.choices.join(', ')} (prompt: ${q.prompt})`).toBe(
             q.choices.length,
           );
         }

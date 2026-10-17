@@ -74,7 +74,6 @@ export class GameOverScene extends Phaser.Scene {
     this.roundData = data;
   }
 
-
   create(): void {
     // Resolve the gameId for this round. Source scene SHOULD pass it
     // in init data; fall back to Settings (always populated — the
@@ -285,11 +284,7 @@ export class GameOverScene extends Phaser.Scene {
    * best for this combo BEFORE saving (otherwise we'd always tie our own
    * just-saved score), then save, then optionally show the badge.
    */
-  private async saveAndCheckHighScore(
-    gameId: GameId,
-    mathId: MathId,
-    speed: SpeedKey,
-  ): Promise<void> {
+  private async saveAndCheckHighScore(gameId: GameId, mathId: MathId, speed: SpeedKey): Promise<void> {
     const store = getScoreStore();
     const filter: ScoreFilter = { gameId, mathId, speed };
 
@@ -316,15 +311,12 @@ export class GameOverScene extends Phaser.Scene {
 
     // Beat the previous best (or there was no previous best AND we scored)?
     const isNewHighScore =
-      this.roundData.score > 0 &&
-      (previousBest === null || this.roundData.score > previousBest.score);
+      this.roundData.score > 0 && (previousBest === null || this.roundData.score > previousBest.score);
 
     if (isNewHighScore && this.scene.isActive()) {
       const { width, height } = this.scale;
       // TextKind 'badge' — 26px warm-amber bold (Sprint 0.7.5 Story 3).
-      const badge = text(this, width / 2, height * 0.54, '★ New High Score! ★', 'badge').setOrigin(
-        0.5,
-      );
+      const badge = text(this, width / 2, height * 0.54, '★ New High Score! ★', 'badge').setOrigin(0.5);
       this.tweens.add({
         targets: badge,
         scale: { from: 0.5, to: 1 },

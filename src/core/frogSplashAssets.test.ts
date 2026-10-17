@@ -67,11 +67,21 @@ describe('Frog Splash assets', () => {
     const audio = AUDIO_MANIFEST.filter((e) => e.scope === 'game:frog-splash');
     expect(audio.map((e) => e.key).sort()).toEqual(
       [
-        'frog-hop-1', 'frog-hop-2', 'frog-hop-3', 'frog-hop-4',
-        'frog-ribbit-1', 'frog-ribbit-2', 'frog-ribbit-3', 'frog-ribbit-4',
-        'frog-slurp-1', 'frog-slurp-2',
-        'frog-splash-1', 'frog-splash-2', 'frog-splash-3',
-        'river-brook-1', 'river-crickets-1',
+        'frog-hop-1',
+        'frog-hop-2',
+        'frog-hop-3',
+        'frog-hop-4',
+        'frog-ribbit-1',
+        'frog-ribbit-2',
+        'frog-ribbit-3',
+        'frog-ribbit-4',
+        'frog-slurp-1',
+        'frog-slurp-2',
+        'frog-splash-1',
+        'frog-splash-2',
+        'frog-splash-3',
+        'river-brook-1',
+        'river-crickets-1',
         'loop-6',
       ].sort(),
     );

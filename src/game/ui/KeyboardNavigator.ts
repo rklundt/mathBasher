@@ -139,8 +139,7 @@ export class KeyboardNavigator {
     }
     // Walk past disabled buttons in the chosen direction; wrap around.
     for (let i = 0; i < this.buttons.length; i++) {
-      this.focusedIndex =
-        (this.focusedIndex + direction + this.buttons.length) % this.buttons.length;
+      this.focusedIndex = (this.focusedIndex + direction + this.buttons.length) % this.buttons.length;
       if (!this.buttons[this.focusedIndex].isDisabled()) break;
     }
     this.applyFocusState();

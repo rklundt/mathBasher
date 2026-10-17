@@ -46,11 +46,7 @@ export interface FullscreenEnv {
 }
 
 export type FullscreenDecision =
-  | 'request'
-  | 'skip-not-touch'
-  | 'skip-already-fullscreen'
-  | 'skip-unsupported'
-  | 'skip-no-gesture';
+  'request' | 'skip-not-touch' | 'skip-already-fullscreen' | 'skip-unsupported' | 'skip-no-gesture';
 
 /** Pure decision: should we ask the browser for fullscreen right now? */
 export function decideFullscreen(env: FullscreenEnv): FullscreenDecision {
@@ -101,8 +97,7 @@ function readEnv(): FullscreenEnv {
   return {
     touchPrimary: isTouchPrimary(),
     alreadyFullscreen: Boolean(doc.fullscreenElement ?? doc.webkitFullscreenElement),
-    canRequest:
-      typeof root.requestFullscreen === 'function' || typeof root.webkitRequestFullscreen === 'function',
+    canRequest: typeof root.requestFullscreen === 'function' || typeof root.webkitRequestFullscreen === 'function',
     // `userActivation` isn't in every browser; when absent, assume the
     // caller is a click handler (the browser rejects it otherwise anyway).
     hasUserGesture: navigator.userActivation?.isActive ?? true,

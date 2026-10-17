@@ -20,12 +20,7 @@ import { InputSystem } from '@/game/systems/InputSystem';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { createAlienAnims } from '@/game/services/alienAnims';
 import { GameSceneLifecycle } from '@/game/services/GameSceneLifecycle';
-import {
-  SfxKeys,
-  GAME_MIDGROUND_MAP,
-  pickRandomHitCorrectSfx,
-  pickRandomHitWrongSfx,
-} from '@/core/audioKeys';
+import { SfxKeys, GAME_MIDGROUND_MAP, pickRandomHitCorrectSfx, pickRandomHitWrongSfx } from '@/core/audioKeys';
 import { ParticleSpriteKeys } from '@/core/spriteKeys';
 import { TouchFireButton } from '@/game/ui/TouchFireButton';
 
@@ -128,7 +123,6 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
   // hot-reload re-runs BootScene). Removing the redundant calls
   // makes "what assets does this scene depend on?" answerable in
   // one place (the manifest scope tags).
-
 
   create(): void {
     // Sprint 2.1.6 — register alien animations after preload completes.

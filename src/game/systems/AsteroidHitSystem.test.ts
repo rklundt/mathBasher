@@ -23,12 +23,7 @@ function mockAsteroid(opts: { x: number; y: number; radius: number; destroyed?: 
   } as unknown as Asteroid;
 }
 
-function mockProjectile(opts: {
-  x: number;
-  y: number;
-  radius: number;
-  destroyed?: boolean;
-}): AsteroidProjectile {
+function mockProjectile(opts: { x: number; y: number; radius: number; destroyed?: boolean }): AsteroidProjectile {
   return {
     x: opts.x,
     y: opts.y,

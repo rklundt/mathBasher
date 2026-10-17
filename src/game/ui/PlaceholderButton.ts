@@ -125,12 +125,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // stays centered at y=0 (unchanged). For TALLER tiles (GameSelect
     // 200px), the centered text block leaves more padding top/bottom,
     // which still reads cleanly.
-    const label = opts.scene.add.text(
-      0,
-      opts.subtitle ? -28 : 0,
-      opts.label,
-      textStyle('buttonLabel'),
-    );
+    const label = opts.scene.add.text(0, opts.subtitle ? -28 : 0, opts.label, textStyle('buttonLabel'));
     label.setOrigin(0.5);
     this.add(label);
     this.textChildren.push(label);

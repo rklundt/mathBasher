@@ -114,12 +114,7 @@ export class MenuScene extends Phaser.Scene {
     // Tap target on the backdrop (sprite has transparent edges which
     // would make a sprite-level hit area unreliable).
     bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerdown', (
-      _p: Phaser.Input.Pointer,
-      _x: number,
-      _y: number,
-      event: Phaser.Types.Input.EventData,
-    ) => {
+    bg.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Phaser types stopPropagation as `Function`
       event.stopPropagation();
       const init: HeroChooserSceneInit = { fromMenu: true };

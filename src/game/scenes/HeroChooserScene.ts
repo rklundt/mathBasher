@@ -113,8 +113,7 @@ export class HeroChooserScene extends Phaser.Scene {
     //     bottom card bot edge = 382 + 112 + 100 = 594
     //   Back button @ 0.92·720 = 662 → top edge 634  (40px below grid)
     text(this, cx, height * 0.08, 'Pick Your Hero', 'h2').setOrigin(0.5);
-    text(this, cx, height * 0.16, 'Just for looks — pick the one that feels like you.', 'body')
-      .setOrigin(0.5);
+    text(this, cx, height * 0.16, 'Just for looks — pick the one that feels like you.', 'body').setOrigin(0.5);
 
     // 2×2 grid centered horizontally + vertically.
     // Centers at (cx - half, cy - half) → (cx + half, cy + half).
@@ -183,11 +182,7 @@ export class HeroChooserScene extends Phaser.Scene {
     // the currently-selected hero (carries the amber accent from the
     // rest of the UI; matches PlaceholderButton's selected chrome).
     const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, 0x1f2740, 0.85);
-    bg.setStrokeStyle(
-      isSelected ? 4 : 2,
-      isSelected ? 0xfbbf24 : 0x475569,
-      1,
-    );
+    bg.setStrokeStyle(isSelected ? 4 : 2, isSelected ? 0xfbbf24 : 0x475569, 1);
     card.add(bg);
 
     // Hero sprite — centered in the upper portion of the card so the

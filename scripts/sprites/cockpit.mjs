@@ -50,7 +50,10 @@ async function cockpitAt(w, h) {
  * Returns its bounding box and, at a few heights, its left / right edge.
  */
 async function measureWindow() {
-  const { data, info } = await sharp(await cockpitAt(W, H)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(await cockpitAt(W, H))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   const clear = (x, y) => data[(y * info.width + x) * 4 + 3] < 8;
   const seen = new Uint8Array(W * H);
   const stack = [[W >> 1, H >> 1]];
@@ -91,7 +94,10 @@ function refuseOverwrite(paths, force) {
 async function main() {
   const args = process.argv.slice(2);
   const win = await measureWindow();
-  console.log('window opening (design px):', JSON.stringify({ left: win.left, right: win.right, top: win.top, bottom: win.bottom }));
+  console.log(
+    'window opening (design px):',
+    JSON.stringify({ left: win.left, right: win.right, top: win.top, bottom: win.bottom }),
+  );
   console.log('windowEdge (paste into config.spaceShooter.windowEdge):');
   console.log(win.rows.map((r) => `[${r.join(', ')}]`).join(', '));
   if (args.includes('--measure')) return;
@@ -110,7 +116,10 @@ async function main() {
   await sharp(cockpitHi).webp({ quality: 88, alphaQuality: 100, effort: 6 }).toFile(outCockpit);
   console.log(`wrote ${outCockpit}`);
 
-  const menu = await sharp(cosmos).composite([{ input: await cockpitAt(W, H) }]).png().toBuffer();
+  const menu = await sharp(cosmos)
+    .composite([{ input: await cockpitAt(W, H) }])
+    .png()
+    .toBuffer();
   await sharp(menu).modulate({ brightness: 0.6 }).webp({ quality: 85, effort: 6 }).toFile(outMenu);
   console.log(`wrote ${outMenu}`);
 }
