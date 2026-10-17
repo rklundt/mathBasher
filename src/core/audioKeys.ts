@@ -97,6 +97,10 @@ export const SfxKeys = {
   PenguinSplat1: 'penguin-splat-1',
   PenguinSplat2: 'penguin-splat-2',
   PenguinSplat3: 'penguin-splat-3',
+  /** Sprint 2.7 — Penguin Slide: a kid's "Yummy!" for the round's last fish, one of three at random. */
+  PenguinYummy1: 'penguin-yummy-1',
+  PenguinYummy2: 'penguin-yummy-2',
+  PenguinYummy3: 'penguin-yummy-3',
 } as const;
 
 /**
@@ -156,8 +160,8 @@ export function pickRandomFrogHopSfx(rng: () => number = Math.random): (typeof F
 }
 
 /**
- * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes, hops and splats
- * are its own (`game:penguin-slide`). The gulp is a PLACEHOLDER that reuses
+ * Sprint 2.7 — Penguin Slide's sounds. The slide swooshes, hops, splats and
+ * yummies are its own (`game:penguin-slide`). The gulp is a PLACEHOLDER that reuses
  * existing (eager) sounds until the owner's arrives; then only its list
  * changes, to new `penguin-…` keys (the existing files are never touched).
  */
@@ -165,10 +169,12 @@ const PENGUIN_GULP_KEYS = HIT_CORRECT_KEYS;
 const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-3'] as const;
 const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
 const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
+const PENGUIN_YUMMY_KEYS = ['penguin-yummy-1', 'penguin-yummy-2', 'penguin-yummy-3'] as const;
 const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
   ...PENGUIN_SWISH_KEYS,
   ...PENGUIN_HOP_KEYS,
   ...PENGUIN_BONK_KEYS,
+  ...PENGUIN_YUMMY_KEYS,
 ]);
 
 /** Right fish caught. */
@@ -184,6 +190,11 @@ export function pickRandomPenguinBonkSfx(rng: () => number = Math.random): (type
 /** A lane change, or the slide sound now and then while sliding. */
 export function pickRandomPenguinSwishSfx(rng: () => number = Math.random): (typeof PENGUIN_SWISH_KEYS)[number] {
   return PENGUIN_SWISH_KEYS[Math.floor(rng() * PENGUIN_SWISH_KEYS.length)];
+}
+
+/** The round's last fish caught: "Yummy!" (in place of the gulp). */
+export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typeof PENGUIN_YUMMY_KEYS)[number] {
+  return PENGUIN_YUMMY_KEYS[Math.floor(rng() * PENGUIN_YUMMY_KEYS.length)];
 }
 
 /** The hop up to grab a fish (right or wrong). */
@@ -476,7 +487,7 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (FROG_SFX_KEYS.has(key)) return 'game:frog-splash';
   // Sprint 2.6 — Space Shooter's music (its effects are Alien Shoot's, eager).
   if (key === MusicKeys.CockpitLoop1) return 'game:space-shooter';
-  // Sprint 2.7 — Penguin Slide's music, slides, hops and splats (its gulp is an eager placeholder for now).
+  // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp is an eager placeholder for now).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   return 'eager';

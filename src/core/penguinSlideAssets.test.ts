@@ -27,6 +27,7 @@ import {
   pickRandomPenguinGulpSfx,
   pickRandomPenguinHopSfx,
   pickRandomPenguinSwishSfx,
+  pickRandomPenguinYummySfx,
 } from '@/core/audioKeys';
 import { config } from '@/core/config';
 
@@ -105,6 +106,9 @@ describe('Penguin Slide assets', () => {
         'penguin-splat-1',
         'penguin-splat-2',
         'penguin-splat-3',
+        'penguin-yummy-1',
+        'penguin-yummy-2',
+        'penguin-yummy-3',
         'snow-slide-1',
         'snow-slide-2',
       ].sort(),
@@ -114,6 +118,7 @@ describe('Penguin Slide assets', () => {
       expect(scopeOf(pickRandomPenguinSwishSfx())).toBe('game:penguin-slide');
       expect(scopeOf(pickRandomPenguinHopSfx())).toBe('game:penguin-slide');
       expect(scopeOf(pickRandomPenguinBonkSfx())).toBe('game:penguin-slide');
+      expect(scopeOf(pickRandomPenguinYummySfx())).toBe('game:penguin-slide');
     }
     for (const e of audio) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
