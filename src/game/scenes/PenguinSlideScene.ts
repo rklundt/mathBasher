@@ -49,6 +49,7 @@ import {
   pickRandomPenguinGulpSfx,
   pickRandomPenguinHopSfx,
   pickRandomPenguinSwishSfx,
+  pickRandomPenguinYummySfx,
 } from '@/core/audioKeys';
 import { assertNever } from '@/shared/assertNever';
 
@@ -354,7 +355,6 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
   private handleCorrect(record: OutcomeRecord, fish: SlideFish): void {
     fish.gulped(this.penguin.x, this.penguin.y - 30);
     this.penguin.gulp();
-    getAudioManager().play(pickRandomPenguinGulpSfx(), 'sfx');
     this.playSparkle(this.penguin.x, this.penguin.y - 20);
     for (const f of this.row) if (f !== fish && f.isAlive) f.swimAway();
     const { scoreDelta } = this.roundController.recordOutcome(record);
@@ -372,6 +372,8 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     this.answeredCount += 1;
     this.roundController.advanceQuestionIndex();
     const last = this.answeredCount >= this.roundController.questionsPerRound;
+    // The round's last fish gets a "Yummy!" in place of the gulp.
+    getAudioManager().play(last ? pickRandomPenguinYummySfx() : pickRandomPenguinGulpSfx(), 'sfx');
     this.time.delayedCall(this.cfg.gulpMs, () =>
       this.penguin.returnHome(() => {
         if (last) this.finish();

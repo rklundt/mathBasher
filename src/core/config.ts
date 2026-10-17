@@ -1038,6 +1038,12 @@ export const config = {
      */
     canvasBottomGutterPx: 32,
     /**
+     * Sprint 2.7 — mixed numbers in answers and prompts (`MathText`): the whole
+     * part is drawn this much bigger, with a gap (× font size) before its
+     * fraction, so "1 1/2" can't be misread as "11/2".
+     */
+    mixedNumber: { wholeScale: 1.3, gapEm: 0.2 },
+    /**
      * Sprint 2.6.3 — the shared look of game callouts (`src/game/ui/callouts.ts`):
      * the pulsing "👆 …" tap hint, floating notes ("Oops! Try again!") and
      * centred banners ("Out of lives!"). Colours live in `uiPalette.ts`;

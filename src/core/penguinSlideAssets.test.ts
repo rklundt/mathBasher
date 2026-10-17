@@ -27,6 +27,7 @@ import {
   pickRandomPenguinGulpSfx,
   pickRandomPenguinHopSfx,
   pickRandomPenguinSwishSfx,
+  pickRandomPenguinYummySfx,
 } from '@/core/audioKeys';
 import { config } from '@/core/config';
 
@@ -92,23 +93,39 @@ describe('Penguin Slide assets', () => {
     for (const e of sprites) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('plays its own music, slides and hops (game-scoped, no ambience yet) and the files exist', () => {
+  it('plays its own music, slides, hops and splats (game-scoped, no ambience yet) and the files exist', () => {
     expect(GAME_MUSIC_MAP['penguin-slide']).toBe('loop-8');
     expect(GAME_MIDGROUND_MAP['penguin-slide']).toEqual([]);
     const audio = AUDIO_MANIFEST.filter((e) => e.scope === 'game:penguin-slide');
     expect(audio.map((e) => e.key).sort()).toEqual(
-      ['loop-8', 'penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3', 'snow-slide-1', 'snow-slide-2'].sort(),
+      [
+        'loop-8',
+        'penguin-hop-1',
+        'penguin-hop-2',
+        'penguin-hop-3',
+        'penguin-splat-1',
+        'penguin-splat-2',
+        'penguin-splat-3',
+        'penguin-yummy-1',
+        'penguin-yummy-2',
+        'penguin-yummy-3',
+        'snow-slide-1',
+        'snow-slide-2',
+      ].sort(),
     );
     const scopeOf = (k: string) => AUDIO_MANIFEST.find((e) => e.key === k)?.scope;
     for (let i = 0; i < 20; i++) {
       expect(scopeOf(pickRandomPenguinSwishSfx())).toBe('game:penguin-slide');
       expect(scopeOf(pickRandomPenguinHopSfx())).toBe('game:penguin-slide');
+      expect(scopeOf(pickRandomPenguinBonkSfx())).toBe('game:penguin-slide');
+      expect(scopeOf(pickRandomPenguinYummySfx())).toBe('game:penguin-slide');
     }
     for (const e of audio) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('placeholder gulp and bonk are existing boot-loaded effects (until the owner sounds arrive)', () => {
-    for (const key of [pickRandomPenguinGulpSfx(), pickRandomPenguinBonkSfx()]) {
+  it('the gulp borrows the frog fly slurps, which load at boot so both games have them', () => {
+    for (let i = 0; i < 20; i++) expect(pickRandomPenguinGulpSfx()).toMatch(/^frog-slurp-[12]$/);
+    for (const key of ['frog-slurp-1', 'frog-slurp-2']) {
       expect(AUDIO_MANIFEST.find((e) => e.key === key)?.scope, key).toBe('eager');
     }
   });

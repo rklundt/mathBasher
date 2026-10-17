@@ -75,8 +75,6 @@ describe('Frog Splash assets', () => {
         'frog-ribbit-2',
         'frog-ribbit-3',
         'frog-ribbit-4',
-        'frog-slurp-1',
-        'frog-slurp-2',
         'frog-splash-1',
         'frog-splash-2',
         'frog-splash-3',

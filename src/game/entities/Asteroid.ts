@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { textStyle } from '@/game/ui/typography';
+import { MathText } from '@/game/ui/MathText';
 import { defaultRng } from '@/math/rng';
 import { pickRandomAsteroidSpriteKey } from '@/core/spriteKeys';
 
@@ -112,7 +113,7 @@ export class Asteroid extends Phaser.GameObjects.Container {
    * visual without disturbing position / velocity / answer text.
    */
   private visual: Phaser.GameObjects.GameObject;
-  private readonly answerText: Phaser.GameObjects.Text;
+  private readonly answerText: MathText;
   /** Tracks current visual mode so swaps can no-op when already matching. */
   private usingImageVariant: boolean;
   /**
@@ -145,8 +146,7 @@ export class Asteroid extends Phaser.GameObjects.Container {
     // falling alien block or a drifting asteroid).
     // Sprint 2.4 story 5 — fraction display string if provided, else bare number.
     const answerLabel = opts.answerDisplay ?? String(opts.answer);
-    this.answerText = opts.scene.add.text(0, 0, answerLabel, textStyle('alienAnswer'));
-    this.answerText.setOrigin(0.5);
+    this.answerText = new MathText(opts.scene, 0, 0, answerLabel, textStyle('alienAnswer'));
     // Sprint 2.4 story 9 — shrink long
     // fraction labels so they fit the rock silhouette. See Alien.ts for
     // the rationale; same defensive shrink applied uniformly across
