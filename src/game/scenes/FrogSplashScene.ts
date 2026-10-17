@@ -14,12 +14,11 @@ import type { GameSceneContract, QuitDestination } from '@/game/scenes/gameScene
 import type { Question } from '@/math/types';
 import { Frog } from '@/game/entities/Frog';
 import { LilyPadRow } from '@/game/entities/LilyPadRow';
-import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
+import { pickRowAnswers, QuestionClock, resolveStrike } from '@/game/systems/roundRules';
 import {
   cameraScrollY,
   pickTappedPad,
   riverLayout,
-  rowAnswers,
   rowDirection,
   type RiverLayout,
 } from '@/game/systems/frogSplashMath';
@@ -555,13 +554,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
   }
 
   private answersFor(q: Question): Array<{ answer: number; display: string }> {
-    return rowAnswers({
-      choices: q.choices,
-      correctAnswer: q.correctAnswer,
-      choiceDisplays: q.choiceDisplays,
-      count: this.rows[this.activeRow].count,
-      rng: Math.random,
-    });
+    return pickRowAnswers(q, this.rows[this.activeRow].count, Math.random);
   }
 
   private scrollToFrog(): void {

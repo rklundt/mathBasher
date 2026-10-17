@@ -18,7 +18,6 @@ import {
   pickPadLooks,
   pickTappedPad,
   riverLayout,
-  rowAnswers,
   rowDirection,
   wrapPeerX,
 } from '@/game/systems/frogSplashMath';
@@ -73,28 +72,6 @@ describe('rows + pads', () => {
   it('keeps pads at least a pad apart, so they never overlap', () => {
     const minGap = 1280 / 4;
     expect(minGap).toBeGreaterThan(cfg.pad.displayPx);
-  });
-
-  it('assigns the right answer to exactly one pad in every row', () => {
-    for (let seed = 1; seed <= 200; seed++) {
-      for (const count of [2, 3, 4]) {
-        const row = rowAnswers({ choices: [3, 7, 5, 9], correctAnswer: 7, count, rng: mulberry32(seed) });
-        expect(row).toHaveLength(count);
-        expect(row.filter((p) => p.answer === 7)).toHaveLength(1);
-        expect(new Set(row.map((p) => p.answer)).size).toBe(count);
-      }
-    }
-  });
-
-  it('labels fraction pads with their display strings', () => {
-    const row = rowAnswers({
-      choices: [0.5, 0.25, 0.75, 1],
-      correctAnswer: 0.25,
-      choiceDisplays: ['1/2', '1/4', '3/4', '1'],
-      count: 4,
-      rng: mulberry32(4),
-    });
-    for (const p of row) expect(p.display).toBe(['1/2', '1/4', '3/4', '1'][[0.5, 0.25, 0.75, 1].indexOf(p.answer)]);
   });
 });
 
