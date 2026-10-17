@@ -222,9 +222,12 @@ mathBasher/
 ├── src/                 BROWSER-SIDE TYPESCRIPT
 │   ├── main.ts          thin entry; wires splash click handler → calls bootGame()
 │   ├── main.test.ts     static contract tests: main.ts has no Phaser import; boot.ts has no top-level Phaser.Game
-│   ├── app/             top-of-graph orchestration (composes core + services + game/scenes)
-│   │   └── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
-│   ├── game/            rendering layer (the only folder that imports phaser)
+│   ├── app/             browser shell, top of the graph (composes core + services + game/scenes)
+│   │   ├── boot.ts      bootGame() — constructs Phaser.Game inside the splash gesture
+│   │   ├── fullscreen.ts           mobile fullscreen request + the footer's "Full screen" button
+│   │   └── attributionFooter.ts    fills the DOM license footer (AGPL §7(b)) from core/attribution.ts
+│   ├── shared/          pure modules shared with server/ (telemetry-core, assertNever); imports nothing
+│   ├── game/            rendering layer (imports phaser; boot.ts is the only other file allowed to)
 │   │   ├── scenes/      Boot, Menu, GameSelect, Difficulty, Game, Hud, GameOver, PauseOverlay,
 │   │   │                Settings, HeroChooser, Background (parallax stars + nebula behind everything)
 │   │   │                (sceneSetup.ts — shared lifecycle helper for owning scenes)
@@ -235,7 +238,8 @@ mathBasher/
 │   │   │   └── PhaserAudioManager.ts  scene-bound audio playback + loop tracking
 │   │   └── ui/          PlaceholderButton, IconButton, KeyboardNavigator, EscBackHandler,
 │   │                    TouchFireButton (on-screen fire btn for touch devices),
-│   │                    MenuLayout (+ pure menuLayoutGeometry.ts), typography, uiPalette
+│   │                    MenuLayout (+ pure menuLayoutGeometry.ts), typography, uiPalette,
+│   │                    callouts (tap hint / notes / banners, + pure calloutGeometry.ts)
 │   ├── math/            PURE TS — math content (no DOM, no engine imports)
 │   │   ├── types.ts             Question and QuestionGenerator interfaces
 │   │   ├── distractors.ts       distractor-picking helpers
@@ -299,20 +303,33 @@ mathBasher/
 │       ├── README.md            ADR index + format
 │       └── ADR-XXXX-*.md        one ADR per significant decision
 │
+├── .githooks/          committed git hooks (pre-commit, commit-msg); `pnpm install` enables them
+│                        (gitignored .githooks/local/ holds optional machine-only checks)
+├── eslint.config.js     lint rules incl. the folder rules below (ADR-0013)
+├── .prettierrc.json     formatting (code + config only; see .prettierignore)
+├── .nvmrc               Node major for CI and version managers
+│
 └── .github/             repo metadata GitHub recognizes
-    └── workflows/
-        └── deploy.yml   GitHub Actions — builds + deploys to Azure Static Web Apps
+    ├── workflows/
+    │   ├── ci.yml       pull-request check "Typecheck, test, build" (lint, typecheck, tests, build; required)
+    │   └── deploy.yml   GitHub Actions — builds + deploys to Azure Static Web Apps
+    ├── ISSUE_TEMPLATE/  bug + idea forms (privacy note), config (private security link)
+    └── PULL_REQUEST_TEMPLATE.md
 ```
 
-### Folder discipline (enforced)
+### Folder discipline (enforced by lint)
 
-- **`src/game/`** — the only folder that imports `phaser`. Visual concerns only.
+Each folder imports only from the layers below it. The full map, with the two known exceptions, is in [ADR-0006](docs/adrs/ADR-0006-folder-discipline.md).
+
+- **`src/shared/`** — pure, shared with the server. Imports nothing from the app.
+- **`src/core/`** — types, `config.ts`, keys, telemetry wrapper, attribution text. May import `shared` only.
 - **`src/math/`** — pure TypeScript. No Phaser, no DOM, no `window`.
 - **`src/services/`** — pure TypeScript. No Phaser. May read `localStorage`.
-- **`src/core/`** — types and `config.ts`. No imports from `/game`, `/math`, or `/services` (it's at the bottom of the dependency arrow).
-- **`server/`** — Express server. No imports from `/src/game`. May import from `/src/math` and `/src/services` if pure.
+- **`src/game/`** — scenes, entities, systems, Phaser UI. Imports Phaser.
+- **`src/app/`** — the browser shell (boot, fullscreen, DOM footer). Only `src/main.ts` imports it; `boot.ts` is the one file outside `src/game/` that may import Phaser.
+- **`server/`** — Express server. Never imports `src/game/` or `src/app/`.
 
-These boundaries are checked at every code review. Adding a Phaser import to `/src/math/` is a hard violation.
+ESLint (`eslint.config.js`) checks these on every commit and in CI, for both `@/…` and relative imports. A Phaser import in `src/math/` fails the build.
 
 ---
 

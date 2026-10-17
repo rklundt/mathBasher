@@ -56,10 +56,12 @@ pnpm start                 # listens on http://localhost:8080
 
 ```
 src/              browser-side TypeScript (Vite)
+  app/           browser shell: boot, fullscreen, license footer
   game/          Phaser scenes, entities, systems, UI
   math/          question generators (pure TS, no Phaser)
   services/      score store, audio manager, settings (no Phaser)
   core/          config, telemetry, attribution, shared types
+  shared/        pure modules shared with the server
 public/           static assets served as-is by Vite (CREDITS.md lives here)
 server/           Express server (not deployed; future backend)
   src/           server source
@@ -81,6 +83,8 @@ NOTICE            attribution and third-party notices
 | `pnpm test:watch` | Vitest in watch mode |
 | `pnpm test:coverage` | Vitest with v8 coverage; report at `coverage/index.html` |
 | `pnpm typecheck` | TypeScript strict-mode check, no emit |
+| `pnpm lint` | ESLint (the pull-request check runs it too) |
+| `pnpm format` / `pnpm format:check` | Prettier: reformat / check code and config files |
 
 ## Contributing
 
