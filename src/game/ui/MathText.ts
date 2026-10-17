@@ -40,6 +40,7 @@ export class MathText extends Phaser.GameObjects.Container {
   }
 
   setText(value: string): this {
+    if (value === this.value && this.list.length > 0) return this;
     this.value = value;
     this.removeAll(true);
     const { wholeScale } = config.layout.mixedNumber;

@@ -29,6 +29,23 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.7.0] - 2026-10-17 — Penguin Slide; clearer mixed numbers
+
+**Penguin Slide** — a seventh game
+- A cute penguin slides down a snowy hill toward the igloo. Fish carrying answers slide up toward it, one per lane. Tap the right fish (or steer with ← / → and press Space, or press 1–5) and the penguin hops over and gulps it.
+- A wrong fish is a snowball: splat, a life lost, and the same question again. If the fish reach the penguin before an answer, it tumbles and loses a life. Three lives, 12 questions, then a slide home to the igloo.
+- Easy / Medium / Hard = 3 / 4 / 5 lanes. One of three penguins at random.
+- Its own music and sounds: slides, hops, gulps, splats, and a "Yummy!" on the last fish. A sound never plays twice in a row.
+- Game Select shows all seven games (a row of four, then three).
+
+**All games**
+- Mixed numbers are easier to read: the whole number is bigger, with a gap before the fraction, so "1 1/2" no longer looks like "11/2". This applies to the answers and to the question at the top.
+- The score, question, timer and Game Over text have a dark outline, so they read on light backgrounds too.
+
+**Developer notes**
+- The 2026 reformat is hidden from `git blame`, and the formatting check runs in CI and the commit hook.
+- CONTRIBUTING describes the planned contributor agreement (contributions are still closed).
+
 ## [2.6.5] - 2026-10-16 — "Change Game" in the pause menu
 
 **"Change Game" in the pause menu**

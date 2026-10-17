@@ -186,8 +186,12 @@ function noRepeatPicker<T extends string>(keys: readonly T[]): (rng?: () => numb
   let last = -1;
   return (rng = Math.random) => {
     if (keys.length < 2) return keys[0];
-    let i = Math.floor(rng() * (keys.length - 1));
-    if (last >= 0 && i >= last) i += 1;
+    let i: number;
+    if (last < 0) i = Math.floor(rng() * keys.length);
+    else {
+      i = Math.floor(rng() * (keys.length - 1));
+      if (i >= last) i += 1;
+    }
     last = i;
     return keys[i];
   };

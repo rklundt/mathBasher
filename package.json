@@ -1,10 +1,10 @@
 {
   "name": "mathbasher",
   "private": true,
-  "version": "2.6.5",
+  "version": "2.7.0",
   "type": "module",
   "license": "AGPL-3.0-or-later",
-  "description": "A browser math game for kids: six arcade mini-games for phones, tablets and computers.",
+  "description": "A browser math game for kids: arcade mini-games for phones, tablets and computers.",
   "homepage": "https://github.com/rklundt/mathBasher",
   "repository": {
     "type": "git",
