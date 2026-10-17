@@ -204,12 +204,15 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
 
     // Lane marks: soft dashed lines between lanes, from the row's start to the bottom.
     const marks = this.add.graphics().setDepth(1);
-    marks.lineStyle(3, 0xc9e3f7, 0.9);
+    const lm = this.cfg.laneMarks;
+    marks.lineStyle(lm.widthPx, lm.color, lm.alpha);
     const laneW = (this.area.right - this.area.left) / count;
-    const top = this.cfg.horizonY + this.cfg.rowStartBelowHorizonPx - 20;
+    const top = this.cfg.horizonY + this.cfg.rowStartBelowHorizonPx - lm.startAboveRowPx;
     for (let i = 1; i < count; i++) {
       const x = this.area.left + laneW * i;
-      for (let y = top; y < this.scale.height; y += 28) marks.lineBetween(x, y, x, Math.min(y + 14, this.scale.height));
+      for (let y = top; y < this.scale.height; y += lm.dashPx + lm.gapPx) {
+        marks.lineBetween(x, y, x, Math.min(y + lm.dashPx, this.scale.height));
+      }
     }
 
     for (let c = 0; c < SLIDE_FISH_SHEET.colours; c++) {
@@ -345,7 +348,10 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
         this.handleSnowball(decision, fish);
         break;
       case 'timeout':
-        // A pick is never a time-out; the clock path handles those.
+        // A pick is never a time-out (the clock path handles those). If it ever
+        // were, unlock input rather than leave the round stuck.
+        _th.logToAi('PenguinSlide.unexpectedPickOutcome', SeverityLevel.Error, this.questionProps());
+        this.busy = false;
         break;
       default:
         assertNever(decision, 'pick outcome');
@@ -353,9 +359,9 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
   }
 
   private handleCorrect(record: OutcomeRecord, fish: SlideFish): void {
-    fish.gulped(this.penguin.x, this.penguin.y - 30);
+    fish.gulped(this.penguin.x, this.penguin.y - this.cfg.fx.gulpAbovePx);
     this.penguin.gulp();
-    this.playSparkle(this.penguin.x, this.penguin.y - 20);
+    this.playSparkle(this.penguin.x, this.penguin.y - this.cfg.fx.sparkleAbovePx);
     for (const f of this.row) if (f !== fish && f.isAlive) f.swimAway();
     const { scoreDelta } = this.roundController.recordOutcome(record);
     this.events.emit('correctHit', { x: this.penguin.x, y: this.penguin.y, scoreDelta });
@@ -392,7 +398,13 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     _th.logToAi('PenguinSlide.wrong', SeverityLevel.Information, this.questionProps());
     const outOfLives = decision.kind === 'out-of-lives';
     // No "Try again!" on the last life — "Out of lives!" follows.
-    floatNote(this, fish.x, fish.y - 70, outOfLives ? 'Bonk!' : 'Bonk! Try again!', this.cfg.note);
+    floatNote(
+      this,
+      fish.x,
+      fish.y - this.cfg.fx.noteAboveFishPx,
+      outOfLives ? 'Bonk!' : 'Bonk! Try again!',
+      this.cfg.note,
+    );
     for (const f of this.row) if (f !== fish && f.isAlive) f.swimAway();
     this.time.delayedCall(this.cfg.bonkSpinMs, () =>
       this.penguin.returnHome(() => {
@@ -407,6 +419,7 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     this.busy = true;
     this.hideTapHint();
     const decision = resolveRetryEvent(this.retryState(), { type: 'timeout' });
+    if (decision.kind === 'correct') return; // unreachable for a time-out; keeps the types narrow
     const correct = this.currentQuestion?.correctAnswer;
     for (const f of this.row) {
       if (!f.isAlive) continue;
@@ -415,11 +428,10 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     }
     this.penguin.tumble();
     getAudioManager().play(pickRandomPenguinBonkSfx(), 'sfx');
-    this.snowPuff(this.penguin.x, this.penguin.y - 40);
+    this.snowPuff(this.penguin.x, this.penguin.y - this.cfg.fx.puffAbovePx);
     _th.logToAi('PenguinSlide.timeout', SeverityLevel.Information, this.questionProps());
     // "Out of time!" shows even on the last life, so the kid knows why the round ends.
     const banner = screenBanner(this, 'Out of time!');
-    if (decision.kind === 'correct') return; // unreachable for a time-out; keeps the types narrow
     this.spendLife(decision);
     this.time.delayedCall(this.cfg.timeoutBannerMs, () => {
       banner.destroy();
@@ -464,12 +476,13 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
   /** All 12 answered: slide off to the igloo and celebrate. */
   private finish(): void {
     this.busy = true;
-    this.penguin.slideHome(this.cfg.horizonY + 14, () => {
-      this.playSparkle(this.penguin.x, this.penguin.y - 10);
+    this.penguin.slideHome(this.cfg.horizonY + this.cfg.iglooStopBelowHorizonPx, () => {
+      this.playSparkle(this.penguin.x, this.penguin.y - this.cfg.fx.finishSparkleAbovePx);
       const banner = screenBanner(this, 'You made it!', { style: 'stars' });
       banner.setStroke(CALLOUT_INK_CSS, this.cfg.finishBannerStrokePx);
-      banner.setScale(0.6);
-      this.tweens.add({ targets: banner, scale: 1, duration: 300, ease: 'Back.Out' });
+      const pop = this.cfg.finishBannerPop;
+      banner.setScale(pop.fromScale);
+      this.tweens.add({ targets: banner, scale: 1, duration: pop.ms, ease: 'Back.Out' });
       _th.logToAi('PenguinSlide.finished', SeverityLevel.Information, {
         gameId: this.gameId,
         mathId: this.mathId,

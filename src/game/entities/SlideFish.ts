@@ -41,16 +41,16 @@ export class SlideFish {
       startFrame: Math.floor(Math.random() * SLIDE_FISH_SHEET.wiggleFrames),
     });
 
-    const { padPx, heightPadPx, maxWidthPx } = this.cfg.badge;
+    const { padPx, heightPadPx, maxWidthPx, labelStrokePx, fill, fillAlpha, rimPx, rim, rimAlpha } = this.cfg.badge;
     const label = new MathText(scene, 0, 0, display, textStyle('alienAnswer'));
-    label.setStroke(CALLOUT_INK_CSS, 6);
+    label.setStroke(CALLOUT_INK_CSS, labelStrokePx);
     const fit = Math.min(1, (maxWidthPx - padPx * 2) / label.width);
     label.setScale(fit);
     const w = label.width * fit + padPx * 2;
     const h = label.height * fit + heightPadPx;
     const pill = scene.add.graphics();
-    pill.fillStyle(0x1f3550, 0.95).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
-    pill.lineStyle(3, 0xcfe6ff, 0.8).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    pill.fillStyle(fill, fillAlpha).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2);
+    pill.lineStyle(rimPx, rim, rimAlpha).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
     this.badge = scene.add.container(0, 0, [pill, label]);
 
     this.container = scene.add.container(x, y, [this.sprite, this.badge]).setDepth(6);
@@ -86,7 +86,7 @@ export class SlideFish {
       targets: this.sprite,
       scaleX: this.sprite.scaleX * 1.15,
       scaleY: this.sprite.scaleY * 0.85,
-      duration: 90,
+      duration: this.cfg.fishMotion.squishMs,
       yoyo: true,
     });
   }
@@ -133,19 +133,20 @@ export class SlideFish {
     this.scene.tweens.add({
       targets: this.container,
       alpha: 0,
-      y: this.container.y + 60,
-      duration: 380,
+      y: this.container.y + this.cfg.fishMotion.swimDropPx,
+      duration: this.cfg.fishMotion.swimMs,
       ease: 'Quad.In',
       onComplete: () => this.destroy(),
     });
   }
 
+  /** Safe on a fish that has already left (destroyed by its exit tween, still in the scene's row). */
   pauseAnim(): void {
-    this.sprite.anims.pause();
+    if (this.sprite.active) this.sprite.anims.pause();
   }
 
   resumeAnim(): void {
-    this.sprite.anims.resume();
+    if (this.sprite.active) this.sprite.anims.resume();
   }
 
   destroy(): void {

@@ -28,10 +28,10 @@ export class Penguin {
   ) {
     const { displayPx } = this.cfg.penguin;
     this.baseScale = displayPx / PENGUIN_SHEET.frame;
-    const { rx, ry, alpha } = this.cfg.laneRing;
+    const { rx, ry, alpha, belowFrac, strokePx, stroke, strokeAlpha } = this.cfg.laneRing;
     this.ring = scene.add
-      .ellipse(x, homeY + displayPx * 0.42, rx * 2, ry * 2, 0xffffff, alpha)
-      .setStrokeStyle(3, 0x9fc3e3, 0.9)
+      .ellipse(x, homeY + displayPx * belowFrac, rx * 2, ry * 2, 0xffffff, alpha)
+      .setStrokeStyle(strokePx, stroke, strokeAlpha)
       .setDepth(3);
     this.sprite = scene.add.sprite(x, homeY, key, PENGUIN_SHEET.poses.slide).setScale(this.baseScale).setDepth(8);
   }
@@ -76,7 +76,7 @@ export class Penguin {
       onComplete: () => {
         this.scene.tweens.add({
           targets: this.sprite,
-          y: fishY + 40,
+          y: fishY + this.cfg.reachBelowFishPx,
           duration: this.cfg.reachMs,
           ease: 'Quad.Out',
           onComplete: onArrive,
@@ -105,9 +105,9 @@ export class Penguin {
     this.setPose('gulp');
     this.scene.tweens.add({
       targets: this.sprite,
-      scaleX: this.baseScale * 1.12,
-      scaleY: this.baseScale * 0.92,
-      duration: 120,
+      scaleX: this.baseScale * this.cfg.gulpSquash.x,
+      scaleY: this.baseScale * this.cfg.gulpSquash.y,
+      duration: this.cfg.gulpSquash.ms,
       yoyo: true,
       ease: 'Quad.Out',
     });
@@ -125,7 +125,7 @@ export class Penguin {
     this.scene.tweens.add({
       targets: this.sprite,
       angle: -540,
-      duration: this.cfg.bonkSpinMs * 1.4,
+      duration: this.cfg.bonkSpinMs * this.cfg.tumbleSpinFactor,
       ease: 'Cubic.Out',
     });
   }
@@ -138,7 +138,7 @@ export class Penguin {
       targets: this.sprite,
       y: toY,
       x: this.scene.scale.width / 2,
-      scale: this.baseScale * 0.35,
+      scale: this.baseScale * this.cfg.iglooScale,
       duration: this.cfg.iglooSlideMs,
       ease: 'Sine.In',
       onComplete: () => {
