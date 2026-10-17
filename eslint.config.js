@@ -42,6 +42,8 @@ const NO_HTML_INJECTION = [
     selector: 'CallExpression[callee.property.name=/^(insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseFromString)$/]',
     message: HTML_MSG,
   },
+  // iframe.srcdoc = …
+  { selector: 'AssignmentExpression > MemberExpression.left[property.name="srcdoc"]', message: HTML_MSG },
   // document.write(…), document.writeln(…)
   { selector: "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]", message: HTML_MSG },
 ];
@@ -95,6 +97,9 @@ export default tseslint.config(
         },
     rules: {
       'no-restricted-syntax': ['error', ...NO_HTML_INJECTION],
+      // No running strings as code.
+      'no-eval': 'error',
+      'no-new-func': 'error',
       // A `let` read by a closure before its one assignment can't be const.
       'prefer-const': ['error', { ignoreReadBeforeAssign: true }],
       // `_`-prefixed names mark intentionally unused parameters.

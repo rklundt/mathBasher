@@ -22,9 +22,14 @@ if (process.env.CI) skip('CI');
 if (!existsSync('.git')) skip('no .git folder');
 if (spawnSync('git', ['--version'], { stdio: 'ignore' }).status !== 0) skip('git not found');
 
+const get = (key) => spawnSync('git', ['config', '--local', '--get', key], { encoding: 'utf8' }).stdout.trim();
 const set = (key, value) => spawnSync('git', ['config', '--local', key, value], { stdio: 'ignore' }).status === 0;
 
+const previous = get('core.hooksPath');
+if (previous && previous !== '.githooks') {
+  console.log(`install-hooks: replacing your core.hooksPath ("${previous}") with .githooks; set it back with git config --local core.hooksPath "${previous}".`);
+}
 if (!set('core.hooksPath', '.githooks')) skip('could not write git config');
-// `git blame` skips the repo-wide reformat commit(s) listed here.
-if (existsSync('.git-blame-ignore-revs')) set('blame.ignoreRevsFile', '.git-blame-ignore-revs');
+// Deliberately not setting blame.ignoreRevsFile: git then refuses to blame
+// any checkout without that file (see ADR-0013).
 console.log('install-hooks: git hooks enabled (.githooks/).');

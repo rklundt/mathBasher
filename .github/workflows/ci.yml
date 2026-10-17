@@ -51,7 +51,12 @@ jobs:
       # Machine-local hook checks must never come from the repository.
       - name: No tracked files in .githooks/local
         # Case-insensitive, so .githooks/Local/ can't slip past on Windows clones.
-        run: test -z "$(git ls-files ':(icase).githooks/local')"
+        run: |
+          tracked=$(git ls-files ':(icase).githooks/local')
+          test -z "$tracked"
+          # Windows short names (GITHOO~1/…) can land in the same folder on checkout.
+          shortnames=$(git ls-files | grep -E '(^|/)[^/]*~[0-9]+(/|$)' || true)
+          test -z "$shortnames"
 
       - name: Lint
         run: pnpm lint
