@@ -100,6 +100,8 @@ describe('Penguin Slide assets', () => {
     expect(audio.map((e) => e.key).sort()).toEqual(
       [
         'loop-8',
+        'penguin-gulp-1',
+        'penguin-gulp-2',
         'penguin-hop-1',
         'penguin-hop-2',
         'penguin-hop-3',
@@ -123,10 +125,30 @@ describe('Penguin Slide assets', () => {
     for (const e of audio) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('the gulp borrows the frog fly slurps, which load at boot so both games have them', () => {
-    for (let i = 0; i < 20; i++) expect(pickRandomPenguinGulpSfx()).toMatch(/^frog-slurp-[12]$/);
+  it('the gulp mixes its own two gulps with the frog fly slurps (which load at boot so both games have them)', () => {
+    const heard = new Set<string>();
+    for (let i = 0; i < 200; i++) heard.add(pickRandomPenguinGulpSfx());
+    expect([...heard].sort()).toEqual(['frog-slurp-1', 'frog-slurp-2', 'penguin-gulp-1', 'penguin-gulp-2']);
     for (const key of ['frog-slurp-1', 'frog-slurp-2']) {
       expect(AUDIO_MANIFEST.find((e) => e.key === key)?.scope, key).toBe('eager');
+    }
+  });
+
+  it('never plays the same sound twice in a row', () => {
+    const pickers = [
+      pickRandomPenguinGulpSfx,
+      pickRandomPenguinBonkSfx,
+      pickRandomPenguinSwishSfx,
+      pickRandomPenguinHopSfx,
+      pickRandomPenguinYummySfx,
+    ];
+    for (const pick of pickers) {
+      let prev = pick();
+      for (let i = 0; i < 60; i++) {
+        const next = pick();
+        expect(next).not.toBe(prev);
+        prev = next;
+      }
     }
   });
 
