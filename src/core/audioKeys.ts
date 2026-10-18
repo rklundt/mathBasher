@@ -104,6 +104,13 @@ export const SfxKeys = {
   /** Sprint 2.7 — Penguin Slide: its own two gulps (mixed with Frog Splash's fly slurps). */
   PenguinGulp1: 'penguin-gulp-1',
   PenguinGulp2: 'penguin-gulp-2',
+  /** Sprint 2.8 — Bunny Garden: a rising tune when the right carrot comes up (harp, two trombones), one of three. */
+  BunnySuccess1: 'bunny-success-1',
+  BunnySuccess2: 'bunny-success-2',
+  BunnySuccess3: 'bunny-success-3',
+  /** Sprint 2.8 — Bunny Garden: a sad-trombone "wah-wah" when the mole pops up (a wrong hole), one of two. */
+  BunnyFail1: 'bunny-fail-1',
+  BunnyFail2: 'bunny-fail-2',
 } as const;
 
 /**
@@ -170,9 +177,10 @@ const PENGUIN_BONK_KEYS = ['penguin-splat-1', 'penguin-splat-2', 'penguin-splat-
 const PENGUIN_SWISH_KEYS = ['snow-slide-1', 'snow-slide-2'] as const;
 const PENGUIN_HOP_KEYS = ['penguin-hop-1', 'penguin-hop-2', 'penguin-hop-3'] as const;
 const PENGUIN_YUMMY_KEYS = ['penguin-yummy-1', 'penguin-yummy-2', 'penguin-yummy-3'] as const;
+// The hops are shared with Bunny Garden (sprint 2.8), so they load at boot
+// (~23 KB): an asset scope names one game.
 const PENGUIN_SFX_KEYS: ReadonlySet<string> = new Set([
   ...PENGUIN_SWISH_KEYS,
-  ...PENGUIN_HOP_KEYS,
   ...PENGUIN_BONK_KEYS,
   ...PENGUIN_YUMMY_KEYS,
   ...PENGUIN_OWN_GULP_KEYS,
@@ -220,6 +228,42 @@ export function pickRandomPenguinSwishSfx(rng: () => number = Math.random): (typ
 /** The round's last fish caught: "Yummy!" (in place of the gulp). */
 export function pickRandomPenguinYummySfx(rng: () => number = Math.random): (typeof PENGUIN_YUMMY_KEYS)[number] {
   return nextPenguinYummy(rng);
+}
+
+/**
+ * Sprint 2.8 — Bunny Garden's sounds. The hop is Penguin Slide's hop to a
+ * fish (owner's choice, shared and boot-loaded). The success and fail tunes
+ * are its own (`game:bunny-garden`). The hide (time's up) is a PLACEHOLDER
+ * that reuses a boot-loaded sound until the owner's arrives.
+ */
+const BUNNY_HOP_KEYS = PENGUIN_HOP_KEYS;
+const BUNNY_POP_KEYS = ['bunny-success-1', 'bunny-success-2', 'bunny-success-3'] as const;
+const BUNNY_MOLE_KEYS = ['bunny-fail-1', 'bunny-fail-2'] as const;
+const BUNNY_HIDE_KEYS = ['timeout-fail-1'] as const;
+const BUNNY_SFX_KEYS: ReadonlySet<string> = new Set([...BUNNY_POP_KEYS, ...BUNNY_MOLE_KEYS]);
+const nextBunnyHop = noRepeatPicker(BUNNY_HOP_KEYS);
+const nextBunnyPop = noRepeatPicker(BUNNY_POP_KEYS);
+const nextBunnyMole = noRepeatPicker(BUNNY_MOLE_KEYS);
+const nextBunnyHide = noRepeatPicker(BUNNY_HIDE_KEYS);
+
+/** The bunny hops to a hole. */
+export function pickRandomBunnyHopSfx(rng: () => number = Math.random): (typeof BUNNY_HOP_KEYS)[number] {
+  return nextBunnyHop(rng);
+}
+
+/** The right carrot pops out of the ground. */
+export function pickRandomBunnyPopSfx(rng: () => number = Math.random): (typeof BUNNY_POP_KEYS)[number] {
+  return nextBunnyPop(rng);
+}
+
+/** A wrong hole: the mole peeks up. */
+export function pickRandomBunnyMoleSfx(rng: () => number = Math.random): (typeof BUNNY_MOLE_KEYS)[number] {
+  return nextBunnyMole(rng);
+}
+
+/** Time's up: the carrots hide. */
+export function pickRandomBunnyHideSfx(rng: () => number = Math.random): (typeof BUNNY_HIDE_KEYS)[number] {
+  return nextBunnyHide(rng);
 }
 
 /** The hop up to grab a fish (right or wrong). */
@@ -332,6 +376,11 @@ export const MusicKeys = {
    * `--kind music --no-trim` for a clean loop seam.
    */
   SnowLoop1: 'loop-8',
+  /**
+   * Bunny Garden gameplay loop (sprint 2.8). 60 s stereo track, encoded
+   * `--kind music --no-trim` for a clean loop seam.
+   */
+  GardenLoop1: 'loop-9',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -365,6 +414,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'frog-splash': MusicKeys.PondLoop1,
   'space-shooter': MusicKeys.CockpitLoop1,
   'penguin-slide': MusicKeys.SnowLoop1,
+  'bunny-garden': MusicKeys.GardenLoop1,
 };
 
 /**
@@ -392,6 +442,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'space-shooter': [],
   // Sprint 2.7 — none yet (an optional sliding-on-snow loop may come from the owner).
   'penguin-slide': [],
+  // Sprint 2.8 — none yet.
+  'bunny-garden': [],
 };
 
 /**
@@ -515,6 +567,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   // Sprint 2.7 — Penguin Slide's music and its own sounds (its gulp mix also uses the frog slurps, eager).
   if (key === MusicKeys.SnowLoop1) return 'game:penguin-slide';
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
+  // Sprint 2.8 — Bunny Garden's music and tunes (its hop is the shared penguin hop; its hide is an eager placeholder).
+  if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
+  if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   return 'eager';
 }
 
