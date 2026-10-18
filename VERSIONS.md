@@ -27,12 +27,16 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-**Bunny Garden** — an eighth game (on dev for testing)
+_Nothing yet._
+
+## [2.8.0] - 2026-10-17 — Bunny Garden
+
+**Bunny Garden** — an eighth game
 - A cute bunny pulls up the carrot with the right answer. Carrots peek out of a row of holes under answer signs, and they sink back into the ground as the time runs out. Tap the right carrot (or steer with ← / → and press Space, or press 1–5) and it pops out into the bunny's basket.
 - A wrong hole has a friendly mole in it: a life lost, and the same question again. If the carrots hide before an answer, a life is lost too. Three lives, 12 carrots fill the basket.
 - Easy / Medium / Hard = 3 / 4 / 5 holes. One of three bunnies at random.
 - Game Select shows all eight games (two rows of four).
-- Its own music and sounds: a rising tune for the right carrot, a sad trombone for the mole, and Penguin Slide's hop sounds for the bunny. The time's-up sound is a placeholder until the owner's arrives.
+- Its own music and sounds: a rising tune for the right carrot, a sad trombone for the mole, and Penguin Slide's hop sounds for the bunny. The time's-up sound is borrowed from another game for now.
 
 ## [2.7.0] - 2026-10-17 — Penguin Slide; clearer mixed numbers
 
