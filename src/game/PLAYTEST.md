@@ -433,6 +433,24 @@ Phone in landscape, then desktop.
 - [ ] Add Fractions in each of the seven games: mixed numbers show a bigger whole number with a gap ("1 1/2", never "11/2"), on the answers and in the question. Long answers still fit their alien, rock, rung, bubble, pad, ship or fish.
 - [ ] The score, question, timer and Lives labels, and the Game Over headline and score, have a dark outline; Penguin Slide's Game Over reads clearly on the snow.
 
+## Bunny Garden (sprint 2.8)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select shows eight tiles, two rows of four; Bunny Garden is bottom right.
+- [ ] Difficulty reads "3 holes · 25s", "4 holes · 18s", "5 holes · 12s" for Add to 10 (longer for harder math) over a dimmed garden; the text reads clearly.
+- [ ] In game: the garden, a row of holes with a carrot in each and an answer sign above it, the bunny on the grass, the basket bottom left. Q1 shows "👆 Tap the carrot with the right answer!"; tapping the hint does nothing.
+- [ ] The signs never move. The carrots sink slowly, faces still peeking, and their leaves shiver near the end; then they duck in.
+- [ ] Tap the right carrot (or anywhere in its lane) → hop, pull, the carrot pops out and lands in the basket, "+points", next question.
+- [ ] Tap a wrong hole → the carrot ducks, the mole peeks up and waves, the bunny's ears droop, "Oops! Try again!", a Lives dot turns red, same question with a fresh row.
+- [ ] Let the carrots hide → "Out of time!", a life lost, same question with full time.
+- [ ] Third life lost → "Out of lives!" → Game Over (not a pass).
+- [ ] Twelve carrots → the bunny hops to the basket and cheers, "Basket full!", Game Over.
+- [ ] Keyboard: ← / → hop between holes, Space pulls, 1–5 pull a hole (4–5 do nothing on Easy); Space on Resume doesn't pull.
+- [ ] Pause mid-hop, mid-toss and mid-mole: everything freezes and resumes.
+- [ ] Add Fractions on Hard: mixed numbers fit their signs at 5 holes.
+- [ ] All three bunnies stand out (especially the white one on the light grass).
+
 ## Logging the run
 
 ```

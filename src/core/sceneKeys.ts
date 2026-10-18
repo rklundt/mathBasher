@@ -86,6 +86,12 @@ export const SceneKeys = {
    */
   PenguinSlide: 'penguin-slide',
   /**
+   * Bunny Garden — sprint 2.8 eighth game mode. A bunny pulls up the carrot
+   * with the right answer; a wrong hole has a mole, and the carrots sinking
+   * back into their holes is the countdown. Each miss costs one of 3 lives.
+   */
+  BunnyGarden: 'bunny-garden',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -133,5 +139,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.SpaceShooter;
     case 'penguin-slide':
       return SceneKeys.PenguinSlide;
+    case 'bunny-garden':
+      return SceneKeys.BunnyGarden;
   }
 }

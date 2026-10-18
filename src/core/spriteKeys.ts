@@ -517,6 +517,12 @@ export const BgSpriteKeys = {
    * background (the lanes are drawn on top).
    */
   PenguinSlide: 'penguin-slide',
+  /**
+   * Bunny Garden menu backdrop (sprint 2.8) — the garden drawn by
+   * `scripts/sprites/garden.mjs`, darkened so menu text reads on it. The
+   * game plays on the bright copy, `BunnyGardenSceneryKeys.Patch`.
+   */
+  BunnyGarden: 'bunny-garden',
 } as const;
 
 /**
@@ -589,6 +595,53 @@ export const SNOWBALL_SHEET = { key: SlideFishKeys.Snowball, frame: 120, frames:
  */
 export const PenguinSlideSceneryKeys = { Hill: 'penguin-slide-hill' } as const;
 export type PenguinSlideSceneryKey = (typeof PenguinSlideSceneryKeys)[keyof typeof PenguinSlideSceneryKeys];
+
+/** Sprint 2.8 — the full-brightness garden the game is played on (`garden.mjs`). */
+export const BunnyGardenSceneryKeys = { Patch: 'bunny-garden-patch' } as const;
+export type BunnyGardenSceneryKey = (typeof BunnyGardenSceneryKeys)[keyof typeof BunnyGardenSceneryKeys];
+
+/**
+ * Sprint 2.8 — Bunny Garden bunny sheets, one per colorway, drawn by
+ * `scripts/sprites/bunny.mjs` (source of truth for the frame geometry).
+ */
+export const BunnySpriteKeys = {
+  Snowball: 'bunny-snowball',
+  Caramel: 'bunny-caramel',
+  Lop: 'bunny-lop',
+} as const;
+export type BunnySpriteKey = (typeof BunnySpriteKeys)[keyof typeof BunnySpriteKeys];
+
+/** Frame geometry of the bunny sheets — must match `scripts/sprites/bunny.mjs`. */
+export const BUNNY_SHEET = {
+  frame: 220,
+  poses: { idle: 0, hop: 1, pull: 2, happy: 3, oops: 4, cheer: 5 },
+} as const;
+export const BUNNY_POSE_COUNT = Object.keys(BUNNY_SHEET.poses).length;
+
+/** Pick one bunny colorway at random (one bunny per round). */
+export function pickRandomBunnySpriteKey(rng: () => number = Math.random): BunnySpriteKey {
+  const keys = Object.values(BunnySpriteKeys);
+  return keys[Math.floor(rng() * keys.length)];
+}
+
+/**
+ * Sprint 2.8 — Bunny Garden pieces (`scripts/sprites/carrot.mjs`): carrots
+ * (one row per kind; frames up / pulled), the mole (peek / wave), a hole
+ * (back / front lip) and the basket (back / front rim).
+ */
+export const GardenSpriteKeys = {
+  Carrots: 'garden-carrots',
+  Mole: 'garden-mole',
+  Hole: 'garden-hole',
+  Basket: 'garden-basket',
+} as const;
+export type GardenSpriteKey = (typeof GardenSpriteKeys)[keyof typeof GardenSpriteKeys];
+export const GARDEN_SHEETS = {
+  carrots: { key: GardenSpriteKeys.Carrots, frame: 120, kinds: 4, frames: 2 },
+  mole: { key: GardenSpriteKeys.Mole, frame: 120, frames: 2 },
+  hole: { key: GardenSpriteKeys.Hole, frameWidth: 160, frameHeight: 70 },
+  basket: { key: GardenSpriteKeys.Basket, frameWidth: 170, frameHeight: 120 },
+} as const;
 
 /** The fly the frog catches at the far bank (wing-flap sheet, `frog.mjs`). */
 export const FLY_SHEET = { key: 'fly', frameWidth: 72, frameHeight: 56, frames: 2 } as const;
@@ -820,6 +873,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'frog-splash': BgSpriteKeys.FrogSplash,
   'space-shooter': BgSpriteKeys.SpaceShooter,
   'penguin-slide': BgSpriteKeys.PenguinSlide,
+  'bunny-garden': BgSpriteKeys.BunnyGarden,
 };
 
 /**
@@ -837,6 +891,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'frog-splash': { stars: false, bottomFade: false },
   'space-shooter': { stars: false, bottomFade: false },
   'penguin-slide': { stars: false, bottomFade: false },
+  'bunny-garden': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1173,6 +1228,53 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', PenguinSlideSceneryKeys.Hill),
     scope: 'game:penguin-slide',
   },
+  // Sprint 2.8 — Bunny Garden: the bunnies, the garden pieces and the bright garden, all game-scoped.
+  ...(Object.values(BunnySpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth: BUNNY_SHEET.frame,
+    frameHeight: BUNNY_SHEET.frame,
+    scope: 'game:bunny-garden',
+  })),
+  {
+    kind: 'hero',
+    key: GARDEN_SHEETS.carrots.key,
+    url: spritePath('hero', GARDEN_SHEETS.carrots.key),
+    frameWidth: GARDEN_SHEETS.carrots.frame,
+    frameHeight: GARDEN_SHEETS.carrots.frame,
+    scope: 'game:bunny-garden',
+  },
+  {
+    kind: 'hero',
+    key: GARDEN_SHEETS.mole.key,
+    url: spritePath('hero', GARDEN_SHEETS.mole.key),
+    frameWidth: GARDEN_SHEETS.mole.frame,
+    frameHeight: GARDEN_SHEETS.mole.frame,
+    scope: 'game:bunny-garden',
+  },
+  {
+    kind: 'hero',
+    key: GARDEN_SHEETS.hole.key,
+    url: spritePath('hero', GARDEN_SHEETS.hole.key),
+    frameWidth: GARDEN_SHEETS.hole.frameWidth,
+    frameHeight: GARDEN_SHEETS.hole.frameHeight,
+    scope: 'game:bunny-garden',
+  },
+  {
+    kind: 'hero',
+    key: GARDEN_SHEETS.basket.key,
+    url: spritePath('hero', GARDEN_SHEETS.basket.key),
+    frameWidth: GARDEN_SHEETS.basket.frameWidth,
+    frameHeight: GARDEN_SHEETS.basket.frameHeight,
+    scope: 'game:bunny-garden',
+  },
+  {
+    kind: 'bg',
+    key: BunnyGardenSceneryKeys.Patch,
+    url: spritePath('bg', BunnyGardenSceneryKeys.Patch),
+    scope: 'game:bunny-garden',
+  },
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -1252,4 +1354,7 @@ export type NonAlienSpriteKey =
   | SpaceShooterSpriteKey
   | PenguinSpriteKey
   | SlideFishKey
-  | PenguinSlideSceneryKey;
+  | PenguinSlideSceneryKey
+  | BunnyGardenSceneryKey
+  | BunnySpriteKey
+  | GardenSpriteKey;

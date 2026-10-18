@@ -49,6 +49,7 @@ describe('shared base time per question', () => {
       config.frogSplash.speed,
       config.spaceShooter.speed,
       config.penguinSlide.speed,
+      config.bunnyGarden.speed,
     ]) {
       for (const s of Object.values(block)) expect('countdownSec' in s).toBe(false);
     }
