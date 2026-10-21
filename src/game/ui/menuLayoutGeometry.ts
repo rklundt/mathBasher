@@ -64,6 +64,40 @@ export function computeStackSlots(
   return slots;
 }
 
+/** Cell size and spacing for `computeGridSlots`. */
+export interface GridSpec {
+  cellW: number;
+  cellH: number;
+  gapX: number;
+  gapY: number;
+  perRow: number;
+}
+
+/**
+ * Sprint 2.9 — slots for `count` same-size buttons in rows of
+ * `spec.perRow`, the first row centred on `firstRowY`. Every row is
+ * centred on `centerX`, a partial last row included (the challenge grid's
+ * 4 + 4 + 3, Pause / Game Over's 2 × 2).
+ */
+export function computeGridSlots(centerX: number, firstRowY: number, count: number, spec: GridSpec): StackedSlot[] {
+  if (count <= 0 || spec.perRow <= 0) return [];
+  const rows = Math.ceil(count / spec.perRow);
+  const slots: StackedSlot[] = [];
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / spec.perRow);
+    const col = i % spec.perRow;
+    const inRow = row < rows - 1 ? spec.perRow : count - (rows - 1) * spec.perRow;
+    const rowW = inRow * spec.cellW + (inRow - 1) * spec.gapX;
+    slots.push({
+      x: centerX - rowW / 2 + spec.cellW / 2 + col * (spec.cellW + spec.gapX),
+      y: firstRowY + row * (spec.cellH + spec.gapY),
+      width: spec.cellW,
+      height: spec.cellH,
+    });
+  }
+  return slots;
+}
+
 /**
  * Slots for a single horizontal ROW of buttons, all the same kind, centred
  * on (centerX, centerY) with `gap` px between them. Same slot shape as

@@ -1263,6 +1263,54 @@ export const config = {
       tileH: 200,
     },
     /**
+     * Sprint 2.9 — the challenge-first flow: the challenge picker (and the
+     * same grid inside the pause card), the challenge chip on Game Select
+     * and Difficulty, the per-game Difficulty tiles, and the Pause / Game
+     * Over button grids. Sized for a phone, where 1 CSS px is about 2
+     * canvas px: every target is at least 72 canvas px tall.
+     */
+    challengeFlow: {
+      /** The challenge buttons: 4 + 4 + 3, the name and its "1.5x Points!" inside each. */
+      grid: { cellW: 280, cellH: 96, gapX: 16, gapY: 16, perRow: 4 },
+      picker: { headingY: 58, subjectTabY: 135, subjectTab: { w: 220, h: 64 }, gridTopY: 230, backY: 610 },
+      backButton: { w: 220, h: 72 },
+      /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
+      chip: { w: 440, h: 72 },
+      gameSelect: { headingY: 86, chipY: 172 },
+      difficulty: {
+        headingY: 58,
+        chipY: 150,
+        /** Space Escape's "12 floors per round" line. */
+        floorsY: 222,
+        tileY: 320,
+        tile: { w: 260, h: 96, gapX: 40 },
+        /** "Up to 1,500 points!" under each tile, then a fraction challenge's level note. */
+        upToGapPx: 14,
+        noteGapPx: 44,
+        buttonsY: 600,
+        startW: 240,
+        backW: 200,
+        buttonH: 72,
+      },
+      /** Pause: Resume, then a 2 × 2 grid; the challenge view reuses `grid`. */
+      pause: {
+        titleY: 190,
+        resume: { y: 300, w: 360, h: 80 },
+        grid: { topY: 400, cellW: 300, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+        challengeHeadingY: 130,
+        challengeGridTopY: 230,
+        challengeBackY: 590,
+      },
+      /** Game Over: Play again, then a 2 × 2 grid; stars and the badge sit above. */
+      gameOver: {
+        summaryY: 216,
+        starsY: 295,
+        badgeY: 360,
+        playAgain: { y: 440, w: 360, h: 80 },
+        grid: { topY: 532, cellW: 280, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+      },
+    },
+    /**
      * DifficultyScene math-tile + Speed-tile grid dimensions.
      *
      * Lifted to config in sprint 1.5 end-of-sprint review (mirroring the sprint 1.1

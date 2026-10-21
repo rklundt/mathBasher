@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 // Imports the pure-geometry module directly — does NOT pull Phaser
 // into the test's import graph (MenuLayout.ts itself imports
 // PlaceholderButton -> Phaser, which would crash without a DOM env).
-import { computeRowSlots, computeStackSlots } from '@/game/ui/menuLayoutGeometry';
+import { computeGridSlots, computeRowSlots, computeStackSlots } from '@/game/ui/menuLayoutGeometry';
 import { config } from '@/core/config';
 
 /**
@@ -137,5 +137,40 @@ describe('computeRowSlots', () => {
 
   it('returns nothing for an empty row', () => {
     expect(computeRowSlots(640, 550, config.layout.button.rowGapPx, 0)).toEqual([]);
+  });
+});
+
+describe('computeGridSlots (sprint 2.9)', () => {
+  const spec = { cellW: 280, cellH: 96, gapX: 16, gapY: 16, perRow: 4 };
+
+  it('lays the challenge grid out 4 + 4 + 3, every row centred', () => {
+    const slots = computeGridSlots(640, 230, 11, spec);
+    expect(slots).toHaveLength(11);
+    expect(slots.map((s) => s.y)).toEqual([230, 230, 230, 230, 342, 342, 342, 342, 454, 454, 454]);
+    // A full row is symmetric around the centre.
+    expect(slots[0].x + slots[3].x).toBe(1280);
+    // The partial last row (3) is centred too: its middle button sits on the centre.
+    expect(slots[9].x).toBe(640);
+  });
+
+  it('fits the challenge grid inside the 1280-wide canvas', () => {
+    const slots = computeGridSlots(640, 230, 11, config.layout.challengeFlow.grid);
+    for (const s of slots) {
+      expect(s.x - s.width / 2).toBeGreaterThanOrEqual(0);
+      expect(s.x + s.width / 2).toBeLessThanOrEqual(1280);
+    }
+  });
+
+  it('keeps the Pause and Game Over 2 × 2 grids above the bottom gutter', () => {
+    const { pause, gameOver } = config.layout.challengeFlow;
+    for (const g of [pause.grid, gameOver.grid]) {
+      const slots = computeGridSlots(640, g.topY, 4, g);
+      const bottom = Math.max(...slots.map((s) => s.y + s.height / 2));
+      expect(bottom).toBeLessThanOrEqual(688);
+    }
+  });
+
+  it('handles nothing to lay out', () => {
+    expect(computeGridSlots(640, 100, 0, spec)).toEqual([]);
   });
 });

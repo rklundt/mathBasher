@@ -61,6 +61,12 @@ export interface KeyboardNavigatorOptions {
    * input handler (HudScene during gameplay).
    */
   activateOnSpace?: boolean;
+  /**
+   * Sprint 2.9 — which focusable has focus on arrival (default: the first
+   * enabled one). Lets a chip stay first in Tab order without an Enter-masher
+   * landing on it every time. Ignored when that one is disabled.
+   */
+  initialIndex?: number;
 }
 
 export class KeyboardNavigator {
@@ -90,7 +96,11 @@ export class KeyboardNavigator {
       return;
     }
 
-    this.focusedIndex = this.firstFocusableIndex();
+    const wanted = options?.initialIndex;
+    this.focusedIndex =
+      wanted !== undefined && buttons[wanted] !== undefined && !buttons[wanted].isDisabled()
+        ? wanted
+        : this.firstFocusableIndex();
     // addKey() calls register the keys with Phaser so the 'keydown-X' events
     // fire below. Only `shift` needs a stored reference (we read isDown to
     // detect Shift+Tab); the others are pure event-driven.
