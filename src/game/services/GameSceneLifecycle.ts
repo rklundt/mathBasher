@@ -255,7 +255,8 @@ export class GameSceneLifecycle {
       mathId,
       speed,
       questionsCompleted: String(roundController.questionIndex),
-      // Where the player went: the menu or Game Select (pause → Change Game).
+      // Where the player went: the menu, Game Select (pause → Change Game) or
+      // Difficulty (pause → a new challenge).
       sceneKey: target,
     });
     scene.tweens.resumeAll();

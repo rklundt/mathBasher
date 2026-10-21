@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { SceneKeys } from '@/core/sceneKeys';
 
 /**
  * Structural contract for anything KeyboardNavigator can move focus through.
@@ -131,9 +132,19 @@ export class KeyboardNavigator {
     return this.buttons.findIndex((b) => !b.isDisabled());
   }
 
+  /**
+   * Sprint 2.9 — while Settings is open over this scene (Menu, the pause
+   * card), Tab and Enter belong to Settings: Phaser sends keys to every
+   * running scene, and a Tab-then-Enter inside Settings must not press a
+   * button behind it (the pause card's Change Game would end the round).
+   */
+  private blockedBySettings(): boolean {
+    return this.scene.scene.key !== SceneKeys.Settings && this.scene.scene.isActive(SceneKeys.Settings);
+  }
+
   private handleTab(event: KeyboardEvent): void {
     event.preventDefault();
-    if (this.buttons.length === 0) return;
+    if (this.buttons.length === 0 || this.blockedBySettings()) return;
     // shiftKey is null only when the scene has no keyboard plugin, in
     // which case Tab keydown can't fire and this code is unreachable.
     // The optional-chained read is a belt-and-braces guard.
@@ -156,6 +167,7 @@ export class KeyboardNavigator {
   }
 
   private activateFocused(): void {
+    if (this.blockedBySettings()) return;
     const btn = this.buttons[this.focusedIndex];
     if (!btn || btn.isDisabled()) return;
     btn.activate();
