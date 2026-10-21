@@ -6,9 +6,10 @@ import type Phaser from 'phaser';
 import type { Question } from '@/math/types';
 
 /**
- * Where a mid-round quit from the pause menu goes (sprint 2.6.5): the main
- * menu, or straight to Game Select to pick another game (math type and
- * difficulty carry over, as from Game Over's "Change Game").
+ * Where a mid-round quit from the pause menu goes: the main menu, straight
+ * to Game Select to pick another game (sprint 2.6.5; the challenge and
+ * difficulty carry over), or this game's Difficulty after a new challenge
+ * was picked in the pause card (sprint 2.9).
  */
 export type QuitDestination = 'menu' | 'game-select' | 'difficulty';
 
