@@ -10,7 +10,9 @@ import { Settings, type GameId } from '@/services/Settings';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { rowButtons, stackButtons } from '@/game/ui/MenuLayout';
+import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
+import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
@@ -151,7 +153,7 @@ export class GameOverScene extends Phaser.Scene {
     // than text() so we can layer in `align: 'center'` for the two-line
     // string.
     const scoreSummary = this.add
-      .text(cx, height * 0.32, '', { ...textStyle('summary'), align: 'center' })
+      .text(cx, config.layout.challengeFlow.gameOver.summaryY, '', { ...textStyle('summary'), align: 'center' })
       .setOrigin(0.5);
     applyTextOutline(scoreSummary);
     // Round size — Number Climb passes 10 here (10 floors); other modes
@@ -185,51 +187,65 @@ export class GameOverScene extends Phaser.Scene {
     // refactored to 3 distinct game objects so each can animate
     // independently. Stagger 200ms between stars; first star starts
     // 500ms after scene mount so the headline pop reads first.
-    this.buildStarRow(cx, height * 0.46);
+    this.buildStarRow(cx, config.layout.challengeFlow.gameOver.starsY);
 
-    // Sprint 2.6.1 — Play Again on its own, then a row of three: Change
-    // Difficulty · Change Game · Main Menu ("Change Game" saves a trip
-    // through the main menu). A row keeps the stack clear of the
-    // "New High Score!" badge above.
-    const playAgainY = height * 0.68;
-    const [playAgain] = stackButtons(this, {
-      centerY: playAgainY,
-      items: [
-        {
-          label: 'Play Again',
-          onClick: () => {
-            // Defensive: re-set Settings to the round we just played, so
-            // Play Again works even if a future code path resets Settings
-            // (e.g. on round-end cleanup that hasn't been written yet).
-            // The destination scene reads Settings on create, so this
-            // preserves the user's intent across the bounce.
-            Settings.setGameId(gameId);
-            if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
-            if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
-            // Route to the game scene that matches the JUST-PLAYED
-            // gameId via the canonical helper. The original sprint 2.1
-            // fix used an inline ternary that didn't cover number-climb
-            // (added in sprint 2.2) and silently fell through to
-            // SceneKeys.Game (Alien Shoot). Using `gameSceneKeyFor` keeps
-            // this site exhaustive against the GameId union.
-            this.scene.start(gameSceneKeyFor(gameId));
-          },
-        },
-      ],
+    // Sprint 2.9 — Play again on its own, then a 2 × 2 grid: Change
+    // difficulty · Change challenge / Change game · Main menu. Four in a row
+    // don't fit a phone; the grid keeps every target 72 tall and clear of
+    // the "New High Score!" badge above.
+    const G = config.layout.challengeFlow.gameOver;
+    const playAgain = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y: G.playAgain.y,
+      width: G.playAgain.w,
+      height: G.playAgain.h,
+      label: 'Play Again',
+      onClick: () => {
+        // Defensive: re-set Settings to the round we just played, so
+        // Play Again works even if a future code path resets Settings.
+        // The destination scene reads Settings on create, so this
+        // preserves the user's intent across the bounce.
+        Settings.setGameId(gameId);
+        if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
+        if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
+        // Route to the game scene that matches the JUST-PLAYED gameId via
+        // the canonical helper (exhaustive against the GameId union).
+        this.scene.start(gameSceneKeyFor(gameId));
+      },
     });
-    // The row sits as far below Play Again as its buttons sit from each
-    // other, so a thumb aimed at Play Again doesn't land on the row.
-    const { primaryH, secondaryH, rowGapPx } = config.layout.button;
-    const row = rowButtons(this, {
-      centerY: playAgainY + primaryH / 2 + rowGapPx + secondaryH / 2,
-      items: [
-        { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
-        // Math type + difficulty carry over (Settings keeps them).
-        { label: 'Change Game', onClick: () => this.scene.start(SceneKeys.GameSelect) },
-        { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
-      ],
-    });
-    const buttons = [playAgain, ...row];
+    const changeChallenge = (): void => {
+      // Back on the picker goes to this game's Difficulty, not back here:
+      // re-entering Game Over would replay it and save the score again.
+      Settings.setGameId(gameId);
+      const init: ChallengePickerInit = {
+        next: SceneKeys.Difficulty,
+        back: SceneKeys.Difficulty,
+        source: 'gameOver',
+      };
+      this.scene.start(SceneKeys.ChallengePicker, init);
+    };
+    const items: Array<{ label: string; onClick: () => void }> = [
+      { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
+      { label: 'Change Challenge', onClick: changeChallenge },
+      // Challenge + difficulty carry over (Settings keeps them).
+      { label: 'Change Game', onClick: () => this.scene.start(SceneKeys.GameSelect) },
+      { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
+    ];
+    const slots = computeGridSlots(cx, G.grid.topY, items.length, G.grid);
+    const grid = items.map(
+      (item, i) =>
+        new PlaceholderButton({
+          scene: this,
+          x: slots[i].x,
+          y: slots[i].y,
+          width: slots[i].width,
+          height: slots[i].height,
+          label: item.label,
+          onClick: item.onClick,
+        }),
+    );
+    const buttons = [playAgain, ...grid];
 
     new KeyboardNavigator(this, buttons);
 
@@ -317,9 +333,15 @@ export class GameOverScene extends Phaser.Scene {
       this.roundData.score > 0 && (previousBest === null || this.roundData.score > previousBest.score);
 
     if (isNewHighScore && this.scene.isActive()) {
-      const { width, height } = this.scale;
+      const { width } = this.scale;
       // TextKind 'badge' — 26px warm-amber bold (Sprint 0.7.5 Story 3).
-      const badge = text(this, width / 2, height * 0.54, '★ New High Score! ★', 'badge').setOrigin(0.5);
+      const badge = text(
+        this,
+        width / 2,
+        config.layout.challengeFlow.gameOver.badgeY,
+        '★ New High Score! ★',
+        'badge',
+      ).setOrigin(0.5);
       applyTextOutline(badge);
       this.tweens.add({
         targets: badge,

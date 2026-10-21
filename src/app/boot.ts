@@ -21,6 +21,7 @@ import { FrogSplashScene } from '@/game/scenes/FrogSplashScene';
 import { SpaceShooterScene } from '@/game/scenes/SpaceShooterScene';
 import { PenguinSlideScene } from '@/game/scenes/PenguinSlideScene';
 import { BunnyGardenScene } from '@/game/scenes/BunnyGardenScene';
+import { ChallengePickerScene } from '@/game/scenes/ChallengePickerScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
 import { PauseOverlay } from '@/game/scenes/PauseOverlay';
@@ -128,6 +129,7 @@ export function bootGame(): void {
       MenuScene,
       GameSelectScene,
       DifficultyScene,
+      ChallengePickerScene,
       LoadingScene,
       GameScene,
       AsteroidFieldScene,

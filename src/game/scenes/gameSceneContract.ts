@@ -10,7 +10,7 @@ import type { Question } from '@/math/types';
  * menu, or straight to Game Select to pick another game (math type and
  * difficulty carry over, as from Game Over's "Change Game").
  */
-export type QuitDestination = 'menu' | 'game-select';
+export type QuitDestination = 'menu' | 'game-select' | 'difficulty';
 
 /**
  * Contract every game-mode scene must satisfy so HudScene (and other

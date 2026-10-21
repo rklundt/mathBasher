@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings, type GameId } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
@@ -11,11 +12,13 @@ import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
+import { createChallengeChip } from '@/game/ui/ChallengeChip';
+import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 
 /**
- * Game-mode selection. Seven tiles as of sprint 2.7 (Alien Shoot, Asteroid
- * Field, Space Escape!, Math-a-lotl, Frog Splash, Space Shooter, Penguin
- * Slide): four on top, three centred below.
+ * Game-mode selection: "Pick a game!", the challenge chip (sprint 2.9:
+ * the challenge is picked first and stays put while you hop between games),
+ * and eight tiles in two rows of four.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
@@ -30,8 +33,17 @@ export class GameSelectScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    // Sprint 2.5.6 — higher (was 0.18) to clear the three-row grid.
-    text(this, cx, height * 0.12, 'Pick a Game', 'h2').setOrigin(0.5);
+    const L = config.layout.challengeFlow.gameSelect;
+    text(this, cx, L.headingY, 'Pick a game!', 'h2').setOrigin(0.5);
+    // Sprint 2.9 — the challenge chip: tap to swap the challenge, then back here.
+    const chip = createChallengeChip(this, cx, L.chipY, () => {
+      const init: ChallengePickerInit = {
+        next: SceneKeys.GameSelect,
+        back: SceneKeys.GameSelect,
+        source: 'gameSelect',
+      };
+      this.scene.start(SceneKeys.ChallengePicker, init);
+    });
 
     // Top-right mute icon — matches MenuScene + HudScene placement so
     // the affordance is in the same spot every screen.
@@ -88,17 +100,23 @@ export class GameSelectScene extends Phaser.Scene {
       onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    new KeyboardNavigator(this, [
-      alienShoot,
-      asteroidField,
-      numberClimb,
-      mathALotl,
-      frogSplash,
-      spaceShooter,
-      penguinSlide,
-      bunnyGarden,
-      back,
-    ]);
+    // The chip is first in Tab order, but focus lands on the first game.
+    new KeyboardNavigator(
+      this,
+      [
+        chip,
+        alienShoot,
+        asteroidField,
+        numberClimb,
+        mathALotl,
+        frogSplash,
+        spaceShooter,
+        penguinSlide,
+        bunnyGarden,
+        back,
+      ],
+      { initialIndex: 1 },
+    );
 
     // Esc returns to the previous step in the menu stack.
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
