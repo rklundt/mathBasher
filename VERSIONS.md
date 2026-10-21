@@ -29,6 +29,15 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.9.0] - 2026-10-21 — Pick your challenge first
+
+**Pick your challenge first**
+- The challenge (Add to 10, Subtract Fractions…) is now picked first, on its own screen: "Pick your challenge!". Each challenge shows how many points it's worth ("1.5x Points!"). The picker opens on the first Start of a visit; after that it stays put while you hop between games.
+- Game Select ("Pick a game!") and each game's Difficulty screen show the challenge at the top. Tap it to swap.
+- Difficulty is still picked per game, with the game's own labels, and now shows the most points a round can earn ("Up to 1,500 points!"). Fraction challenges say what changes with the level (same bottoms, mixed numbers, different bottoms).
+- Pause and Game Over have a "Change Challenge" button. On Pause, the challenges open inside the pause card: Back returns to the paused game, and only a different challenge ends the round.
+- Bigger buttons on these screens, for phones.
+
 ## [2.8.0] - 2026-10-17 — Bunny Garden
 
 **Bunny Garden** — an eighth game

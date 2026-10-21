@@ -26,6 +26,8 @@ export interface PlaceholderButtonOpts {
   label: string;
   /** Optional secondary line under the label (e.g. tile description). */
   subtitle?: string;
+  /** Sprint 2.9 — a colour for the subtitle (the challenge buttons' "1.5x Points!"). */
+  subtitleColor?: string;
   /** Disabled buttons render dimmer and ignore pointer + keyboard activation. */
   disabled?: boolean;
   /** Selected buttons get an amber border to indicate active choice. */
@@ -141,6 +143,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
         ...textStyle('buttonSubtitle'),
         wordWrap: { width: opts.width - 16 },
         align: 'center',
+        ...(opts.subtitleColor !== undefined && { color: opts.subtitleColor }),
       });
       subtitle.setOrigin(0.5);
       this.add(subtitle);

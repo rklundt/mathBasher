@@ -1263,71 +1263,52 @@ export const config = {
       tileH: 200,
     },
     /**
-     * DifficultyScene math-tile + Speed-tile grid dimensions.
-     *
-     * Lifted to config in sprint 1.5 end-of-sprint review (mirroring the sprint 1.1
-     * chassis-dims lift). The math-tile
-     * dimensions have been re-tuned in TWO consecutive sprints (1.1
-     * went 100→116, 1.5 went 116→64 to fit 3 rows of 9 tiles), so
-     * keeping them in config means the next layout iteration is a
-     * 1-line edit — not a code change to DifficultyScene + the
-     * tuning-history comment block.
-     *
-     * Tuning history:
-     *   v1.5 (current): mathTile 220×64, Speed 160×64. 3-row math
-     *     grid (4+4+1) fits 9 implemented generators. Tiles match
-     *     Speed-button height for visual rhythm. Subtitle dropped
-     *     on math tiles (Story 5) so a 64-tall tile is sufficient.
-     *   v1.1 end-of-sprint review: 220×116 (subtitle wrapping needed the height).
-     *   v0.7.5: 200×80 baseline.
+     * Sprint 2.9 — the challenge-first flow: the challenge picker (and the
+     * same grid inside the pause card), the challenge chip on Game Select
+     * and Difficulty, the per-game Difficulty tiles, and the Pause / Game
+     * Over button grids. Sized for a phone, where 1 CSS px is about 2
+     * canvas px: every target is at least 72 canvas px tall.
      */
-    difficultyTile: {
-      mathWidthPx: 220,
-      // Sprint 2.2 story 15b — bumped 64 → 56 to reclaim vertical
-      // headroom now that the speed row carries standalone subtitles
-      // below each button + a per-game section title ("Speed" vs
-      // "Difficulty"). 56 stays above the iOS HIG 44 px touch-target
-      // floor with margin.
-      mathHeightPx: 56,
-      mathColGapPx: 20,
-      mathRowGapPx: 12,
-      mathMaxPerRow: 4,
-      speedWidthPx: 160,
-      // Same 64 → 56 height bump as the math tiles.
-      speedHeightPx: 56,
-      // Sprint 2.2 story 15b — bumped 20 → 60 so the standalone subtitle
-      // text under each speed button has horizontal breathing room. At
-      // 20 px gap the three subtitles read as one continuous run-on
-      // string ("2 rungs · 5:00 timer 3 rungs · 3:36 timer …").
-      speedGapPx: 60,
-      /**
-       * Vertical offset (in design pixels) of the section label ABOVE
-       * the FIRST math row's center. The 32px-bold sectionLabel kind
-       * occupies ~42px (centered on its y-coord = ±21). 60 - 32 - 21 =
-       * 7px of visible gap between label-bottom and first-row tile-top.
-       */
-      mathSectionLabelOffsetY: 60,
-      /**
-       * Same idea for Speed. Speed tile is 64 tall, so offset 75
-       * gives 22px of gap between label-bottom and tile-top — slightly
-       * more breathing room than Math row (which has 3 rows of tiles
-       * to budget for vertically).
-       */
-      speedSectionLabelOffsetY: 75,
-      /**
-       * Sprint 2.5.2 — Number Climb only. Climb adds a "N floors per
-       * round" line between the section label and the difficulty buttons,
-       * which needs more room than the 75px offset leaves. The section
-       * label lifts by this extra amount on Climb (keeps ~14px clear of the
-       * third Math Type row above).
-       */
-      climbSectionLabelExtraOffsetY: 18,
-      /**
-       * Sprint 2.5.2 — gap between the BOTTOM of the Climb floor-count
-       * line and the TOP edge of the difficulty buttons (the line is
-       * bottom-anchored so its descenders never touch the button stroke).
-       */
-      floorCountLabelGapPx: 8,
+    challengeFlow: {
+      /** The challenge buttons: 4 + 4 + 3, the name and its "1.5x Points!" inside each. */
+      grid: { cellW: 280, cellH: 96, gapX: 16, gapY: 16, perRow: 4 },
+      picker: { headingY: 58, subjectTabY: 135, subjectTab: { w: 220, h: 64 }, gridTopY: 230, backY: 610 },
+      backButton: { w: 220, h: 72 },
+      /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
+      chip: { w: 440, h: 72 },
+      gameSelect: { headingY: 86, chipY: 172 },
+      difficulty: {
+        headingY: 58,
+        chipY: 150,
+        /** Space Escape's "12 floors per round" line. */
+        floorsY: 222,
+        tileY: 320,
+        tile: { w: 260, h: 96, gapX: 40 },
+        /** "Up to 1,500 points!" under each tile, then a fraction challenge's level note. */
+        upToGapPx: 14,
+        noteGapPx: 44,
+        buttonsY: 600,
+        startW: 240,
+        backW: 200,
+        buttonH: 72,
+      },
+      /** Pause: Resume, then a 2 × 2 grid; the challenge view reuses `grid`. */
+      pause: {
+        titleY: 190,
+        resume: { y: 300, w: 360, h: 80 },
+        grid: { topY: 400, cellW: 300, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+        challengeHeadingY: 130,
+        challengeGridTopY: 230,
+        challengeBackY: 590,
+      },
+      /** Game Over: Play again, then a 2 × 2 grid; stars and the badge sit above. */
+      gameOver: {
+        summaryY: 216,
+        starsY: 295,
+        badgeY: 360,
+        playAgain: { y: 440, w: 360, h: 80 },
+        grid: { topY: 532, cellW: 280, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+      },
     },
     /**
      * Floating "+N" points popup on a correct answer (HudScene, every
