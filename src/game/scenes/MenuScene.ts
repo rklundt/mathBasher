@@ -77,7 +77,7 @@ export class MenuScene extends Phaser.Scene {
    * again on the next visit. Back on the picker returns here.
    */
   private start(): void {
-    if (Settings.round.mathId === null) {
+    if (Settings.round.challengeId === null) {
       const init: ChallengePickerInit = { next: SceneKeys.GameSelect, back: SceneKeys.Menu, source: 'menu' };
       this.scene.start(SceneKeys.ChallengePicker, init);
       return;

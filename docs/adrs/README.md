@@ -45,3 +45,8 @@ Don't write one for:
 | [0007](ADR-0007-azure-app-service-for-containers.md) | Azure App Service for Containers (over Container Apps) |
 | [0008](ADR-0008-ffmpeg-static-as-dev-dependency.md) | `ffmpeg-static` as a project-scoped dev dependency (with build-script allowlist) |
 | [0009](ADR-0009-sharp-as-dev-dependency.md) | `sharp` as a project-scoped dev dependency (visual-asset analogue of ADR-0008) |
+| [0010](ADR-0010-sprite-tier-strategy.md) | Sprite tier strategy + extract defaults |
+| [0011](ADR-0011-per-game-mode-dispatch.md) | Per-game-mode dispatch via `Record<GameId, X>` maps (and the new-game checklist) |
+| [0012](ADR-0012-static-web-apps-hosting.md) | Azure Static Web Apps hosting; Express server kept but not deployed |
+| [0013](ADR-0013-lint-and-format-toolchain.md) | ESLint + Prettier, committed git hooks, and a release-age guard |
+| [0014](ADR-0014-subjects-and-challenge-first-flow.md) | Subjects, challenge types, and the challenge-first flow |

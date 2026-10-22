@@ -47,7 +47,6 @@ Two folders grew up after this ADR and weren't listed. Here is the whole map, lo
 - **`/server/`** may import `/src/shared/` and pure `/src/math/` / `/src/services/` modules, never `/src/game/` or `/src/app/`.
 
 **Known exceptions today** (found while writing this map; allowed explicitly, file by file, in `eslint.config.js`):
-- `core/{assetScope,audioKeys,sceneKeys,spriteKeys}.ts` import the `GameId` *type* from `services/Settings.ts`. It's type-only, so nothing runs, but the type belongs in `core`.
 - `services/audioManagerFactory.ts` imports `PhaserAudioManager` from `game/services/`. The factory is where the Phaser-backed implementation gets wired to the Phaser-free interface, so it belongs in `game` or `app`.
 
-Since sprint 2.6.4 ESLint enforces this map in CI and in the commit hook (`no-restricted-imports` per folder, matching both `@/…` aliases and relative paths; see ADR-0013). The fix for the exceptions, when convenient: move `GameId` into `core`, and move `audioManagerFactory.ts` into `game/services/`. Each fix removes its exception block from the lint config.
+Since sprint 2.6.4 ESLint enforces this map in CI and in the commit hook (`no-restricted-imports` per folder, matching both `@/…` aliases and relative paths; see ADR-0013). The fix for the remaining exception, when convenient: move `audioManagerFactory.ts` into `game/services/`, which removes its exception block from the lint config. (The other one, `core` files taking the `GameId` type from `services`, was fixed in sprint 2.9.1: `GameId` now lives in `core/gameIds.ts`; ADR-0014.)

@@ -7,6 +7,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
+import { SUBJECTS, subjectOf } from '@/core/subjects';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
@@ -155,8 +156,11 @@ export class PauseOverlay extends Phaser.Scene {
     const L = config.layout.challengeFlow;
 
     this.view.push(text(this, cx, P.challengeHeadingY, 'Pick your challenge!', 'h2').setOrigin(0.5));
-    const current = Settings.round.mathId;
+    const current = Settings.round.challengeId;
+    // The current challenge's subject (only Math today; a subject tab row
+    // comes to the pause card when there's a second subject).
     const grid = buildChallengeGrid(this, {
+      subject: current === null ? SUBJECTS[0] : subjectOf(current),
       centerX: cx,
       firstRowY: P.challengeGridTopY,
       onPick: (id) => {

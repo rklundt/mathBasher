@@ -155,7 +155,7 @@ export class BunnyGardenScene extends Phaser.Scene implements GameSceneContract 
     this.keyHandlers = [];
     this.tapHint = undefined;
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
     this.roundController = new RoundController(this.mathId, this.speed);
