@@ -203,7 +203,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.strikesUsed = 0;
     this.floorSpacingPx = pickFloorSpacingPx();
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
 

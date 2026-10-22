@@ -154,11 +154,6 @@ export default tseslint.config(
     rules: banImports([layer('math'), layer('services'), layer('game'), layer('app')]),
   },
   {
-    // Known exception (ADR-0006): these four take the `GameId` type from services.
-    files: ['src/core/{assetScope,audioKeys,sceneKeys,spriteKeys}.ts'],
-    rules: banImports([layer('math'), layer('services', true), layer('game'), layer('app')]),
-  },
-  {
     files: ['src/math/**/*.ts'],
     rules: {
       ...banImports([layer('services'), layer('game'), layer('app')]),

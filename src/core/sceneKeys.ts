@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/services/Settings';
+import type { GameId } from '@/core/gameIds';
 
 /**
  * Stable string keys for every Phaser scene in the app. Use these constants

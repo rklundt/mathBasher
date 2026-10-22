@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { MathId } from '@/core/config';
+import type { ChallengeId } from '@/core/subjects';
 import type { SceneKey } from '@/core/sceneKeys';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { Settings } from '@/services/Settings';
@@ -21,10 +21,10 @@ export interface ChallengePickerInit {
  * Set the challenge (today's math type). Logs `ChallengeChanged` only on a
  * real change, with the previous challenge as `from`. Returns whether it changed.
  */
-export function selectChallenge(id: MathId, source: ChallengeSource): boolean {
-  const previous = Settings.round.mathId;
+export function selectChallenge(id: ChallengeId, source: ChallengeSource): boolean {
+  const previous = Settings.round.challengeId;
   if (previous === id) return false;
-  Settings.setMathId(id);
+  Settings.setChallenge(id);
   _th.logToAi('ChallengeChanged', SeverityLevel.Information, { mathId: id, from: previous ?? 'none', source });
   return true;
 }

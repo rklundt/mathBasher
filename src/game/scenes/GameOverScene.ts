@@ -207,7 +207,7 @@ export class GameOverScene extends Phaser.Scene {
         // The destination scene reads Settings on create, so this
         // preserves the user's intent across the bounce.
         Settings.setGameId(gameId);
-        if (this.roundData.mathId) Settings.setMathId(this.roundData.mathId);
+        if (this.roundData.mathId) Settings.setChallenge(this.roundData.mathId);
         if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
         // Route to the game scene that matches the JUST-PLAYED gameId via
         // the canonical helper (exhaustive against the GameId union).

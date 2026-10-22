@@ -27,7 +27,9 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Developer notes** — no gameplay change
+- Subjects and challenges in code: `core/subjects.ts` lists each subject's challenges (Math only), the challenge picker builds its tabs from it, and the round settings say `challengeId` / `setChallenge` (ADR-0014). Scores, timings and telemetry are unchanged.
+- `GameId` moved to `core`, removing one of the known folder-rule exceptions.
 
 ## [2.9.0] - 2026-10-21 — Pick your challenge first
 
