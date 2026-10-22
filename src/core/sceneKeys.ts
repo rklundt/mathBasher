@@ -34,6 +34,12 @@ export const SceneKeys = {
   GameSelect: 'game-select',
   Difficulty: 'difficulty',
   /**
+   * Sprint 2.9 — "Pick your challenge!": subject (Math) → challenge type.
+   * Opens on the first Start of a visit and from the challenge chip, Game
+   * Over and (as a card inside) Pause.
+   */
+  ChallengePicker: 'challenge-picker',
+  /**
    * Alien Shoot — the original gameplay mode (4 lanes, aliens descend,
    * hero auto-runs side-to-side, tap to fire upward). Despite the
    * generic 'game' key, this is the SPECIFIC Alien Shoot mode; the key

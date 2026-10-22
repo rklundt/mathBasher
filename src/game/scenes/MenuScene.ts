@@ -12,6 +12,7 @@ import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 import type { HeroChooserSceneInit } from '@/game/scenes/HeroChooserScene';
+import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
@@ -60,13 +61,28 @@ export class MenuScene extends Phaser.Scene {
     const buttons = stackButtons(this, {
       centerY: height * 0.6,
       items: [
-        { label: 'Start', onClick: () => this.scene.start(SceneKeys.GameSelect) },
+        { label: 'Start', onClick: () => this.start() },
         { label: 'High Scores', onClick: () => this.showHighScoresPlaceholder() },
         { label: 'Settings', kind: 'secondary', onClick: () => this.openSettings() },
       ],
     });
 
     new KeyboardNavigator(this, buttons);
+  }
+
+  /**
+   * Sprint 2.9 — the first Start of a visit (no challenge yet) opens the
+   * challenge picker; after that, Start goes straight to Game Select. A
+   * reload forgets the challenge (it's in memory only), so the picker opens
+   * again on the next visit. Back on the picker returns here.
+   */
+  private start(): void {
+    if (Settings.round.mathId === null) {
+      const init: ChallengePickerInit = { next: SceneKeys.GameSelect, back: SceneKeys.Menu, source: 'menu' };
+      this.scene.start(SceneKeys.ChallengePicker, init);
+      return;
+    }
+    this.scene.start(SceneKeys.GameSelect);
   }
 
   /**

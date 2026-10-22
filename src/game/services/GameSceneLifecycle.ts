@@ -242,13 +242,21 @@ export class GameSceneLifecycle {
    */
   quitToMenu(destination: QuitDestination = 'menu'): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
-    const target = destination === 'game-select' ? SceneKeys.GameSelect : SceneKeys.Menu;
+    // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
+    // challenge is already set; this game's Difficulty shows it).
+    const target =
+      destination === 'game-select'
+        ? SceneKeys.GameSelect
+        : destination === 'difficulty'
+          ? SceneKeys.Difficulty
+          : SceneKeys.Menu;
     _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
       gameId,
       mathId,
       speed,
       questionsCompleted: String(roundController.questionIndex),
-      // Where the player went: the menu or Game Select (pause → Change Game).
+      // Where the player went: the menu, Game Select (pause → Change Game) or
+      // Difficulty (pause → a new challenge).
       sceneKey: target,
     });
     scene.tweens.resumeAll();

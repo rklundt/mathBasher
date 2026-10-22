@@ -451,6 +451,23 @@ Phone in landscape, then desktop.
 - [ ] Add Fractions on Hard: mixed numbers fit their signs at 5 holes.
 - [ ] All three bunnies stand out (especially the white one on the light grass).
 
+## Pick your challenge first (sprint 2.9.0)
+
+Phone in landscape, then desktop.
+
+- [ ] First Start after loading the page → "Pick your challenge!" with a Math tab and 11 challenges, each with "1x Points" … "4.5x Points!". Back (or Esc) → the Menu; Start opens the picker again.
+- [ ] Pick a challenge → "Pick a game!" with "Challenge: … 🔄" at the top; focus starts on the first game, not the chip.
+- [ ] The chip on Game Select → the picker → back to Game Select with the new challenge (the chip bounces).
+- [ ] A game → "<Game>: how tough?" (Alien Shoot and Asteroid Field: "how fast?") with the chip, the game's own labels, and "Up to N points!" under each level. Space Escape also shows "12 floors per round".
+- [ ] Add Fractions / Subtract Fractions: the levels add "Same bottoms", "Mixed numbers", "Different bottoms".
+- [ ] The chip on Difficulty → the picker → back to Difficulty.
+- [ ] Later in the visit, Menu → Start goes straight to Game Select. Reloading the page brings the picker back.
+- [ ] Pause: Resume, then Settings · Change Challenge / Change Game · Quit to Menu, none overlapping "Paused".
+- [ ] Pause → Change Challenge: the challenges open inside the card over the frozen game. Back, Esc or the same challenge → the pause buttons, the game still paused. A different challenge → this game's Difficulty with the new challenge (the round isn't scored).
+- [ ] Game Over: Play Again, then Change Difficulty · Change Challenge / Change Game · Main Menu, clear of the stars and the "New High Score!" badge.
+- [ ] Game Over → Change Challenge → the picker; a pick or Back → this game's Difficulty.
+- [ ] All eight games still play every challenge as before; the scores are unchanged.
+
 ## Logging the run
 
 ```

@@ -174,13 +174,6 @@ export const Settings = {
     _th.logToAi('Settings.setSpeed', SeverityLevel.Information, { speed: s });
   },
 
-  /** Clear math + speed selection (e.g. after a round completes). gameId persists. */
-  reset(): void {
-    state.mathId = null;
-    state.speed = null;
-    _th.logToAi('Settings.reset', SeverityLevel.Information);
-  },
-
   /** True when both math and speed are picked — the Start button uses this. */
   isReady(): boolean {
     return state.mathId !== null && state.speed !== null;
