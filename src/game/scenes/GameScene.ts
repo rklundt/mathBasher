@@ -134,7 +134,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // spritesheets and this call does the registration.
     createAlienAnims(this);
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     // Defensive defaults — DifficultyScene gates progress on isReady() so
     // these should always be set, but if a future flow lands here without
     // selections (e.g. dev hotload), pick reasonable fallbacks.

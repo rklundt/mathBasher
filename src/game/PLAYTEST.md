@@ -468,6 +468,20 @@ Phone in landscape, then desktop.
 - [ ] Game Over → Change Challenge → the picker; a pick or Back → this game's Difficulty.
 - [ ] All eight games still play every challenge as before; the scores are unchanged.
 
+## My Scores (sprint 2.9.2)
+
+Phone in landscape, then desktop.
+
+- [ ] Menu shows Start · My Scores · Settings. My Scores with nothing saved: "No points yet today. Play a round!"; All-Time: "No scores yet. Play a round!".
+- [ ] Play a round to Game Over, then another, quitting after a couple of right answers (try Quit to Menu, Change Game and Change Challenge). My Scores → Today: "Math: N points", the challenge row says "2 rounds, 1 ended early" and the points add up. The date shows under the total.
+- [ ] The next round's top bar "This visit" includes the quit round's points.
+- [ ] Leaving a round before answering anything adds no round.
+- [ ] All-Time: the same rows plus earlier days, "Since <first day>", and the note about accounts above Back.
+- [ ] Tap the Math row: it folds (▸) and opens again (▾); the choice stays while you go to the Menu and back.
+- [ ] With more rows than fit: drag, mouse wheel and the arrow keys scroll only the list; the bar on the right moves. A drag that starts on the Math row scrolls without folding it. Taps above or below the list never fold a hidden row.
+- [ ] Keyboard: Tab goes Today → All-Time → Math → Back (the Math row scrolls into view); Enter folds; Esc → Menu.
+- [ ] Reload the page: My Scores still shows the points; "This visit" starts at 0.
+
 ## Logging the run
 
 ```

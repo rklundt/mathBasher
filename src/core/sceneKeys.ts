@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/services/Settings';
+import type { GameId } from '@/core/gameIds';
 
 /**
  * Stable string keys for every Phaser scene in the app. Use these constants
@@ -39,6 +39,11 @@ export const SceneKeys = {
    * Over and (as a card inside) Pause.
    */
   ChallengePicker: 'challenge-picker',
+  /**
+   * Sprint 2.9.2 — "My Scores": points by subject and challenge, Today and
+   * All-Time, saved in this browser. From the Menu.
+   */
+  MyScores: 'my-scores',
   /**
    * Alien Shoot — the original gameplay mode (4 lanes, aliens descend,
    * hero auto-runs side-to-side, tap to fire upward). Despite the

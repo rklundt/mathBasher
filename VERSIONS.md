@@ -29,6 +29,20 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.9.2] - 2026-10-23 — My Scores
+
+Ships 2.9.1 and 2.9.2 together.
+
+**My Scores**
+- The Menu's "High Scores" button is now **My Scores**: the points earned, by subject and challenge, for **Today** and **All-Time**, with how many rounds were played and how many ended early. Grown-ups can check what was practised.
+- Saved in this browser only, with no account; the scores themselves aren't sent anywhere. All-Time notes that accounts are coming.
+- Every point counts: leaving a round early (Quit to Menu, Change Game, Change Challenge) keeps the points earned so far, in My Scores and in the top bar's "This visit" total.
+- Subjects fold open and closed (Math starts open), and the list scrolls by drag, mouse wheel or arrow keys.
+
+**Developer notes** (2.9.1, no gameplay change)
+- Subjects and challenges in code: `core/subjects.ts` lists each subject's challenges (Math only), the challenge picker builds its tabs from it, and the round settings say `challengeId` / `setChallenge` (ADR-0014). Scores, timings and telemetry are unchanged.
+- `GameId` moved to `core`, removing one of the known folder-rule exceptions.
+
 ## [2.9.0] - 2026-10-21 — Pick your challenge first
 
 **Pick your challenge first**

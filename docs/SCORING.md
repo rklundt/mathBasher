@@ -106,6 +106,14 @@ Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCal
 
 (Climb's rating is **height-based**, not correct-count-based — a kid who reaches the top with the maximum allowed wrong picks still earns ★★★.)
 
+## Where points go (sprint 2.9.2)
+
+Each round's points are counted once, by `GameSceneLifecycle`:
+- **Game Over** (out of lives included): a finished round.
+- **Leaving mid-round** (Quit to Menu, Change Game, Change Challenge): the points so far, as a round that ended early. A round left before the first answer isn't counted.
+
+They go to the top bar's "This visit" total (`SessionTotalScore`, this page load) and to **My Scores** (`src/services/MyScores.ts`, saved in the browser by local day and challenge; days older than 90 fold into one total). Game Over's "New High Score!" badge still looks at finished rounds only.
+
 ## Where to edit
 
 | Want to change… | Edit |
@@ -122,4 +130,5 @@ Source: `computeClimbStars(floorReached, totalFloors)` in `src/services/ScoreCal
 
 ## Change log
 
+- **Sprint 2.9.2** — "Where points go": unfinished rounds now count their points (This visit, My Scores). Scoring itself unchanged.
 - **Sprint 2.4 (story 8)** — file created. Added `add-fractions` (4.0) and `subtract-fractions` (4.5) entries; max-score grid extended. Multiplier ladder for the integer types unchanged.

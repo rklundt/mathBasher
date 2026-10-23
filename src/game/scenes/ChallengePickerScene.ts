@@ -6,6 +6,8 @@ import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { SceneKeys, type SceneKey } from '@/core/sceneKeys';
 import { getImplementedIds } from '@/math/registry';
+import { SUBJECTS, subjectOf, type Subject } from '@/core/subjects';
+import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
@@ -52,16 +54,22 @@ export class ChallengePickerScene extends Phaser.Scene {
     text(this, cx, L.picker.headingY, 'Pick your challenge!', 'h2').setOrigin(0.5);
     createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
-    // The subject: Math is the only one, so it's shown selected and its
-    // challenges are already below. More subjects become more tabs here.
-    new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: L.picker.subjectTabY,
-      width: L.picker.subjectTab.w,
-      height: L.picker.subjectTab.h,
-      label: 'Math',
-      selected: true,
+    // One tab per subject (`core/subjects.ts`), the current challenge's
+    // subject selected and its challenges below. Math is the only one today.
+    const current = Settings.round.challengeId;
+    const subject: Subject = current === null ? SUBJECTS[0] : subjectOf(current);
+    const tabW = L.picker.subjectTab.w;
+    const tabGap = 16;
+    SUBJECTS.forEach((s, i) => {
+      new PlaceholderButton({
+        scene: this,
+        x: cx + (i - (SUBJECTS.length - 1) / 2) * (tabW + tabGap),
+        y: L.picker.subjectTabY,
+        width: tabW,
+        height: L.picker.subjectTab.h,
+        label: s.label,
+        selected: s.id === subject.id,
+      });
     });
 
     const goBack = (): void => {
@@ -83,6 +91,7 @@ export class ChallengePickerScene extends Phaser.Scene {
       new KeyboardNavigator(this, [back]);
     } else {
       const grid = buildChallengeGrid(this, {
+        subject,
         centerX: cx,
         firstRowY: L.picker.gridTopY,
         onPick: (id) => {

@@ -201,7 +201,7 @@ export class DifficultyScene extends Phaser.Scene {
     // Phaser reuses the scene instance: drop the previous visit's objects.
     this.speedButtons.clear();
 
-    const { mathId } = Settings.round;
+    const { challengeId: mathId } = Settings.round;
     if (mathId === null) {
       _th.logToAi('DifficultyScene.noChallenge', SeverityLevel.Warning, { gameId: Settings.round.gameId });
       const init: ChallengePickerInit = {

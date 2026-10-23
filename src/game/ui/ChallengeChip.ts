@@ -18,7 +18,7 @@ let lastShown: string | null = null;
  */
 export function createChallengeChip(scene: Phaser.Scene, x: number, y: number, onClick: () => void): PlaceholderButton {
   const { w, h } = config.layout.challengeFlow.chip;
-  const id = Settings.round.mathId;
+  const id = Settings.round.challengeId;
   const label = id === null ? 'Pick a challenge 🔄' : `Challenge: ${generators[id].label} 🔄`;
   const chip = new PlaceholderButton({ scene, x, y, width: w, height: h, label, selected: true, onClick });
   if (lastShown !== null && id !== null && id !== lastShown) {

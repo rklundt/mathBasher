@@ -151,7 +151,7 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     this.tapHint = undefined;
     this.splashes.clear();
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
 

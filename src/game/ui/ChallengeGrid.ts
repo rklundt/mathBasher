@@ -4,6 +4,7 @@
 
 import type Phaser from 'phaser';
 import { config, type MathId } from '@/core/config';
+import type { Subject } from '@/core/subjects';
 import { generators, getImplementedIds } from '@/math/registry';
 import { Settings } from '@/services/Settings';
 import { pointsMultiplierLabel } from '@/services/challengePoints';
@@ -19,19 +20,19 @@ export interface ChallengeGrid {
 }
 
 /**
- * Sprint 2.9 — the Math subject's challenge buttons, shared by the
- * challenge picker and the pause card: 4 + 4 + 3, each with its name and
- * "1.5x Points!" inside, the current one ringed. The order is
- * `config.scoring.mathDifficulty` (whole numbers, then Mixed and fractions).
+ * Sprint 2.9 — a subject's challenge buttons, shared by the challenge
+ * picker and the pause card: 4 + 4 + 3 for Math, each with its name and
+ * "1.5x Points!" inside, the current one ringed, in the subject's order
+ * (`core/subjects.ts`).
  * A challenge without a generator yet shows "Coming soon" and can't be picked.
  */
 export function buildChallengeGrid(
   scene: Phaser.Scene,
-  opts: { centerX: number; firstRowY: number; onPick: (id: MathId) => void },
+  opts: { subject: Subject; centerX: number; firstRowY: number; onPick: (id: MathId) => void },
 ): ChallengeGrid {
-  const ids = Object.keys(config.scoring.mathDifficulty) as MathId[];
+  const ids = opts.subject.challenges;
   const implemented = new Set(getImplementedIds());
-  const current = Settings.round.mathId;
+  const current = Settings.round.challengeId;
   const slots = computeGridSlots(opts.centerX, opts.firstRowY, ids.length, config.layout.challengeFlow.grid);
   const buttons = ids.map((id, i) => {
     const ready = implemented.has(id);
