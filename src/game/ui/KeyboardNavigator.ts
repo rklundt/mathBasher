@@ -124,8 +124,8 @@ export class KeyboardNavigator {
     this.applyFocusState();
 
     // Clean up listeners when the scene shuts down.
-    scene.events.once('shutdown', () => this.destroy());
-    scene.events.once('destroy', () => this.destroy());
+    scene.events.once('shutdown', this.destroy, this);
+    scene.events.once('destroy', this.destroy, this);
   }
 
   private firstFocusableIndex(): number {
@@ -178,6 +178,10 @@ export class KeyboardNavigator {
   }
 
   destroy(): void {
+    // Sprint 2.9.2 — a scene that rebuilds its navigator (My Scores, the pause
+    // card) mustn't pile up these listeners: 'destroy' never fires on a stop.
+    this.scene.events.off('shutdown', this.destroy, this);
+    this.scene.events.off('destroy', this.destroy, this);
     if (!this.scene.input.keyboard) return;
     this.scene.input.keyboard.off('keydown-TAB', this.handleTab, this);
     this.scene.input.keyboard.off('keydown-ENTER', this.activateFocused, this);

@@ -97,6 +97,11 @@ function emptyTally(): RoundTally {
   return { points: 0, finished: 0, unfinished: 0 };
 }
 
+/** Points as earned: a wrong shot halves later answers, so a round can end on a fraction (93.75). */
+function points(n: unknown): number {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function count(n: unknown): number {
   return typeof n === 'number' && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
@@ -108,7 +113,7 @@ function cleanTallies(raw: unknown): TallyMap {
   for (const [id, t] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof t !== 'object' || t === null) continue;
     const r = t as Record<string, unknown>;
-    out[id] = { points: count(r.points), finished: count(r.finished), unfinished: count(r.unfinished) };
+    out[id] = { points: points(r.points), finished: count(r.finished), unfinished: count(r.unfinished) };
   }
   return out;
 }
@@ -186,12 +191,12 @@ export class ScoreLedger {
    * Record one round. `finished` = it reached Game Over. Re-reads storage
    * first, so another tab's rounds aren't overwritten.
    */
-  record(challengeId: ChallengeId, points: number, finished: boolean): void {
+  record(challengeId: ChallengeId, earned: number, finished: boolean): void {
     this.refresh();
     const today = localDayKey(this.now());
     const day = (this.data.days[today] ??= {});
     const t = (day[challengeId] ??= emptyTally());
-    t.points += count(points);
+    t.points += points(earned);
     if (finished) t.finished += 1;
     else t.unfinished += 1;
     this.data.since ??= today;
@@ -199,7 +204,7 @@ export class ScoreLedger {
     this.save();
     _th.logToAi('MyScores.RoundRecorded', SeverityLevel.Verbose, {
       mathId: challengeId,
-      roundScore: String(count(points)),
+      roundScore: String(points(earned)),
       reason: finished ? 'finished' : 'ended-early',
     });
   }

@@ -188,7 +188,7 @@ export class MyScoresScene extends Phaser.Scene {
           this,
           cx,
           M.noteY,
-          'Saved on this device only. Ask a grown-up to make an account to keep them (coming soon).',
+          'Saved in this browser only. Ask a grown-up to make an account to keep them (coming soon).',
           'bodyMuted',
         ).setOrigin(0.5),
       );

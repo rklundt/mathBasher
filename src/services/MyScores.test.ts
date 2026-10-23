@@ -204,11 +204,11 @@ describe('ScoreLedger', () => {
     expect(ledger.today().points).toBe(100);
   });
 
-  it('ignores negative or fractional points', () => {
+  it('ignores negative points and keeps fractions (so totals match "This visit")', () => {
     const ledger = new ScoreLedger(new InMemoryStorage(), () => oct23);
     ledger.record('add-to-10', -50, false);
-    ledger.record('add-to-10', 12.7, true);
-    expect(ledger.today().subjects[0].challenges[0].tally).toEqual({ points: 12, finished: 1, unfinished: 1 });
+    ledger.record('add-to-10', 93.75, true);
+    expect(ledger.today().subjects[0].challenges[0].tally).toEqual({ points: 93.75, finished: 1, unfinished: 1 });
   });
 });
 
