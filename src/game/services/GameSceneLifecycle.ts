@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import type { MathId, SpeedKey } from '@/core/config';
 import { Settings, type GameId } from '@/services/Settings';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { getMyScores } from '@/services/MyScores';
 import { GAME_MIDGROUND_MAP, GAME_MUSIC_MAP } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { setupScene } from '@/game/scenes/sceneSetup';
@@ -91,7 +92,31 @@ export interface GameSceneLifecycleOpts {
 }
 
 export class GameSceneLifecycle {
+  /**
+   * Sprint 2.9.2 — set once the round is scored (Game Over or a quit), so a
+   * second `endRound` / `quitToMenu` (a double tap, a timer firing in the
+   * same frame) can't count it twice: My Scores saves it for good.
+   */
+  private settled = false;
+
   constructor(private readonly opts: GameSceneLifecycleOpts) {}
+
+  /**
+   * Sprint 2.9.2 — count the round's points once: the "This visit" total and
+   * My Scores (finished = it reached Game Over). Returns false when the round
+   * was already counted.
+   */
+  private settle(finished: boolean): boolean {
+    if (this.settled) return false;
+    this.settled = true;
+    const { mathId, roundController } = this.opts;
+    SessionTotalScore.add(roundController.score);
+    // A round left before the first answer (browsing games) isn't a round.
+    if (finished || roundController.questionIndex > 0 || roundController.score > 0) {
+      getMyScores().record(mathId, roundController.score, finished);
+    }
+    return true;
+  }
 
   /**
    * Called from `scene.create()` after subsystems are ready. Handles:
@@ -152,9 +177,10 @@ export class GameSceneLifecycle {
 
   /**
    * Called from the scene's `endRound()`. Contributes this round's
-   * score to the session total, fires `RoundEnded` telemetry, stops
-   * HUD, transitions to GameOver. Quit-to-menu mid-round explicitly
-   * does NOT route through here — `quitToMenu()` instead.
+   * score to the session total and My Scores (as finished), fires
+   * `RoundEnded` telemetry, stops HUD, transitions to GameOver.
+   * Quit-to-menu mid-round does NOT route through here — `quitToMenu()`
+   * instead. A second call (the round is already scored) does nothing.
    *
    * Sprint 2.1.9 default: uses `roundController.passed` + `.stars`
    * (correct-count-based). Sprint 2.2 adds optional overrides for
@@ -165,7 +191,7 @@ export class GameSceneLifecycle {
   endRound(overrides?: { passedOverride?: boolean; starsOverride?: 0 | 1 | 2 | 3 }): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
     // Sprint 2.1.5 invariant — contribute BEFORE GameOver transition.
-    SessionTotalScore.add(roundController.score);
+    if (!this.settle(true)) return;
 
     const finalPassed = overrides?.passedOverride ?? roundController.passed;
     const finalStars = overrides?.starsOverride ?? roundController.stars;
@@ -235,13 +261,16 @@ export class GameSceneLifecycle {
    * Called from the scene's `quitToMenu()`. Fires `RoundAbandoned`
    * telemetry, resumes tweens (so the next scene doesn't inherit
    * paused tweens — they'd freeze its animations), starts Menu or, for
-   * the pause menu's "Change Game" (sprint 2.6.5), Game Select. Does
-   * NOT call `SessionTotalScore.add` — partial-round
-   * abandonment doesn't earn points per the existing convention
-   * (mirrors the score-store's policy on incomplete rounds).
+   * the pause menu's "Change Game" (sprint 2.6.5), Game Select.
+   *
+   * Sprint 2.9.2 — the points earned so far now count: they go to the
+   * "This visit" total and to My Scores as a round that ended early (if
+   * the child answered at least once). The high-score store still ignores
+   * unfinished rounds. A call after the round is scored does nothing.
    */
   quitToMenu(destination: QuitDestination = 'menu'): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
+    if (!this.settle(false)) return;
     // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
     // challenge is already set; this game's Difficulty shows it).
     const target =

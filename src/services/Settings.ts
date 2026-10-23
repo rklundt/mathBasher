@@ -3,33 +3,25 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { _th, SeverityLevel } from '@/core/telemetry';
-import type { MathId, SpeedKey } from '@/core/config';
+import type { SpeedKey } from '@/core/config';
+import type { GameId } from '@/core/gameIds';
+import type { ChallengeId } from '@/core/subjects';
 import { createObservable } from '@/services/observable';
 
 /**
- * Cross-scene round selection state. The user picks `gameId` (which game
- * mode), `mathId` (Add to 10, etc.), and `speed` across multiple scenes;
+ * Cross-scene round selection state. The user picks `challengeId` (Add to
+ * 10, etc.; sprint 2.9.1 renamed it from `mathId`), `gameId` (which game
+ * mode) and `speed` across multiple scenes;
  * this module is the single place that holds the in-flight choice
  * until a game scene reads it on `create`.
  *
- * Sprint 2.1: `gameId` was a bare string with `'alien-shoot'` as the only
- * value; widened to a `GameId` union when Asteroid Field landed. New game
- * modes add a literal to this union + a tile in GameSelectScene + a route
- * to the corresponding scene key.
+ * `GameId` lives in `core/gameIds.ts` (sprint 2.9.1) and is re-exported here.
  *
  * Deliberately a tiny module-level singleton — no event emitter, no
  * subscribers, no Zustand. Scenes read on `create`. If we ever need reactive
  * updates across scenes, we'll add that intentionally.
  */
-export type GameId =
-  | 'alien-shoot'
-  | 'asteroid-field'
-  | 'number-climb'
-  | 'math-a-lotl'
-  | 'frog-splash'
-  | 'space-shooter'
-  | 'penguin-slide'
-  | 'bunny-garden';
+export type { GameId };
 
 /**
  * Sprint 2.4.1 story 3 — Alien Shoot hero skin selector. First time
@@ -64,7 +56,8 @@ export type ChosenHero = 'hero-chooser-1' | 'hero-chooser-2' | 'hero-chooser-3' 
 
 export interface RoundSettings {
   gameId: GameId;
-  mathId: MathId | null;
+  /** The challenge (null until picked; a reload resets it, so the picker opens on the first Start of a visit). */
+  challengeId: ChallengeId | null;
   speed: SpeedKey | null;
 }
 
@@ -138,19 +131,19 @@ function readPersistedChosenHero(): ChosenHero | null {
 const _chosenHero = createObservable<ChosenHero | null>('chosenHero', readPersistedChosenHero());
 
 const state: Omit<RoundSettings, 'gameId'> = {
-  mathId: null,
+  challengeId: null,
   speed: null,
 };
 
 export const Settings = {
   /**
    * Snapshot of the current selection. Read-only access for scenes.
-   * `gameId` is sourced from the observable; `mathId` + `speed` from
+   * `gameId` is sourced from the observable; `challengeId` + `speed` from
    * the local state (they're not observable — read once at scene
    * `create` time, no reactive consumers today).
    */
   get round(): Readonly<RoundSettings> {
-    return { gameId: _gameId.get(), mathId: state.mathId, speed: state.speed };
+    return { gameId: _gameId.get(), challengeId: state.challengeId, speed: state.speed };
   },
 
   setGameId(id: GameId): void {
@@ -164,9 +157,10 @@ export const Settings = {
     }
   },
 
-  setMathId(id: MathId): void {
-    state.mathId = id;
-    _th.logToAi('Settings.setMathId', SeverityLevel.Information, { mathId: id });
+  /** Telemetry keeps the `mathId` property name (cross-version queries; today every challenge is a math type). */
+  setChallenge(id: ChallengeId): void {
+    state.challengeId = id;
+    _th.logToAi('Settings.setChallenge', SeverityLevel.Information, { mathId: id });
   },
 
   setSpeed(s: SpeedKey): void {
@@ -176,7 +170,7 @@ export const Settings = {
 
   /** True when both math and speed are picked — the Start button uses this. */
   isReady(): boolean {
-    return state.mathId !== null && state.speed !== null;
+    return state.challengeId !== null && state.speed !== null;
   },
 
   // ----- Asteroid Field visual-mode toggle (sprint 2.1 playtest) -----

@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { _th, SeverityLevel } from '@/core/telemetry';
+import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
 
 /**
  * Cross-cutting audio facade. Pure TypeScript — does NOT import phaser, so
@@ -102,15 +103,10 @@ const volumeStorageKey = (kind: AudioKind): string => `${VOLUME_STORAGE_KEY_PREF
 export type LoopHandle = string;
 
 /**
- * Subset of the global `Storage` interface that this manager actually uses.
- * Lets tests pass a minimal in-memory mock without satisfying the full
- * `Storage` contract (which has `length`, `key`, `clear`, etc.).
+ * Sprint 2.9.2 — `MinimalStorage` and the default-storage lookup moved to
+ * `storage.ts` (shared with `MyScores`); re-exported for existing imports.
  */
-export interface MinimalStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
+export type { MinimalStorage };
 
 export class AudioManager {
   protected muted: boolean;
@@ -335,38 +331,4 @@ function clampPercent(percent: number): number {
   if (asInt < 0) return 0;
   if (asInt > 100) return 100;
   return asInt;
-}
-
-/**
- * Resolves a default storage backend. In a browser, returns `localStorage`.
- * In the Node test environment, falls back to an in-memory stub so
- * AudioManager construction doesn't throw — tests that care about
- * persistence pass their own mock instead.
- *
- * NOTE: Node 20+ ships a `globalThis.localStorage` that's an EMPTY stub
- * without `getItem`/`setItem` methods (it's reserved for the experimental
- * `--localstorage-file` flag). A bare truthy check passes that stub
- * through, then the next call into it crashes. We check that the
- * methods are actually functions before trusting the binding.
- */
-function resolveDefaultStorage(): MinimalStorage {
-  const g = globalThis as { localStorage?: unknown };
-  const ls = g.localStorage as Partial<MinimalStorage> | undefined;
-  if (ls && typeof ls.getItem === 'function' && typeof ls.setItem === 'function') {
-    return ls as MinimalStorage;
-  }
-  return new InMemoryStorage();
-}
-
-class InMemoryStorage implements MinimalStorage {
-  private map = new Map<string, string>();
-  getItem(key: string): string | null {
-    return this.map.has(key) ? this.map.get(key)! : null;
-  }
-  setItem(key: string, value: string): void {
-    this.map.set(key, value);
-  }
-  removeItem(key: string): void {
-    this.map.delete(key);
-  }
 }

@@ -92,13 +92,13 @@ The downside: per-game-mode info lives in ~6 files. Mitigated by:
 
 ### Neutral
 
-- `GameId` union grows linearly with new game modes. Each addition is a 1-line edit in `Settings.ts` followed by however many compile errors TypeScript flags (which IS the checklist for what else to update).
+- `GameId` union grows linearly with new game modes. Each addition is a 1-line edit in `core/gameIds.ts` (sprint 2.9.1; it was in `Settings.ts`) followed by however many compile errors TypeScript flags (which IS the checklist for what else to update).
 
 ## Checklist — adding a new game mode
 
 When sprint 2.X adds game mode `<id>`:
 
-1. **Extend `GameId` union** in `src/services/Settings.ts`:
+1. **Extend `GameId` union** in `src/core/gameIds.ts` (sprint 2.9.1; `Settings` re-exports it):
    ```ts
    export type GameId = 'alien-shoot' | 'asteroid-field' | '<id>';
    ```
@@ -157,6 +157,8 @@ When sprint 2.X adds game mode `<id>`:
 10. **Update `LoadingScene` caption** switch — same one-line addition. In `DifficultyScene`, add the game's arm to `speedDisplayFor` and to `speedSectionTitleFor` (both exhaustive switches since sprint 2.7).
 
 11. **Add a "Game Select" tile** in `GameSelectScene.ts` that calls `Settings.setGameId('<id>')` + transitions to `SceneKeys.Difficulty`.
+
+11b. **Add the game to `questionsPerRoundFor`** (`src/services/challengePoints.ts`, an exhaustive switch, sprint 2.9): Difficulty's "Up to N points!" uses its round length. Add its name to `gameDisplayName` in `DifficultyScene` (the "<Game>: how tough?" heading).
 
 12. **Add the game's config block** to the lists in `src/core/mathTimeScale.test.ts` and `src/math/extendChoices.test.ts` (time scaling, and how many answers a row needs). Draw answer labels with `MathText` (`src/game/ui/MathText.ts`), so mixed numbers read clearly (sprint 2.7).
 

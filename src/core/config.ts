@@ -1311,6 +1311,37 @@ export const config = {
       },
     },
     /**
+     * Sprint 2.9.2 — My Scores. Only the list (between `list.top` and
+     * `list.bottom`) scrolls; the heading, tabs, total, date, note and Back
+     * stay put. About 8 rows show at once.
+     */
+    myScores: {
+      headingY: 50,
+      tabY: 122,
+      tab: { w: 220, h: 64, gapX: 16 },
+      totalY: 186,
+      dateY: 216,
+      list: {
+        top: 242,
+        bottom: 566,
+        w: 920,
+        /** Tappable subject rows (fold / unfold). */
+        subjectRowH: 72,
+        /** Challenge rows: text only, not tappable. */
+        challengeRowH: 38,
+        gapPx: 8,
+        /** Mouse wheel: list pixels per wheel pixel. */
+        wheelScale: 0.5,
+        /** A press that moves further than this scrolls instead of tapping. */
+        dragThresholdPx: 10,
+        scrollBarW: 8,
+        /** A soft dark panel behind the list, so rows read over the starry backdrop. */
+        panel: { padPx: 12, color: 0x0b1020, alpha: 0.55, radius: 12 },
+      },
+      noteY: 594,
+      backY: 652,
+    },
+    /**
      * Floating "+N" points popup on a correct answer (HudScene, every
      * game). Sprint 2.5.4 playtest: 0.7 s was too quick to read, so it
      * now holds fully visible for `holdMs`, then fades over `fadeMs`

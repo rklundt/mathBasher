@@ -146,7 +146,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.tapHint = undefined;
     this.keyHandlers = [];
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
 

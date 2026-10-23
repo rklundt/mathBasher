@@ -191,7 +191,7 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.fireCooldownUntilMs = 0;
     this.fireButton = null;
 
-    const { mathId, speed } = Settings.round;
+    const { challengeId: mathId, speed } = Settings.round;
     this.mathId = mathId ?? 'add-to-10';
     this.speed = speed ?? 'medium';
 
