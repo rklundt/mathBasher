@@ -37,7 +37,7 @@ Out of scope:
 
 ## What the game does and doesn't collect
 
-The game has no accounts and asks for no personal information. Settings and high scores stay in your own browser. The hosting network counts visits with Cloudflare Web Analytics, which uses no cookies. Like any website, the services that deliver the game (Cloudflare, Microsoft Azure, and Google Fonts for the lettering) receive the ordinary details of each request, such as the IP address and browser type. If the game ever adds accounts or personal data, this policy will be updated first.
+The game has no accounts and asks for no personal information. Settings, high scores and My Scores (points per day and challenge) stay in your own browser. The hosting network counts visits with Cloudflare Web Analytics, which uses no cookies. Like any website, the services that deliver the game (Cloudflare, Microsoft Azure, and Google Fonts for the lettering) receive the ordinary details of each request, such as the IP address and browser type. If the game ever adds accounts or personal data, this policy will be updated first.
 
 ## Disclosure
 
