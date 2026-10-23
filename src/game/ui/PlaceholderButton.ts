@@ -34,6 +34,14 @@ export interface PlaceholderButtonOpts {
   selected?: boolean;
   /** Click / tap / Enter / Space handler. Not invoked when `disabled` is true. */
   onClick?: () => void;
+  /**
+   * Sprint 2.9.2 — false: the button takes no taps itself; the scene finds
+   * the tapped button and calls `activate('pointer')`. For buttons in a
+   * scrolling list (My Scores): Phaser's input ignores masks, so a button
+   * scrolled out of sight would still catch taps meant for the controls
+   * around the list, and a drag that starts on it must scroll, not press it.
+   */
+  pointerInput?: boolean;
 }
 
 /**
@@ -157,6 +165,10 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
     // Make the BG the click target. `useHandCursor: true` flips the CSS cursor
     // to a pointing hand on hover so users get visual feedback before clicking.
+    if (opts.pointerInput === false) {
+      this.refreshAppearance();
+      return;
+    }
     this.bg.setInteractive({ useHandCursor: true });
 
     // Hover state (only when enabled).
@@ -250,11 +262,12 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
    * Programmatically activate the button (used by KeyboardNavigator on
    * Enter/Space). No-op when disabled. Plays the same click SFX as a
    * mouse/touch activation so keyboard users get audible confirmation.
-   * Routes through `handleActivation('keyboard')` so the same telemetry +
-   * SFX + onClick chain runs regardless of activation source.
+   * Routes through `handleActivation` so the same telemetry + SFX +
+   * onClick chain runs regardless of activation source. A scene that
+   * handles taps for a `pointerInput: false` button passes 'pointer'.
    */
-  activate(): void {
-    this.handleActivation('keyboard');
+  activate(source: ButtonClickSource = 'keyboard'): void {
+    this.handleActivation(source);
   }
 
   private refreshAppearance(): void {

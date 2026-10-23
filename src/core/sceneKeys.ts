@@ -40,6 +40,11 @@ export const SceneKeys = {
    */
   ChallengePicker: 'challenge-picker',
   /**
+   * Sprint 2.9.2 — "My Scores": points by subject and challenge, Today and
+   * All-Time, saved in this browser. From the Menu.
+   */
+  MyScores: 'my-scores',
+  /**
    * Alien Shoot — the original gameplay mode (4 lanes, aliens descend,
    * hero auto-runs side-to-side, tap to fire upward). Despite the
    * generic 'game' key, this is the SPECIFIC Alien Shoot mode; the key

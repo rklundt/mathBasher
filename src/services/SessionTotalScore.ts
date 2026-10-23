@@ -23,11 +23,11 @@ import { _th, SeverityLevel } from '@/core/telemetry';
  * playing 5 rounds in a row sees their cumulative total grow, which
  * rewards persistence over single-round performance.
  *
- * Add policy: each game scene's `endRound()` calls
- * `SessionTotalScore.add(roundController.score)` BEFORE transitioning
- * to GameOver. Quit-to-menu mid-round does NOT contribute (the partial
- * round score isn't earned yet — same convention the score store uses
- * for abandoned rounds).
+ * Add policy: `GameSceneLifecycle` adds each round's score once, at Game
+ * Over (before the transition) or, since sprint 2.9.2, when the child
+ * leaves mid-round (Quit to Menu, Change Game, Change Challenge): every
+ * point earned counts, matching My Scores. The high-score store still
+ * ignores unfinished rounds.
  */
 
 let _total = 0;
@@ -42,7 +42,7 @@ let _total = 0;
 let _lastDisplayed = 0;
 
 export const SessionTotalScore = {
-  /** Current session total (sum of all completed rounds this session). */
+  /** Current session total (every round's points this visit, finished or not). */
   get(): number {
     return _total;
   },
@@ -58,7 +58,7 @@ export const SessionTotalScore = {
   },
 
   /**
-   * Add to the session total. Called from each game scene's `endRound()`.
+   * Add to the session total. Called from `GameSceneLifecycle` when a round ends or is left.
    * Logs a Verbose-severity telemetry event so the per-round
    * contributions are queryable in App Insights without flooding the
    * Information stream.

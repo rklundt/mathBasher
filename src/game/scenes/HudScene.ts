@@ -681,8 +681,8 @@ export class HudScene extends Phaser.Scene {
 
   private onQuestionEnded(payload: QuestionEndedPayload): void {
     this.roundScoreText.setText(`This round: ${payload.score}`);
-    // Total only changes at round end (the game scene's `endRound` is
-    // what calls `SessionTotalScore.add`), but reading it on every
+    // Total only changes when a round ends or is left (`GameSceneLifecycle`
+    // calls `SessionTotalScore.add`), but reading it on every
     // questionEnded is cheap and keeps the HUD in sync without a
     // dedicated total-changed event. Mid-round reads are idempotent
     // re-paints. The repositionTotalLabel below handles the round

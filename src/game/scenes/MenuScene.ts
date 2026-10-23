@@ -16,8 +16,8 @@ import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
- * Title screen. Two actions: Start (-> GameSelect) and High Scores
- * (placeholder modal until the score-store UI lands).
+ * Title screen: Start (-> the challenge picker or GameSelect), My Scores
+ * (sprint 2.9.2; it replaced the High Scores placeholder) and Settings.
  *
  * Polish (real fonts, parallax stars, button art) is sprint 0.7's job; this
  * scene's contract is just "navigate correctly."
@@ -62,7 +62,7 @@ export class MenuScene extends Phaser.Scene {
       centerY: height * 0.6,
       items: [
         { label: 'Start', onClick: () => this.start() },
-        { label: 'High Scores', onClick: () => this.showHighScoresPlaceholder() },
+        { label: 'My Scores', onClick: () => this.scene.start(SceneKeys.MyScores) },
         { label: 'Settings', kind: 'secondary', onClick: () => this.openSettings() },
       ],
     });
@@ -138,35 +138,5 @@ export class MenuScene extends Phaser.Scene {
     });
     bg.on('pointerover', () => bg.setStrokeStyle(3, 0xfbbf24));
     bg.on('pointerout', () => bg.setStrokeStyle(2, 0x475569));
-  }
-
-  private highScoresOverlay?: Phaser.GameObjects.Text;
-
-  /**
-   * Placeholder until the score-store UI lands. For now, just shows a temporary
-   * text overlay that auto-dismisses. Real high-score browsing is a later sprint.
-   *
-   * Guards against double-tap stacking: if the user mashes the button, the
-   * existing overlay is destroyed before the new one is created — only ever
-   * one overlay on screen.
-   */
-  private showHighScoresPlaceholder(): void {
-    if (this.highScoresOverlay) {
-      this.highScoresOverlay.destroy();
-    }
-    const { width, height } = this.scale;
-    // TextKind 'bodyAccent' — 22px amber (same size as 'body' but accent
-    // color, used for transient overlay copy). Sprint 0.7.5 Story 3.
-    this.highScoresOverlay = text(
-      this,
-      width / 2,
-      height * 0.78,
-      'No scores yet — play a round!',
-      'bodyAccent',
-    ).setOrigin(0.5);
-    this.time.delayedCall(2000, () => {
-      this.highScoresOverlay?.destroy();
-      this.highScoresOverlay = undefined;
-    });
   }
 }
