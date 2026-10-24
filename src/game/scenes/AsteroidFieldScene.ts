@@ -448,14 +448,17 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     if (correct) {
       this.transitioning = true;
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
-      const { scoreDelta } = this.roundController.recordOutcome({
+      const { scoreDelta, speedTier } = this.roundController.recordOutcome({
         wasCorrect: true,
         usedWrongShot,
+        // Sprint 2.11 — the countdown used (a wrong shot's time penalty counts).
+        timeUsed: 1 - this.waveSystem.getCountdownFraction(),
       });
       this.events.emit('correctHit', {
         x: asteroid.x,
         y: asteroid.y,
         scoreDelta,
+        speedTier,
       });
       this.hero.playHitAnim();
       getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx');

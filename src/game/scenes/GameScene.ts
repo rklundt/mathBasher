@@ -288,9 +288,10 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     if (correct) {
       this.transitioning = true;
       const usedWrongShot = this.waveSystem.hasUsedWrongShot();
-      const { scoreDelta } = this.roundController.recordOutcome({
+      const { scoreDelta, speedTier } = this.roundController.recordOutcome({
         wasCorrect: true,
         usedWrongShot,
+        timeUsed: this.waveSystem.fallFraction(alien),
       });
       // Emit `correctHit` so HudScene can spawn the "+N" score popup at
       // the alien's position (sprint 0.7 Story 8). Done HERE, before the
@@ -301,6 +302,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
         x: alien.x,
         y: alien.y,
         scoreDelta,
+        speedTier,
       });
       this.hero.playHitAnim();
       // SFX BEFORE particle/visual feedback so the audio is sample-aligned

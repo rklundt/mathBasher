@@ -15,6 +15,34 @@ import { config, type MathId, type SpeedKey } from '@/core/config';
 export interface QuestionOutcome {
   wasCorrect: boolean;
   usedWrongShot: boolean;
+  /**
+   * Sprint 2.11 — share of the question's time used when the right answer
+   * landed (0 = instantly, 1 = as time ran out), timed from when the answers
+   * could be tapped (or the question restarted after a miss). Omitted: no
+   * speed bonus.
+   */
+  timeUsed?: number;
+}
+
+/** Sprint 2.11 — 3 = ⚡⚡⚡ (fastest) … 1 = ⚡; 0 = no speed bonus. */
+export type SpeedTier = 0 | 1 | 2 | 3;
+
+/** The tier for a share of the question's time used (`config.scoring.speedBonus`). */
+export function speedTier(timeUsed: number | undefined): SpeedTier {
+  if (timeUsed === undefined || !Number.isFinite(timeUsed)) return 0;
+  const tiers = config.scoring.speedBonus;
+  const i = tiers.findIndex((t) => timeUsed <= t.upTo);
+  return i < 0 ? 0 : ((tiers.length - i) as SpeedTier);
+}
+
+/**
+ * The extra points a tier adds to an answer's points. Not rounded, like the
+ * answer's own points (a halved answer can be 93.75); screens round totals.
+ */
+export function speedBonusFor(answerPoints: number, tier: SpeedTier): number {
+  if (tier === 0) return 0;
+  const tiers = config.scoring.speedBonus;
+  return answerPoints * tiers[tiers.length - tier].bonus;
 }
 
 /**
@@ -33,6 +61,10 @@ export class ScoreCalculator {
   private _correctCount = 0;
   /** Sprint 2.10 — right answers with no miss or time-out first (for Perfect Round). */
   private _firstTryCount = 0;
+  /** Sprint 2.11 — speed-bonus points inside `score` (Game Over's "⚡ Speed bonus" line). */
+  private _speedBonus = 0;
+  /** Sprint 2.11 — the tier the last right answer earned. */
+  private _lastSpeedTier: SpeedTier = 0;
 
   constructor(mathId: MathId, speed: SpeedKey) {
     this.mathMultiplier = config.scoring.mathDifficulty[mathId];
@@ -40,6 +72,7 @@ export class ScoreCalculator {
   }
 
   recordOutcome(outcome: QuestionOutcome): void {
+    this._lastSpeedTier = 0;
     if (!outcome.wasCorrect) {
       // Timeout or never hit the right answer — zero points, doesn't increment
       // the correct count.
@@ -48,7 +81,23 @@ export class ScoreCalculator {
     this._correctCount += 1;
     if (!outcome.usedWrongShot) this._firstTryCount += 1;
     const wrongShotMult = outcome.usedWrongShot ? config.scoring.afterWrongShotMultiplier : 1;
-    this._score += config.scoring.basePerCorrect * this.mathMultiplier * this.speedMultiplier * wrongShotMult;
+    const points = config.scoring.basePerCorrect * this.mathMultiplier * this.speedMultiplier * wrongShotMult;
+    // Sprint 2.11 — the speed bonus is a share of these points (halved ones after a miss).
+    const tier = speedTier(outcome.timeUsed);
+    const bonus = speedBonusFor(points, tier);
+    this._lastSpeedTier = tier;
+    this._speedBonus += bonus;
+    this._score += points + bonus;
+  }
+
+  /** Speed-bonus points earned this round (already inside `score`). */
+  get speedBonus(): number {
+    return this._speedBonus;
+  }
+
+  /** The speed tier of the last recorded answer (0 for a wrong one or no bonus). */
+  get lastSpeedTier(): SpeedTier {
+    return this._lastSpeedTier;
   }
 
   get score(): number {

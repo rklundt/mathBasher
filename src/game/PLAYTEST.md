@@ -493,6 +493,16 @@ Phone in landscape, then desktop. Use Add to 10 · Easy (Finish +300, Perfect +3
 - [ ] Out of lives (Math-a-lotl, Space Shooter, Space Escape, Frog Splash, Penguin Slide, Bunny Garden) or Space Escape's timer: no bonus. Pause and Esc do nothing during "Out of lives!" and after the last answer.
 - [ ] My Scores and the next round's "This visit" include the bonuses.
 
+## Speed bonus (sprint 2.11)
+
+Phone in landscape, then desktop. Add to 10 · Easy (25 s a question).
+
+- [ ] Difficulty: "Up to 2,400 points!" on Easy.
+- [ ] Every game: a right answer right away shows "+150" and "⚡⚡⚡ <cheer>" under it; about a third of the way, "+130 ⚡⚡"; about two thirds, "+110 ⚡"; near the end, just "+100". The cheer changes each time and stays on screen near the edges.
+- [ ] A right answer after a miss: the bonus on the halved points ("+75 ⚡⚡⚡").
+- [ ] Math-a-lotl: the time only starts once a bubble is in view. Penguin Slide: from when the fish can be tapped. Space Escape: each floor timed on its own; a wrong pick's fall doesn't count.
+- [ ] Game Over: "⚡ Speed Bonus! +N" pops in first, then Finish and Perfect Round, the score counting on; the row fits at Subtract Fractions · Hard. A slow perfect round still gets Perfect Round.
+
 ## Logging the run
 
 ```

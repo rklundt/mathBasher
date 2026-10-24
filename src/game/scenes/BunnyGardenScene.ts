@@ -319,8 +319,12 @@ export class BunnyGardenScene extends Phaser.Scene implements GameSceneContract 
     for (const p of this.plots) if (p !== plot) p.duck();
     const slot = basketSlot(this.answeredCount, this.cfg.basket);
     const b = this.cfg.basket;
-    const { scoreDelta } = this.roundController.recordOutcome(record);
-    this.events.emit('correctHit', { x: plot.x, y: this.cfg.cropLineY, scoreDelta });
+    // The clock started as taps opened and stopped at the tap.
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
+      ...record,
+      timeUsed: this.clock.fractionUsed,
+    });
+    this.events.emit('correctHit', { x: plot.x, y: this.cfg.cropLineY, scoreDelta, speedTier });
     _th.logToAi('QuestionEnded', SeverityLevel.Information, {
       ...this.questionProps(),
       wasCorrect: 'true',

@@ -79,6 +79,8 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private usedWrongCatch = false;
   /** Per-question countdown; ticks only while a question is in play, expires at most once. */
   private readonly clock = new QuestionClock();
+  /** Sprint 2.11 — the clock's speed timing has started (a bubble is in view). */
+  private speedTimed = false;
   /** Set once the round has ended — nothing ticks after this (GameOver mounts next frame). */
   private roundOver = false;
   /** Number-key handlers, kept so cleanup removes exactly these. */
@@ -203,6 +205,12 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.axolotl.sprite.setPosition(p.x, p.y);
     if (this.transitioning) return;
 
+    // Sprint 2.11 — the bubbles rise into view after the clock starts; the
+    // speed bonus times the answer from the first one a kid can tap.
+    if (!this.speedTimed && visibleBubbles(this.bubbles, this.scale.height).length > 0) {
+      this.clock.markOpen();
+      this.speedTimed = true;
+    }
     if (this.clock.tick(dt)) {
       this.handleTimeout();
       return;
@@ -320,8 +328,11 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private handleCorrectCatch(b: AnswerBubble, record: OutcomeRecord): void {
     this.transitioning = true;
     this.clock.stop();
-    const { scoreDelta } = this.roundController.recordOutcome(record);
-    this.events.emit('correctHit', { x: b.x, y: b.y, scoreDelta });
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
+      ...record,
+      timeUsed: this.clock.fractionUsed,
+    });
+    this.events.emit('correctHit', { x: b.x, y: b.y, scoreDelta, speedTier });
     getAudioManager().play(pickRandomBubblePopSfx(), 'sfx');
     this.playSparkle(b.x, b.y);
     this.axolotl.playHappy();
@@ -456,6 +467,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.usedWrongCatch = false;
     // Sprint 2.5.7 — harder math gets more time per question.
     this.clock.start(questionSeconds(this.speed, this.mathId) * 1000);
+    this.speedTimed = false;
     this.spawnWave();
     if (this.roundController.questionIndex === 0) this.showTapHint();
     _th.logToAi('QuestionStarted', SeverityLevel.Information, this.questionProps());

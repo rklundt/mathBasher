@@ -104,6 +104,8 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
   /** The game-loop frame the scene last resumed on: keys pressed to close Pause don't also grab. */
   private resumedFrame = -1;
   private readonly clock = new QuestionClock();
+  /** Sprint 2.11 — the clock's speed timing has started (taps are open). */
+  private speedTimed = false;
   private keyHandlers: Array<{ event: string; fn: () => void }> = [];
   private tapHint?: TapHint;
 
@@ -245,6 +247,12 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
 
   override update(_time: number, dt: number): void {
     if (this.paused || this.roundOver || this.busy) return;
+    // Sprint 2.11 — taps open a moment after the row starts sliding; the
+    // speed bonus times the answer from then.
+    if (!this.speedTimed && this.time.now >= this.inputOpenAt) {
+      this.clock.markOpen();
+      this.speedTimed = true;
+    }
     if (this.clock.tick(dt)) {
       this.handleTimeout();
       return;
@@ -367,8 +375,12 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
     this.penguin.gulp();
     this.playSparkle(this.penguin.x, this.penguin.y - this.cfg.fx.sparkleAbovePx);
     for (const f of this.row) if (f !== fish && f.isAlive) f.swimAway();
-    const { scoreDelta } = this.roundController.recordOutcome(record);
-    this.events.emit('correctHit', { x: this.penguin.x, y: this.penguin.y, scoreDelta });
+    // The clock stopped at the tap; the swoop to the fish isn't counted.
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
+      ...record,
+      timeUsed: this.clock.fractionUsed,
+    });
+    this.events.emit('correctHit', { x: this.penguin.x, y: this.penguin.y, scoreDelta, speedTier });
     _th.logToAi('QuestionEnded', SeverityLevel.Information, {
       ...this.questionProps(),
       wasCorrect: 'true',
@@ -528,6 +540,7 @@ export class PenguinSlideScene extends Phaser.Scene implements GameSceneContract
       (a, i) => new SlideFish(this, this.lanes[i], this.rowStartY(), looks[i], a.answer, a.display),
     );
     this.clock.start(this.totalSec() * 1000);
+    this.speedTimed = false;
     this.resetSlideSound();
     this.placeRow();
     this.inputOpenAt = this.time.now + this.cfg.inputLockMs;
