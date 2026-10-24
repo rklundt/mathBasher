@@ -31,6 +31,8 @@ export class ScoreCalculator {
   private readonly speedMultiplier: number;
   private _score = 0;
   private _correctCount = 0;
+  /** Sprint 2.10 — right answers with no miss or time-out first (for Perfect Round). */
+  private _firstTryCount = 0;
 
   constructor(mathId: MathId, speed: SpeedKey) {
     this.mathMultiplier = config.scoring.mathDifficulty[mathId];
@@ -44,6 +46,7 @@ export class ScoreCalculator {
       return;
     }
     this._correctCount += 1;
+    if (!outcome.usedWrongShot) this._firstTryCount += 1;
     const wrongShotMult = outcome.usedWrongShot ? config.scoring.afterWrongShotMultiplier : 1;
     this._score += config.scoring.basePerCorrect * this.mathMultiplier * this.speedMultiplier * wrongShotMult;
   }
@@ -54,6 +57,11 @@ export class ScoreCalculator {
 
   get correctCount(): number {
     return this._correctCount;
+  }
+
+  /** Right answers on the first try (no wrong pick or time-out before them). */
+  get firstTryCount(): number {
+    return this._firstTryCount;
   }
 
   /** True when the round met the passing threshold from `config.round.passingCorrect`. */
@@ -74,6 +82,40 @@ export class ScoreCalculator {
     if (this._correctCount >= oneStar) return 1;
     return 0;
   }
+}
+
+/** Sprint 2.10 — the round-end bonuses a round earned (0 when it didn't). */
+export interface RoundBonuses {
+  /** "Finish Bonus!": the round reached its end. */
+  readonly finish: number;
+  /** "Perfect Round!": reached the end with every question right first try. */
+  readonly perfect: number;
+}
+
+/** One right answer's worth for this challenge and difficulty, before any wrong-shot halving. */
+function answerWorth(mathId: MathId, speed: SpeedKey): number {
+  const { basePerCorrect, mathDifficulty, speed: speeds } = config.scoring;
+  return basePerCorrect * mathDifficulty[mathId] * speeds[speed].multiplier;
+}
+
+/** The Finish Bonus for this challenge and difficulty, in whole points (Add to 10 · Easy: 300). */
+export function finishBonus(mathId: MathId, speed: SpeedKey): number {
+  return Math.round(config.scoring.finishBonusAnswers * answerWorth(mathId, speed));
+}
+
+/** The Perfect Round bonus for this challenge and difficulty, in whole points (Add to 10 · Easy: 300). */
+export function perfectBonus(mathId: MathId, speed: SpeedKey): number {
+  return Math.round(config.scoring.perfectBonusAnswers * answerWorth(mathId, speed));
+}
+
+/**
+ * Sprint 2.10 — what a round earns at its end. `finished`: it reached its
+ * end (the game says so). `perfect`: also every question right first try.
+ * Perfect without finished earns nothing (a round cut short isn't perfect).
+ */
+export function roundBonuses(mathId: MathId, speed: SpeedKey, finished: boolean, perfect: boolean): RoundBonuses {
+  if (!finished) return { finish: 0, perfect: 0 };
+  return { finish: finishBonus(mathId, speed), perfect: perfect ? perfectBonus(mathId, speed) : 0 };
 }
 
 /**

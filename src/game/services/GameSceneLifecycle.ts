@@ -9,12 +9,14 @@ import type { MathId, SpeedKey } from '@/core/config';
 import { Settings, type GameId } from '@/services/Settings';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { getMyScores } from '@/services/MyScores';
+import { roundBonuses } from '@/services/ScoreCalculator';
 import { GAME_MIDGROUND_MAP, GAME_MUSIC_MAP } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { RoundController } from '@/game/services/RoundController';
+import type { GameOverData } from '@/game/scenes/GameOverScene';
 
 /**
  * Sprint 2.1.9 — game-mode-AGNOSTIC scene lifecycle helper. Extracted
@@ -98,6 +100,8 @@ export class GameSceneLifecycle {
    * same frame) can't count it twice: My Scores saves it for good.
    */
   private settled = false;
+  /** Sprint 2.10 — the game has started its end (an "Out of lives!" banner, a fall). */
+  private ending = false;
 
   constructor(private readonly opts: GameSceneLifecycleOpts) {}
 
@@ -106,16 +110,35 @@ export class GameSceneLifecycle {
    * My Scores (finished = it reached Game Over). Returns false when the round
    * was already counted.
    */
-  private settle(finished: boolean): boolean {
+  private settle(finished: boolean, points: number): boolean {
     if (this.settled) return false;
     this.settled = true;
     const { mathId, roundController } = this.opts;
-    SessionTotalScore.add(roundController.score);
+    SessionTotalScore.add(points);
     // A round left before the first answer (browsing games) isn't a round.
-    if (finished || roundController.questionIndex > 0 || roundController.score > 0) {
-      getMyScores().record(mathId, roundController.score, finished);
+    if (finished || roundController.questionIndex > 0 || points > 0) {
+      getMyScores().record(mathId, points, finished);
     }
     return true;
+  }
+
+  /**
+   * Sprint 2.10 — a game calls this when it starts a delayed end that isn't
+   * the last answer (the "Out of lives!" banner, Space Escape's fall or
+   * "Out of time!"), so pause can't open over it.
+   */
+  beginRoundEnd(): void {
+    this.ending = true;
+  }
+
+  /**
+   * Sprint 2.10 — the round is over or about to be (the last answer is in,
+   * or the game started its end): HudScene won't open pause. Pausing there
+   * didn't stop the end anyway (some games' timers run on), and quitting
+   * would count a finished round as ended early and lose its bonus.
+   */
+  get isRoundEnding(): boolean {
+    return this.settled || this.ending || this.opts.roundController.lastAnswerIn;
   }
 
   /**
@@ -190,8 +213,14 @@ export class GameSceneLifecycle {
    */
   endRound(overrides?: { passedOverride?: boolean; starsOverride?: 0 | 1 | 2 | 3 }): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
+    // Sprint 2.10 — a round that reached its end (every game advances to the
+    // last question only by answering it; lives and timers end it sooner)
+    // earns the Finish Bonus, and the Perfect Round bonus if every question
+    // was right first try.
+    const bonus = roundBonuses(mathId, speed, roundController.isRoundOver, roundController.isPerfect);
+    const total = roundController.score + bonus.finish + bonus.perfect;
     // Sprint 2.1.5 invariant — contribute BEFORE GameOver transition.
-    if (!this.settle(true)) return;
+    if (!this.settle(true, total)) return;
 
     const finalPassed = overrides?.passedOverride ?? roundController.passed;
     const finalStars = overrides?.starsOverride ?? roundController.stars;
@@ -200,15 +229,19 @@ export class GameSceneLifecycle {
       gameId,
       mathId,
       speed,
-      roundScore: String(roundController.score),
+      roundScore: String(total),
       roundCorrectCount: String(roundController.correctCount),
       passed: String(finalPassed),
+      finishBonus: String(bonus.finish),
+      perfectBonus: String(bonus.perfect),
     };
     _th.logToAi('RoundEnded', SeverityLevel.Information, props);
 
     scene.scene.stop(SceneKeys.Hud);
-    scene.scene.start(SceneKeys.GameOver, {
-      score: roundController.score,
+    const gameOver: GameOverData = {
+      score: total,
+      finishBonus: bonus.finish,
+      perfectBonus: bonus.perfect,
       correctCount: roundController.correctCount,
       passed: finalPassed,
       stars: finalStars,
@@ -219,7 +252,8 @@ export class GameSceneLifecycle {
       // (the default from config.round.questionsPerRound). Drives the
       // "Correct: N / total" denominator on GameOver.
       totalQuestions: roundController.questionsPerRound,
-    });
+    };
+    scene.scene.start(SceneKeys.GameOver, gameOver);
   }
 
   /**
@@ -270,7 +304,7 @@ export class GameSceneLifecycle {
    */
   quitToMenu(destination: QuitDestination = 'menu'): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
-    if (!this.settle(false)) return;
+    if (!this.settle(false, roundController.score)) return;
     // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
     // challenge is already set; this game's Difficulty shows it).
     const target =

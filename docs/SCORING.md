@@ -22,6 +22,18 @@ score per correct = basePerCorrect
 
 A wrong shot in a round halves every *future* correct answer's score until the round ends (it does NOT retroactively halve correct answers from earlier in the round). The kid's total is the simple sum of per-correct-answer scores.
 
+## Round-end bonuses (sprint 2.10)
+
+- **Finish Bonus!** — the round reached its end (the last question, the top, the far bank, the last row or carrot), whatever the stars. Running out of lives or time, or leaving, doesn't earn it. Worth `finishBonusAnswers` (3) right answers: `3 × 100 × challenge × difficulty`, rounded to whole points.
+- **Perfect Round!** — reached the end with every question right on the first try (no wrong pick, no time-out, no life lost). Worth `perfectBonusAnswers` (3) more, on top of the Finish Bonus.
+- Never halved by a wrong shot. Both are part of the round's score: Game Over, the high score, My Scores and "This visit" all include them, and so does "Up to N points!" (the perfect round with both).
+
+| Add to 10 | Easy | Medium | Hard |
+|---|---:|---:|---:|
+| Finish Bonus | +300 | +375 | +450 |
+| Perfect Round | +300 | +375 | +450 |
+| Up to (12 right + both) | 1,800 | 2,250 | 2,700 |
+
 ## Round length
 
 **12 questions per round** for every game mode (`config.round.questionsPerRound`). Number Climb's 12 floors = 12 questions; the arcade modes' rounds = 12 questions. Calibrated across modes by sprint 2.2.1 story 10.
@@ -60,7 +72,7 @@ Source: `config.scoring.speed[*].multiplier`.
 
 **Cross-game parity:** scoring has no game-mode axis. A perfect 12-question round of `(mathId, speedKey)` produces the same max score regardless of which game mode was played (Alien Shoot, Asteroid Field, Number Climb, Math-a-lotl, Frog Splash, Space Shooter). Locked by `ScoreCalculator.test.ts` parity tests (sprint 2.2.1 story 11, sprint 2.4 story 7).
 
-Formula: `max = 12 × 100 × mathMult × speedMult = 1200 × mathMult × speedMult`. Assumes a clean round (no wrong shot taken).
+Formula: `max = 12 × 100 × mathMult × speedMult = 1200 × mathMult × speedMult`. Assumes a clean round (no wrong shot taken). These are the answers only; since sprint 2.10 a perfect round also earns both round-end bonuses (`+ 2 × 300 × mathMult × speedMult`), which "Up to N points!" includes.
 
 | Math type | Easy (×1.0) | Medium (×1.25) | Hard (×1.5) |
 |---|---:|---:|---:|
@@ -125,10 +137,12 @@ They go to the top bar's "This visit" total (`SessionTotalScore`, this page load
 | Round length | `src/core/config.ts` → `config.round.questionsPerRound` (NumberClimb overrides via RoundController constructor — currently matches the global 12) |
 | Arcade star ladder | `src/core/config.ts` → `config.round.starThresholds` |
 | Climb star ladder | `src/services/ScoreCalculator.ts` → `computeClimbStars` |
+| Round-end bonuses | `src/core/config.ts` → `config.scoring.finishBonusAnswers` / `perfectBonusAnswers` |
 
 **After any edit above, update this file in the same commit.** A stale entry here is a documentation bug — keep the table truthful.
 
 ## Change log
 
+- **Sprint 2.10** — Finish Bonus and Perfect Round (3 right answers' worth each); "Up to N points!" includes them.
 - **Sprint 2.9.2** — "Where points go": unfinished rounds now count their points (This visit, My Scores). Scoring itself unchanged.
 - **Sprint 2.4 (story 8)** — file created. Added `add-fractions` (4.0) and `subtract-fractions` (4.5) entries; max-score grid extended. Multiplier ladder for the integer types unchanged.

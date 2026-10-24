@@ -3,7 +3,13 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { describe, it, expect, vi } from 'vitest';
-import { ScoreCalculator, computeClimbStars } from '@/services/ScoreCalculator';
+import {
+  ScoreCalculator,
+  computeClimbStars,
+  finishBonus,
+  perfectBonus,
+  roundBonuses,
+} from '@/services/ScoreCalculator';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 
 /**
@@ -347,5 +353,44 @@ describe('fraction math calibration (story 7)', () => {
 
   it('add-fractions multiplier matches div-to-144 (both = hardest-tier peer)', () => {
     expect(config.scoring.mathDifficulty['add-fractions']).toBe(config.scoring.mathDifficulty['div-to-144']);
+  });
+});
+
+describe('round-end bonuses (sprint 2.10)', () => {
+  const { basePerCorrect, finishBonusAnswers, perfectBonusAnswers, mathDifficulty, speed } = config.scoring;
+  const finishAt = (m: MathId, s: SpeedKey): number =>
+    Math.round(finishBonusAnswers * basePerCorrect * mathDifficulty[m] * speed[s].multiplier);
+  const perfectAt = (m: MathId, s: SpeedKey): number =>
+    Math.round(perfectBonusAnswers * basePerCorrect * mathDifficulty[m] * speed[s].multiplier);
+
+  it('Finish Bonus and Perfect Round are worth some right answers, scaled by challenge and difficulty', () => {
+    expect(finishBonus('add-to-10', 'slow')).toBe(finishAt('add-to-10', 'slow'));
+    expect(perfectBonus('add-to-10', 'slow')).toBe(perfectAt('add-to-10', 'slow'));
+    expect(finishBonus('subtract-fractions', 'fast')).toBe(finishAt('subtract-fractions', 'fast'));
+    expect(finishBonus('subtract-fractions', 'fast')).toBeGreaterThan(finishBonus('add-to-10', 'slow'));
+  });
+
+  it('rounds each bonus to whole points (Multiply 10×10 · Medium: 937.5 → 938)', () => {
+    expect(Number.isInteger(finishBonus('mult-to-100', 'medium'))).toBe(true);
+    expect(Number.isInteger(perfectBonus('mult-to-100', 'medium'))).toBe(true);
+  });
+
+  it('a round cut short earns nothing, even with every answer right so far', () => {
+    expect(roundBonuses('add-to-10', 'slow', false, true)).toEqual({ finish: 0, perfect: 0 });
+  });
+
+  it('reaching the end earns the Finish Bonus; a perfect round adds the Perfect Round bonus', () => {
+    const finish = finishAt('add-to-10', 'slow');
+    expect(roundBonuses('add-to-10', 'slow', true, false)).toEqual({ finish, perfect: 0 });
+    expect(roundBonuses('add-to-10', 'slow', true, true)).toEqual({ finish, perfect: perfectAt('add-to-10', 'slow') });
+  });
+
+  it('counts first-try right answers; a miss or time-out first does not count', () => {
+    const calc = new ScoreCalculator('add-to-10', 'slow');
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: true });
+    calc.recordOutcome({ wasCorrect: false, usedWrongShot: false });
+    expect(calc.correctCount).toBe(2);
+    expect(calc.firstTryCount).toBe(1);
   });
 });

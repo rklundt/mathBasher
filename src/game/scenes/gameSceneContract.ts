@@ -32,6 +32,12 @@ export interface GameSceneContract extends Phaser.Scene {
   /** Round paused (player pulled up the PauseOverlay)? */
   isPaused(): boolean;
 
+  /**
+   * Sprint 2.10 — the round is over or about to be (`GameSceneLifecycle.isRoundEnding`);
+   * HudScene won't open pause then.
+   */
+  isRoundEnding(): boolean;
+
   /** Pause the round. Idempotent. */
   pause(): void;
 
