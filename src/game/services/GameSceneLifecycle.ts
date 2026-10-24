@@ -243,7 +243,8 @@ export class GameSceneLifecycle {
       score: total,
       finishBonus: bonus.finish,
       perfectBonus: bonus.perfect,
-      speedBonus: roundController.speedBonus,
+      // Whole points, so Game Over's subtotal and "+N" add up on screen.
+      speedBonus: Math.round(roundController.speedBonus),
       correctCount: roundController.correctCount,
       passed: finalPassed,
       stars: finalStars,

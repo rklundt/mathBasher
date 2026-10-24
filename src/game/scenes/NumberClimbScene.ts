@@ -404,9 +404,11 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
       usedWrongShot: hadWrongPick,
       timeUsed: this.floorClock.fractionUsed,
     });
+    // HUD draws in screen space; the climb scrolls (sprint 2.11: the popup
+    // was drawn above the screen a few floors up).
     this.events.emit('correctHit', {
       x: rung.x,
-      y: rung.y,
+      y: rung.y - this.cameras.main.scrollY,
       scoreDelta,
       speedTier,
     });
