@@ -180,6 +180,10 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   /** Cumulative timer remaining in seconds. HUD polls per-frame for the countdown text. */
   getCountdownSec(): number | undefined {
     if (this.transitioning) return undefined;
@@ -494,6 +498,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
    */
   private handleStrikeBudgetExhausted(): void {
     this.transitioning = true;
+    this.lifecycle.beginRoundEnd();
     _th.logToAi('NumberClimb.strikeBudgetExhausted', SeverityLevel.Information, {
       gameId: this.gameId,
       questionIndex: String(this.roundController.questionIndex),
@@ -563,6 +568,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   private handleTimerOut(): void {
     if (this.transitioning) return;
     this.transitioning = true;
+    this.lifecycle.beginRoundEnd();
     this.cameras.main.flash(180, 239, 68, 68, false);
     this.cameras.main.shake(180, 0.006);
     // Sprint 2.2.1 story 2 — "Out of time!" banner so the kid registers

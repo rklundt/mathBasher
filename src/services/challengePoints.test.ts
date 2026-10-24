@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { config, type MathId, type SpeedKey } from '@/core/config';
-import { ScoreCalculator } from '@/services/ScoreCalculator';
+import { ScoreCalculator, roundBonuses } from '@/services/ScoreCalculator';
 import {
   formatPoints,
   fractionLevelNote,
@@ -18,22 +18,26 @@ const mathIds = Object.keys(config.scoring.mathDifficulty) as MathId[];
 const speeds: SpeedKey[] = ['slow', 'medium', 'fast'];
 
 describe('challengePoints', () => {
-  it('"Up to" equals what ScoreCalculator pays for a perfect round, for every challenge and difficulty', () => {
+  it('"Up to" equals what a perfect round pays with both bonuses, for every challenge and difficulty', () => {
     for (const mathId of mathIds) {
       for (const speed of speeds) {
         for (const questions of [config.round.questionsPerRound, config.numberClimb.questionsPerRound]) {
           const calc = new ScoreCalculator(mathId, speed);
           for (let i = 0; i < questions; i++) calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
-          expect(maxRoundScore(mathId, speed, questions), `${mathId} ${speed}`).toBe(Math.round(calc.score));
+          const bonus = roundBonuses(mathId, speed, true, calc.firstTryCount >= questions);
+          expect(maxRoundScore(mathId, speed, questions), `${mathId} ${speed}`).toBe(
+            Math.round(calc.score) + bonus.finish + bonus.perfect,
+          );
         }
       }
     }
   });
 
   it('matches the documented top scores', () => {
-    expect(upToPointsLabel('bunny-garden', 'add-to-10', 'medium')).toBe('Up to 1,500 points!');
-    expect(upToPointsLabel('alien-shoot', 'subtract-fractions', 'fast')).toBe('Up to 8,100 points!');
-    expect(upToPointsLabel('frog-splash', 'add-to-10', 'slow')).toBe('Up to 1,200 points!');
+    // 12 answers + 3 (Finish Bonus) + 3 (Perfect Round), sprint 2.10.
+    expect(upToPointsLabel('bunny-garden', 'add-to-10', 'medium')).toBe('Up to 2,250 points!');
+    expect(upToPointsLabel('alien-shoot', 'subtract-fractions', 'fast')).toBe('Up to 12,150 points!');
+    expect(upToPointsLabel('frog-splash', 'add-to-10', 'slow')).toBe('Up to 1,800 points!');
   });
 
   it("uses each game's own round length", () => {

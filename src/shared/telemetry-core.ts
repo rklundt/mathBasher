@@ -68,7 +68,11 @@ export type TelemetryPropName =
   // `floorReached` (numeric, stringified) — kid's floor when the budget ran out
   | 'strikesUsed'
   | 'maxStrikes'
-  | 'floorReached';
+  | 'floorReached'
+  // Sprint 2.10 — RoundEnded's round-end bonuses (whole points, stringified;
+  // "0" when not earned). `roundScore` there is the total with them.
+  | 'finishBonus'
+  | 'perfectBonus';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so

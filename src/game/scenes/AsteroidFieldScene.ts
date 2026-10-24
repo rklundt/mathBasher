@@ -170,6 +170,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   // ----- Lifecycle ---------------------------------------------------------
 
   // Sprint 2.1.9 — preload() removed; LoadingScene now warms the
@@ -550,6 +554,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
   private handleQuestionWrongShotBudgetExhausted(): void {
     if (this.transitioning) return;
     this.transitioning = true;
+    // Sprint 2.10 — the forfeit is this question's outcome (0 points). Every
+    // question records one, so `RoundController.lastAnswerIn` (pause closed
+    // at the round's end) also holds for a round with a forfeit.
+    this.roundController.recordOutcome({ wasCorrect: false, usedWrongShot: true });
     _th.logToAi('AsteroidField.questionWrongShotBudgetExhausted', SeverityLevel.Information, {
       gameId: this.gameId,
       questionIndex: String(this.roundController.questionIndex),
@@ -577,9 +585,8 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
       });
     }
     // After the banner hold, advance to the next question via
-    // afterQuestion(false) — same path as a per-question timeout.
-    // The roundController records the wrong outcome inside
-    // afterQuestion → questionEnded → next wave spawn.
+    // afterQuestion(false) — same path as a per-question timeout
+    // (questionEnded → next wave spawn; the outcome was recorded above).
     this.time.delayedCall(700, () => {
       banner.destroy();
       this.afterQuestion(false);

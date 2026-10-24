@@ -423,6 +423,9 @@ export class HudScene extends Phaser.Scene {
   private openPauseOverlay(): void {
     const gameScene = this.getGameScene();
     if (!gameScene || gameScene.isPaused()) return;
+    // Sprint 2.10 — not once the round is ending (its last answer is in, or
+    // "Out of lives!"): see `GameSceneLifecycle.isRoundEnding`.
+    if (gameScene.isRoundEnding()) return;
     if (this.scene.isActive(SceneKeys.PauseOverlay)) return;
     gameScene.pause();
     const init: PauseOverlayInit = {
