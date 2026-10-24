@@ -159,10 +159,10 @@ export const config = {
      * first cut-off is the free thinking time: any answer inside it is top tier.
      */
     speedBonus: [
-      // Owner, 2026-10-24: 25 / 50 / 75 % made ⚡⚡⚡ too easy; now 15 / 25 / 35 %.
+      // Owner, 2026-10-24: 25 / 50 / 75 % made ⚡⚡⚡ too easy; then 15 / 30 / 45 %.
       { upTo: 0.15, bonus: 0.5 }, // ⚡⚡⚡
-      { upTo: 0.25, bonus: 0.3 }, // ⚡⚡
-      { upTo: 0.35, bonus: 0.1 }, // ⚡
+      { upTo: 0.3, bonus: 0.3 }, // ⚡⚡
+      { upTo: 0.45, bonus: 0.1 }, // ⚡
     ],
     mathDifficulty: {
       // Multiplier ladder pattern:
