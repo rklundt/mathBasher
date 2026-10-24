@@ -28,9 +28,9 @@ A right answer keeps its points; a quick one earns extra on top, by the share of
 
 | Time used | Popup | Extra |
 |---|---|---:|
-| first 25% (free thinking time) | ⚡⚡⚡ + a random cheer | +50% |
-| up to 50% | ⚡⚡ | +30% |
-| up to 75% | ⚡ | +10% |
+| first 15% (free thinking time) | ⚡⚡⚡ + a random cheer | +50% |
+| up to 25% | ⚡⚡ | +30% |
+| up to 35% | ⚡ | +10% |
 | after that | — | nothing |
 
 - After a miss it's a share of the halved points, timed from when the question restarts (games that don't restart it, like Alien Shoot, keep the original time).
@@ -161,7 +161,7 @@ They go to the top bar's "This visit" total (`SessionTotalScore`, this page load
 
 ## Change log
 
-- **Sprint 2.11** — Speed bonus (+50 / +30 / +10% for the first quarter / half / three quarters of the time); "Up to N points!" assumes every answer is ⚡⚡⚡.
+- **Sprint 2.11** — Speed bonus (+50 / +30 / +10% within 15 / 25 / 35 % of the time; first tried at 25 / 50 / 75 %, which made ⚡⚡⚡ too easy); "Up to N points!" assumes every answer is ⚡⚡⚡.
 - **Sprint 2.10** — Finish Bonus and Perfect Round (3 right answers' worth each); "Up to N points!" includes them.
 - **Sprint 2.9.2** — "Where points go": unfinished rounds now count their points (This visit, My Scores). Scoring itself unchanged.
 - **Sprint 2.4 (story 8)** — file created. Added `add-fractions` (4.0) and `subtract-fractions` (4.5) entries; max-score grid extended. Multiplier ladder for the integer types unchanged.
