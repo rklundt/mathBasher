@@ -111,6 +111,11 @@ export const SfxKeys = {
   /** Sprint 2.8 — Bunny Garden: a sad-trombone "wah-wah" when the mole pops up (a wrong hole), one of two. */
   BunnyFail1: 'bunny-fail-1',
   BunnyFail2: 'bunny-fail-2',
+  /** Sprint 2.10 — Game Over's "Finish Bonus!" / "Perfect Round!" cheer, one of four (owner's), boot-loaded. */
+  BonusCheer1: 'bonus-cheer-1',
+  BonusCheer2: 'bonus-cheer-2',
+  BonusCheer3: 'bonus-cheer-3',
+  BonusCheer4: 'bonus-cheer-4',
 } as const;
 
 /**
@@ -264,6 +269,15 @@ export function pickRandomBunnyMoleSfx(rng: () => number = Math.random): (typeof
 /** Time's up: the carrots hide. */
 export function pickRandomBunnyHideSfx(rng: () => number = Math.random): (typeof BUNNY_HIDE_KEYS)[number] {
   return nextBunnyHide(rng);
+}
+
+/** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
+const BONUS_CHEER_KEYS = ['bonus-cheer-1', 'bonus-cheer-2', 'bonus-cheer-3', 'bonus-cheer-4'] as const;
+const nextBonusCheer = noRepeatPicker(BONUS_CHEER_KEYS);
+
+/** A "Finish Bonus!" or "Perfect Round!" popping in on Game Over. */
+export function pickBonusCheerSfx(rng: () => number = Math.random): (typeof BONUS_CHEER_KEYS)[number] {
+  return nextBonusCheer(rng);
 }
 
 /** The hop up to grab a fish (right or wrong). */

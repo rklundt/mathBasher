@@ -17,7 +17,7 @@ import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { formatPoints } from '@/services/challengePoints';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { pickRandomHitCorrectSfx } from '@/core/audioKeys';
+import { pickBonusCheerSfx } from '@/core/audioKeys';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
 
@@ -276,7 +276,8 @@ export class GameOverScene extends Phaser.Scene {
 
   /**
    * Sprint 2.10 — "Finish Bonus! +300" and "Perfect Round! +300" on one line
-   * under the score, popping in one after the other (each with a cheer and
+   * under the score, popping in one after the other (each with one of the
+   * owner's four cheers, never the same twice running, and
    * the score counting on). Nothing when the round earned neither. Returns
    * when the last one is done (ms after Game Over opened).
    */
@@ -308,8 +309,7 @@ export class GameOverScene extends Phaser.Scene {
       subtotal += parts[i].points;
       t.setScale(0);
       this.tweens.add({ targets: t, scale: 1, duration: 300, delay: at, ease: 'Back.Out' });
-      // Stand-in cheer until the owner's bonus sound arrives.
-      this.time.delayedCall(at, () => getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx'));
+      this.time.delayedCall(at, () => getAudioManager().play(pickBonusCheerSfx(), 'sfx'));
       countOn(subtotal, at);
     });
     return BONUS_POP_MS.first + (texts.length - 1) * BONUS_POP_MS.gap + BONUS_POP_MS.countOn;
