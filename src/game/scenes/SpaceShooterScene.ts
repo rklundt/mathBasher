@@ -109,6 +109,10 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   // ----- Lifecycle ---------------------------------------------------------
 
   create(): void {
@@ -408,6 +412,7 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
       correctCount: this.roundController.correctCount,
     });
     screenBanner(this, 'Out of lives!');
+    this.lifecycle.beginRoundEnd();
     this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound());
   }
 

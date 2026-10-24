@@ -27,7 +27,12 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Finish Bonus and Perfect Round** (2.10)
+- Make it to the end of a round and Game Over pops in a **Finish Bonus!**, worth 3 right answers (Add to 10 · Easy: +300). Get every question right on the first try and **Perfect Round!** adds 3 more. Harder challenges and difficulties earn bigger bonuses.
+- "Up to N points!" on the Difficulty screen includes both (Add to 10 · Easy: up to 1,800).
+- The bonuses count everywhere the score does: the high score, My Scores and "This visit".
+- Pause stays closed once the last answer is in or "Out of lives!" shows, so a finished round can't be lost by quitting at the very end.
+- Game Over scores show with commas ("4,532").
 
 ## [2.9.2] - 2026-10-23 — My Scores
 

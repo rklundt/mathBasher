@@ -141,6 +141,17 @@ export const config = {
     basePerCorrect: 100,
     /** points multiplier when the player got it right after a wrong shot */
     afterWrongShotMultiplier: 0.5,
+    /**
+     * Sprint 2.10 — round-end bonuses, in right answers' worth (so they scale
+     * with the challenge and difficulty like everything else):
+     *  - Finish Bonus: the round reached its end (not cut short by lives,
+     *    time or leaving).
+     *  - Perfect Round: reached the end with every question right first try
+     *    (no miss, no time-out, no life lost); on top of the Finish Bonus.
+     * Never halved by a wrong shot.
+     */
+    finishBonusAnswers: 3,
+    perfectBonusAnswers: 3,
     mathDifficulty: {
       // Multiplier ladder pattern:
       //   - addition baseline = 1.0
@@ -1301,11 +1312,14 @@ export const config = {
         challengeGridTopY: 230,
         challengeBackY: 590,
       },
-      /** Game Over: Play again, then a 2 × 2 grid; stars and the badge sit above. */
+      /** Game Over: Play again, then a 2 × 2 grid; the bonuses, stars and the badge sit above. */
       gameOver: {
-        summaryY: 216,
-        starsY: 295,
-        badgeY: 360,
+        summaryY: 208,
+        /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score. */
+        bonusY: 266,
+        bonusGapPx: 40,
+        starsY: 316,
+        badgeY: 372,
         playAgain: { y: 440, w: 360, h: 80 },
         grid: { topY: 532, cellW: 280, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
       },

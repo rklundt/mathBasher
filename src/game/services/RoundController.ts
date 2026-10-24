@@ -28,6 +28,8 @@ import type { Question } from '@/math/types';
  */
 export class RoundController {
   private _questionIndex = 0;
+  /** Sprint 2.10 — outcomes recorded so far (see `lastAnswerIn`). */
+  private _outcomes = 0;
   private readonly recentPrompts: string[] = [];
   private readonly scoreCalculator: ScoreCalculator;
   private readonly mathId: MathId;
@@ -121,6 +123,7 @@ export class RoundController {
    * (used by the scene to emit `correctHit` events with the delta payload).
    */
   recordOutcome(outcome: QuestionOutcome): { scoreDelta: number; newScore: number } {
+    this._outcomes += 1;
     const scoreBefore = this.scoreCalculator.score;
     this.scoreCalculator.recordOutcome(outcome);
     const newScore = this.scoreCalculator.score;
@@ -147,6 +150,23 @@ export class RoundController {
 
   get stars(): 0 | 1 | 2 | 3 {
     return this.scoreCalculator.stars;
+  }
+
+  /**
+   * Sprint 2.10 — every question of the round right on the first try (no
+   * miss, no time-out, no life lost: each game marks those as a wrong shot).
+   */
+  /**
+   * Sprint 2.10 — the last question's outcome is in (each question records
+   * one outcome; a retried question records it when it's finally answered).
+   * The round is ending even if the game's end animation hasn't started.
+   */
+  get lastAnswerIn(): boolean {
+    return this._outcomes >= this._questionsPerRound;
+  }
+
+  get isPerfect(): boolean {
+    return this.scoreCalculator.firstTryCount >= this._questionsPerRound;
   }
 
   get isRoundOver(): boolean {

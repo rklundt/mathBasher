@@ -170,6 +170,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   // ----- Lifecycle ---------------------------------------------------------
 
   // Sprint 2.1.9 — preload() removed; LoadingScene now warms the
