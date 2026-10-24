@@ -131,3 +131,35 @@ describe('resolveRetryEvent', () => {
     expect(resolveRetryEvent(state({ correctAnswer: null }), { type: 'pick', answer: 56 }).kind).toBe('wrong');
   });
 });
+
+describe('QuestionClock speed timing (sprint 2.11)', () => {
+  it('reports the share of the time used, kept after stop()', () => {
+    const c = new QuestionClock();
+    c.start(10_000);
+    expect(c.fractionUsed).toBe(0);
+    c.tick(2_500);
+    expect(c.fractionUsed).toBeCloseTo(0.25);
+    c.stop();
+    c.tick(5_000);
+    expect(c.fractionUsed).toBeCloseTo(0.25);
+  });
+
+  it('times from markOpen() when the answers become tappable later', () => {
+    const c = new QuestionClock();
+    c.start(10_000);
+    c.tick(2_000); // still locked / rising into view
+    c.markOpen();
+    expect(c.fractionUsed).toBe(0);
+    c.tick(4_000);
+    expect(c.fractionUsed).toBeCloseTo(0.5);
+  });
+
+  it('reads 1 once time has run out, and restarts with start()', () => {
+    const c = new QuestionClock();
+    c.start(1_000);
+    c.tick(1_000);
+    expect(c.fractionUsed).toBe(1);
+    c.start(1_000);
+    expect(c.fractionUsed).toBe(0);
+  });
+});

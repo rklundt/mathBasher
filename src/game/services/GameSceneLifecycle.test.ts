@@ -123,6 +123,7 @@ describe('GameSceneLifecycle round counting', () => {
       lc.endRound();
       const over = data[0] as GameOverData;
       expect(over).toMatchObject({ finishBonus: finish, perfectBonus: perfect, score: rc.score + finish + perfect });
+      expect(over.speedBonus).toBe(0);
       expect(SessionTotalScore.get()).toBe(rc.score + finish + perfect);
       expect(addTo10().points).toBe(before.points + rc.score + finish + perfect);
     });
@@ -148,5 +149,26 @@ describe('GameSceneLifecycle round counting', () => {
       expect(almost.isRoundEnding).toBe(true);
       expect(lifecycleFor(playedRound(questions)).lc.isRoundEnding).toBe(true);
     });
+  });
+
+  it('hands Game Over the speed bonus inside the score (sprint 2.11)', () => {
+    const rc = new RoundController('add-to-10', 'medium');
+    rc.drawNextQuestion();
+    const fast = rc.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0 });
+    rc.advanceQuestionIndex();
+    expect(fast.speedTier).toBe(3);
+    const { lc, data } = lifecycleFor(rc);
+    lc.quitToMenu();
+    lc.endRound();
+    expect(data).toEqual([undefined]);
+    const rc2 = new RoundController('add-to-10', 'medium');
+    rc2.drawNextQuestion();
+    rc2.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.4 });
+    rc2.advanceQuestionIndex();
+    const two = lifecycleFor(rc2);
+    two.lc.endRound();
+    const over = two.data[0] as GameOverData;
+    expect(over.speedBonus).toBeGreaterThan(0);
+    expect(over.score).toBe(rc2.score);
   });
 });

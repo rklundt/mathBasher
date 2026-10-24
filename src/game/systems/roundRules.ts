@@ -104,10 +104,32 @@ export function resolveStrike(strikesSoFar: number, maxStrikes: number): StrikeD
 export class QuestionClock {
   private remainingMs = 0;
   private running = false;
+  /** Sprint 2.11 — time left when the answers could be tapped (speed is timed from there). */
+  private openRemainingMs = 0;
 
   start(ms: number): void {
     this.remainingMs = ms;
+    this.openRemainingMs = ms;
     this.running = true;
+  }
+
+  /**
+   * Sprint 2.11 — the answers can be tapped from now on: the speed bonus
+   * times the answer from here, not from `start` (an input lock, bubbles
+   * still rising into view). Without a call, it's timed from `start`.
+   */
+  markOpen(): void {
+    this.openRemainingMs = this.remainingMs;
+  }
+
+  /**
+   * Sprint 2.11 — share of the time used since the answers could be tapped
+   * (0 at once … 1 when time ran out), for the speed bonus. Read it right
+   * after `stop()` (which keeps the time left).
+   */
+  get fractionUsed(): number {
+    if (this.openRemainingMs <= 0) return 1;
+    return Math.min(1, Math.max(0, 1 - this.remainingMs / this.openRemainingMs));
   }
 
   stop(): void {

@@ -234,6 +234,7 @@ export class GameSceneLifecycle {
       passed: String(finalPassed),
       finishBonus: String(bonus.finish),
       perfectBonus: String(bonus.perfect),
+      speedBonus: String(Math.round(roundController.speedBonus)),
     };
     _th.logToAi('RoundEnded', SeverityLevel.Information, props);
 
@@ -242,6 +243,7 @@ export class GameSceneLifecycle {
       score: total,
       finishBonus: bonus.finish,
       perfectBonus: bonus.perfect,
+      speedBonus: roundController.speedBonus,
       correctCount: roundController.correctCount,
       passed: finalPassed,
       stars: finalStars,

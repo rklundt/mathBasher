@@ -323,12 +323,18 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     row.setAnswers(null);
     this.sitRow = this.activeRow;
     this.sitPad = padIndex;
-    const { scoreDelta } = this.roundController.recordOutcome({
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
       wasCorrect: true,
       usedWrongShot: this.usedWrongThisQuestion,
+      timeUsed: this.clock.fractionUsed,
     });
     // HUD draws in screen space; the river scrolls.
-    this.events.emit('correctHit', { x: this.frog.x, y: this.frog.y - this.cameras.main.scrollY, scoreDelta });
+    this.events.emit('correctHit', {
+      x: this.frog.x,
+      y: this.frog.y - this.cameras.main.scrollY,
+      scoreDelta,
+      speedTier,
+    });
     getAudioManager().play(pickRandomFrogRibbitSfx(), 'sfx');
     this.playSparkle(this.frog.x, this.frog.y);
     _th.logToAi('QuestionEnded', SeverityLevel.Information, {
