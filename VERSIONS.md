@@ -28,7 +28,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 ## [Unreleased]
 
 **Speed bonus** (2.11)
-- Answer quickly and earn extra points on top: ⚡⚡⚡ (+50%) within the first 15% of the time, ⚡⚡ (+30%) within 25%, ⚡ (+10%) within 35% (Add to 10 · Easy: about 4, 6 and 9 seconds of 25). A right answer never loses points for being slow.
+- Answer quickly and earn extra points on top: ⚡⚡⚡ (+50%) within the first 15% of the time, ⚡⚡ (+30%) within 30%, ⚡ (+10%) within 45% (Add to 10 · Easy: about 4, 7½ and 11 seconds of 25). A right answer never loses points for being slow.
 - The "+points" popup shows the ⚡ marks and a cheer from a pool of 60 ("Lightning Fast!", "Super Speedy!", "Nice and Quick!"…), never the same one twice in a row.
 - After a miss you can still earn it, on the halved points.
 - Every game times the answer from when it can be tapped; Space Escape times each floor.
