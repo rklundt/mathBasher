@@ -163,7 +163,7 @@ describe('GameSceneLifecycle round counting', () => {
     expect(data).toEqual([undefined]);
     const rc2 = new RoundController('add-to-10', 'medium');
     rc2.drawNextQuestion();
-    rc2.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.4 });
+    rc2.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.2 });
     rc2.advanceQuestionIndex();
     const two = lifecycleFor(rc2);
     two.lc.endRound();
