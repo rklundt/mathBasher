@@ -81,6 +81,8 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private readonly clock = new QuestionClock();
   /** Sprint 2.11 — the clock's speed timing has started (a bubble is in view). */
   private speedTimed = false;
+  /** Sprint 2.11 — the share of the time used when the bubble being chased was tapped. */
+  private chaseTimeUsed = 1;
   /** Set once the round has ended — nothing ticks after this (GameOver mounts next frame). */
   private roundOver = false;
   /** Number-key handlers, kept so cleanup removes exactly these. */
@@ -285,6 +287,9 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
   private chaseBubble(b: AnswerBubble): void {
     this.chasing?.setHoldY(null);
     this.chasing = b;
+    // Sprint 2.11 — the speed bonus times the answer at the tap; the swim
+    // to the bubble isn't thinking time.
+    this.chaseTimeUsed = this.clock.fractionUsed;
     // The chosen bubble waits just under the surface until it's caught,
     // whatever its answer — a right choice is never lost to a slow swim.
     b.setHoldY(chaseHoldY(this.waterlineY, b.radius, this.cfg.bubble.chaseHoldMarginPx));
@@ -330,7 +335,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     this.clock.stop();
     const { scoreDelta, speedTier } = this.roundController.recordOutcome({
       ...record,
-      timeUsed: this.clock.fractionUsed,
+      timeUsed: this.chaseTimeUsed,
     });
     this.events.emit('correctHit', { x: b.x, y: b.y, scoreDelta, speedTier });
     getAudioManager().play(pickRandomBubblePopSfx(), 'sfx');

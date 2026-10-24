@@ -73,10 +73,8 @@ export type TelemetryPropName =
   // "0" when not earned). `roundScore` there is the total with them.
   | 'finishBonus'
   | 'perfectBonus'
-  // Sprint 2.11 — RoundEnded: the round's speed-bonus points (rounded); on
-  // QuestionEnded, the tier earned ("0"–"3").
-  | 'speedBonus'
-  | 'speedTier';
+  // Sprint 2.11 — RoundEnded: the round's speed-bonus points (rounded).
+  | 'speedBonus';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so
