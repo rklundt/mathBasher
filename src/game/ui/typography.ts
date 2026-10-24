@@ -97,6 +97,7 @@ export type TextKind =
   | 'summary' // primary — multi-line score summary (GameOverScene)
   | 'scorePopup' // green bold — the floating "+100" popup at alien hit position
   | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb wrong pick)
+  | 'speedPopup' // amber bold — "⚡⚡⚡ Lightning Fast!" under the "+points" popup (sprint 2.11)
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
   | 'bonus' // teal bold — Game Over's "Finish Bonus! +300" / "Perfect Round! +300" (sprint 2.10)
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
@@ -159,6 +160,7 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   summary: { fontSize: '29px', color: TEXT_PRIMARY },
   scorePopup: { fontSize: '29px', color: TEXT_GREEN, fontStyle: 'bold' },
   penaltyPopup: { fontSize: '29px', color: TEXT_RED, fontStyle: 'bold' },
+  speedPopup: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' },
   badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
   bonus: { fontSize: '29px', color: TEXT_TEAL, fontStyle: 'bold' },
   rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },

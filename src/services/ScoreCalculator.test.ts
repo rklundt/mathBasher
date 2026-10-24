@@ -9,6 +9,8 @@ import {
   finishBonus,
   perfectBonus,
   roundBonuses,
+  speedBonusFor,
+  speedTier,
 } from '@/services/ScoreCalculator';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 
@@ -391,6 +393,57 @@ describe('round-end bonuses (sprint 2.10)', () => {
     calc.recordOutcome({ wasCorrect: true, usedWrongShot: true });
     calc.recordOutcome({ wasCorrect: false, usedWrongShot: false });
     expect(calc.correctCount).toBe(2);
+    expect(calc.firstTryCount).toBe(1);
+  });
+});
+
+describe('speed bonus (sprint 2.11)', () => {
+  const tiers = config.scoring.speedBonus;
+  const answer = (m: MathId, s: SpeedKey): number =>
+    config.scoring.basePerCorrect * config.scoring.mathDifficulty[m] * config.scoring.speed[s].multiplier;
+
+  it('tiers by the share of the time used: the free thinking time is the top tier', () => {
+    expect(speedTier(0)).toBe(3);
+    expect(speedTier(tiers[0].upTo)).toBe(3);
+    expect(speedTier(tiers[0].upTo + 0.01)).toBe(2);
+    expect(speedTier(tiers[1].upTo)).toBe(2);
+    expect(speedTier(tiers[2].upTo)).toBe(1);
+    expect(speedTier(tiers[2].upTo + 0.01)).toBe(0);
+    expect(speedTier(1)).toBe(0);
+    expect(speedTier(undefined)).toBe(0);
+    expect(speedTier(Number.NaN)).toBe(0);
+  });
+
+  it('adds the tier share on top of a right answer, and totals it', () => {
+    const calc = new ScoreCalculator('add-to-10', 'slow');
+    const pts = answer('add-to-10', 'slow');
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.1 });
+    expect(calc.lastSpeedTier).toBe(3);
+    expect(calc.score).toBe(pts * (1 + tiers[0].bonus));
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.9 });
+    expect(calc.lastSpeedTier).toBe(0);
+    expect(calc.speedBonus).toBe(pts * tiers[0].bonus);
+  });
+
+  it('after a miss, the bonus is a share of the halved points', () => {
+    const calc = new ScoreCalculator('add-to-10', 'slow');
+    const halved = answer('add-to-10', 'slow') * config.scoring.afterWrongShotMultiplier;
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: true, timeUsed: 0 });
+    expect(calc.score).toBe(halved * (1 + tiers[0].bonus));
+    expect(speedBonusFor(halved, 3)).toBe(halved * tiers[0].bonus);
+  });
+
+  it('a wrong answer earns no speed bonus, however fast', () => {
+    const calc = new ScoreCalculator('add-to-10', 'slow');
+    calc.recordOutcome({ wasCorrect: false, usedWrongShot: false, timeUsed: 0 });
+    expect(calc.score).toBe(0);
+    expect(calc.lastSpeedTier).toBe(0);
+    expect(calc.speedBonus).toBe(0);
+  });
+
+  it('speed does not change Perfect Round (first try is enough)', () => {
+    const calc = new ScoreCalculator('add-to-10', 'slow');
+    calc.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 1 });
     expect(calc.firstTryCount).toBe(1);
   });
 });

@@ -261,11 +261,12 @@ export class SpaceShooterScene extends Phaser.Scene implements GameSceneContract
 
   private handleCorrect(ship: AlienShip): void {
     this.clock.stop();
-    const { scoreDelta } = this.roundController.recordOutcome({
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
       wasCorrect: true,
       usedWrongShot: this.usedWrongThisQuestion,
+      timeUsed: this.clock.fractionUsed,
     });
-    this.events.emit('correctHit', { x: ship.body.x, y: ship.body.y, scoreDelta });
+    this.events.emit('correctHit', { x: ship.body.x, y: ship.body.y, scoreDelta, speedTier });
     getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx');
     ship.explode();
     this.cameras.main.shake(120, 0.003);

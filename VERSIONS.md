@@ -29,6 +29,16 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.11.0] - 2026-10-24 — Speed bonus
+
+**Speed bonus**
+- Answer quickly and earn extra points on top: ⚡⚡⚡ (+50%) within the first 15% of the time, ⚡⚡ (+30%) within 30%, ⚡ (+10%) within 45% (Add to 10 · Easy: about 4, 7½ and 11 seconds of 25). A right answer never loses points for being slow.
+- The "+points" popup shows the ⚡ marks and a cheer from a pool of 60 ("Lightning Fast!", "Super Speedy!", "Nice and Quick!"…), never the same one twice in a row.
+- After a miss you can still earn it, on the halved points.
+- Every game times the answer from when it can be tapped; Space Escape times each floor.
+- Game Over shows "⚡ Speed Bonus! +N" with the Finish and Perfect Round bonuses. Perfect Round doesn't need speed.
+- "Up to N points!" now counts a lightning-fast round (Add to 10 · Easy: up to 2,400).
+
 ## [2.10.0] - 2026-10-24 — Finish Bonus and Perfect Round
 
 **Finish Bonus and Perfect Round**

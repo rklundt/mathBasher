@@ -44,6 +44,8 @@ export type WaveOutcome = 'in-progress' | 'reached-hero';
  */
 export class WaveSystem {
   private aliens: Alien[] = [];
+  /** Sprint 2.11 — the wave's alien bottom edge at spawn (see `fallFraction`). */
+  private startBottomY: number | undefined;
   private correctAnswerLane = -1;
   private penaltyApplied = false;
   private paused = false;
@@ -75,6 +77,7 @@ export class WaveSystem {
    * `question.correctAnswer` is recorded so `isCorrect()` can answer later.
    */
   spawnWave(question: Question): Alien[] {
+    this.startBottomY = undefined;
     if (this.aliens.length > 0) {
       // Defensive: clear any leftover wave before spawning a new one.
       this.clearWave(true);
@@ -117,7 +120,22 @@ export class WaveSystem {
         this.correctAnswerLane = lane;
       }
     }
+    this.startBottomY = this.aliens[0]?.bottomY();
     return this.aliens.slice();
+  }
+
+  /**
+   * Sprint 2.11 — how far this alien has fallen toward the hero (0 at the
+   * spawn line … 1 at contact), for the speed bonus. The pre-fall jiggle
+   * doesn't move it, so that's free reading time. A wrong shot speeds the
+   * fall without restarting it, so the time used so far still counts.
+   */
+  fallFraction(alien: Alien): number {
+    const start = this.startBottomY;
+    if (start === undefined) return 1;
+    const span = this.opts.heroY - start;
+    if (span <= 0) return 1;
+    return Math.min(1, Math.max(0, (alien.bottomY() - start) / span));
   }
 
   /**

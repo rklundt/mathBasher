@@ -72,7 +72,9 @@ export type TelemetryPropName =
   // Sprint 2.10 — RoundEnded's round-end bonuses (whole points, stringified;
   // "0" when not earned). `roundScore` there is the total with them.
   | 'finishBonus'
-  | 'perfectBonus';
+  | 'perfectBonus'
+  // Sprint 2.11 — RoundEnded: the round's speed-bonus points (rounded).
+  | 'speedBonus';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so

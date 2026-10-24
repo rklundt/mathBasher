@@ -18,12 +18,14 @@ const mathIds = Object.keys(config.scoring.mathDifficulty) as MathId[];
 const speeds: SpeedKey[] = ['slow', 'medium', 'fast'];
 
 describe('challengePoints', () => {
-  it('"Up to" equals what a perfect round pays with both bonuses, for every challenge and difficulty', () => {
+  it('"Up to" equals what a perfect, all-Lightning round pays with both bonuses, for every challenge and difficulty', () => {
     for (const mathId of mathIds) {
       for (const speed of speeds) {
         for (const questions of [config.round.questionsPerRound, config.numberClimb.questionsPerRound]) {
           const calc = new ScoreCalculator(mathId, speed);
-          for (let i = 0; i < questions; i++) calc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
+          for (let i = 0; i < questions; i++) {
+            calc.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0 });
+          }
           const bonus = roundBonuses(mathId, speed, true, calc.firstTryCount >= questions);
           expect(maxRoundScore(mathId, speed, questions), `${mathId} ${speed}`).toBe(
             Math.round(calc.score) + bonus.finish + bonus.perfect,
@@ -34,10 +36,10 @@ describe('challengePoints', () => {
   });
 
   it('matches the documented top scores', () => {
-    // 12 answers + 3 (Finish Bonus) + 3 (Perfect Round), sprint 2.10.
-    expect(upToPointsLabel('bunny-garden', 'add-to-10', 'medium')).toBe('Up to 2,250 points!');
-    expect(upToPointsLabel('alien-shoot', 'subtract-fractions', 'fast')).toBe('Up to 12,150 points!');
-    expect(upToPointsLabel('frog-splash', 'add-to-10', 'slow')).toBe('Up to 1,800 points!');
+    // 12 answers at ⚡⚡⚡ (×1.5, sprint 2.11) + 3 (Finish Bonus) + 3 (Perfect Round), sprint 2.10.
+    expect(upToPointsLabel('bunny-garden', 'add-to-10', 'medium')).toBe('Up to 3,000 points!');
+    expect(upToPointsLabel('alien-shoot', 'subtract-fractions', 'fast')).toBe('Up to 16,200 points!');
+    expect(upToPointsLabel('frog-splash', 'add-to-10', 'slow')).toBe('Up to 2,400 points!');
   });
 
   it("uses each game's own round length", () => {

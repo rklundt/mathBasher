@@ -18,6 +18,9 @@ import { text, textStyle } from '@/game/ui/typography';
 import { MathText } from '@/game/ui/MathText';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { SLATE_BG } from '@/game/ui/uiPalette';
+import { pickSpeedPhrase, speedMarks } from '@/game/ui/speedPhrases';
+import { formatPoints } from '@/services/challengePoints';
+import type { SpeedTier } from '@/services/ScoreCalculator';
 
 /** Sprint 2.5.2 — HUD hero avatar: total vertical padding inside the bar (half above, half below). */
 const HUD_AVATAR_VERTICAL_PAD_PX = 12;
@@ -45,10 +48,12 @@ interface QuestionEndedPayload {
  * HUD bar corner (more readable feedback than the prior fixed-position
  * popup, which the player's eyes weren't on).
  */
-interface CorrectHitPayload {
+export interface CorrectHitPayload {
   x: number;
   y: number;
   scoreDelta: number;
+  /** Sprint 2.11 — the speed tier the answer earned (omitted or 0: none). */
+  speedTier?: SpeedTier;
 }
 
 /**
@@ -768,7 +773,7 @@ export class HudScene extends Phaser.Scene {
    */
   private onCorrectHit(payload: CorrectHitPayload): void {
     if (payload.scoreDelta > 0) {
-      this.popupScoreDelta(payload.scoreDelta, payload.x, payload.y);
+      this.popupScoreDelta(payload.scoreDelta, payload.x, payload.y, payload.speedTier ?? 0);
     }
   }
 
@@ -806,26 +811,42 @@ export class HudScene extends Phaser.Scene {
    * player's eyes — already on the alien they just shot — see the
    * reward without re-scanning to a different corner of the screen.
    */
-  private popupScoreDelta(delta: number, x: number, y: number): void {
+  private popupScoreDelta(delta: number, x: number, y: number, tier: SpeedTier): void {
     // TextKind 'scorePopup' — 29px green bold (Sprint 0.7.5 Story 3).
-    const popup = text(this, x, y, `+${delta}`, 'scorePopup').setOrigin(0.5);
+    const popup = text(this, x, y, `+${formatPoints(delta)}`, 'scorePopup').setOrigin(0.5);
     // Dark outline so the green reads on any backdrop (it was ~1.3:1 on
     // Math-a-lotl's blue water — sprint 2.5.5).
     popup.setStroke('#0b1020', 6);
+    const parts: Phaser.GameObjects.Text[] = [popup];
+    // Sprint 2.11 — a fast answer adds "⚡⚡⚡ Lightning Fast!" under the points
+    // (the delta already includes the speed bonus).
+    if (tier !== 0) {
+      const lineGap = config.layout.scorePopup.speedLineGapPx;
+      const cheer = text(this, x, y + lineGap, `${speedMarks(tier)} ${pickSpeedPhrase(tier)}`, 'speedPopup').setOrigin(
+        0.5,
+      );
+      cheer.setStroke('#0b1020', 6);
+      // Keep it on screen near the edges (the points line is narrow; this isn't).
+      const half = cheer.width / 2 + 8;
+      cheer.setX(Phaser.Math.Clamp(x, half, this.scale.width - half));
+      parts.push(cheer);
+    }
     const { holdMs, fadeMs, risePx } = config.layout.scorePopup;
-    this.tweens.add({
-      targets: popup,
-      y: y - risePx,
-      duration: holdMs + fadeMs,
-      ease: 'Quad.Out',
-    });
-    this.tweens.add({
-      targets: popup,
-      alpha: 0,
-      delay: holdMs,
-      duration: fadeMs,
-      ease: 'Quad.In',
-      onComplete: () => popup.destroy(),
-    });
+    for (const t of parts) {
+      this.tweens.add({
+        targets: t,
+        y: t.y - risePx,
+        duration: holdMs + fadeMs,
+        ease: 'Quad.Out',
+      });
+      this.tweens.add({
+        targets: t,
+        alpha: 0,
+        delay: holdMs,
+        duration: fadeMs,
+        ease: 'Quad.In',
+        onComplete: () => t.destroy(),
+      });
+    }
   }
 }
