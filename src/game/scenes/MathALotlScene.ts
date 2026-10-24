@@ -121,6 +121,10 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   /** GameSceneContract — seconds left on this question's countdown (HUD timer). */
   getCountdownSec(): number | undefined {
     if (!this.currentQuestion || this.roundOver) return undefined;
@@ -405,6 +409,7 @@ export class MathALotlScene extends Phaser.Scene implements GameSceneContract {
     for (const b of this.bubbles) b.popQuiet();
     // "lives" (not "hearts") to match the HUD's "Lives:" row.
     screenBanner(this, 'Out of lives!');
+    this.lifecycle.beginRoundEnd();
     this.time.delayedCall(this.cfg.outOfLivesBannerMs, () => this.endRound());
   }
 

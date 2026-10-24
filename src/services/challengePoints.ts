@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { config, type MathId, type SpeedKey } from '@/core/config';
+import { roundBonuses } from '@/services/ScoreCalculator';
 import type { GameId } from '@/services/Settings';
 
 /**
@@ -29,10 +30,15 @@ export function questionsPerRoundFor(gameId: GameId): number {
   }
 }
 
-/** A perfect round's score (every answer right first time), rounded to whole points. */
+/**
+ * A perfect round's score (every answer right first time), with the Finish
+ * Bonus and the Perfect Round bonus (sprint 2.10), rounded to whole points.
+ */
 export function maxRoundScore(mathId: MathId, speed: SpeedKey, questions: number): number {
   const { basePerCorrect, mathDifficulty, speed: speeds } = config.scoring;
-  return Math.round(questions * basePerCorrect * mathDifficulty[mathId] * speeds[speed].multiplier);
+  const answers = questions * basePerCorrect * mathDifficulty[mathId] * speeds[speed].multiplier;
+  const bonus = roundBonuses(mathId, speed, true, true);
+  return Math.round(answers) + bonus.finish + bonus.perfect;
 }
 
 /** "1,500" — the same thousands separator everywhere, whatever the device's locale. */

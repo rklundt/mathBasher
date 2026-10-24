@@ -15,11 +15,19 @@ import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
 import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
+import { formatPoints } from '@/services/challengePoints';
+import { getAudioManager } from '@/services/audioManagerFactory';
+import { pickRandomHitCorrectSfx } from '@/core/audioKeys';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
 
 export interface GameOverData {
+  /** The round's total, bonuses included. */
   score: number;
+  /** Sprint 2.10 — the Finish Bonus inside `score` (0 when the round didn't reach its end). */
+  finishBonus?: number;
+  /** Sprint 2.10 — the Perfect Round bonus inside `score` (0 unless every question was right first try). */
+  perfectBonus?: number;
   correctCount: number;
   passed: boolean;
   stars: 0 | 1 | 2 | 3;
@@ -64,8 +72,14 @@ export interface GameOverData {
  * "New high score!"); a later visual-polish pass animates the stars and adds
  * a count-up score effect.
  */
+/** Sprint 2.10 — Game Over's timeline (ms after it opens): score count-up, then each bonus, then the badge. */
+const SCORE_COUNT_MS = { delay: 200, duration: 600 };
+const BONUS_POP_MS = { first: 1000, gap: 500, countOn: 300 };
+
 export class GameOverScene extends Phaser.Scene {
   private roundData!: GameOverData;
+  /** Sprint 2.10 — `this.time.now` when the "New High Score!" badge may appear (after the bonuses). */
+  private badgeAt = 0;
 
   static readonly key = SceneKeys.GameOver;
 
@@ -162,24 +176,31 @@ export class GameOverScene extends Phaser.Scene {
     // Climb win displays "10 / 10" instead of the legacy "10 / 20".
     const totalQuestions = this.roundData.totalQuestions ?? config.round.questionsPerRound;
     const renderScoreLine = (displayedScore: number): string =>
-      `Score: ${displayedScore}\nCorrect: ${this.roundData.correctCount} / ${totalQuestions}`;
+      `Score: ${formatPoints(displayedScore)}\nCorrect: ${this.roundData.correctCount} / ${totalQuestions}`;
     scoreSummary.setText(renderScoreLine(0));
+    // Sprint 2.10 — count up to the answers' points, then each bonus pops in
+    // and the score counts on to the total.
+    const finish = this.roundData.finishBonus ?? 0;
+    const perfect = this.roundData.perfectBonus ?? 0;
     const scoreCounter = { value: 0 };
-    this.tweens.add({
-      targets: scoreCounter,
-      value: this.roundData.score,
-      duration: 600,
-      delay: 200, // start AFTER the headline has begun popping in
-      ease: 'Quad.Out',
-      onUpdate: () => {
-        scoreSummary.setText(renderScoreLine(Math.floor(scoreCounter.value)));
-      },
-      onComplete: () => {
-        // Defensive: ensure the final value matches the score exactly
-        // (Math.floor of the tweened value may drop the last 1 on rounding).
-        scoreSummary.setText(renderScoreLine(this.roundData.score));
-      },
-    });
+    const countTo = (value: number, delay: number, duration: number): void => {
+      this.tweens.add({
+        targets: scoreCounter,
+        value,
+        duration,
+        delay,
+        ease: 'Quad.Out',
+        onUpdate: () => scoreSummary.setText(renderScoreLine(Math.floor(scoreCounter.value))),
+        // Exact at the end (Math.floor of the tweened value can fall short).
+        onComplete: () => scoreSummary.setText(renderScoreLine(value)),
+      });
+    };
+    // Start AFTER the headline has begun popping in.
+    countTo(this.roundData.score - finish - perfect, SCORE_COUNT_MS.delay, SCORE_COUNT_MS.duration);
+    const bonusesDoneMs = this.buildBonusRow(cx, finish, perfect, (subtotal, at) =>
+      countTo(subtotal, at, BONUS_POP_MS.countOn),
+    );
+    this.badgeAt = this.time.now + Math.max(SCORE_COUNT_MS.delay + SCORE_COUNT_MS.duration, bonusesDoneMs);
 
     // Sprint 0.7 Story 9 — three separate star Text objects laid out in a
     // row, each popping in with a staggered Back.Out scale tween. Was a
@@ -251,6 +272,47 @@ export class GameOverScene extends Phaser.Scene {
 
     // Esc on Game Over = Main Menu (matches the existing button's destination).
     wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+  }
+
+  /**
+   * Sprint 2.10 — "Finish Bonus! +300" and "Perfect Round! +300" on one line
+   * under the score, popping in one after the other (each with a cheer and
+   * the score counting on). Nothing when the round earned neither. Returns
+   * when the last one is done (ms after Game Over opened).
+   */
+  private buildBonusRow(
+    cx: number,
+    finish: number,
+    perfect: number,
+    countOn: (subtotal: number, atMs: number) => void,
+  ): number {
+    const G = config.layout.challengeFlow.gameOver;
+    const parts = [
+      { label: `Finish Bonus! +${formatPoints(finish)}`, points: finish },
+      { label: `Perfect Round! +${formatPoints(perfect)}`, points: perfect },
+    ].filter((p) => p.points > 0);
+    if (parts.length === 0) return 0;
+
+    const texts = parts.map((p) => {
+      const t = text(this, 0, G.bonusY, p.label, 'bonus').setOrigin(0.5);
+      applyTextOutline(t);
+      return t;
+    });
+    const rowW = texts.reduce((w, t) => w + t.width, 0) + G.bonusGapPx * (texts.length - 1);
+    let x = cx - rowW / 2;
+    let subtotal = this.roundData.score - finish - perfect;
+    texts.forEach((t, i) => {
+      t.setX(x + t.width / 2);
+      x += t.width + G.bonusGapPx;
+      const at = BONUS_POP_MS.first + i * BONUS_POP_MS.gap;
+      subtotal += parts[i].points;
+      t.setScale(0);
+      this.tweens.add({ targets: t, scale: 1, duration: 300, delay: at, ease: 'Back.Out' });
+      // Stand-in cheer until the owner's bonus sound arrives.
+      this.time.delayedCall(at, () => getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx'));
+      countOn(subtotal, at);
+    });
+    return BONUS_POP_MS.first + (texts.length - 1) * BONUS_POP_MS.gap + BONUS_POP_MS.countOn;
   }
 
   /**
@@ -343,11 +405,14 @@ export class GameOverScene extends Phaser.Scene {
         'badge',
       ).setOrigin(0.5);
       applyTextOutline(badge);
+      // Sprint 2.10 — after the bonuses have popped in (it used to land mid-count).
+      badge.setAlpha(0);
       this.tweens.add({
         targets: badge,
         scale: { from: 0.5, to: 1 },
         alpha: { from: 0, to: 1 },
         duration: 400,
+        delay: Math.max(0, this.badgeAt - this.time.now),
         ease: 'Back.Out',
       });
     }

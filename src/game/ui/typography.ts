@@ -65,6 +65,8 @@ export const TEXT_AMBER = '#facc15';
 export const TEXT_AMBER_WARM = '#fbbf24';
 /** Success / passed-round copy. */
 export const TEXT_GREEN = '#34d399';
+/** Sprint 2.10 — Game Over's "Finish Bonus!" / "Perfect Round!" (apart from the amber stars and badge). */
+export const TEXT_TEAL = '#5eead4';
 /** Penalty / negative-feedback copy. Matches the camera-flash red (rgb 239,68,68). */
 export const TEXT_RED = '#ef4444';
 /** Focus ring color (rarely used in text — present for parity with palette). */
@@ -96,6 +98,7 @@ export type TextKind =
   | 'scorePopup' // green bold — the floating "+100" popup at alien hit position
   | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb wrong pick)
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
+  | 'bonus' // teal bold — Game Over's "Finish Bonus! +300" / "Perfect Round! +300" (sprint 2.10)
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
   | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)
   // --- Container-anchored kinds (used via `textStyle(kind)` spread, see below) ---
@@ -157,6 +160,7 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   scorePopup: { fontSize: '29px', color: TEXT_GREEN, fontStyle: 'bold' },
   penaltyPopup: { fontSize: '29px', color: TEXT_RED, fontStyle: 'bold' },
   badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
+  bonus: { fontSize: '29px', color: TEXT_TEAL, fontStyle: 'bold' },
   rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },
   iconGlyph: { fontSize: '26px', color: TEXT_PRIMARY }, // color is irrelevant for emoji glyphs but required by TextStyle
   // Story 3 additions — container-anchored (consumed via `textStyle(kind)`)

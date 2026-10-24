@@ -9,6 +9,9 @@ import { RoundController } from '@/game/services/RoundController';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { getMyScores } from '@/services/MyScores';
 import { SceneKeys } from '@/core/sceneKeys';
+import { config } from '@/core/config';
+import { finishBonus, perfectBonus } from '@/services/ScoreCalculator';
+import type { GameOverData } from '@/game/scenes/GameOverScene';
 import '@/math/registry';
 
 /**
@@ -17,33 +20,37 @@ import '@/math/registry';
  * total and My Scores. The scene is a stub: only the calls endRound and
  * quitToMenu make.
  */
-function fakeScene(): { scene: Phaser.Scene; started: string[] } {
+function fakeScene(): { scene: Phaser.Scene; started: string[]; data: unknown[] } {
   const started: string[] = [];
+  const data: unknown[] = [];
   const scene = {
     scene: {
       key: SceneKeys.Game,
-      start: (key: string) => started.push(key),
+      start: (key: string, d?: unknown) => {
+        started.push(key);
+        data.push(d);
+      },
       stop: () => undefined,
       isActive: () => false,
     },
     tweens: { resumeAll: () => undefined },
   } as unknown as Phaser.Scene;
-  return { scene, started };
+  return { scene, started, data };
 }
 
-/** A round with `n` right answers. */
-function playedRound(n: number): RoundController {
+/** A round with `n` answers, right unless listed in `misses` (a miss first, then right). */
+function playedRound(n: number, misses: number[] = []): RoundController {
   const rc = new RoundController('add-to-10', 'medium');
   for (let i = 0; i < n; i++) {
     rc.drawNextQuestion();
-    rc.recordOutcome({ wasCorrect: true, usedWrongShot: false });
+    rc.recordOutcome({ wasCorrect: true, usedWrongShot: misses.includes(i) });
     rc.advanceQuestionIndex();
   }
   return rc;
 }
 
-function lifecycleFor(rc: RoundController): { lc: GameSceneLifecycle; started: string[] } {
-  const { scene, started } = fakeScene();
+function lifecycleFor(rc: RoundController): { lc: GameSceneLifecycle; started: string[]; data: unknown[] } {
+  const { scene, started, data } = fakeScene();
   const lc = new GameSceneLifecycle({
     scene,
     gameId: 'alien-shoot',
@@ -51,7 +58,7 @@ function lifecycleFor(rc: RoundController): { lc: GameSceneLifecycle; started: s
     speed: 'medium',
     roundController: rc,
   });
-  return { lc, started };
+  return { lc, started, data };
 }
 
 describe('GameSceneLifecycle round counting', () => {
@@ -103,5 +110,43 @@ describe('GameSceneLifecycle round counting', () => {
     lc.quitToMenu();
     expect(started).toEqual([SceneKeys.Menu]);
     expect(addTo10()).toEqual(before);
+  });
+
+  describe('round-end bonuses (sprint 2.10)', () => {
+    const questions = config.round.questionsPerRound;
+    const finish = finishBonus('add-to-10', 'medium');
+    const perfect = perfectBonus('add-to-10', 'medium');
+
+    it('a perfect round earns both bonuses, everywhere the score goes', () => {
+      const rc = playedRound(questions);
+      const { lc, data } = lifecycleFor(rc);
+      lc.endRound();
+      const over = data[0] as GameOverData;
+      expect(over).toMatchObject({ finishBonus: finish, perfectBonus: perfect, score: rc.score + finish + perfect });
+      expect(SessionTotalScore.get()).toBe(rc.score + finish + perfect);
+      expect(addTo10().points).toBe(before.points + rc.score + finish + perfect);
+    });
+
+    it('a miss on the way still earns the Finish Bonus, not Perfect Round', () => {
+      const rc = playedRound(questions, [5]);
+      const { lc, data } = lifecycleFor(rc);
+      lc.endRound();
+      expect(data[0]).toMatchObject({ finishBonus: finish, perfectBonus: 0, score: rc.score + finish });
+    });
+
+    it('a round cut short (out of lives) earns neither', () => {
+      const rc = playedRound(7);
+      const { lc, data } = lifecycleFor(rc);
+      lc.endRound();
+      expect(data[0]).toMatchObject({ finishBonus: 0, perfectBonus: 0, score: rc.score });
+    });
+
+    it('pause is refused once the last answer is in or the game has started its end', () => {
+      const almost = lifecycleFor(playedRound(questions - 1)).lc;
+      expect(almost.isRoundEnding).toBe(false);
+      almost.beginRoundEnd();
+      expect(almost.isRoundEnding).toBe(true);
+      expect(lifecycleFor(playedRound(questions)).lc.isRoundEnding).toBe(true);
+    });
   });
 });

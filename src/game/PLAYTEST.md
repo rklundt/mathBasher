@@ -482,6 +482,17 @@ Phone in landscape, then desktop.
 - [ ] Keyboard: Tab goes Today → All-Time → Math → Back (the Math row scrolls into view); Enter folds; Esc → Menu.
 - [ ] Reload the page: My Scores still shows the points; "This visit" starts at 0.
 
+## Finish Bonus and Perfect Round (sprint 2.10)
+
+Phone in landscape, then desktop. Use Add to 10 · Easy (Finish +300, Perfect +300).
+
+- [ ] Difficulty: "Up to 1,800 points!" on Easy (2,250 Medium, 2,700 Hard).
+- [ ] Every game, a round played to the end with every answer right first try: the score counts up, then "Finish Bonus! +300" and "Perfect Round! +300" pop in (teal, each with a sound) and the score counts on. Stars and "New High Score!" come after, nothing overlapping.
+- [ ] One miss or time-out (then right): Finish Bonus only.
+- [ ] Alien Shoot / Asteroid Field with most answers wrong: "Round Done — Try Again?" with the Finish Bonus (owner's rule: reaching the end earns it). Check the pairing reads OK.
+- [ ] Out of lives (Math-a-lotl, Space Shooter, Space Escape, Frog Splash, Penguin Slide, Bunny Garden) or Space Escape's timer: no bonus. Pause and Esc do nothing during "Out of lives!" and after the last answer.
+- [ ] My Scores and the next round's "This visit" include the bonuses.
+
 ## Logging the run
 
 ```

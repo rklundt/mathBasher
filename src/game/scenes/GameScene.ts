@@ -495,6 +495,10 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     return this.paused;
   }
 
+  isRoundEnding(): boolean {
+    return this.lifecycle.isRoundEnding;
+  }
+
   /** Questions COMPLETED so far (i.e. answered or timed out). Used by RoundAbandoned. */
   getQuestionsCompleted(): number {
     return this.roundController.questionIndex;
