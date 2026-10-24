@@ -152,6 +152,18 @@ export const config = {
      */
     finishBonusAnswers: 3,
     perfectBonusAnswers: 3,
+    /**
+     * Sprint 2.11 — speed bonus on top of a right answer's points (after any
+     * wrong-shot halving), by the share of the question's time used when it
+     * lands. Fastest tier first; past the last cut-off, nothing extra. The
+     * first cut-off is the free thinking time: any answer inside it is top tier.
+     */
+    speedBonus: [
+      // Owner, 2026-10-24: 25 / 50 / 75 % made ⚡⚡⚡ too easy; then 15 / 30 / 45 %.
+      { upTo: 0.15, bonus: 0.5 }, // ⚡⚡⚡
+      { upTo: 0.3, bonus: 0.3 }, // ⚡⚡
+      { upTo: 0.45, bonus: 0.1 }, // ⚡
+    ],
     mathDifficulty: {
       // Multiplier ladder pattern:
       //   - addition baseline = 1.0
@@ -1315,9 +1327,11 @@ export const config = {
       /** Game Over: Play again, then a 2 × 2 grid; the bonuses, stars and the badge sit above. */
       gameOver: {
         summaryY: 208,
-        /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score. */
+        /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score (2.11: speed first). */
         bonusY: 266,
         bonusGapPx: 40,
+        /** Sprint 2.11 — the row shrinks to fit inside this width (three bonuses at hard math are wide). */
+        bonusMaxW: 1160,
         starsY: 316,
         badgeY: 372,
         playAgain: { y: 440, w: 360, h: 80 },
@@ -1365,6 +1379,8 @@ export const config = {
       holdMs: 550,
       fadeMs: 800,
       risePx: 60,
+      /** Sprint 2.11 — the "⚡⚡⚡ Lightning Fast!" line sits this far under the points. */
+      speedLineGapPx: 32,
     },
     /**
      * On-screen FIRE button (`TouchFireButton`) sizing + positioning.

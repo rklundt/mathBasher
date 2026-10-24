@@ -22,6 +22,23 @@ score per correct = basePerCorrect
 
 A wrong shot in a round halves every *future* correct answer's score until the round ends (it does NOT retroactively halve correct answers from earlier in the round). The kid's total is the simple sum of per-correct-answer scores.
 
+## Speed bonus (sprint 2.11)
+
+A right answer keeps its points; a quick one earns extra on top, by the share of the question's time used when it lands (`config.scoring.speedBonus`):
+
+| Time used | Popup | Extra |
+|---|---|---:|
+| first 15% (free thinking time) | ⚡⚡⚡ + a random cheer | +50% |
+| up to 30% | ⚡⚡ | +30% |
+| up to 45% | ⚡ | +10% |
+| after that | — | nothing |
+
+- After a miss it's a share of the halved points, timed from when the question restarts (games that don't restart it, like Alien Shoot, keep the original time).
+- Timed from when the answers can be tapped. Alien Shoot: how far the alien has fallen; Asteroid Field: its countdown (a wrong shot's lost seconds count); Space Escape: each floor's share of the round timer (the per-question time), restarted after a wrong pick's fall; the others: their question clock (Math-a-lotl from the first bubble in view, Penguin Slide from when taps open).
+- Not part of the round-end bonuses: Finish and Perfect stay 3 answers' worth; Perfect Round doesn't need speed.
+- Game Over shows the round's total as "⚡ Speed Bonus! +N", first in the bonus row.
+- "Up to N points!" assumes every answer is ⚡⚡⚡: Add to 10 · Easy 1,200 × 1.5 + 300 + 300 = 2,400.
+
 ## Round-end bonuses (sprint 2.10)
 
 - **Finish Bonus!** — the round reached its end (the last question, the top, the far bank, the last row or carrot), whatever the stars. Running out of lives or time, or leaving, doesn't earn it. Worth `finishBonusAnswers` (3) right answers: `3 × 100 × challenge × difficulty`, rounded to whole points.
@@ -32,7 +49,7 @@ A wrong shot in a round halves every *future* correct answer's score until the r
 |---|---:|---:|---:|
 | Finish Bonus | +300 | +375 | +450 |
 | Perfect Round | +300 | +375 | +450 |
-| Up to (12 right + both) | 1,800 | 2,250 | 2,700 |
+| Up to (12 right at ⚡⚡⚡ + both, sprint 2.11) | 2,400 | 3,000 | 3,600 |
 
 ## Round length
 
@@ -138,11 +155,13 @@ They go to the top bar's "This visit" total (`SessionTotalScore`, this page load
 | Arcade star ladder | `src/core/config.ts` → `config.round.starThresholds` |
 | Climb star ladder | `src/services/ScoreCalculator.ts` → `computeClimbStars` |
 | Round-end bonuses | `src/core/config.ts` → `config.scoring.finishBonusAnswers` / `perfectBonusAnswers` |
+| Speed bonus tiers | `src/core/config.ts` → `config.scoring.speedBonus`; cheers in `src/game/ui/speedPhrases.ts` |
 
 **After any edit above, update this file in the same commit.** A stale entry here is a documentation bug — keep the table truthful.
 
 ## Change log
 
+- **Sprint 2.11** — Speed bonus (+50 / +30 / +10% within 15 / 30 / 45 % of the time; first tried at 25 / 50 / 75 %, which made ⚡⚡⚡ too easy); "Up to N points!" assumes every answer is ⚡⚡⚡.
 - **Sprint 2.10** — Finish Bonus and Perfect Round (3 right answers' worth each); "Up to N points!" includes them.
 - **Sprint 2.9.2** — "Where points go": unfinished rounds now count their points (This visit, My Scores). Scoring itself unchanged.
 - **Sprint 2.4 (story 8)** — file created. Added `add-fractions` (4.0) and `subtract-fractions` (4.5) entries; max-score grid extended. Multiplier ladder for the integer types unchanged.

@@ -4,7 +4,7 @@
 
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { getGenerator } from '@/math/registry';
-import { ScoreCalculator, type QuestionOutcome } from '@/services/ScoreCalculator';
+import { ScoreCalculator, type QuestionOutcome, type SpeedTier } from '@/services/ScoreCalculator';
 import type { Question } from '@/math/types';
 
 /**
@@ -122,12 +122,18 @@ export class RoundController {
    * Record the outcome of the current question and return the score delta
    * (used by the scene to emit `correctHit` events with the delta payload).
    */
-  recordOutcome(outcome: QuestionOutcome): { scoreDelta: number; newScore: number } {
+  recordOutcome(outcome: QuestionOutcome): { scoreDelta: number; newScore: number; speedTier: SpeedTier } {
     this._outcomes += 1;
     const scoreBefore = this.scoreCalculator.score;
     this.scoreCalculator.recordOutcome(outcome);
     const newScore = this.scoreCalculator.score;
-    return { scoreDelta: newScore - scoreBefore, newScore };
+    // Sprint 2.11 — the tier for the "+points" popup (0: no speed bonus).
+    return { scoreDelta: newScore - scoreBefore, newScore, speedTier: this.scoreCalculator.lastSpeedTier };
+  }
+
+  /** Sprint 2.11 — speed-bonus points earned this round (already inside `score`). */
+  get speedBonus(): number {
+    return this.scoreCalculator.speedBonus;
   }
 
   // ----- Round state (read-only views) --------------------------------------

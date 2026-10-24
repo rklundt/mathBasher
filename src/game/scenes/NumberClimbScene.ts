@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
-import { config, pickFloorSpacingPx, roundSeconds, type MathId, type SpeedKey } from '@/core/config';
+import { config, pickFloorSpacingPx, questionSeconds, roundSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { SfxKeys } from '@/core/audioKeys';
 import { Settings } from '@/services/Settings';
@@ -19,7 +19,7 @@ import { applyBannerLegibility, screenBanner } from '@/game/ui/callouts';
 import { assertNever } from '@/shared/assertNever';
 import { NumberClimbHero } from '@/game/entities/NumberClimbHero';
 import { NumberClimbFloorSystem } from '@/game/systems/NumberClimbFloorSystem';
-import { resolveStrike } from '@/game/systems/roundRules';
+import { QuestionClock, resolveStrike } from '@/game/systems/roundRules';
 import { SHIP_BLAST_TWEEN_MS } from '@/game/entities/NumberClimbFloorFrame';
 import { NumberClimbInputSystem } from '@/game/systems/NumberClimbInputSystem';
 import type { NumberClimbRung } from '@/game/entities/NumberClimbRung';
@@ -102,6 +102,12 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   private speed!: SpeedKey;
   private roundController!: RoundController;
   private lifecycle!: GameSceneLifecycle;
+  /**
+   * Sprint 2.11 — each floor's share of the round timer (the per-question
+   * time), for the speed bonus only: running out of it ends nothing. Starts
+   * when the floor's rungs can be tapped; restarts after a wrong pick's fall.
+   */
+  private readonly floorClock = new QuestionClock();
   private hero!: NumberClimbHero;
   private floorSystem!: NumberClimbFloorSystem;
   private inputSystem!: NumberClimbInputSystem;
@@ -305,6 +311,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     if (this.transitioning) return;
     if (this.paused) return;
 
+    this.floorClock.tick(dt);
     // Cumulative timer drain. When it hits 0 → end the round.
     this.remainingTimeMs -= dt;
     if (this.remainingTimeMs <= 0) {
@@ -348,6 +355,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     const rungs = this.floorSystem.spawnFloor(question, nextFloorY);
     this.inputSystem.bindRungs(rungs);
     this.inputSystem.acceptInput();
+    this.floorClock.start(this.floorSpeedMs());
 
     _th.logToAi('QuestionStarted', SeverityLevel.Information, {
       gameId: this.gameId,
@@ -390,14 +398,19 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
   private handleCorrectPick(rung: NumberClimbRung): void {
     this.transitioning = true;
     const hadWrongPick = this.floorSystem.hadWrongPickThisFloor();
-    const { scoreDelta } = this.roundController.recordOutcome({
+    this.floorClock.stop();
+    const { scoreDelta, speedTier } = this.roundController.recordOutcome({
       wasCorrect: true,
       usedWrongShot: hadWrongPick,
+      timeUsed: this.floorClock.fractionUsed,
     });
+    // HUD draws in screen space; the climb scrolls (sprint 2.11: the popup
+    // was drawn above the screen a few floors up).
     this.events.emit('correctHit', {
       x: rung.x,
-      y: rung.y,
+      y: rung.y - this.cameras.main.scrollY,
       scoreDelta,
+      speedTier,
     });
 
     // Sprint 2.2 — staged audio + motion sequence on a correct pick:
@@ -438,6 +451,11 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     });
   }
 
+  /** Sprint 2.11 — one floor's share of the round timer: the shared per-question time. */
+  private floorSpeedMs(): number {
+    return questionSeconds(this.speed, this.mathId) * 1000;
+  }
+
   private handleWrongPick(): void {
     this.remainingTimeMs = Math.max(0, this.remainingTimeMs - config.numberClimb.wrongRungTimePenaltySec * 1000);
     // Sprint 2.2.1 story 1 — surface the time cost: the HUD listens for
@@ -467,8 +485,12 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     // re-enable input so they can try again (as long as lives remain).
     const currentFloorY = this.floor0Y - this.floorReached * this.floorSpacingPx;
     // Sprint 2.5.2 tweak 3 — fall back to the band-bottom resting y.
+    // Sprint 2.11 — the fall isn't thinking time: the floor's speed clock
+    // starts again with the retry.
+    this.floorClock.stop();
     this.hero.fallBackToFloor(this.heroRestY(currentFloorY), () => {
       this.inputSystem.acceptInput();
+      this.floorClock.start(this.floorSpeedMs());
     });
   }
 

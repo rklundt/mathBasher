@@ -28,6 +28,8 @@ export interface GameOverData {
   finishBonus?: number;
   /** Sprint 2.10 — the Perfect Round bonus inside `score` (0 unless every question was right first try). */
   perfectBonus?: number;
+  /** Sprint 2.11 — the speed-bonus points inside `score` (0 when no answer was fast). */
+  speedBonus?: number;
   correctCount: number;
   passed: boolean;
   stars: 0 | 1 | 2 | 3;
@@ -182,6 +184,7 @@ export class GameOverScene extends Phaser.Scene {
     // and the score counts on to the total.
     const finish = this.roundData.finishBonus ?? 0;
     const perfect = this.roundData.perfectBonus ?? 0;
+    const speed = this.roundData.speedBonus ?? 0;
     const scoreCounter = { value: 0 };
     const countTo = (value: number, delay: number, duration: number): void => {
       this.tweens.add({
@@ -196,8 +199,13 @@ export class GameOverScene extends Phaser.Scene {
       });
     };
     // Start AFTER the headline has begun popping in.
-    countTo(this.roundData.score - finish - perfect, SCORE_COUNT_MS.delay, SCORE_COUNT_MS.duration);
-    const bonusesDoneMs = this.buildBonusRow(cx, finish, perfect, (subtotal, at) =>
+    countTo(this.roundData.score - finish - perfect - speed, SCORE_COUNT_MS.delay, SCORE_COUNT_MS.duration);
+    const bonuses = [
+      { label: `⚡ Speed Bonus! +${formatPoints(speed)}`, points: speed },
+      { label: `Finish Bonus! +${formatPoints(finish)}`, points: finish },
+      { label: `Perfect Round! +${formatPoints(perfect)}`, points: perfect },
+    ];
+    const bonusesDoneMs = this.buildBonusRow(cx, bonuses, (subtotal, at) =>
       countTo(subtotal, at, BONUS_POP_MS.countOn),
     );
     this.badgeAt = this.time.now + Math.max(SCORE_COUNT_MS.delay + SCORE_COUNT_MS.duration, bonusesDoneMs);
@@ -275,23 +283,21 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   /**
-   * Sprint 2.10 — "Finish Bonus! +300" and "Perfect Round! +300" on one line
-   * under the score, popping in one after the other (each with one of the
-   * owner's four cheers, never the same twice running, and
-   * the score counting on). Nothing when the round earned neither. Returns
-   * when the last one is done (ms after Game Over opened).
+   * Sprint 2.10 — the round's bonuses on one line under the score (2.11:
+   * "⚡ Speed Bonus! +450", then "Finish Bonus! +300", "Perfect Round! +300"),
+   * popping in one after the other (each with one of the owner's four
+   * cheers, never the same twice running, and the score counting on). Only
+   * the ones earned; the row shrinks to fit. Returns when the last one is
+   * done (ms after Game Over opened).
    */
   private buildBonusRow(
     cx: number,
-    finish: number,
-    perfect: number,
+    bonuses: ReadonlyArray<{ label: string; points: number }>,
     countOn: (subtotal: number, atMs: number) => void,
   ): number {
     const G = config.layout.challengeFlow.gameOver;
-    const parts = [
-      { label: `Finish Bonus! +${formatPoints(finish)}`, points: finish },
-      { label: `Perfect Round! +${formatPoints(perfect)}`, points: perfect },
-    ].filter((p) => p.points > 0);
+    // Under half a point rounds to "+0": not worth a pop.
+    const parts = bonuses.filter((p) => p.points >= 0.5);
     if (parts.length === 0) return 0;
 
     const texts = parts.map((p) => {
@@ -299,16 +305,19 @@ export class GameOverScene extends Phaser.Scene {
       applyTextOutline(t);
       return t;
     });
-    const rowW = texts.reduce((w, t) => w + t.width, 0) + G.bonusGapPx * (texts.length - 1);
-    let x = cx - rowW / 2;
-    let subtotal = this.roundData.score - finish - perfect;
+    const naturalW = texts.reduce((w, t) => w + t.width, 0) + G.bonusGapPx * (texts.length - 1);
+    const fit = Math.min(1, G.bonusMaxW / naturalW);
+    let x = cx - (naturalW * fit) / 2;
+    let subtotal = this.roundData.score - bonuses.reduce((sum, b) => sum + b.points, 0);
+    // Bonuses too small to pop still count; they land in the first count-on.
+    subtotal += bonuses.filter((b) => b.points < 0.5).reduce((sum, b) => sum + b.points, 0);
     texts.forEach((t, i) => {
-      t.setX(x + t.width / 2);
-      x += t.width + G.bonusGapPx;
+      t.setX(x + (t.width * fit) / 2);
+      x += (t.width + G.bonusGapPx) * fit;
       const at = BONUS_POP_MS.first + i * BONUS_POP_MS.gap;
       subtotal += parts[i].points;
       t.setScale(0);
-      this.tweens.add({ targets: t, scale: 1, duration: 300, delay: at, ease: 'Back.Out' });
+      this.tweens.add({ targets: t, scale: fit, duration: 300, delay: at, ease: 'Back.Out' });
       this.time.delayedCall(at, () => getAudioManager().play(pickBonusCheerSfx(), 'sfx'));
       countOn(subtotal, at);
     });
