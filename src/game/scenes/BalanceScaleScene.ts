@@ -542,6 +542,15 @@ export class BalanceScaleScene extends Phaser.Scene implements GameSceneContract
     this.hideTapHint();
     this.focusRing.clear();
     const decision = resolveRetryEvent(this.retryState(), { type: 'pick', answer: w.value });
+    // Sprint 2.12 review — the tap decides it when it's the round's last
+    // right answer or its last life: pause closes now, not after the
+    // animation (quitting in that gap would lose the round's end).
+    if (
+      decision.kind === 'out-of-lives' ||
+      (decision.kind === 'correct' && this.answeredCount + 1 >= this.roundController.questionsPerRound)
+    ) {
+      this.lifecycle.beginRoundEnd();
+    }
     getAudioManager().play(pickRandomPenguinHopSfx(), 'sfx');
     w.setDepth(Z.focus + 1);
     this.tweens.add({
@@ -663,6 +672,8 @@ export class BalanceScaleScene extends Phaser.Scene implements GameSceneContract
       this.reopen();
       return;
     }
+    // Sprint 2.12 review — the last life: pause closes now, not when the banner ends.
+    if (decision.kind === 'out-of-lives') this.lifecycle.beginRoundEnd();
     getAudioManager().play(SfxKeys.TimeoutFail1, 'sfx');
     this.pillar.setFrame(BALANCE_SHEETS.pillar.frames.dizzy);
     this.crowdPose('oops');
