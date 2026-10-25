@@ -7,6 +7,7 @@ import { pickDistractors, shuffleAnswers } from '@/math/distractors';
 import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Add-to-20 generator.
@@ -71,6 +72,7 @@ const addTo20: QuestionGenerator = {
 
     return {
       prompt: `${a} + ${b} = ?`,
+      parts: wholeParts(a, '+', b, correctAnswer, ADDEND_MIN, SUM_MAX - ADDEND_MIN),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

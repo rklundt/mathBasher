@@ -5,7 +5,8 @@
 import type { SpeedKey } from '@/core/config';
 import { buildFractionDistractors, decimalValue, formatFraction, mixedToImproper } from '@/math/fractionMath';
 import { defaultRng } from '@/math/rng';
-import type { Question, QuestionGenerator } from '@/math/types';
+import type { EquationParts, Question, QuestionGenerator } from '@/math/types';
+import { fractionResult, fractionTerm } from '@/math/equationParts';
 
 /**
  * Subtract Fractions — sprint 2.4 story 4. Mirror of `addFractions` with
@@ -51,6 +52,9 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
 
 interface OperandResult {
   prompt: string;
+  /** Sprint 2.12 — the operands as shown (Balance Scale blanks one). */
+  left: { whole: number; num: number; den: number };
+  right: { whole: number; num: number; den: number };
   /** Difference numerator BEFORE reduction; always ≥ 0. */
   correctNum: number;
   /** Difference denominator. */
@@ -71,6 +75,8 @@ function generateEasy(rng: () => number): OperandResult {
     prompt: `${a}/${den} − ${b}/${den} = ?`,
     correctNum: a - b,
     correctDen: den,
+    left: { whole: 0, num: a, den },
+    right: { whole: 0, num: b, den },
   };
 }
 
@@ -95,6 +101,8 @@ function generateMedium(rng: () => number): OperandResult {
     prompt: `${first.w} ${first.f}/${den} − ${second.w} ${second.f}/${den} = ?`,
     correctNum: first.impNum - second.impNum,
     correctDen: den,
+    left: { whole: first.w, num: first.f, den },
+    right: { whole: second.w, num: second.f, den },
   };
 }
 
@@ -117,18 +125,16 @@ function generateHard(rng: () => number): OperandResult {
   // If they're equal, result is 0 (acceptable but rare).
   let prompt: string;
   let diffNum: number;
+  const small = { whole: 0, num: a, den: smallerDen };
+  const large = { whole: 0, num: b, den: largerDen };
   if (aOnLarger >= b) {
     prompt = `${a}/${smallerDen} − ${b}/${largerDen} = ?`;
     diffNum = aOnLarger - b;
-  } else {
-    prompt = `${b}/${largerDen} − ${a}/${smallerDen} = ?`;
-    diffNum = b - aOnLarger;
+    return { prompt, correctNum: diffNum, correctDen: largerDen, left: small, right: large };
   }
-  return {
-    prompt,
-    correctNum: diffNum,
-    correctDen: largerDen,
-  };
+  prompt = `${b}/${largerDen} − ${a}/${smallerDen} = ?`;
+  diffNum = b - aOnLarger;
+  return { prompt, correctNum: diffNum, correctDen: largerDen, left: large, right: small };
 }
 
 const subtractFractions: QuestionGenerator = {
@@ -173,8 +179,15 @@ const subtractFractions: QuestionGenerator = {
     const correctAnswer = choices[correctIdx];
     const correctDisplay = choiceDisplays[correctIdx];
 
+    const parts: EquationParts = {
+      left: fractionTerm(result.left.num, result.left.den, result.left.whole),
+      op: '−',
+      right: fractionTerm(result.right.num, result.right.den, result.right.whole),
+      result: fractionResult(result.correctNum, result.correctDen),
+    };
     return {
       prompt: result.prompt,
+      parts,
       correctAnswer,
       choices,
       correctDisplay,

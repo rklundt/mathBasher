@@ -277,6 +277,15 @@ export class BunnyGardenScene extends Phaser.Scene implements GameSceneContract 
     this.hideTapHint();
     for (const p of this.plots) p.setShiver(0);
     const decision = resolveRetryEvent(this.retryState(), { type: 'pick', answer: plot.answer });
+    // Sprint 2.12 review — the tap decides it when it's the round's last
+    // right answer or its last life: pause closes now, not after the
+    // animation (quitting in that gap would lose the round's end).
+    if (
+      decision.kind === 'out-of-lives' ||
+      (decision.kind === 'correct' && this.answeredCount + 1 >= this.roundController.questionsPerRound)
+    ) {
+      this.lifecycle.beginRoundEnd();
+    }
     if (lane !== this.lane) getAudioManager().play(pickRandomBunnyHopSfx(), 'sfx');
     this.lane = lane;
     this.bunny.hopTo(this.lanes[lane], () => this.bunny.pull(() => this.applyPick(decision, plot)));
@@ -412,6 +421,8 @@ export class BunnyGardenScene extends Phaser.Scene implements GameSceneContract 
       this.recoverFromUnexpectedOutcome('timeout');
       return;
     }
+    // Sprint 2.12 review — the last life: pause closes now, not when the banner ends.
+    if (decision.kind === 'out-of-lives') this.lifecycle.beginRoundEnd();
     for (const p of this.plots) {
       p.setShiver(0);
       p.setDepth(1);

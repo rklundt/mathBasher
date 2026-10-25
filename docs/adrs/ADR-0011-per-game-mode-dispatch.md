@@ -164,6 +164,8 @@ When sprint 2.X adds game mode `<id>`:
 
 11d. **Speed bonus (sprint 2.11):** pass `timeUsed` (the share of the question's time used, 0–1) with the right answer's `recordOutcome`, timed from when the answers can be tapped (a `QuestionClock`: `markOpen()` if taps open after `start`, read `fractionUsed` after `stop()`), and put the returned `speedTier` in the `correctHit` event so the popup shows ⚡.
 
+11e. **Own progress display (sprint 2.12, optional):** a game that draws its own progress (Balance Scale's path) implements `drawsOwnProgress()` returning true; HudScene then hides its progress dots and "Q: n/12". With ten or more games, Game Select's grid (`config.layout.challengeFlow.gameSelect.grid`) needs a fourth row or a new layout.
+
 12. **Add the game's config block** to the lists in `src/core/mathTimeScale.test.ts` and `src/math/extendChoices.test.ts` (time scaling, and how many answers a row needs). Draw answer labels with `MathText` (`src/game/ui/MathText.ts`), so mixed numbers read clearly (sprint 2.7).
 
 13. **(Optional)** If the new game has its own `Settings` toggle (image asteroids style), add it via `createObservable<T>` (`src/services/observable.ts`) — don't hand-roll the listener Set + try/catch pattern.

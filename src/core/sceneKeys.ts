@@ -103,6 +103,12 @@ export const SceneKeys = {
    */
   BunnyGarden: 'bunny-garden',
   /**
+   * Balance Scale — sprint 2.12 ninth game mode. A missing-number sentence
+   * on a balance scale ("12 + ? = 17"); drop the weight that levels it.
+   * Each miss costs one of 3 lives and the same sentence comes back.
+   */
+  BalanceScale: 'balance-scale',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -152,5 +158,7 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.PenguinSlide;
     case 'bunny-garden':
       return SceneKeys.BunnyGarden;
+    case 'balance-scale':
+      return SceneKeys.BalanceScale;
   }
 }

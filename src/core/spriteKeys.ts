@@ -523,6 +523,12 @@ export const BgSpriteKeys = {
    * game plays on the bright copy, `BunnyGardenSceneryKeys.Patch`.
    */
   BunnyGarden: 'bunny-garden',
+  /**
+   * Balance Scale menu backdrop (sprint 2.12) — the fair drawn by
+   * `scripts/sprites/balance.mjs`, darkened. The game plays on the bright
+   * copy, `BalanceSceneryKeys.Fair`.
+   */
+  BalanceScale: 'balance-scale',
 } as const;
 
 /**
@@ -636,6 +642,60 @@ export const GardenSpriteKeys = {
   Basket: 'garden-basket',
 } as const;
 export type GardenSpriteKey = (typeof GardenSpriteKeys)[keyof typeof GardenSpriteKeys];
+
+/**
+ * Sprint 2.12 — Balance Scale's art, drawn by `scripts/sprites/balance.mjs`
+ * (the source of truth for the frame sizes; a test checks them). The fair
+ * and its six side-scenery layers are full-canvas images.
+ */
+export const BalanceSceneryKeys = {
+  Fair: 'balance-fair',
+  Props1: 'balance-props-1',
+  Props2: 'balance-props-2',
+  Props3: 'balance-props-3',
+  Props4: 'balance-props-4',
+  Props5: 'balance-props-5',
+  Props6: 'balance-props-6',
+} as const;
+export type BalanceSceneryKey = (typeof BalanceSceneryKeys)[keyof typeof BalanceSceneryKeys];
+/** The six side-scenery layers, in order. */
+export const BALANCE_PROP_KEYS: readonly BalanceSceneryKey[] = [
+  BalanceSceneryKeys.Props1,
+  BalanceSceneryKeys.Props2,
+  BalanceSceneryKeys.Props3,
+  BalanceSceneryKeys.Props4,
+  BalanceSceneryKeys.Props5,
+  BalanceSceneryKeys.Props6,
+];
+export const BalanceSpriteKeys = {
+  Pillar: 'balance-pillar',
+  Beam: 'balance-beam',
+  Pan: 'balance-pan',
+  Badge: 'balance-badge',
+  Weights: 'balance-weights',
+  Slot: 'balance-slot',
+  Crowd: 'balance-crowd',
+  Duck: 'balance-duck',
+} as const;
+export type BalanceSpriteKey = (typeof BalanceSpriteKeys)[keyof typeof BalanceSpriteKeys];
+/** Frame geometry, mirrored from `balance.mjs`. */
+export const BALANCE_SHEETS = {
+  pillar: { key: BalanceSpriteKeys.Pillar, frameWidth: 260, frameHeight: 340, frames: { idle: 0, happy: 1, dizzy: 2 } },
+  beam: { key: BalanceSpriteKeys.Beam, frameWidth: 600, frameHeight: 44, hookInsetPx: 28 },
+  pan: { key: BalanceSpriteKeys.Pan, frameWidth: 380, frameHeight: 74, rimY: 12 },
+  badge: { key: BalanceSpriteKeys.Badge, frameWidth: 96, frameHeight: 96 },
+  weights: { key: BalanceSpriteKeys.Weights, frameWidth: 130, frameHeight: 140, colours: 5, bodyY: 92, bottomY: 132 },
+  slot: { key: BalanceSpriteKeys.Slot, frameWidth: 130, frameHeight: 140 },
+  crowd: {
+    key: BalanceSpriteKeys.Crowd,
+    frameWidth: 200,
+    frameHeight: 230,
+    animals: ['bear', 'kitten', 'piglet', 'bunny', 'panda', 'lamb', 'mouse', 'frog'],
+    poses: { idle: 0, happy: 1, oops: 2 },
+    bottomY: 228,
+  },
+  duck: { key: BalanceSpriteKeys.Duck, frameWidth: 120, frameHeight: 130, poses: { idle: 0, hop: 1, cheer: 2 } },
+} as const;
 export const GARDEN_SHEETS = {
   carrots: { key: GardenSpriteKeys.Carrots, frame: 120, kinds: 4, frames: 2 },
   mole: { key: GardenSpriteKeys.Mole, frame: 120, frames: 2 },
@@ -874,6 +934,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'space-shooter': BgSpriteKeys.SpaceShooter,
   'penguin-slide': BgSpriteKeys.PenguinSlide,
   'bunny-garden': BgSpriteKeys.BunnyGarden,
+  'balance-scale': BgSpriteKeys.BalanceScale,
 };
 
 /**
@@ -892,6 +953,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'space-shooter': { stars: false, bottomFade: false },
   'penguin-slide': { stars: false, bottomFade: false },
   'bunny-garden': { stars: false, bottomFade: false },
+  'balance-scale': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1275,6 +1337,21 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('bg', BunnyGardenSceneryKeys.Patch),
     scope: 'game:bunny-garden',
   },
+  // Sprint 2.12 — Balance Scale: the fair, its scenery layers and the scale pieces, all game-scoped.
+  ...(Object.values(BalanceSceneryKeys) as string[]).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:balance-scale',
+  })),
+  ...Object.values(BALANCE_SHEETS).map<SpriteManifestEntry>((s) => ({
+    kind: 'hero',
+    key: s.key,
+    url: spritePath('hero', s.key),
+    frameWidth: s.frameWidth,
+    frameHeight: s.frameHeight,
+    scope: 'game:balance-scale',
+  })),
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount
   // (avatar). +96 KB across the 4 lossless WebPs is acceptable
@@ -1357,4 +1434,6 @@ export type NonAlienSpriteKey =
   | PenguinSlideSceneryKey
   | BunnyGardenSceneryKey
   | BunnySpriteKey
-  | GardenSpriteKey;
+  | GardenSpriteKey
+  | BalanceSceneryKey
+  | BalanceSpriteKey;

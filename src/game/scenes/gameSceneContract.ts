@@ -38,6 +38,12 @@ export interface GameSceneContract extends Phaser.Scene {
    */
   isRoundEnding(): boolean;
 
+  /**
+   * Sprint 2.12 — true when the game draws its own progress (Balance
+   * Scale's path): HudScene then hides its progress dots and "Q: n/12".
+   */
+  drawsOwnProgress?(): boolean;
+
   /** Pause the round. Idempotent. */
   pause(): void;
 

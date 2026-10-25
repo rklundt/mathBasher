@@ -251,7 +251,7 @@ export class HudScene extends Phaser.Scene {
       this,
       0, // placeholder; repositioned by repositionTotalLabel below
       barHeight / 2,
-      `This visit: ${String(SessionTotalScore.get())}`,
+      `This visit: ${formatPoints(SessionTotalScore.get())}`,
       'body',
     ).setOrigin(0, 0.5);
     applyTextOutline(this.totalScoreText);
@@ -322,7 +322,11 @@ export class HudScene extends Phaser.Scene {
     // per question; filled green/red after `questionEnded`, hollow grey
     // initially. Centered horizontally; dot size + gap tuned so the full
     // row at 20 questions stays under ~220px wide (~30% of canvas width).
-    this.buildProgressDots(width, barHeight);
+    // Sprint 2.12 — not for a game that draws its own progress (Balance
+    // Scale's path), which also hides the "Q: n/12" counter.
+    const ownProgress = (this.scene.get(this.gameSceneKey) as Partial<GameSceneContract>).drawsOwnProgress?.() === true;
+    if (ownProgress) this.counterText.setVisible(false);
+    else this.buildProgressDots(width, barHeight);
 
     // Sprint 2.4.1 story 1 — Number Climb's lives indicator. Built only
     // when the active game scene implements `getMaxStrikes`; other
@@ -688,7 +692,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onQuestionEnded(payload: QuestionEndedPayload): void {
-    this.roundScoreText.setText(`This round: ${payload.score}`);
+    // Sprint 2.12 — whole points with commas: scores can be fractional (halved answers, speed bonus).
+    this.roundScoreText.setText(`This round: ${formatPoints(payload.score)}`);
     // Total only changes when a round ends or is left (`GameSceneLifecycle`
     // calls `SessionTotalScore.add`), but reading it on every
     // questionEnded is cheap and keeps the HUD in sync without a
@@ -697,7 +702,7 @@ export class HudScene extends Phaser.Scene {
     // label growing wider so the two labels never visually overlap
     // (sprint 2.1.5 — the create-time-only position was fragile to
     // 5+ digit scores).
-    this.totalScoreText.setText(`This visit: ${String(SessionTotalScore.get())}`);
+    this.totalScoreText.setText(`This visit: ${formatPoints(SessionTotalScore.get())}`);
     this.repositionTotalLabel();
     // Sprint 0.7 Story 8 — mark the just-ended question's dot. Score
     // popup is NO LONGER triggered here; it's now driven by the
@@ -738,14 +743,14 @@ export class HudScene extends Phaser.Scene {
     if (current <= previous) {
       // No change (first round, page reload, or back-to-back same-
       // round). Snap to the current value and mark — no animation.
-      this.totalScoreText.setText(`This visit: ${String(current)}`);
+      this.totalScoreText.setText(`This visit: ${formatPoints(current)}`);
       SessionTotalScore.markDisplayedAs(current);
       this.repositionTotalLabel();
       return;
     }
     // Show the previous value first (so the tween starts where the
     // kid last saw it), then animate up.
-    this.totalScoreText.setText(`This visit: ${String(previous)}`);
+    this.totalScoreText.setText(`This visit: ${formatPoints(previous)}`);
     this.repositionTotalLabel();
     const counter = { value: previous };
     this.tweens.add({
@@ -755,11 +760,11 @@ export class HudScene extends Phaser.Scene {
       delay: 100, // brief beat before the climb starts
       ease: 'Quad.Out',
       onUpdate: () => {
-        this.totalScoreText.setText(`This visit: ${String(Math.floor(counter.value))}`);
+        this.totalScoreText.setText(`This visit: ${formatPoints(Math.floor(counter.value))}`);
         this.repositionTotalLabel();
       },
       onComplete: () => {
-        this.totalScoreText.setText(`This visit: ${String(current)}`);
+        this.totalScoreText.setText(`This visit: ${formatPoints(current)}`);
         this.repositionTotalLabel();
         SessionTotalScore.markDisplayedAs(current);
       },

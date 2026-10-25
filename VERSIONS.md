@@ -29,6 +29,22 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.12.0] - 2026-10-25 — Balance Scale
+
+**Balance Scale** — a ninth game
+- A cute balance scale at a sunny fair. One pan holds a number sentence with a missing number ("12 + ? = 17"), the other the total; tap the weight that makes both sides the same. Medium and Hard also mix in the reversed sentences ("17 = 12 + ?").
+- Works with every challenge: adding, taking away, times, sharing, Mixed Math and fractions.
+- The right weight levels the scale and the crowd of animals cheers; a wrong one tips it the honest way with "Too big! Try a smaller one" (or smaller), a life lost, and the same sentence to try again. 3 lives, 12 sentences, the speed bonus, Finish Bonus and Perfect Round as everywhere.
+- A winding path with a duckling shows how far through the round you are; the scenery and the animals change with every sentence. The owner's own music.
+- Game Select is now a 3 × 3 grid.
+
+**Every game**
+- The top bar shows whole points with commas ("This round: 1,250"); with the speed bonus it could show fractions.
+- Pause closes the moment the last right answer or the last life is tapped (Balance Scale and Bunny Garden), so quitting can't lose the round's end.
+
+**Bunny Garden**
+- Its own "time's up" sound when the carrots hide (three of them, never the same twice in a row), in place of a borrowed one.
+
 ## [2.11.0] - 2026-10-24 — Speed bonus
 
 **Speed bonus**

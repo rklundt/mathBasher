@@ -108,22 +108,37 @@ describe('Bunny Garden assets', () => {
     for (const e of sprites) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
   });
 
-  it('plays its own music and tunes (game-scoped); the shared hop and the placeholder hide are boot-loaded', () => {
+  it("plays its own music, tunes and time's-up sounds (game-scoped); the shared hop is boot-loaded", () => {
     expect(GAME_MIDGROUND_MAP['bunny-garden']).toEqual([]);
     const scopeOf = (k: string) => AUDIO_MANIFEST.find((e) => e.key === k)?.scope;
     expect(GAME_MUSIC_MAP['bunny-garden']).toBe('loop-9');
     const music = AUDIO_MANIFEST.filter((e) => e.scope === 'game:bunny-garden');
     expect(music.map((e) => e.key).sort()).toEqual(
-      ['loop-9', 'bunny-success-1', 'bunny-success-2', 'bunny-success-3', 'bunny-fail-1', 'bunny-fail-2'].sort(),
+      [
+        'loop-9',
+        'bunny-success-1',
+        'bunny-success-2',
+        'bunny-success-3',
+        'bunny-fail-1',
+        'bunny-fail-2',
+        'bunny-hide-1',
+        'bunny-hide-2',
+        'bunny-hide-3',
+      ].sort(),
     );
     for (const e of music) expect(existsSync(onDisk(e.url)), e.url).toBe(true);
     for (let i = 0; i < 10; i++) {
       expect(pickRandomBunnyHopSfx()).toMatch(/^penguin-hop-[123]$/);
       expect(scopeOf(pickRandomBunnyPopSfx())).toBe('game:bunny-garden');
       expect(scopeOf(pickRandomBunnyMoleSfx())).toBe('game:bunny-garden');
+      expect(scopeOf(pickRandomBunnyHideSfx())).toBe('game:bunny-garden');
     }
-    for (const pick of [pickRandomBunnyHopSfx, pickRandomBunnyHideSfx]) {
-      expect(scopeOf(pick()), pick.name).toBe('eager');
+    expect(scopeOf(pickRandomBunnyHopSfx())).toBe('eager');
+    let prev = pickRandomBunnyHideSfx();
+    for (let i = 0; i < 30; i++) {
+      const next = pickRandomBunnyHideSfx();
+      expect(next).not.toBe(prev);
+      prev = next;
     }
   });
 
