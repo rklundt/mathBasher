@@ -26,6 +26,7 @@ export function questionsPerRoundFor(gameId: GameId): number {
     case 'space-shooter':
     case 'penguin-slide':
     case 'bunny-garden':
+    case 'balance-scale':
       return config.round.questionsPerRound;
   }
 }

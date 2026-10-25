@@ -1121,6 +1121,83 @@ export const config = {
     tapHint: { y: 160, heightPx: 60, backdropAlpha: 0.6 },
   },
   /**
+   * Sprint 2.12 — Balance Scale (the ninth game). A missing-number sentence
+   * on a balance scale; tap the weight that levels it. 3 lives, a miss
+   * retries the same sentence (like Bunny Garden). Time per question is
+   * the shared `round.baseQuestionSec` (no countdown here).
+   * Positions are design px on the 1280 × 720 canvas; the art is drawn by
+   * `scripts/sprites/balance.mjs` (its geometry is mirrored in
+   * `BALANCE_SHEETS` and `path`; a test checks them).
+   */
+  balanceScale: {
+    maxLives: 3,
+    /** Weights in the tray; Medium and Hard also mix in the reversed sentences ("17 = 12 + ?"). */
+    speed: {
+      slow: { weights: 3, reversed: false },
+      medium: { weights: 4, reversed: true },
+      fast: { weights: 5, reversed: true },
+    },
+    scale: {
+      /** The beam's pivot (the "=" badge); the pillar hangs down from it. */
+      pivot: { x: 610, y: 236 },
+      /** Hook to the pan's rim. */
+      hangPx: 140,
+      /** Centre-to-centre spacing of the things on a pan ("12", "+", "?"). */
+      panItemGapPx: 116,
+      /** Weights on the pans, and in the tray. */
+      itemScale: 0.8,
+      /** The start: the "?" side up this much (it can't be weighed yet). */
+      startTiltDeg: 9,
+      /** A wrong weight tips at least this much, up to max for a big miss (|error| ≥ fullTiltAt × the total). */
+      minTiltDeg: 5,
+      maxTiltDeg: 14,
+      fullTiltAt: 0.5,
+      /** The swing to a new angle (eased, with a small overshoot and wobble). */
+      swingMs: 420,
+    },
+    tray: { left: 270, right: 970, bottomY: 690, scale: 0.86, tapTop: 560 },
+    /** Three animals from the crowd each question (never the same set twice running). */
+    crowd: {
+      slots: [
+        { x: 62, scale: 0.95 },
+        { x: 174, scale: 0.86 },
+        { x: 1052, scale: 0.86 },
+      ],
+      bottomY: 626,
+      swapMs: 260,
+    },
+    /** The winding progress path up the right side (mirrors `PATH` in balance.mjs). */
+    path: {
+      x: 1205,
+      amplitude: 30,
+      turns: 2.2,
+      bottomY: 600,
+      topY: 150,
+      stones: 12,
+      stoneRadius: 24,
+      duckAbovePx: 30,
+      duckScale: 0.62,
+      hopMs: 360,
+    },
+    /** Side scenery cross-fades between questions. */
+    propsFadeMs: 450,
+    label: { plateMinW: 78, plateH: 58, platePadPx: 18, plateRadius: 16 },
+    flyMs: 280,
+    correctHoldMs: 950,
+    wrongHoldMs: 700,
+    returnMs: 250,
+    resetMs: 300,
+    inputLockMs: 400,
+    timeoutBannerMs: 900,
+    outOfLivesBannerMs: 1300,
+    celebrateMs: 1800,
+    finishBannerStrokePx: 10,
+    finishBannerPop: { fromScale: 0.6, ms: 300 },
+    reward: { sparkleCount: 22, sparkleScale: 0.55 },
+    note: { edgeMarginPx: 150, risePx: 50, durationMs: 1400 },
+    tapHint: { y: 150, heightPx: 60, backdropAlpha: 0.6 },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
@@ -1299,7 +1376,12 @@ export const config = {
       backButton: { w: 220, h: 72 },
       /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
       chip: { w: 440, h: 72 },
-      gameSelect: { headingY: 86, chipY: 172 },
+      /** Sprint 2.12 — nine games: a 3 × 3 grid (five across left phone tiles too narrow). */
+      gameSelect: {
+        headingY: 86,
+        chipY: 172,
+        grid: { firstRowY: 268, cellW: 360, cellH: 104, gapX: 12, gapY: 12, perRow: 3 },
+      },
       difficulty: {
         headingY: 58,
         chipY: 150,

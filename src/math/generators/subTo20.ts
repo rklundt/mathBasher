@@ -7,6 +7,7 @@ import { pickDistractors, shuffleAnswers } from '@/math/distractors';
 import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Subtract-within-20 generator.
@@ -68,6 +69,7 @@ const subTo20: QuestionGenerator = {
     return {
       // Unicode minus (U+2212) — see subTo10.ts for rationale.
       prompt: `${a} − ${b} = ?`,
+      parts: wholeParts(a, '−', b, correctAnswer, 0, MINUEND_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

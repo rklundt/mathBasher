@@ -399,6 +399,8 @@ export const MusicKeys = {
    * `--kind music --no-trim` for a clean loop seam.
    */
   GardenLoop1: 'loop-9',
+  /** Balance Scale gameplay loop (sprint 2.12, the owner's track). 60 s stereo, `--kind music --no-trim`. */
+  BalanceLoop1: 'loop-10',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -433,6 +435,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'space-shooter': MusicKeys.CockpitLoop1,
   'penguin-slide': MusicKeys.SnowLoop1,
   'bunny-garden': MusicKeys.GardenLoop1,
+  'balance-scale': MusicKeys.BalanceLoop1,
 };
 
 /**
@@ -462,6 +465,8 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'penguin-slide': [],
   // Sprint 2.8 — none yet.
   'bunny-garden': [],
+  // Sprint 2.12 — music only.
+  'balance-scale': [],
 };
 
 /**
@@ -587,6 +592,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   // Sprint 2.8 — Bunny Garden's music, tunes and time's-up sounds (its hop is the shared penguin hop).
   if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
+  // Sprint 2.12 — Balance Scale's music (its sounds are shared, boot-loaded ones).
+  if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   return 'eager';
 }

@@ -8,6 +8,7 @@ import { pickMultiplicationDistractors } from '@/math/multDistractors';
 import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Multiply-to-100 generator (the standard elementary "tables to 10×10" set).
@@ -73,6 +74,7 @@ const multTo100: QuestionGenerator = {
     return {
       // Unicode multiplication sign (U+00D7).
       prompt: `${a} × ${b} = ?`,
+      parts: wholeParts(a, '×', b, correctAnswer, FACTOR_MIN, FACTOR_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

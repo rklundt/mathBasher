@@ -54,6 +54,36 @@ export interface Question {
    * `correctDisplay` above for the all-or-none contract.
    */
   choiceDisplays?: string[];
+  /**
+   * Sprint 2.12 — the number sentence behind the prompt (`a op b = result`),
+   * so Balance Scale can blank one number out ("12 + ? = 17"). Every
+   * generator sets it; Mixed passes its delegate's through. Optional so
+   * hand-built test questions needn't.
+   */
+  parts?: EquationParts;
+}
+
+/** Sprint 2.12 — the operator in a number sentence. */
+export type EquationOp = '+' | '−' | '×' | '÷';
+
+/** Sprint 2.12 — one number in a sentence. */
+export interface Term {
+  /** Its value (fractions as decimals, for comparing and weighing). */
+  value: number;
+  /** How it's shown, when not just the plain number ("3/4", "1 2/4"). */
+  display?: string;
+  /** A fraction operand as shown (not reduced), for wrong weights near it. */
+  frac?: { whole: number; num: number; den: number };
+}
+
+/** Sprint 2.12 — `left op right = result`. */
+export interface EquationParts {
+  left: Term;
+  op: EquationOp;
+  right: Term;
+  result: Term;
+  /** Whole-number challenges: the range an operand comes from (wrong weights stay inside it). */
+  range?: { min: number; max: number };
 }
 
 /**

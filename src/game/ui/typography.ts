@@ -99,6 +99,9 @@ export type TextKind =
   | 'penaltyPopup' // red bold — the floating "−3s" popup at the timer (Number Climb wrong pick)
   | 'speedPopup' // amber bold — "⚡⚡⚡ Lightning Fast!" under the "+points" popup (sprint 2.11)
   | 'badge' // warm-amber bold — "★ New High Score! ★" badge
+  | 'weightLabel' // ink bold — the number on a Balance Scale weight (sprint 2.12)
+  | 'panOp' // ink bold — "+", "−", "×", "÷" between the weights on a pan (sprint 2.12)
+  | 'slotMark' // ink bold — the "?" on the empty slot (sprint 2.12)
   | 'bonus' // teal bold — Game Over's "Finish Bonus! +300" / "Perfect Round! +300" (sprint 2.10)
   | 'rowLabel' // primary — settings-row label (SettingsScene volume rows)
   | 'iconGlyph' // primary — emoji glyphs inside icon buttons (mute speaker)
@@ -163,6 +166,9 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   speedPopup: { fontSize: '24px', color: TEXT_AMBER, fontStyle: 'bold' },
   badge: { fontSize: '26px', color: TEXT_AMBER_WARM, fontStyle: 'bold' },
   bonus: { fontSize: '29px', color: TEXT_TEAL, fontStyle: 'bold' },
+  weightLabel: { fontSize: '44px', color: '#24140f', fontStyle: 'bold' },
+  panOp: { fontSize: '64px', color: '#24140f', fontStyle: 'bold' },
+  slotMark: { fontSize: '58px', color: '#24140f', fontStyle: 'bold' },
   rowLabel: { fontSize: '26px', color: TEXT_PRIMARY },
   iconGlyph: { fontSize: '26px', color: TEXT_PRIMARY }, // color is irrelevant for emoji glyphs but required by TextStyle
   // Story 3 additions — container-anchored (consumed via `textStyle(kind)`)
