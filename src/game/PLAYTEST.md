@@ -503,6 +503,21 @@ Phone in landscape, then desktop. Add to 10 · Easy (25 s a question).
 - [ ] Math-a-lotl: the time only starts once a bubble is in view. Penguin Slide: from when the fish can be tapped. Space Escape: each floor timed on its own; a wrong pick's fall doesn't count.
 - [ ] Game Over: "⚡ Speed Bonus! +N" pops in first, then Finish and Perfect Round, the score counting on; the row fits at Subtract Fractions · Hard. A slow perfect round still gets Perfect Round.
 
+## Balance Scale (sprint 2.12)
+
+Phone in landscape, then desktop.
+
+- [ ] Game Select is a 3 × 3 grid with Balance Scale last; nothing overlaps the chip or Back.
+- [ ] Difficulty: "3 / 4 / 5 weights · Ns" and "Up to N points!".
+- [ ] The first sentence shows "👆 Tap the weight that makes both sides the same!" and the "?" bobs; the "?" side starts up.
+- [ ] Right weight: it flies onto the "?", the beam swings level, the pillar smiles, the crowd cheers, "Balanced!", +points with ⚡; a stone fills (green ✓) and the duckling hops up. Next sentence: new animals, new scenery.
+- [ ] Wrong weight: the scale tips the honest way, the pillar goes dizzy, the crowd says "Oh!", "Too big! Try a smaller one" (or smaller), a life lost; the weight hops back and the same sentence stays. Right after a miss: an amber stone.
+- [ ] Easy never shows "17 = …"; Medium and Hard sometimes do. Try add, take away ("17 − ? = 12"), times, sharing ("? ÷ 4 = 6"), Mixed and both fraction challenges at every difficulty.
+- [ ] Time out: "Out of time!", a life lost, same sentence. Out of lives: "Out of lives!" → Game Over.
+- [ ] Twelve right: "All balanced!", the duckling at the flag, Game Over with the bonuses.
+- [ ] Keys: 1–5 drop a weight; ← → move the blue ring, Space drops. Pause mid-swing and resume.
+- [ ] The top bar has no progress dots or "Q: n/12" in this game, and shows whole points everywhere.
+
 ## Logging the run
 
 ```

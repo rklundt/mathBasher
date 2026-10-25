@@ -20,4 +20,5 @@ export type GameId =
   | 'frog-splash'
   | 'space-shooter'
   | 'penguin-slide'
-  | 'bunny-garden';
+  | 'bunny-garden'
+  | 'balance-scale';

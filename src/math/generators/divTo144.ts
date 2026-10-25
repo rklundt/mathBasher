@@ -7,6 +7,7 @@ import { pickDistractors, shuffleAnswers } from '@/math/distractors';
 import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Divide-to-144 generator (inverse of mult-to-144 — "tables up to 12×12").
@@ -48,6 +49,8 @@ const divTo144: QuestionGenerator = {
 
     return {
       prompt: `${dividend} ÷ ${divisor} = ?`,
+      // The range is the factors' (a missing dividend is a quotient × the divisor).
+      parts: wholeParts(dividend, '÷', divisor, correctAnswer, FACTOR_MIN, FACTOR_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };
