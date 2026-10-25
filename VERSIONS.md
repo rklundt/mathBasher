@@ -27,7 +27,8 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Bunny Garden**
+- Its own "time's up" sound when the carrots hide (three of them, never the same twice in a row), in place of a borrowed one.
 
 ## [2.11.0] - 2026-10-24 — Speed bonus
 
