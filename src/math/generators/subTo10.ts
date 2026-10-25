@@ -7,6 +7,7 @@ import { pickDistractors, shuffleAnswers } from '@/math/distractors';
 import { answerWeightedTable, pickWeighted, type Operands } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Subtract-within-10 generator.
@@ -59,6 +60,7 @@ const subTo10: QuestionGenerator = {
       // the prompt-line; ASCII '-' would also render but '−' lines up with
       // the typographic conventions kids see in textbooks.
       prompt: `${a} − ${b} = ?`,
+      parts: wholeParts(a, '−', b, correctAnswer, 0, MINUEND_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

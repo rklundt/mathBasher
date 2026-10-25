@@ -8,6 +8,7 @@ import { pickMultiplicationDistractors } from '@/math/multDistractors';
 import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Multiply-to-144 generator (extended "tables to 12×12" set — the traditional
@@ -61,6 +62,7 @@ const multTo144: QuestionGenerator = {
 
     return {
       prompt: `${a} × ${b} = ?`,
+      parts: wholeParts(a, '×', b, correctAnswer, FACTOR_MIN, FACTOR_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

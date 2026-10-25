@@ -53,6 +53,7 @@ function speedSectionTitleFor(gameId: GameId): string {
     case 'space-shooter':
     case 'penguin-slide':
     case 'bunny-garden':
+    case 'balance-scale':
       return 'Difficulty';
   }
 }
@@ -142,6 +143,13 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
       const countdownSec = questionSeconds(key, mathId);
       return { label: labels[key], subtitle: `${holeCount} holes · ${countdownSec}s` };
     }
+    case 'balance-scale': {
+      // Sprint 2.12 — difficulty = weights in the tray + time per question (+ reversed sentences on Medium / Hard).
+      const labels: Record<SpeedKey, string> = { slow: 'Easy', medium: 'Medium', fast: 'Hard' };
+      const { weights } = config.balanceScale.speed[key];
+      const countdownSec = questionSeconds(key, mathId);
+      return { label: labels[key], subtitle: `${weights} weights · ${countdownSec}s` };
+    }
   }
 }
 
@@ -164,6 +172,8 @@ function gameDisplayName(gameId: GameId): string {
       return 'Penguin Slide';
     case 'bunny-garden':
       return 'Bunny Garden';
+    case 'balance-scale':
+      return 'Balance Scale';
   }
 }
 

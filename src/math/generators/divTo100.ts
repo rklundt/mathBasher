@@ -7,6 +7,7 @@ import { pickDistractors, shuffleAnswers } from '@/math/distractors';
 import { factorTable, pickWeighted } from '@/math/questionMix';
 import { defaultRng } from '@/math/rng';
 import type { Question, QuestionGenerator } from '@/math/types';
+import { wholeParts } from '@/math/equationParts';
 
 /**
  * Divide-to-100 generator (inverse of mult-to-100 — "tables up to 10×10").
@@ -64,6 +65,8 @@ const divTo100: QuestionGenerator = {
     return {
       // Unicode division sign (U+00F7).
       prompt: `${dividend} ÷ ${divisor} = ?`,
+      // The range is the factors' (a missing dividend is a quotient × the divisor).
+      parts: wholeParts(dividend, '÷', divisor, correctAnswer, FACTOR_MIN, FACTOR_MAX),
       correctAnswer,
       choices: shuffleAnswers(correctAnswer, distractors, rng),
     };

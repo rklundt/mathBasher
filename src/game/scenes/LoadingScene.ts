@@ -137,6 +137,9 @@ export class LoadingScene extends Phaser.Scene {
       case 'bunny-garden':
         caption = 'Loading Bunny Garden…';
         break;
+      case 'balance-scale':
+        caption = 'Loading Balance Scale…';
+        break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }

@@ -5,7 +5,8 @@
 import type { SpeedKey } from '@/core/config';
 import { buildFractionDistractors, decimalValue, formatFraction, mixedToImproper } from '@/math/fractionMath';
 import { defaultRng } from '@/math/rng';
-import type { Question, QuestionGenerator } from '@/math/types';
+import type { EquationParts, Question, QuestionGenerator } from '@/math/types';
+import { fractionResult, fractionTerm } from '@/math/equationParts';
 
 /**
  * Add Fractions — sprint 2.4 story 3.
@@ -53,6 +54,9 @@ interface OperandResult {
   correctNum: number;
   /** Sum denominator BEFORE reduction. */
   correctDen: number;
+  /** Sprint 2.12 — the operands as shown (Balance Scale blanks one). */
+  left: { whole: number; num: number; den: number };
+  right: { whole: number; num: number; den: number };
 }
 
 /** Easy band: a/d + b/d, same denominator (like fractions). */
@@ -65,6 +69,8 @@ function generateEasy(rng: () => number): OperandResult {
     prompt: `${a}/${den} + ${b}/${den} = ?`,
     correctNum: a + b,
     correctDen: den,
+    left: { whole: 0, num: a, den },
+    right: { whole: 0, num: b, den },
   };
 }
 
@@ -84,6 +90,8 @@ function generateMedium(rng: () => number): OperandResult {
     prompt: `${w1} ${f1}/${den} + ${w2} ${f2}/${den} = ?`,
     correctNum: imp1.num + imp2.num,
     correctDen: den,
+    left: { whole: w1, num: f1, den },
+    right: { whole: w2, num: f2, den },
   };
 }
 
@@ -110,10 +118,14 @@ function generateHard(rng: () => number): OperandResult {
     ? `${a}/${smallerDen} + ${b}/${largerDen} = ?`
     : `${b}/${largerDen} + ${a}/${smallerDen} = ?`;
 
+  const small = { whole: 0, num: a, den: smallerDen };
+  const large = { whole: 0, num: b, den: largerDen };
   return {
     prompt,
     correctNum: sumNum,
     correctDen: largerDen,
+    left: smallerFirst ? small : large,
+    right: smallerFirst ? large : small,
   };
 }
 
@@ -151,8 +163,15 @@ const addFractions: QuestionGenerator = {
     const correctAnswer = choices[correctIdx];
     const correctDisplay = choiceDisplays[correctIdx];
 
+    const parts: EquationParts = {
+      left: fractionTerm(result.left.num, result.left.den, result.left.whole),
+      op: '+',
+      right: fractionTerm(result.right.num, result.right.den, result.right.whole),
+      result: fractionResult(result.correctNum, result.correctDen),
+    };
     return {
       prompt: result.prompt,
+      parts,
       correctAnswer,
       choices,
       correctDisplay,
