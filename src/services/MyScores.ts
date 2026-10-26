@@ -3,7 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { _th, SeverityLevel } from '@/core/telemetry';
-import { SUBJECTS, type ChallengeId, type Subject } from '@/core/subjects';
+import { CHALLENGE_SUBJECTS, type ChallengeId, type ChallengeSubject } from '@/core/subjects';
 import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
 
 /**
@@ -62,7 +62,7 @@ export interface ChallengeScores {
 }
 
 export interface SubjectScores {
-  readonly subject: Subject;
+  readonly subject: ChallengeSubject;
   readonly points: number;
   /** Only challenges played, in picker order. */
   readonly challenges: readonly ChallengeScores[];
@@ -70,7 +70,7 @@ export interface SubjectScores {
 
 export interface ScoresView {
   readonly points: number;
-  /** Only subjects played, in `SUBJECTS` order. */
+  /** Only subjects played, in `CHALLENGE_SUBJECTS` order (puzzles have no points). */
   readonly subjects: readonly SubjectScores[];
 }
 
@@ -147,7 +147,7 @@ function addInto(target: TallyMap, from: TallyMap): void {
 /** Group tallies by subject → challenge, in picker order, played ones only. */
 export function groupBySubject(tallies: Readonly<TallyMap>): ScoresView {
   const subjects: SubjectScores[] = [];
-  for (const subject of SUBJECTS) {
+  for (const subject of CHALLENGE_SUBJECTS) {
     const challenges: ChallengeScores[] = [];
     for (const id of subject.challenges) {
       const t = tallies[id];

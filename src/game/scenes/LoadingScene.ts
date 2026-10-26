@@ -140,6 +140,9 @@ export class LoadingScene extends Phaser.Scene {
       case 'balance-scale':
         caption = 'Loading Balance Scale…';
         break;
+      case 'pair-pals':
+        caption = 'Loading Pair Pals…';
+        break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }

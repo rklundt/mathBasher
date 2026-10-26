@@ -6,6 +6,7 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import type { SpeedKey } from '@/core/config';
 import type { GameId } from '@/core/gameIds';
 import type { ChallengeId } from '@/core/subjects';
+import type { PuzzleId } from '@/core/puzzles';
 import { createObservable } from '@/services/observable';
 
 /**
@@ -53,6 +54,13 @@ export type HeroSkin = 'space-robot' | 'og-yellow';
  * `spriteKeys.ts` + the picker grid in `HeroChooserScene`.
  */
 export type ChosenHero = 'hero-chooser-1' | 'hero-chooser-2' | 'hero-chooser-3' | 'hero-chooser-4';
+
+/**
+ * Sprint 2.13 — what was picked last on "Pick your challenge!" this visit:
+ * a math challenge, a puzzle, or nothing yet. Menu Start goes back to it
+ * (`menuStartTarget`). In memory only, like the challenge.
+ */
+export type LastPick = 'challenge' | PuzzleId | null;
 
 export interface RoundSettings {
   gameId: GameId;
@@ -130,9 +138,10 @@ function readPersistedChosenHero(): ChosenHero | null {
 
 const _chosenHero = createObservable<ChosenHero | null>('chosenHero', readPersistedChosenHero());
 
-const state: Omit<RoundSettings, 'gameId'> = {
+const state: Omit<RoundSettings, 'gameId'> & { lastPick: LastPick } = {
   challengeId: null,
   speed: null,
+  lastPick: null,
 };
 
 export const Settings = {
@@ -161,6 +170,15 @@ export const Settings = {
   setChallenge(id: ChallengeId): void {
     state.challengeId = id;
     _th.logToAi('Settings.setChallenge', SeverityLevel.Information, { mathId: id });
+  },
+
+  /** Sprint 2.13 — the last pick on the challenge picker this visit (Menu Start returns to it). */
+  get lastPick(): LastPick {
+    return state.lastPick;
+  },
+
+  setLastPick(pick: Exclude<LastPick, null>): void {
+    state.lastPick = pick;
   },
 
   setSpeed(s: SpeedKey): void {

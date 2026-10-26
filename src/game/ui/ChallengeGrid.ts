@@ -4,7 +4,7 @@
 
 import type Phaser from 'phaser';
 import { config, type MathId } from '@/core/config';
-import type { Subject } from '@/core/subjects';
+import type { ChallengeSubject } from '@/core/subjects';
 import { generators, getImplementedIds } from '@/math/registry';
 import { Settings } from '@/services/Settings';
 import { pointsMultiplierLabel } from '@/services/challengePoints';
@@ -28,7 +28,7 @@ export interface ChallengeGrid {
  */
 export function buildChallengeGrid(
   scene: Phaser.Scene,
-  opts: { subject: Subject; centerX: number; firstRowY: number; onPick: (id: MathId) => void },
+  opts: { subject: ChallengeSubject; centerX: number; firstRowY: number; onPick: (id: MathId) => void },
 ): ChallengeGrid {
   const ids = opts.subject.challenges;
   const implemented = new Set(getImplementedIds());

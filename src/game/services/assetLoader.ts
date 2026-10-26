@@ -48,8 +48,9 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
 
   // Audio manifest entries (sfx / midground / music — all loaded via
   // load.audio regardless of kind; AudioManager binds them later).
+  // Sprint 2.13 — plus the sounds this game borrows from another (`alsoFor`).
   for (const entry of AUDIO_MANIFEST) {
-    if (!isGameScope(entry.scope, gameId)) continue;
+    if (!isGameScope(entry.scope, gameId) && !entry.alsoFor?.includes(gameId)) continue;
     loader.audio(entry.key, entry.url);
   }
 

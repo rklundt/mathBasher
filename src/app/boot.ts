@@ -22,6 +22,8 @@ import { SpaceShooterScene } from '@/game/scenes/SpaceShooterScene';
 import { PenguinSlideScene } from '@/game/scenes/PenguinSlideScene';
 import { BunnyGardenScene } from '@/game/scenes/BunnyGardenScene';
 import { BalanceScaleScene } from '@/game/scenes/BalanceScaleScene';
+import { PairPalsSetupScene } from '@/game/scenes/PairPalsSetupScene';
+import { PairPalsScene } from '@/game/scenes/PairPalsScene';
 import { ChallengePickerScene } from '@/game/scenes/ChallengePickerScene';
 import { MyScoresScene } from '@/game/scenes/MyScoresScene';
 import { HudScene } from '@/game/scenes/HudScene';
@@ -143,6 +145,8 @@ export function bootGame(): void {
       PenguinSlideScene,
       BunnyGardenScene,
       BalanceScaleScene,
+      PairPalsSetupScene,
+      PairPalsScene,
       HudScene,
       GameOverScene,
       PauseOverlay,
