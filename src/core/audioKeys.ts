@@ -544,7 +544,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'penguin-slide': MusicKeys.SnowLoop1,
   'bunny-garden': MusicKeys.GardenLoop1,
   'balance-scale': MusicKeys.BalanceLoop1,
-  // Sprint 2.13 — Pair Pals plays its card theme's track instead (`PAIR_PALS_MUSIC`); this is the default.
+  // Sprint 2.13 — not read: Pair Pals plays its card theme's track (`PAIR_PALS_MUSIC`); the map just covers every game.
   'pair-pals': MusicKeys.PairPalsLoop1,
 };
 
