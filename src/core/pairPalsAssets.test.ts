@@ -24,7 +24,6 @@ import {
   pickPairPalsMissSfx,
   pickTileFlipSfx,
 } from '@/core/audioKeys';
-import { isGameScope } from '@/core/assetScope';
 import { MATH_GAME_IDS, isMathGameId, type MathGameId } from '@/core/gameIds';
 import { config } from '@/core/config';
 
@@ -33,7 +32,7 @@ import { config } from '@/core/config';
  * the frame sizes the scene uses live in `spriteKeys.ts`
  * (`PAIR_PALS_SHEETS`) and `config.pairPals`. Guards the two against
  * drifting apart, checks every file is on disk and game-scoped, and that
- * every sound the game plays loads with it (some are borrowed).
+ * every sound the game plays is its own and loads with it.
  */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PUBLIC = resolve(ROOT, 'public');
@@ -85,7 +84,7 @@ describe('Pair Pals assets (sprint 2.13)', () => {
     expect(meta.width).toBe((PAIR_PALS_SHEETS.cards.faceFrame + 1) * PAIR_PALS_SHEETS.cards.frame);
   });
 
-  it('every sound it plays loads with it (its own flips, and the borrowed results)', () => {
+  it('every sound it plays is its own and loads with it (flips, matches, misses)', () => {
     const played = new Set<string>(GAME_MIDGROUND_MAP['pair-pals']);
     for (let i = 0; i < 40; i++) {
       played.add(pickTileFlipSfx());
@@ -95,13 +94,12 @@ describe('Pair Pals assets (sprint 2.13)', () => {
     for (const key of played) {
       const e = AUDIO_MANIFEST.find((x) => x.key === key);
       expect(e, key).toBeDefined();
-      const loaded = isGameScope(e!.scope, 'pair-pals') || e!.scope === 'eager' || e!.alsoFor?.includes('pair-pals');
-      expect(loaded, key).toBe(true);
+      expect(e!.scope, key).toBe('game:pair-pals');
+      expect(e!.onDemand, key).toBeUndefined();
+      expect(existsSync(onDisk(e!.url)), e!.url).toBe(true);
     }
-    // The four flips are its own and stay out of boot.
-    for (const n of [1, 2, 3, 4]) {
-      expect(AUDIO_MANIFEST.find((x) => x.key === `tile-flip-${String(n)}`)?.scope).toBe('game:pair-pals');
-    }
+    // Every one of the owner's 4 flips, 5 matches and 4 misses comes up.
+    expect(played.size).toBe(4 + 5 + 4);
   });
 
   it('each card theme has its own track on disk, loaded on demand (never in a bundle or at boot)', () => {
