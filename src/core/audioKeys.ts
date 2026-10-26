@@ -120,6 +120,15 @@ export const SfxKeys = {
   BonusCheer2: 'bonus-cheer-2',
   BonusCheer3: 'bonus-cheer-3',
   BonusCheer4: 'bonus-cheer-4',
+  /** Sprint 2.12 follow-up — Balance Scale: a hollow clank when a wrong weight tips the scale, one of three (owner's). */
+  BalanceClank1: 'balance-clank-1',
+  BalanceClank2: 'balance-clank-2',
+  BalanceClank3: 'balance-clank-3',
+  /** Sprint 2.12 follow-up — Balance Scale: a bright little fanfare when the scale levels, one of four (owner's). */
+  BalanceSuccess1: 'balance-success-1',
+  BalanceSuccess2: 'balance-success-2',
+  BalanceSuccess3: 'balance-success-3',
+  BalanceSuccess4: 'balance-success-4',
 } as const;
 
 /**
@@ -273,6 +282,28 @@ export function pickRandomBunnyMoleSfx(rng: () => number = Math.random): (typeof
 /** Time's up: the carrots hide. */
 export function pickRandomBunnyHideSfx(rng: () => number = Math.random): (typeof BUNNY_HIDE_KEYS)[number] {
   return nextBunnyHide(rng);
+}
+
+/** Sprint 2.12 — Balance Scale's own sounds (the mismatch clank, the "Balanced!" fanfare), loaded with the game; never the same one twice running. */
+const BALANCE_CLANK_KEYS = ['balance-clank-1', 'balance-clank-2', 'balance-clank-3'] as const;
+const BALANCE_SUCCESS_KEYS = [
+  'balance-success-1',
+  'balance-success-2',
+  'balance-success-3',
+  'balance-success-4',
+] as const;
+const BALANCE_SFX_KEYS: ReadonlySet<string> = new Set([...BALANCE_CLANK_KEYS, ...BALANCE_SUCCESS_KEYS]);
+const nextBalanceClank = noRepeatPicker(BALANCE_CLANK_KEYS);
+const nextBalanceSuccess = noRepeatPicker(BALANCE_SUCCESS_KEYS);
+
+/** The right weight levels the scale. */
+export function pickBalanceSuccessSfx(rng: () => number = Math.random): (typeof BALANCE_SUCCESS_KEYS)[number] {
+  return nextBalanceSuccess(rng);
+}
+
+/** A wrong weight tips the scale. */
+export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BALANCE_CLANK_KEYS)[number] {
+  return nextBalanceClank(rng);
 }
 
 /** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
@@ -493,6 +524,11 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [MidgroundKeys.RiverBrook1]: 0.6,
   [MidgroundKeys.RiverCrickets1]: 0.25,
   [MusicKeys.PondLoop1]: 0.5,
+  // Owner: the mismatch clank should be "less pronounced than normal sfx";
+  // 0.6 was too muted on the owner's phone, so 0.8.
+  [SfxKeys.BalanceClank1]: 0.8,
+  [SfxKeys.BalanceClank2]: 0.8,
+  [SfxKeys.BalanceClank3]: 0.8,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
@@ -592,8 +628,9 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   // Sprint 2.8 — Bunny Garden's music, tunes and time's-up sounds (its hop is the shared penguin hop).
   if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
-  // Sprint 2.12 — Balance Scale's music (its sounds are shared, boot-loaded ones).
+  // Sprint 2.12 — Balance Scale's music, clanks and fanfares (its hop is the shared penguin hop).
   if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
+  if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   return 'eager';
 }

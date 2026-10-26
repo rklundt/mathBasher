@@ -28,7 +28,7 @@ import { createTapHint, floatNote, screenBanner, type TapHint } from '@/game/ui/
 import { text } from '@/game/ui/typography';
 import { NUMBER_KEYS } from '@/game/ui/numberKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
-import { SfxKeys, pickRandomHitCorrectSfx, pickRandomHitWrongSfx, pickRandomPenguinHopSfx } from '@/core/audioKeys';
+import { SfxKeys, pickBalanceClankSfx, pickBalanceSuccessSfx, pickRandomPenguinHopSfx } from '@/core/audioKeys';
 import { assertNever } from '@/shared/assertNever';
 
 const INK = 0x3a2420;
@@ -599,7 +599,8 @@ export class BalanceScaleScene extends Phaser.Scene implements GameSceneContract
   }
 
   private handleBalanced(record: OutcomeRecord): void {
-    getAudioManager().play(pickRandomHitCorrectSfx(), 'sfx');
+    // The owner's "Balanced!" fanfare (it borrowed Alien Shoot's hit, an explosion, before).
+    getAudioManager().play(pickBalanceSuccessSfx(), 'sfx');
     this.pillar.setFrame(BALANCE_SHEETS.pillar.frames.happy);
     this.crowdPose('happy');
     const P = this.cfg.scale.pivot;
@@ -638,7 +639,8 @@ export class BalanceScaleScene extends Phaser.Scene implements GameSceneContract
   /** Off balance: "Too big!" / "Too small!", a life lost; the weight hops back and the sentence stays (or the round ends). */
   private handleOff(decision: Extract<RetryDecision, { kind: 'wrong' | 'out-of-lives' }>, i: number): void {
     const q = this.currentQuestion;
-    getAudioManager().play(pickRandomHitWrongSfx(), 'sfx');
+    // The owner's hollow clank, a little under the other sounds (AUDIO_GAIN).
+    getAudioManager().play(pickBalanceClankSfx(), 'sfx');
     this.pillar.setFrame(BALANCE_SHEETS.pillar.frames.dizzy);
     this.crowdPose('oops');
     this.spendLife(decision);
