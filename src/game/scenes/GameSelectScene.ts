@@ -5,7 +5,8 @@
 import Phaser from 'phaser';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { Settings, type GameId } from '@/services/Settings';
+import { Settings } from '@/services/Settings';
+import { isMathGameId, type MathGameId } from '@/core/gameIds';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
@@ -30,6 +31,8 @@ export class GameSelectScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    // Sprint 2.13 — back from a puzzle: the math games' default backdrop, not the puzzle's.
+    if (!isMathGameId(Settings.round.gameId)) Settings.setGameId('alien-shoot');
 
     const { width, height } = this.scale;
     const cx = width / 2;
@@ -55,7 +58,7 @@ export class GameSelectScene extends Phaser.Scene {
     // tall enough to tap on a phone.
     const slots = computeGridSlots(cx, L.grid.firstRowY, 9, L.grid);
     let slotIndex = 0;
-    const tile = (label: string, subtitle: string, gameId: GameId): PlaceholderButton => {
+    const tile = (label: string, subtitle: string, gameId: MathGameId): PlaceholderButton => {
       const s = slots[slotIndex++];
       return new PlaceholderButton({
         scene: this,

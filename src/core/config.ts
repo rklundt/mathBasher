@@ -1198,6 +1198,105 @@ export const config = {
     tapHint: { y: 150, heightPx: 60, backdropAlpha: 0.6 },
   },
   /**
+   * Sprint 2.13 — Pair Pals (the Puzzles subject): a memory-match game. Turn
+   * two cards over per turn; a match stays up, a miss turns back. No points,
+   * timer or lives: the round counts turns, and the best (fewest) is kept
+   * per size (`PairPalsProgress`).
+   */
+  pairPals: {
+    /** Setup-screen order; the card backs and picture sheets follow it (`THEMES` in pairpals.mjs). */
+    themes: ['animals', 'desserts', 'dinosaurs', 'dragons', 'aliens'],
+    themeLabels: {
+      animals: 'Cute Animals',
+      desserts: 'Desserts',
+      dinosaurs: 'Dinosaurs',
+      dragons: 'Dragons',
+      aliens: 'Aliens',
+    },
+    /** Columns × rows (owner, 2026-10-25). */
+    sizes: {
+      easy: { label: 'Easy', cols: 4, rows: 3 },
+      medium: { label: 'Medium', cols: 5, rows: 4 },
+      hard: { label: 'Hard', cols: 6, rows: 5 },
+    },
+    /** A first visit: Cute Animals, Easy. */
+    defaults: { theme: 'animals', size: 'easy' },
+    picturesPerTheme: 20,
+    /**
+     * Near look-alikes (sheet frames, 0-based) that a deal keeps apart when
+     * it can: two of them on a small Hard card feels like a trick. A deal
+     * takes one per group first, and only reaches for a second one when a
+     * size needs more pictures than there are groups.
+     */
+    twinGroups: {
+      animals: [],
+      desserts: [],
+      dinosaurs: [
+        [1, 3, 9],
+        [14, 19],
+        [0, 7],
+        [2, 8, 16],
+        [12, 18],
+        [13, 17],
+      ],
+      dragons: [
+        [1, 12, 13, 18],
+        [5, 15, 17],
+        [6, 16],
+        [3, 10, 14],
+        [8, 19],
+      ],
+      aliens: [[0, 9]],
+    },
+    /** Where the board fits (below the top bar), and the side strip the mascot stands in. */
+    board: {
+      top: 86,
+      bottom: 708,
+      centerX: 660,
+      maxWidth: 820,
+      maxCardPx: 180,
+      gapPx: { easy: 16, medium: 14, hard: 12 },
+    },
+    /** The picture's share of the card. */
+    pictureScale: 0.86,
+    topBar: { height: 66, y: 33 },
+    mascot: { x: 128, bottomY: 690, sizePx: 190, bobPx: 6, bobMs: 1400, hopPx: 34, hopMs: 300 },
+    /** A card turning: squash to edge-on, swap, open. */
+    flipHalfMs: 120,
+    flipLiftScale: 1.06,
+    /** A miss stays up this long so it can be remembered (a tap skips it); owner: 1.2 s → 2.2 s, 2026-10-26. */
+    missHoldMs: 2200,
+    missWiggleDeg: 4,
+    matchPopScale: 1.14,
+    matchPopMs: 220,
+    /** A matched card settles: its ring fades and it dims a little, so face-down cards stand out. */
+    matchedSettleMs: 700,
+    matchedAlpha: 0.82,
+    winPanelDelayMs: 1100,
+    winWaveMs: 260,
+    winWaveStaggerMs: 45,
+    sparkleCount: 10,
+    hint: { y: 120, heightPx: 56, backdropAlpha: 0.6 },
+    /** The setup screen ("Pair Pals: pick your cards"). */
+    setup: {
+      headingY: 52,
+      themeLabelY: 112,
+      themeY: 224,
+      themeTile: { w: 196, h: 176, gap: 18 },
+      /** A theme tile's sample picture (frame in its sheet) and its size. */
+      samples: { animals: 0, desserts: 0, dinosaurs: 15, dragons: 1, aliens: 0 },
+      samplePx: 116,
+      sizeLabelY: 352,
+      sizeY: 432,
+      sizeTile: { w: 270, h: 104, gap: 26 },
+      bestY: 516,
+      buttonsY: 622,
+      startW: 240,
+      backW: 200,
+      buttonH: 72,
+    },
+  },
+  /**
    * Sprint 2.5.7 — the question mix for the whole-number math types (see
    * `src/math/questionMix.ts`). Weights are relative: 1 = normal, below 1
    * = rarer, above 1 = more often. "Answer" weights set how often each
@@ -1372,7 +1471,17 @@ export const config = {
     challengeFlow: {
       /** The challenge buttons: 4 + 4 + 3, the name and its "1.5x Points!" inside each. */
       grid: { cellW: 280, cellH: 96, gapX: 16, gapY: 16, perRow: 4 },
-      picker: { headingY: 58, subjectTabY: 135, subjectTab: { w: 220, h: 64 }, gridTopY: 230, backY: 610 },
+      picker: {
+        headingY: 58,
+        subjectTabY: 135,
+        subjectTab: { w: 220, h: 64 },
+        gridTopY: 230,
+        backY: 610,
+        /** Sprint 2.13 — the Puzzles tab's game tiles (two across). */
+        puzzleGrid: { firstRowY: 360, cellW: 340, cellH: 150, gapX: 28, gapY: 16, perRow: 2 },
+        /** A tab swap fades the buttons below in. */
+        swapFadeMs: 160,
+      },
       backButton: { w: 220, h: 72 },
       /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
       chip: { w: 440, h: 72 },
@@ -1490,6 +1599,9 @@ export const config = {
 
 export type SpeedKey = keyof typeof config.scoring.speed;
 export type MathId = keyof typeof config.scoring.mathDifficulty;
+/** Sprint 2.13 — a Pair Pals card theme and board size. */
+export type PairPalsTheme = (typeof config.pairPals.themes)[number];
+export type PairPalsSize = keyof typeof config.pairPals.sizes;
 
 /** Sprint 2.5.7 — time-limit multiplier for a math type (1 = as configured per difficulty). */
 export function mathTimeScale(mathId: MathId | null): number {

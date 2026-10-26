@@ -516,11 +516,17 @@ The canonical reference is `docs/adrs/ADR-0011-per-game-mode-dispatch.md` (12-st
 
 Sprint 2.2 shipped Number Climb (display name "Space Escape!") through this exact checklist; boot load stays at ~2 MB regardless of how many game modes ship. Sprint 2.5.4 shipped Math-a-lotl the same way (plus a Game Select move to a 2×2 grid).
 
+A puzzle game (the Puzzles subject, sprint 2.13: Pair Pals) skips Game Select, Difficulty, the HUD and Game Over: see "A puzzle game" in ADR-0011.
+
 Two per-game knobs added in 2.5.4:
 
 - **Several ambience loops.** `GAME_MIDGROUND_MAP` maps a game to a *list* of midground keys; they all start and stop together (Math-a-lotl layers two water loops).
 - **Per-asset mix gain.** `AUDIO_GAIN` in `src/core/audioKeys.ts` multiplies an asset's playback volume (0–1) on top of the kind's slider, so a game can balance its own mix without re-encoding. Unlisted keys play at 1.
 - **Space-only background layers.** `GAME_BG_SPACE_LAYERS` in `src/core/spriteKeys.ts` turns BackgroundScene's parallax stars and bottom darkening band on or off per game.
+
+### Pair Pals art (sprint 2.13)
+
+`pnpm sprite:pairpals` (`scripts/sprites/pairpals.mjs`) draws the cute animals and desserts (20 each), the card backs and each theme's backdrop (plus a darkened setup-screen copy), and packs the owner's Midjourney dinosaurs, dragons and aliens: one cut-out per creature, 20 per theme, kept in the private `.sprite-source/pair-pals/<theme>/01.png … 20.png` (the script stops if one is missing). Near look-alikes are listed per theme in `config.pairPals.twinGroups` (sheet frames), and a deal keeps them apart when it can. `src/core/pairPalsAssets.test.ts` checks the frames against the script and the files.
 
 ### Code-drawn art (Math-a-lotl, Frog Splash, Space Shooter, Penguin Slide, Bunny Garden)
 

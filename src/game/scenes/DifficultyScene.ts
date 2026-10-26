@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, questionSeconds, roundSeconds, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
-import { Settings, type GameId } from '@/services/Settings';
+import { Settings } from '@/services/Settings';
+import { isMathGameId, type MathGameId } from '@/core/gameIds';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
@@ -42,7 +43,7 @@ interface SpeedDisplay {
  * An exhaustive switch (sprint 2.7), so a new game can't silently fall
  * back to "Speed".
  */
-function speedSectionTitleFor(gameId: GameId): string {
+function speedSectionTitleFor(gameId: MathGameId): string {
   switch (gameId) {
     case 'alien-shoot':
     case 'asteroid-field':
@@ -74,7 +75,7 @@ function timerLabel(totalSec: number): string {
  * ones for the selected math type (sprint 2.5.7 — harder math gets more
  * time), so the subtitles refresh when the math type changes.
  */
-function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): SpeedDisplay {
+function speedDisplayFor(gameId: MathGameId, key: SpeedKey, mathId: MathId | null): SpeedDisplay {
   switch (gameId) {
     case 'alien-shoot': {
       const map: Record<SpeedKey, SpeedDisplay> = {
@@ -154,7 +155,7 @@ function speedDisplayFor(gameId: GameId, key: SpeedKey, mathId: MathId | null): 
 }
 
 /** The game's name as its Game Select tile shows it (the Difficulty heading uses it). */
-function gameDisplayName(gameId: GameId): string {
+function gameDisplayName(gameId: MathGameId): string {
   switch (gameId) {
     case 'alien-shoot':
       return 'Alien Shoot';
@@ -178,7 +179,7 @@ function gameDisplayName(gameId: GameId): string {
 }
 
 /** "Bunny Garden: how tough?", or "Alien Shoot: how fast?" for the two games whose setting is speed. */
-function headingFor(gameId: GameId): string {
+function headingFor(gameId: MathGameId): string {
   const question = speedSectionTitleFor(gameId) === 'Speed' ? 'how fast?' : 'how tough?';
   // "Space Escape!: how tough?" reads oddly, so a name's own "!" is dropped here.
   return `${gameDisplayName(gameId).replace(/!$/, '')}: ${question}`;
@@ -211,6 +212,14 @@ export class DifficultyScene extends Phaser.Scene {
     // Phaser reuses the scene instance: drop the previous visit's objects.
     this.speedButtons.clear();
 
+    // Sprint 2.13 — a puzzle game has its own setup, never this screen.
+    const gameId = Settings.round.gameId;
+    if (!isMathGameId(gameId)) {
+      _th.logToAi('DifficultyScene.notMathGame', SeverityLevel.Warning, { gameId });
+      this.scene.start(SceneKeys.GameSelect);
+      return;
+    }
+
     const { challengeId: mathId } = Settings.round;
     if (mathId === null) {
       _th.logToAi('DifficultyScene.noChallenge', SeverityLevel.Warning, { gameId: Settings.round.gameId });
@@ -227,7 +236,6 @@ export class DifficultyScene extends Phaser.Scene {
     const { width } = this.scale;
     const cx = width / 2;
     const L = config.layout.challengeFlow.difficulty;
-    const gameId = Settings.round.gameId;
 
     text(this, cx, L.headingY, headingFor(gameId), 'h2').setOrigin(0.5);
     const chip = createChallengeChip(this, cx, L.chipY, () => {
@@ -277,7 +285,7 @@ export class DifficultyScene extends Phaser.Scene {
     this.refreshSelection();
   }
 
-  private renderSpeeds(cx: number, gameId: GameId, mathId: MathId): void {
+  private renderSpeeds(cx: number, gameId: MathGameId, mathId: MathId): void {
     const L = config.layout.challengeFlow.difficulty;
     const speedKeys: SpeedKey[] = ['slow', 'medium', 'fast'];
     const { w, h, gapX } = L.tile;

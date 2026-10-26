@@ -4,24 +4,26 @@
 
 import { describe, expect, it } from 'vitest';
 import { config } from '@/core/config';
-import { SUBJECTS, subjectOf } from '@/core/subjects';
+import { CHALLENGE_SUBJECTS, SUBJECTS, subjectById, subjectOf } from '@/core/subjects';
+import { PUZZLES } from '@/core/puzzles';
 import { generators } from '@/math/registry';
 
 // Lives in src/math (not core) because it checks the subjects against the math generators.
-describe('subjects (sprint 2.9.1)', () => {
-  it('has Math, with every scoring row as a challenge, in the scoring order', () => {
-    expect(SUBJECTS.map((s) => s.id)).toEqual(['math']);
-    expect(SUBJECTS[0].label).toBe('Math');
-    expect(SUBJECTS[0].challenges).toEqual(Object.keys(config.scoring.mathDifficulty));
+describe('subjects (sprint 2.9.1, Puzzles sprint 2.13)', () => {
+  it('has Math then Puzzles; Math has every scoring row as a challenge, in the scoring order', () => {
+    expect(SUBJECTS.map((s) => s.id)).toEqual(['math', 'puzzles']);
+    expect(SUBJECTS.map((s) => s.label)).toEqual(['Math', 'Puzzles']);
+    expect(CHALLENGE_SUBJECTS.map((s) => s.id)).toEqual(['math']);
+    expect(CHALLENGE_SUBJECTS[0].challenges).toEqual(Object.keys(config.scoring.mathDifficulty));
   });
 
   it('puts every challenge in exactly one subject', () => {
-    const all = SUBJECTS.flatMap((s) => s.challenges);
+    const all = CHALLENGE_SUBJECTS.flatMap((s) => s.challenges);
     expect(new Set(all).size).toBe(all.length);
   });
 
   it('every challenge has a question generator, a timing row and a scoring row', () => {
-    for (const subject of SUBJECTS) {
+    for (const subject of CHALLENGE_SUBJECTS) {
       for (const id of subject.challenges) {
         expect(generators[id], id).toBeDefined();
         expect(config.round.mathTimeScale[id], id).toBeGreaterThan(0);
@@ -30,7 +32,16 @@ describe('subjects (sprint 2.9.1)', () => {
     }
   });
 
-  it('finds the subject of a challenge', () => {
+  it('finds the subject of a challenge (never Puzzles)', () => {
     expect(subjectOf('add-fractions').id).toBe('math');
+  });
+
+  it('Puzzles lists every puzzle, in order; only built ones name a game', () => {
+    const puzzles = subjectById('puzzles');
+    expect(puzzles.kind).toBe('puzzles');
+    if (puzzles.kind !== 'puzzles') return;
+    expect(puzzles.puzzles).toEqual(PUZZLES.map((p) => p.id));
+    expect(PUZZLES.find((p) => p.id === 'pair-pals')?.gameId).toBe('pair-pals');
+    expect(PUZZLES.find((p) => p.id === 'pattern-train')?.gameId).toBeNull();
   });
 });

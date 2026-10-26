@@ -4,7 +4,7 @@
 
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { roundBonuses, speedBonusFor } from '@/services/ScoreCalculator';
-import type { GameId } from '@/services/Settings';
+import type { MathGameId } from '@/core/gameIds';
 
 /**
  * Sprint 2.9 — the points words kids see while choosing: "1.5x Points!"
@@ -15,7 +15,7 @@ import type { GameId } from '@/services/Settings';
  */
 
 /** How many questions a round of this game has (Space Escape's floors differ). */
-export function questionsPerRoundFor(gameId: GameId): number {
+export function questionsPerRoundFor(gameId: MathGameId): number {
   switch (gameId) {
     case 'number-climb':
       return config.numberClimb.questionsPerRound;
@@ -56,7 +56,7 @@ export function pointsMultiplierLabel(mathId: MathId): string {
 }
 
 /** "Up to 1,500 points!" for this game, challenge and difficulty. */
-export function upToPointsLabel(gameId: GameId, mathId: MathId, speed: SpeedKey): string {
+export function upToPointsLabel(gameId: MathGameId, mathId: MathId, speed: SpeedKey): string {
   return `Up to ${formatPoints(maxRoundScore(mathId, speed, questionsPerRoundFor(gameId)))} points!`;
 }
 

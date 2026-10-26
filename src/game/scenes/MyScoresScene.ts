@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { SUBJECTS, type SubjectId } from '@/core/subjects';
+import { CHALLENGE_SUBJECTS, type SubjectId } from '@/core/subjects';
 import { generators } from '@/math/registry';
 import { formatPoints } from '@/services/challengePoints';
 import { dayKeyToDate, getMyScores, roundsLabel, type ScoresView } from '@/services/MyScores';
@@ -22,8 +22,8 @@ type Tab = 'today' | 'all-time';
 /** Remembered for the visit: the tab, and which subjects are open. */
 let visitTab: Tab = 'today';
 const visitOpen = new Map<SubjectId, boolean>();
-/** With one subject (Math today) it starts open; with several, closed. */
-const isOpen = (id: SubjectId): boolean => visitOpen.get(id) ?? SUBJECTS.length === 1;
+/** With one subject of points (Math today) it starts open; with several, closed (puzzles have no points). */
+const isOpen = (id: SubjectId): boolean => visitOpen.get(id) ?? CHALLENGE_SUBJECTS.length === 1;
 
 /** A subject row in the list, in list coordinates (0 = the list's top, unscrolled). */
 interface SubjectRow {
