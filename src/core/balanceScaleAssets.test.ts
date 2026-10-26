@@ -14,6 +14,7 @@ import {
   GAME_MUSIC_MAP,
   audioGainFor,
   pickBalanceClankSfx,
+  pickBalanceSuccessSfx,
 } from '@/core/audioKeys';
 import { config } from '@/core/config';
 
@@ -102,6 +103,24 @@ describe('Balance Scale assets (sprint 2.12)', () => {
       expect(next).not.toBe(prev);
       prev = next;
     }
+  });
+
+  it(`the owner's "Balanced!" fanfare: four, game-scoped, never twice running`, () => {
+    const sounds = AUDIO_MANIFEST.filter((e) => e.key.startsWith('balance-success-'));
+    expect(sounds).toHaveLength(4);
+    for (const e of sounds) {
+      expect(e.scope, e.key).toBe('game:balance-scale');
+      expect(existsSync(onDisk(e.url)), e.url).toBe(true);
+    }
+    const heard = new Set<string>();
+    let prev = pickBalanceSuccessSfx();
+    for (let i = 0; i < 60; i++) {
+      const next = pickBalanceSuccessSfx();
+      expect(next).not.toBe(prev);
+      heard.add(next);
+      prev = next;
+    }
+    expect(heard.size).toBe(4);
   });
 
   it('the tray has room for five weights', () => {
