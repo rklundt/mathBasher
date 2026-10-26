@@ -124,6 +124,11 @@ export const SfxKeys = {
   BalanceClank1: 'balance-clank-1',
   BalanceClank2: 'balance-clank-2',
   BalanceClank3: 'balance-clank-3',
+  /** Sprint 2.12 follow-up — Balance Scale: a bright little fanfare when the scale levels, one of four (owner's). */
+  BalanceSuccess1: 'balance-success-1',
+  BalanceSuccess2: 'balance-success-2',
+  BalanceSuccess3: 'balance-success-3',
+  BalanceSuccess4: 'balance-success-4',
 } as const;
 
 /**
@@ -279,10 +284,22 @@ export function pickRandomBunnyHideSfx(rng: () => number = Math.random): (typeof
   return nextBunnyHide(rng);
 }
 
-/** Sprint 2.12 — Balance Scale's mismatch clank, loaded with the game; never the same one twice running. */
+/** Sprint 2.12 — Balance Scale's own sounds (the mismatch clank, the "Balanced!" fanfare), loaded with the game; never the same one twice running. */
 const BALANCE_CLANK_KEYS = ['balance-clank-1', 'balance-clank-2', 'balance-clank-3'] as const;
-const BALANCE_SFX_KEYS: ReadonlySet<string> = new Set(BALANCE_CLANK_KEYS);
+const BALANCE_SUCCESS_KEYS = [
+  'balance-success-1',
+  'balance-success-2',
+  'balance-success-3',
+  'balance-success-4',
+] as const;
+const BALANCE_SFX_KEYS: ReadonlySet<string> = new Set([...BALANCE_CLANK_KEYS, ...BALANCE_SUCCESS_KEYS]);
 const nextBalanceClank = noRepeatPicker(BALANCE_CLANK_KEYS);
+const nextBalanceSuccess = noRepeatPicker(BALANCE_SUCCESS_KEYS);
+
+/** The right weight levels the scale. */
+export function pickBalanceSuccessSfx(rng: () => number = Math.random): (typeof BALANCE_SUCCESS_KEYS)[number] {
+  return nextBalanceSuccess(rng);
+}
 
 /** A wrong weight tips the scale. */
 export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BALANCE_CLANK_KEYS)[number] {
