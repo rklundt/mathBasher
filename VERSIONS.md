@@ -27,7 +27,8 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+**Balance Scale**
+- A wrong weight now tips the scale with a soft hollow clank (three of them, never the same twice in a row), a little quieter than the other sounds.
 
 ## [2.12.0] - 2026-10-25 — Balance Scale
 
