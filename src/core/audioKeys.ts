@@ -135,6 +135,17 @@ export const SfxKeys = {
   TileFlip2: 'tile-flip-2',
   TileFlip3: 'tile-flip-3',
   TileFlip4: 'tile-flip-4',
+  /** Sprint 2.13 — Pair Pals: a turn's second card makes a pair, one of five (owner's orchestral hits). */
+  PairPalsMatch1: 'pairpals-match-1',
+  PairPalsMatch2: 'pairpals-match-2',
+  PairPalsMatch3: 'pairpals-match-3',
+  PairPalsMatch4: 'pairpals-match-4',
+  PairPalsMatch5: 'pairpals-match-5',
+  /** Sprint 2.13 — Pair Pals: a turn's second card doesn't match, one of four (owner's tiles / bricks breaking). */
+  PairPalsMiss1: 'pairpals-miss-1',
+  PairPalsMiss2: 'pairpals-miss-2',
+  PairPalsMiss3: 'pairpals-miss-3',
+  PairPalsMiss4: 'pairpals-miss-4',
 } as const;
 
 /**
@@ -313,15 +324,24 @@ export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BA
 }
 
 /**
- * Sprint 2.13 — Pair Pals' sounds. The first card of a turn plays one of the
- * owner's tile flips (its own); the second plays the result, borrowed from
- * Bunny Garden and Balance Scale (owner: their success and fail sounds until
- * Pair Pals has its own), so those load with Pair Pals too (`audioAlsoFor`).
- * Its music is its own, one track per card theme (`PAIR_PALS_MUSIC`).
+ * Sprint 2.13 — Pair Pals' sounds, all the owner's and all its own: the first
+ * card of a turn flips; the second plays a match or a miss. Its music is one
+ * track per card theme (`PAIR_PALS_MUSIC`).
  */
 const TILE_FLIP_KEYS = ['tile-flip-1', 'tile-flip-2', 'tile-flip-3', 'tile-flip-4'] as const;
-const PAIR_PALS_MATCH_KEYS = [...BUNNY_POP_KEYS, ...BALANCE_SUCCESS_KEYS] as const;
-const PAIR_PALS_MISS_KEYS = [...BUNNY_MOLE_KEYS, ...BALANCE_CLANK_KEYS] as const;
+const PAIR_PALS_MATCH_KEYS = [
+  'pairpals-match-1',
+  'pairpals-match-2',
+  'pairpals-match-3',
+  'pairpals-match-4',
+  'pairpals-match-5',
+] as const;
+const PAIR_PALS_MISS_KEYS = ['pairpals-miss-1', 'pairpals-miss-2', 'pairpals-miss-3', 'pairpals-miss-4'] as const;
+const PAIR_PALS_SFX_KEYS: ReadonlySet<string> = new Set([
+  ...TILE_FLIP_KEYS,
+  ...PAIR_PALS_MATCH_KEYS,
+  ...PAIR_PALS_MISS_KEYS,
+]);
 const nextTileFlip = noRepeatPicker(TILE_FLIP_KEYS);
 const nextPairPalsMatch = noRepeatPicker(PAIR_PALS_MATCH_KEYS);
 const nextPairPalsMiss = noRepeatPicker(PAIR_PALS_MISS_KEYS);
@@ -643,12 +663,6 @@ export interface AudioManifestEntry {
    */
   readonly scope: AssetScope;
   /**
-   * Sprint 2.13 — other games that borrow this sound and load it with
-   * their own (`scope` names one game). Pair Pals plays Bunny Garden's and
-   * Balance Scale's success and fail sounds.
-   */
-  readonly alsoFor?: readonly GameId[];
-  /**
    * Sprint 2.13 — not in its game's bundle: the scene loads it when it's
    * needed (`loadAudioOnDemand`). Pair Pals' four theme tracks (about
    * 1 MB each) load one at a time, in the background, for the theme played.
@@ -704,17 +718,14 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
   if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
-  // Sprint 2.13 — Pair Pals' music and its own tile flips.
-  if (PAIR_PALS_MUSIC_KEYS.has(key)) return 'game:pair-pals';
-  if ((TILE_FLIP_KEYS as readonly string[]).includes(key)) return 'game:pair-pals';
+  // Sprint 2.13 — Pair Pals' music, flips, matches and misses.
+  if (PAIR_PALS_MUSIC_KEYS.has(key) || PAIR_PALS_SFX_KEYS.has(key)) return 'game:pair-pals';
   return 'eager';
 }
 
-/** Sprint 2.13 — the games that borrow a sound scoped to another game (see `alsoFor`): Pair Pals' success and fail sounds. */
-const PAIR_PALS_BORROWED: ReadonlySet<string> = new Set([...PAIR_PALS_MATCH_KEYS, ...PAIR_PALS_MISS_KEYS]);
-function audioAlsoFor(key: AudioKey): { alsoFor?: readonly GameId[]; onDemand?: true } {
-  if (PAIR_PALS_MUSIC_KEYS.has(key)) return { onDemand: true };
-  return PAIR_PALS_BORROWED.has(key) ? { alsoFor: ['pair-pals'] } : {};
+/** Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`): Pair Pals' theme tracks. */
+function audioOnDemand(key: AudioKey): { onDemand?: true } {
+  return PAIR_PALS_MUSIC_KEYS.has(key) ? { onDemand: true } : {};
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -723,20 +734,20 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     kind: 'sfx',
     url: sfxPath(key),
     scope: audioScopeFor(key),
-    ...audioAlsoFor(key),
+    ...audioOnDemand(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
     scope: audioScopeFor(key),
-    ...audioAlsoFor(key),
+    ...audioOnDemand(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
     scope: audioScopeFor(key),
-    ...audioAlsoFor(key),
+    ...audioOnDemand(key),
   })),
 ];

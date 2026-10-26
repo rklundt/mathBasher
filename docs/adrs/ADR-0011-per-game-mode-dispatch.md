@@ -177,7 +177,7 @@ A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no challeng
 - Steps 1–6, 8, 9 and 10 (the Loading caption only) as above, with the id added to `PuzzleGameId`; list the puzzle in `src/core/puzzles.ts` with its `gameId`.
 - Give it a setup scene and an arm in `puzzleSetupSceneKeyFor` (`src/core/sceneKeys.ts`): the picker's Puzzles tab and Menu Start open it through Loading, so its own pictures are in memory.
 - Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Change Cards or Difficulty · Settings · Quit to Menu).
-- A sound it borrows from another game lists it in `alsoFor` (`audioKeys.ts`), so it loads with the puzzle too.
+- Sounds big enough to matter (Pair Pals' music, one track per card theme) can be `onDemand` in the audio manifest: left out of the game's bundle and loaded by the scene when needed (`loadAudioOnDemand`).
 - Steps 7, 10 (Difficulty), 11, 11c–11e and 12 don't apply.
 
 If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.
