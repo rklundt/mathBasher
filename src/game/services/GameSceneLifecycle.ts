@@ -310,7 +310,8 @@ export class GameSceneLifecycle {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
     if (!this.settle(false, roundController.score)) return;
     // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
-    // challenge is already set; this game's Difficulty shows it).
+    // challenge is already set; this game's Difficulty shows it) and, since
+    // 2.13, its Change Difficulty.
     const target =
       destination === 'game-select'
         ? SceneKeys.GameSelect

@@ -54,7 +54,41 @@ export function pickPictures(
   return chosen;
 }
 
-/** The board: each picked picture twice, shuffled into `cols × rows` places (left to right, top to bottom). */
+/**
+ * How many matching pairs touch (side by side, above / below, or corner to
+ * corner) on a board laid out `cols` across.
+ */
+export function touchingPairs(cards: readonly number[], cols: number): number {
+  let n = 0;
+  for (let i = 0; i < cards.length; i++) {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    // Each neighbour once: right, and the three below.
+    for (const [dr, dc] of [
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ]) {
+      const rr = r + dr;
+      const cc = c + dc;
+      if (cc < 0 || cc >= cols) continue;
+      const j = rr * cols + cc;
+      if (j < cards.length && cards[j] === cards[i]) n++;
+    }
+  }
+  return n;
+}
+
+/** Shuffles tried before settling for the one with the fewest touching pairs (in practice a valid one comes within ~20). */
+const MAX_SHUFFLES = 500;
+
+/**
+ * The board: each picked picture twice, shuffled into `cols × rows` places
+ * (left to right, top to bottom), with no matching pair touching (owner,
+ * 2026-10-26: a plain shuffle left about 1.6 touching pairs a game). It
+ * reshuffles until none touch, so every such board is equally likely.
+ */
 export function deal(
   cols: number,
   rows: number,
@@ -65,7 +99,18 @@ export function deal(
   const cells = cols * rows;
   if (cells % 2 !== 0) throw new Error(`${String(cols)} × ${String(rows)} has an odd number of cards`);
   const pictures = pickPictures(cells / 2, total, twinGroups, rng);
-  return shuffled([...pictures, ...pictures], rng);
+  const cards = [...pictures, ...pictures];
+  let best = shuffled(cards, rng);
+  let bestTouching = touchingPairs(best, cols);
+  for (let i = 1; i < MAX_SHUFFLES && bestTouching > 0; i++) {
+    const next = shuffled(cards, rng);
+    const touching = touchingPairs(next, cols);
+    if (touching < bestTouching) {
+      best = next;
+      bestTouching = touching;
+    }
+  }
+  return best;
 }
 
 export type CardState = 'down' | 'up' | 'matched';

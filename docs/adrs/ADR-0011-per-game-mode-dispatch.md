@@ -176,7 +176,7 @@ A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no challeng
 
 - Steps 1–6, 8, 9 and 10 (the Loading caption only) as above, with the id added to `PuzzleGameId`; list the puzzle in `src/core/puzzles.ts` with its `gameId`.
 - Give it a setup scene and an arm in `puzzleSetupSceneKeyFor` (`src/core/sceneKeys.ts`): the picker's Puzzles tab and Menu Start open it through Loading, so its own pictures are in memory.
-- Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Settings · Change Cards · Quit to Menu).
+- Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Change Cards or Difficulty · Settings · Quit to Menu).
 - A sound it borrows from another game lists it in `alsoFor` (`audioKeys.ts`), so it loads with the puzzle too.
 - Steps 7, 10 (Difficulty), 11, 11c–11e and 12 don't apply.
 

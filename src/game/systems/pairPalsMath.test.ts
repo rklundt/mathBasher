@@ -14,6 +14,7 @@ import {
   releaseMiss,
   tapCard,
   totalPairs,
+  touchingPairs,
 } from '@/game/systems/pairPalsMath';
 
 const P = config.pairPals;
@@ -60,6 +61,25 @@ describe('Pair Pals deal (sprint 2.13)', () => {
         }
       }
     }
+  });
+
+  it('no matching pair touches (side, above / below or corner), on every size, over many deals', () => {
+    for (const size of SIZES) {
+      const { cols, rows } = P.sizes[size];
+      for (let seed = 1; seed <= 300; seed++) {
+        const cards = deal(cols, rows, P.picturesPerTheme, [], mulberry32(seed));
+        expect(touchingPairs(cards, cols), `${size} seed ${String(seed)}`).toBe(0);
+      }
+    }
+  });
+
+  it('counts touching pairs: side by side, above / below, corner to corner, not across a row end', () => {
+    // 3 across: 1 2 3 / 4 5 6
+    expect(touchingPairs([1, 1, 2, 3, 4, 5], 3)).toBe(1); // side by side
+    expect(touchingPairs([1, 2, 3, 1, 4, 5], 3)).toBe(1); // above / below
+    expect(touchingPairs([1, 2, 3, 4, 1, 5], 3)).toBe(1); // corner to corner
+    expect(touchingPairs([1, 2, 3, 3, 4, 5], 3)).toBe(0); // the end of a row and the start of the next aren't neighbours
+    expect(touchingPairs([1, 2, 3, 4, 5, 1], 3)).toBe(0);
   });
 
   it('every twin group names real, different pictures', () => {
