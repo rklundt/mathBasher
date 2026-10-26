@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/core/gameIds';
+import type { GameId, MathGameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -729,6 +729,31 @@ export const PAIR_PALS_SHEETS = {
   /** Frames 0–4: the card backs in `config.pairPals.themes` order; frame 5: the blank face. */
   cards: { key: 'pairpals-cards', frame: 200, faceFrame: 5 },
 } as const;
+/**
+ * Sprint 2.13.1 — the Game Select tile pictures: one 96 px frame per math
+ * game, cut from each game's own art by `scripts/sprites/game-icons.mjs`
+ * (its `ORDER` must match `frames`; a test checks). Boot-loaded (≈40 KB):
+ * the game sheets the pictures come from load only when their game starts.
+ */
+export const GAME_ICON_SHEET: {
+  readonly key: 'game-icons';
+  readonly frame: number;
+  readonly frames: Readonly<Record<MathGameId, number>>;
+} = {
+  key: 'game-icons',
+  frame: 96,
+  frames: {
+    'alien-shoot': 0,
+    'asteroid-field': 1,
+    'number-climb': 2,
+    'math-a-lotl': 3,
+    'frog-splash': 4,
+    'space-shooter': 5,
+    'penguin-slide': 6,
+    'bunny-garden': 7,
+    'balance-scale': 8,
+  },
+};
 export const GARDEN_SHEETS = {
   carrots: { key: GardenSpriteKeys.Carrots, frame: 120, kinds: 4, frames: 2 },
   mole: { key: GardenSpriteKeys.Mole, frame: 120, frames: 2 },
@@ -1420,6 +1445,15 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', key),
     scope: 'eager',
   })),
+  // Sprint 2.13.1 — the Game Select tile pictures. Eager: Game Select comes before any game loads.
+  {
+    kind: 'hero',
+    key: GAME_ICON_SHEET.key,
+    url: spritePath('hero', GAME_ICON_SHEET.key),
+    frameWidth: GAME_ICON_SHEET.frame,
+    frameHeight: GAME_ICON_SHEET.frame,
+    scope: 'eager',
+  },
   // Sprint 2.1 playtest — image-variant asteroid sprites (target rocks in
   // Asteroid Field). Sprint 2.6.3 gave them their own `asteroid` kind and
   // folder; before that they were tagged `particle` with a hard-coded URL
