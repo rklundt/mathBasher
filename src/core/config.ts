@@ -1485,11 +1485,22 @@ export const config = {
       backButton: { w: 220, h: 72 },
       /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
       chip: { w: 440, h: 72 },
-      /** Sprint 2.12 — nine games: a 3 × 3 grid (five across left phone tiles too narrow). */
+      /**
+       * Sprint 2.13.1 — the games in two tabs (Math Basher, Math Fun; see
+       * `core/gameGroups.ts`), each tab's tiles in two rows (4 → 2 + 2,
+       * 5 → 3 + 2). A tile shows the game's picture on its left.
+       */
       gameSelect: {
-        headingY: 86,
-        chipY: 172,
-        grid: { firstRowY: 268, cellW: 360, cellH: 104, gapX: 12, gapY: 12, perRow: 3 },
+        headingY: 50,
+        chipY: 128,
+        tabY: 212,
+        tab: { w: 240, h: 60, gapX: 16 },
+        grid: { firstRowY: 334, cellW: 390, cellH: 150, gapX: 16, gapY: 16, rows: 2 },
+        /** The picture on each tile: its size and the space around it. */
+        icon: { sizePx: 92, padPx: 12 },
+        backY: 636,
+        /** A tab swap fades the tiles in. */
+        swapFadeMs: 160,
       },
       difficulty: {
         headingY: 58,
