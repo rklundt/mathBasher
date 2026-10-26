@@ -507,10 +507,11 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [MidgroundKeys.RiverBrook1]: 0.6,
   [MidgroundKeys.RiverCrickets1]: 0.25,
   [MusicKeys.PondLoop1]: 0.5,
-  // Owner: the mismatch clank should be "less pronounced than normal sfx".
-  [SfxKeys.BalanceClank1]: 0.6,
-  [SfxKeys.BalanceClank2]: 0.6,
-  [SfxKeys.BalanceClank3]: 0.6,
+  // Owner: the mismatch clank should be "less pronounced than normal sfx";
+  // 0.6 was too muted on the owner's phone, so 0.8.
+  [SfxKeys.BalanceClank1]: 0.8,
+  [SfxKeys.BalanceClank2]: 0.8,
+  [SfxKeys.BalanceClank3]: 0.8,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
