@@ -27,6 +27,10 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [2.12.1] - 2026-10-25 — Balance Scale sounds
+
 **Balance Scale**
 - A wrong weight now tips the scale with a soft hollow clank (three of them, never the same twice in a row), a little quieter than the other sounds.
 - The scale levelling plays a bright little fanfare (four of them), in place of a borrowed sound.
