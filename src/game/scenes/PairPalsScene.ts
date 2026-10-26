@@ -291,7 +291,7 @@ export class PairPalsScene extends Phaser.Scene {
     const card = this.cards[i];
     const half = this.cfg.flipHalfMs;
     this.tweens.killTweensOf(card.root);
-    card.root.setScale(1);
+    card.root.setScale(1).setAngle(0); // a killed miss wiggle leaves its tilt behind
     this.tweens.add({
       targets: card.root,
       scaleX: 0,

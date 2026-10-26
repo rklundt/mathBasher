@@ -80,7 +80,7 @@ export function touchingPairs(cards: readonly number[], cols: number): number {
   return n;
 }
 
-/** Shuffles tried before settling for the one with the fewest touching pairs (in practice a valid one comes within ~20). */
+/** Shuffles tried before settling for the one with the fewest touching pairs (a valid board takes about 30–45 on average; giving up is about 1 in 100,000 on Easy). */
 const MAX_SHUFFLES = 500;
 
 /**
