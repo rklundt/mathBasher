@@ -1264,8 +1264,8 @@ export const config = {
     /** A card turning: squash to edge-on, swap, open. */
     flipHalfMs: 120,
     flipLiftScale: 1.06,
-    /** A miss stays up this long so it can be remembered (a tap skips it). */
-    missHoldMs: 1200,
+    /** A miss stays up this long so it can be remembered (a tap skips it); owner: 1.2 s → 2.2 s, 2026-10-26. */
+    missHoldMs: 2200,
     missWiggleDeg: 4,
     matchPopScale: 1.14,
     matchPopMs: 220,
