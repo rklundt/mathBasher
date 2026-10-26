@@ -34,8 +34,9 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
 
   // Sprite manifest entries (single-image OR spritesheet via the optional
   // `frameWidth` field — same branching BootScene uses for eager loads).
+  // Sprint 2.14 — plus the sheets this game shares with another (`alsoFor`).
   for (const entry of SPRITE_MANIFEST) {
-    if (!isGameScope(entry.scope, gameId)) continue;
+    if (!isGameScope(entry.scope, gameId) && !entry.alsoFor?.includes(gameId)) continue;
     if (entry.frameWidth !== undefined) {
       loader.spritesheet(entry.key, entry.url, {
         frameWidth: entry.frameWidth,
@@ -48,10 +49,11 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
 
   // Audio manifest entries (sfx / midground / music — all loaded via
   // load.audio regardless of kind; AudioManager binds them later).
-  // Sprint 2.13 — minus the ones its scene loads when needed (`onDemand`).
+  // Sprint 2.13 — minus the ones its scene loads when needed (`onDemand`);
+  // sprint 2.14 — plus the ones it borrows (`alsoFor`).
   for (const entry of AUDIO_MANIFEST) {
     if (entry.onDemand) continue;
-    if (!isGameScope(entry.scope, gameId)) continue;
+    if (!isGameScope(entry.scope, gameId) && !entry.alsoFor?.includes(gameId)) continue;
     loader.audio(entry.key, entry.url);
   }
 

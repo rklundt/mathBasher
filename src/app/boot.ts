@@ -24,6 +24,10 @@ import { BunnyGardenScene } from '@/game/scenes/BunnyGardenScene';
 import { BalanceScaleScene } from '@/game/scenes/BalanceScaleScene';
 import { PairPalsSetupScene } from '@/game/scenes/PairPalsSetupScene';
 import { PairPalsScene } from '@/game/scenes/PairPalsScene';
+import { PuzzleSetupScene } from '@/game/scenes/PuzzleSetupScene';
+import { PickPuzzleScene } from '@/game/scenes/PickPuzzleScene';
+import { CopyCatScene } from '@/game/scenes/CopyCatScene';
+import { SymbolHuntScene } from '@/game/scenes/SymbolHuntScene';
 import { ChallengePickerScene } from '@/game/scenes/ChallengePickerScene';
 import { MyScoresScene } from '@/game/scenes/MyScoresScene';
 import { HudScene } from '@/game/scenes/HudScene';
@@ -147,6 +151,10 @@ export function bootGame(): void {
       BalanceScaleScene,
       PairPalsSetupScene,
       PairPalsScene,
+      PuzzleSetupScene,
+      PickPuzzleScene,
+      CopyCatScene,
+      SymbolHuntScene,
       HudScene,
       GameOverScene,
       PauseOverlay,

@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/core/gameIds';
+import { ROUND_PUZZLE_IDS, type GameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -361,6 +361,29 @@ export function pickPairPalsMissSfx(rng: () => number = Math.random): (typeof PA
   return nextPairPalsMiss(rng);
 }
 
+/**
+ * Sprint 2.14 — the puzzle pack's sounds, borrowed until the owner swaps
+ * them (owner: "use sounds that make sense that you have"): a tap is Pair
+ * Pals' tile flip, a right answer its match hit, a wrong one its miss, the
+ * round's end the bonus cheer. Copy Cat's animals each have their own short
+ * sound, in pad order. All of them load with every puzzle in the pack
+ * (`alsoFor`).
+ */
+export const COPY_CAT_VOICES = [
+  'frog-ribbit-1',
+  'bubble-pop-1',
+  'penguin-hop-1',
+  'tile-flip-2',
+  'frog-slurp-1',
+  'penguin-gulp-1',
+] as const;
+const PUZZLE_PACK_SOUNDS: ReadonlySet<string> = new Set([
+  ...TILE_FLIP_KEYS,
+  ...PAIR_PALS_MATCH_KEYS,
+  ...PAIR_PALS_MISS_KEYS,
+  ...COPY_CAT_VOICES,
+]);
+
 /** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
 const BONUS_CHEER_KEYS = ['bonus-cheer-1', 'bonus-cheer-2', 'bonus-cheer-3', 'bonus-cheer-4'] as const;
 const nextBonusCheer = noRepeatPicker(BONUS_CHEER_KEYS);
@@ -546,6 +569,14 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'balance-scale': MusicKeys.BalanceLoop1,
   // Sprint 2.13 — not read: Pair Pals plays its card theme's track (`PAIR_PALS_MUSIC`); the map just covers every game.
   'pair-pals': MusicKeys.PairPalsLoop1,
+  // Sprint 2.14 — the puzzle pack borrows Pair Pals' tracks (loaded on demand by its scenes).
+  'pattern-train': MusicKeys.PairPalsAnimalLoop1,
+  'missing-piece': MusicKeys.PairPalsDessertLoop1,
+  'odd-one-out': MusicKeys.PairPalsDinoLoop1,
+  'magic-wand': MusicKeys.PairPalsAlienLoop1,
+  'spin-match': MusicKeys.PairPalsLoop1,
+  'copy-cat': MusicKeys.PairPalsAnimalLoop1,
+  'symbol-hunt': MusicKeys.PairPalsDessertLoop1,
 };
 
 /**
@@ -578,6 +609,13 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   // Sprint 2.12 — music only.
   'balance-scale': [],
   'pair-pals': [],
+  'pattern-train': [],
+  'missing-piece': [],
+  'odd-one-out': [],
+  'magic-wand': [],
+  'spin-match': [],
+  'copy-cat': [],
+  'symbol-hunt': [],
 };
 
 /**
@@ -663,6 +701,11 @@ export interface AudioManifestEntry {
    */
   readonly scope: AssetScope;
   /**
+   * Sprint 2.14 — other games that play this sound and load it with their
+   * own (`scope` names one game): the puzzle pack's borrowed sounds.
+   */
+  readonly alsoFor?: readonly GameId[];
+  /**
    * Sprint 2.13 — not in its game's bundle: the scene loads it when it's
    * needed (`loadAudioOnDemand`). Pair Pals' four theme tracks (about
    * 1 MB each) load one at a time, in the background, for the theme played.
@@ -723,9 +766,14 @@ function audioScopeFor(key: AudioKey): AssetScope {
   return 'eager';
 }
 
-/** Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`): Pair Pals' theme tracks. */
-function audioOnDemand(key: AudioKey): { onDemand?: true } {
-  return PAIR_PALS_MUSIC_KEYS.has(key) ? { onDemand: true } : {};
+/**
+ * Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`):
+ * Pair Pals' theme tracks (the puzzle pack plays them too). Sprint 2.14 —
+ * the puzzle pack's borrowed sounds load with each of its puzzles (`alsoFor`).
+ */
+function audioExtras(key: AudioKey): { onDemand?: true; alsoFor?: readonly GameId[] } {
+  if (PAIR_PALS_MUSIC_KEYS.has(key)) return { onDemand: true };
+  return PUZZLE_PACK_SOUNDS.has(key) ? { alsoFor: ROUND_PUZZLE_IDS } : {};
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -734,20 +782,20 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     kind: 'sfx',
     url: sfxPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
 ];

@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId, MathGameId } from '@/core/gameIds';
+import { ROUND_PUZZLE_IDS, type GameId, type MathGameId, type PuzzleGameId, type RoundPuzzleId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -536,6 +536,18 @@ export const BgSpriteKeys = {
    * each theme's bright copy (`PAIR_PALS_BACKDROP_KEYS`).
    */
   PairPals: 'pair-pals',
+  /**
+   * Sprint 2.14 — the puzzle pack's setup-screen backdrops: each puzzle's
+   * first backdrop drawn by `scripts/sprites/puzzles.mjs`, darkened. The
+   * round plays on its three bright ones (`PUZZLE_BACKDROP_KEYS`).
+   */
+  PatternTrain: 'puzzle-pattern-train',
+  MissingPiece: 'puzzle-missing-piece',
+  OddOneOut: 'puzzle-odd-one-out',
+  MagicWand: 'puzzle-magic-wand',
+  SpinMatch: 'puzzle-spin-match',
+  CopyCat: 'puzzle-copy-cat',
+  SymbolHunt: 'puzzle-symbol-hunt',
 } as const;
 
 /**
@@ -729,6 +741,55 @@ export const PAIR_PALS_SHEETS = {
   /** Frames 0–4: the card backs in `config.pairPals.themes` order; frame 5: the blank face. */
   cards: { key: 'pairpals-cards', frame: 200, faceFrame: 5 },
 } as const;
+/**
+ * Sprint 2.14 — the puzzle pack's art, drawn by `scripts/sprites/puzzles.mjs`
+ * (the source of truth for the frame sizes; a test checks them).
+ *  - tokens: 12 shapes across × 8 colours down (`config.puzzles.shapes` / `colours` order);
+ *  - spin: 16 lopsided shapes across × 4 colours down (`config.puzzles.spinCells`);
+ *  - hats: 8 across (`config.puzzles.hats`), anchored at their bottom middle (glasses at their centre);
+ *  - train: the engine, then 4 cars (the token sits in a car's window, `windowY` from its top);
+ *  - wand: one image.
+ */
+export const PUZZLE_SHEETS = {
+  tokens: { key: 'puzzle-tokens', frameWidth: 128, frameHeight: 128, cols: 12 },
+  spin: { key: 'puzzle-spin', frameWidth: 128, frameHeight: 128, cols: 16 },
+  hats: { key: 'puzzle-hats', frameWidth: 96, frameHeight: 96 },
+  train: { key: 'puzzle-train', frameWidth: 220, frameHeight: 180, cars: 4, windowY: 88 },
+  wand: { key: 'puzzle-wand', frameWidth: 120, frameHeight: 220 },
+} as const;
+/**
+ * Sprint 2.14 — the picker's puzzle tile pictures: one 96 px frame per
+ * puzzle, drawn by `scripts/sprites/puzzles.mjs` (its `ICON_ORDER` must
+ * match `frames`; a test checks). Boot-loaded, like the game pictures.
+ */
+export const PUZZLE_ICON_SHEET: {
+  readonly key: 'puzzle-icons';
+  readonly frame: number;
+  readonly frames: Readonly<Record<PuzzleGameId, number>>;
+} = {
+  key: 'puzzle-icons',
+  frame: 96,
+  frames: {
+    'pair-pals': 0,
+    'pattern-train': 1,
+    'missing-piece': 2,
+    'odd-one-out': 3,
+    'magic-wand': 4,
+    'spin-match': 5,
+    'copy-cat': 6,
+    'symbol-hunt': 7,
+  },
+};
+/** Each puzzle's three backdrops, cross-faded between puzzles. */
+export const PUZZLE_BACKDROP_KEYS: Readonly<Record<RoundPuzzleId, readonly string[]>> = {
+  'pattern-train': ['puzzle-pattern-train-1', 'puzzle-pattern-train-2', 'puzzle-pattern-train-3'],
+  'missing-piece': ['puzzle-missing-piece-1', 'puzzle-missing-piece-2', 'puzzle-missing-piece-3'],
+  'odd-one-out': ['puzzle-odd-one-out-1', 'puzzle-odd-one-out-2', 'puzzle-odd-one-out-3'],
+  'magic-wand': ['puzzle-magic-wand-1', 'puzzle-magic-wand-2', 'puzzle-magic-wand-3'],
+  'spin-match': ['puzzle-spin-match-1', 'puzzle-spin-match-2', 'puzzle-spin-match-3'],
+  'copy-cat': ['puzzle-copy-cat-1', 'puzzle-copy-cat-2', 'puzzle-copy-cat-3'],
+  'symbol-hunt': ['puzzle-symbol-hunt-1', 'puzzle-symbol-hunt-2', 'puzzle-symbol-hunt-3'],
+};
 /**
  * Sprint 2.13.1 — the Game Select tile pictures: one 96 px frame per math
  * game, cut from each game's own art by `scripts/sprites/game-icons.mjs`
@@ -994,6 +1055,13 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'bunny-garden': BgSpriteKeys.BunnyGarden,
   'balance-scale': BgSpriteKeys.BalanceScale,
   'pair-pals': BgSpriteKeys.PairPals,
+  'pattern-train': BgSpriteKeys.PatternTrain,
+  'missing-piece': BgSpriteKeys.MissingPiece,
+  'odd-one-out': BgSpriteKeys.OddOneOut,
+  'magic-wand': BgSpriteKeys.MagicWand,
+  'spin-match': BgSpriteKeys.SpinMatch,
+  'copy-cat': BgSpriteKeys.CopyCat,
+  'symbol-hunt': BgSpriteKeys.SymbolHunt,
 };
 
 /**
@@ -1014,6 +1082,13 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'bunny-garden': { stars: false, bottomFade: false },
   'balance-scale': { stars: false, bottomFade: false },
   'pair-pals': { stars: false, bottomFade: false },
+  'pattern-train': { stars: false, bottomFade: false },
+  'missing-piece': { stars: false, bottomFade: false },
+  'odd-one-out': { stars: false, bottomFade: false },
+  'magic-wand': { stars: false, bottomFade: false },
+  'spin-match': { stars: false, bottomFade: false },
+  'copy-cat': { stars: false, bottomFade: false },
+  'symbol-hunt': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1146,6 +1221,12 @@ export interface SpriteManifestEntry {
    */
   readonly frameWidth?: number;
   readonly frameHeight?: number;
+  /**
+   * Sprint 2.14 — other games that use this sheet and load it with their own
+   * (`scope` names one game): the puzzle pack shares its tokens, Balance
+   * Scale's crowd (the dancers) and Pair Pals' animal and dessert pictures.
+   */
+  readonly alsoFor?: readonly GameId[];
   /**
    * Sprint 2.1.6 — when this asset should be loaded. See
    * `src/core/assetScope.ts` for the taxonomy. Story 1 tags every
@@ -1411,6 +1492,8 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameWidth: s.frameWidth,
     frameHeight: s.frameHeight,
     scope: 'game:balance-scale',
+    // Sprint 2.14 — the crowd dances beside every puzzle in the pack.
+    ...(s.key === BALANCE_SHEETS.crowd.key && { alsoFor: ROUND_PUZZLE_IDS }),
   })),
   // Sprint 2.13 — Pair Pals: the picture sheets, the cards and the backdrops, all game-scoped.
   ...Object.values(PAIR_PALS_PICTURE_KEYS).map<SpriteManifestEntry>((key) => ({
@@ -1420,7 +1503,59 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameWidth: PAIR_PALS_SHEETS.picture.frame,
     frameHeight: PAIR_PALS_SHEETS.picture.frame,
     scope: 'game:pair-pals',
+    // Sprint 2.14 — Odd One Out's "kinds" (animals vs desserts) and Copy Cat's animals.
+    ...(key === PAIR_PALS_PICTURE_KEYS.animals && { alsoFor: ['odd-one-out', 'copy-cat'] as const }),
+    ...(key === PAIR_PALS_PICTURE_KEYS.desserts && { alsoFor: ['odd-one-out'] as const }),
   })),
+  // Sprint 2.14 — the puzzle pack: tokens (shared by five puzzles), spin shapes, hats, train, wand, backdrops.
+  {
+    kind: 'hero',
+    key: PUZZLE_SHEETS.tokens.key,
+    url: spritePath('hero', PUZZLE_SHEETS.tokens.key),
+    frameWidth: PUZZLE_SHEETS.tokens.frameWidth,
+    frameHeight: PUZZLE_SHEETS.tokens.frameHeight,
+    scope: 'game:pattern-train',
+    alsoFor: ['missing-piece', 'odd-one-out', 'magic-wand', 'symbol-hunt'],
+  },
+  {
+    kind: 'hero',
+    key: PUZZLE_SHEETS.spin.key,
+    url: spritePath('hero', PUZZLE_SHEETS.spin.key),
+    frameWidth: PUZZLE_SHEETS.spin.frameWidth,
+    frameHeight: PUZZLE_SHEETS.spin.frameHeight,
+    scope: 'game:spin-match',
+    alsoFor: ['odd-one-out', 'magic-wand'],
+  },
+  {
+    kind: 'hero',
+    key: PUZZLE_SHEETS.hats.key,
+    url: spritePath('hero', PUZZLE_SHEETS.hats.key),
+    frameWidth: PUZZLE_SHEETS.hats.frameWidth,
+    frameHeight: PUZZLE_SHEETS.hats.frameHeight,
+    scope: 'game:magic-wand',
+  },
+  {
+    kind: 'hero',
+    key: PUZZLE_SHEETS.train.key,
+    url: spritePath('hero', PUZZLE_SHEETS.train.key),
+    frameWidth: PUZZLE_SHEETS.train.frameWidth,
+    frameHeight: PUZZLE_SHEETS.train.frameHeight,
+    scope: 'game:pattern-train',
+  },
+  {
+    kind: 'hero',
+    key: PUZZLE_SHEETS.wand.key,
+    url: spritePath('hero', PUZZLE_SHEETS.wand.key),
+    scope: 'game:magic-wand',
+  },
+  ...ROUND_PUZZLE_IDS.flatMap((id) =>
+    PUZZLE_BACKDROP_KEYS[id].map<SpriteManifestEntry>((key) => ({
+      kind: 'bg',
+      key,
+      url: spritePath('bg', key),
+      scope: `game:${id}`,
+    })),
+  ),
   {
     kind: 'hero',
     key: PAIR_PALS_SHEETS.cards.key,
@@ -1452,6 +1587,15 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     url: spritePath('hero', GAME_ICON_SHEET.key),
     frameWidth: GAME_ICON_SHEET.frame,
     frameHeight: GAME_ICON_SHEET.frame,
+    scope: 'eager',
+  },
+  // Sprint 2.14 — the picker's puzzle tile pictures, boot-loaded.
+  {
+    kind: 'hero',
+    key: PUZZLE_ICON_SHEET.key,
+    url: spritePath('hero', PUZZLE_ICON_SHEET.key),
+    frameWidth: PUZZLE_ICON_SHEET.frame,
+    frameHeight: PUZZLE_ICON_SHEET.frame,
     scope: 'eager',
   },
   // Sprint 2.1 playtest — image-variant asteroid sprites (target rocks in
