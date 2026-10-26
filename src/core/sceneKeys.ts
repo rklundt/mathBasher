@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/core/gameIds';
+import type { GameId, PuzzleGameId } from '@/core/gameIds';
 
 /**
  * Stable string keys for every Phaser scene in the app. Use these constants
@@ -109,6 +109,13 @@ export const SceneKeys = {
    */
   BalanceScale: 'balance-scale',
   /**
+   * Pair Pals — sprint 2.13, the first puzzle game (the Puzzles subject). Its
+   * setup screen (theme and size) comes after Loading, so its sample
+   * pictures are in memory; Start goes straight to the board.
+   */
+  PairPalsSetup: 'pair-pals-setup',
+  PairPals: 'pair-pals',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -160,5 +167,18 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.BunnyGarden;
     case 'balance-scale':
       return SceneKeys.BalanceScale;
+    case 'pair-pals':
+      return SceneKeys.PairPals;
+  }
+}
+
+/**
+ * Sprint 2.13 — a puzzle game's setup screen (the scene Loading hands over
+ * to; the setup starts the board itself). Exhaustive, like `gameSceneKeyFor`.
+ */
+export function puzzleSetupSceneKeyFor(gameId: PuzzleGameId): SceneKey {
+  switch (gameId) {
+    case 'pair-pals':
+      return SceneKeys.PairPalsSetup;
   }
 }

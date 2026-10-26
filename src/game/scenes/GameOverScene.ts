@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
-import { Settings, type GameId } from '@/services/Settings';
+import { Settings } from '@/services/Settings';
+import type { MathGameId } from '@/core/gameIds';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
@@ -55,10 +56,10 @@ export interface GameOverData {
    *      meant Asteroid Field high scores were being saved under the
    *      Alien Shoot bucket).
    *
-   * Optional for back-compat with any legacy caller; falls back to
-   * Settings.round.gameId, then 'alien-shoot' as a last resort.
+   * Required since sprint 2.13 (`GameSceneLifecycle` always passes it):
+   * the old fallback to `Settings.round.gameId` could now be a puzzle game.
    */
-  gameId?: GameId;
+  gameId: MathGameId;
 }
 
 /**
@@ -94,13 +95,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Resolve the gameId for this round. Source scene SHOULD pass it
-    // in init data; fall back to Settings (always populated — the
-    // GameId union has no nullable variant) for legacy callers. The
-    // prior triple-fallback (`?? 'alien-shoot'`) was unreachable
-    // because `Settings.round.gameId` is typed as non-nullable; dropped
-    // in sprint 2.1 wrap-up.
-    const gameId: GameId = this.roundData.gameId ?? Settings.round.gameId;
+    const { gameId } = this.roundData;
 
     const props: TelemetryProps = {
       gameId,
@@ -374,7 +369,7 @@ export class GameOverScene extends Phaser.Scene {
    * best for this combo BEFORE saving (otherwise we'd always tie our own
    * just-saved score), then save, then optionally show the badge.
    */
-  private async saveAndCheckHighScore(gameId: GameId, mathId: MathId, speed: SpeedKey): Promise<void> {
+  private async saveAndCheckHighScore(gameId: MathGameId, mathId: MathId, speed: SpeedKey): Promise<void> {
     const store = getScoreStore();
     const filter: ScoreFilter = { gameId, mathId, speed };
 

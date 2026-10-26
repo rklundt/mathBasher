@@ -129,6 +129,11 @@ export const SfxKeys = {
   BalanceSuccess2: 'balance-success-2',
   BalanceSuccess3: 'balance-success-3',
   BalanceSuccess4: 'balance-success-4',
+  /** Sprint 2.13 — Pair Pals: the first card of a turn flipping over, one of four (owner's). */
+  TileFlip1: 'tile-flip-1',
+  TileFlip2: 'tile-flip-2',
+  TileFlip3: 'tile-flip-3',
+  TileFlip4: 'tile-flip-4',
 } as const;
 
 /**
@@ -306,6 +311,35 @@ export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BA
   return nextBalanceClank(rng);
 }
 
+/**
+ * Sprint 2.13 — Pair Pals' sounds. The first card of a turn plays one of the
+ * owner's tile flips (its own); the second plays the result, borrowed from
+ * Bunny Garden and Balance Scale (owner: their success and fail sounds until
+ * Pair Pals has its own), so those load with Pair Pals too (`audioAlsoFor`).
+ * Its music (`PairPalsLoop1`) is its own.
+ */
+const TILE_FLIP_KEYS = ['tile-flip-1', 'tile-flip-2', 'tile-flip-3', 'tile-flip-4'] as const;
+const PAIR_PALS_MATCH_KEYS = [...BUNNY_POP_KEYS, ...BALANCE_SUCCESS_KEYS] as const;
+const PAIR_PALS_MISS_KEYS = [...BUNNY_MOLE_KEYS, ...BALANCE_CLANK_KEYS] as const;
+const nextTileFlip = noRepeatPicker(TILE_FLIP_KEYS);
+const nextPairPalsMatch = noRepeatPicker(PAIR_PALS_MATCH_KEYS);
+const nextPairPalsMiss = noRepeatPicker(PAIR_PALS_MISS_KEYS);
+
+/** The first card of a turn flips over. */
+export function pickTileFlipSfx(rng: () => number = Math.random): (typeof TILE_FLIP_KEYS)[number] {
+  return nextTileFlip(rng);
+}
+
+/** The second card makes a pair. */
+export function pickPairPalsMatchSfx(rng: () => number = Math.random): (typeof PAIR_PALS_MATCH_KEYS)[number] {
+  return nextPairPalsMatch(rng);
+}
+
+/** The second card doesn't match. */
+export function pickPairPalsMissSfx(rng: () => number = Math.random): (typeof PAIR_PALS_MISS_KEYS)[number] {
+  return nextPairPalsMiss(rng);
+}
+
 /** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
 const BONUS_CHEER_KEYS = ['bonus-cheer-1', 'bonus-cheer-2', 'bonus-cheer-3', 'bonus-cheer-4'] as const;
 const nextBonusCheer = noRepeatPicker(BONUS_CHEER_KEYS);
@@ -432,6 +466,8 @@ export const MusicKeys = {
   GardenLoop1: 'loop-9',
   /** Balance Scale gameplay loop (sprint 2.12, the owner's track). 60 s stereo, `--kind music --no-trim`. */
   BalanceLoop1: 'loop-10',
+  /** Pair Pals' background music (sprint 2.13, owner's; ~45 s loop). The owner may add one per card theme. */
+  PairPalsLoop1: 'loop-11',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -467,6 +503,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'penguin-slide': MusicKeys.SnowLoop1,
   'bunny-garden': MusicKeys.GardenLoop1,
   'balance-scale': MusicKeys.BalanceLoop1,
+  'pair-pals': MusicKeys.PairPalsLoop1,
 };
 
 /**
@@ -498,6 +535,7 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'bunny-garden': [],
   // Sprint 2.12 — music only.
   'balance-scale': [],
+  'pair-pals': [],
 };
 
 /**
@@ -582,6 +620,12 @@ export interface AudioManifestEntry {
    * to `'game:<id>'` so it defers until the matching game is picked.
    */
   readonly scope: AssetScope;
+  /**
+   * Sprint 2.13 — other games that borrow this sound and load it with
+   * their own (`scope` names one game). Pair Pals plays Bunny Garden's and
+   * Balance Scale's success and fail sounds.
+   */
+  readonly alsoFor?: readonly GameId[];
 }
 
 /**
@@ -632,7 +676,16 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
   if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
+  // Sprint 2.13 — Pair Pals' music and its own tile flips.
+  if (key === MusicKeys.PairPalsLoop1) return 'game:pair-pals';
+  if ((TILE_FLIP_KEYS as readonly string[]).includes(key)) return 'game:pair-pals';
   return 'eager';
+}
+
+/** Sprint 2.13 — the games that borrow a sound scoped to another game (see `alsoFor`): Pair Pals' success and fail sounds. */
+const PAIR_PALS_BORROWED: ReadonlySet<string> = new Set([...PAIR_PALS_MATCH_KEYS, ...PAIR_PALS_MISS_KEYS]);
+function audioAlsoFor(key: AudioKey): { alsoFor?: readonly GameId[] } {
+  return PAIR_PALS_BORROWED.has(key) ? { alsoFor: ['pair-pals'] } : {};
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -641,17 +694,20 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     kind: 'sfx',
     url: sfxPath(key),
     scope: audioScopeFor(key),
+    ...audioAlsoFor(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
     scope: audioScopeFor(key),
+    ...audioAlsoFor(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
     scope: audioScopeFor(key),
+    ...audioAlsoFor(key),
   })),
 ];

@@ -170,6 +170,16 @@ When sprint 2.X adds game mode `<id>`:
 
 13. **(Optional)** If the new game has its own `Settings` toggle (image asteroids style), add it via `createObservable<T>` (`src/services/observable.ts`) — don't hand-roll the listener Set + try/catch pattern.
 
+### A puzzle game (sprint 2.13)
+
+A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no challenge, points, Game Select or Difficulty. `GameId` is `MathGameId | PuzzleGameId`; math-only code (Difficulty, `questionsPerRoundFor`, Game Over, `GameSceneLifecycle`) takes `MathGameId`, so a puzzle can't reach it. For a new puzzle game:
+
+- Steps 1–6, 8, 9 and 10 (the Loading caption only) as above, with the id added to `PuzzleGameId`; list the puzzle in `src/core/puzzles.ts` with its `gameId`.
+- Give it a setup scene and an arm in `puzzleSetupSceneKeyFor` (`src/core/sceneKeys.ts`): the picker's Puzzles tab and Menu Start open it through Loading, so its own pictures are in memory.
+- Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Settings · Change Cards · Quit to Menu).
+- A sound it borrows from another game lists it in `alsoFor` (`audioKeys.ts`), so it loads with the puzzle too.
+- Steps 7, 10 (Difficulty), 11, 11c–11e and 12 don't apply.
+
 If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.
 
 ## References
