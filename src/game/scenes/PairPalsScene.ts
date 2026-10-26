@@ -12,7 +12,7 @@ import {
   PAIR_PALS_SHEETS,
   ParticleSpriteKeys,
 } from '@/core/spriteKeys';
-import { GAME_MUSIC_MAP, pickPairPalsMatchSfx, pickPairPalsMissSfx, pickTileFlipSfx } from '@/core/audioKeys';
+import { PAIR_PALS_MUSIC, pickPairPalsMatchSfx, pickPairPalsMissSfx, pickTileFlipSfx } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
 import { getPairPalsProgress, type GameResult } from '@/services/PairPalsProgress';
@@ -28,7 +28,7 @@ import {
   type Direction,
 } from '@/game/systems/pairPalsMath';
 import { setupScene } from '@/game/scenes/sceneSetup';
-import { loadGameBundle } from '@/game/services/assetLoader';
+import { loadAudioOnDemand, loadGameBundle } from '@/game/services/assetLoader';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline, createTapHint, type TapHint } from '@/game/ui/callouts';
 import { createIconButton } from '@/game/ui/IconButton';
@@ -90,6 +90,8 @@ export class PairPalsScene extends Phaser.Scene {
   private won = false;
   /** Esc that resumed the pause card mustn't pause again in the same key press. */
   private resumedAt = 0;
+  /** The track this game plays (null once the scene has shut down). */
+  private musicKey: string | null = null;
 
   constructor() {
     super(PairPalsScene.key);
@@ -123,7 +125,7 @@ export class PairPalsScene extends Phaser.Scene {
     this.buildHint();
     this.bindKeys();
 
-    getAudioManager().playLoop(GAME_MUSIC_MAP['pair-pals'], 'music');
+    this.startMusic();
     this.events.once('shutdown', () => this.cleanUp());
     _th.logToAi('PairPalsStarted', SeverityLevel.Information, this.props());
   }
@@ -233,6 +235,21 @@ export class PairPalsScene extends Phaser.Scene {
     kb.on('keydown-ESC', () => {
       if (Date.now() - this.resumedAt < 250) return;
       this.openPause();
+    });
+  }
+
+  /**
+   * The card theme's own track (`PAIR_PALS_MUSIC`). It loads in the
+   * background the first time (about 1 MB), so the board never waits; the
+   * music starts when it's ready (paused straight away if the game is).
+   */
+  private startMusic(): void {
+    const key = PAIR_PALS_MUSIC[this.theme];
+    this.musicKey = key;
+    loadAudioOnDemand(this, key, () => {
+      if (this.musicKey !== key) return;
+      getAudioManager().playLoop(key, 'music');
+      if (this.paused) getAudioManager().pauseAllLoops();
     });
   }
 
@@ -545,7 +562,8 @@ export class PairPalsScene extends Phaser.Scene {
     this.cancelHold();
     this.time.paused = false;
     this.input.keyboard?.removeAllListeners();
-    getAudioManager().stopLoop(GAME_MUSIC_MAP['pair-pals']);
+    if (this.musicKey !== null) getAudioManager().stopLoop(this.musicKey);
+    this.musicKey = null;
     for (const key of [SceneKeys.PauseOverlay, SceneKeys.Settings]) {
       if (this.scene.isActive(key)) this.scene.stop(key);
     }

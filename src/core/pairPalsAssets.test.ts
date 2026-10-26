@@ -19,6 +19,7 @@ import {
   AUDIO_MANIFEST,
   GAME_MIDGROUND_MAP,
   GAME_MUSIC_MAP,
+  PAIR_PALS_MUSIC,
   pickPairPalsMatchSfx,
   pickPairPalsMissSfx,
   pickTileFlipSfx,
@@ -84,8 +85,8 @@ describe('Pair Pals assets (sprint 2.13)', () => {
     expect(meta.width).toBe((PAIR_PALS_SHEETS.cards.faceFrame + 1) * PAIR_PALS_SHEETS.cards.frame);
   });
 
-  it('every sound it plays loads with it (its own flips, and the borrowed results and music)', () => {
-    const played = new Set<string>([GAME_MUSIC_MAP['pair-pals'], ...GAME_MIDGROUND_MAP['pair-pals']]);
+  it('every sound it plays loads with it (its own flips, and the borrowed results)', () => {
+    const played = new Set<string>(GAME_MIDGROUND_MAP['pair-pals']);
     for (let i = 0; i < 40; i++) {
       played.add(pickTileFlipSfx());
       played.add(pickPairPalsMatchSfx());
@@ -101,6 +102,21 @@ describe('Pair Pals assets (sprint 2.13)', () => {
     for (const n of [1, 2, 3, 4]) {
       expect(AUDIO_MANIFEST.find((x) => x.key === `tile-flip-${String(n)}`)?.scope).toBe('game:pair-pals');
     }
+  });
+
+  it('each card theme has its own track on disk, loaded on demand (never in a bundle or at boot)', () => {
+    expect(GAME_MUSIC_MAP['pair-pals']).toBe(PAIR_PALS_MUSIC.dragons);
+    for (const theme of config.pairPals.themes) {
+      const e = AUDIO_MANIFEST.find((x) => x.key === PAIR_PALS_MUSIC[theme]);
+      expect(e, theme).toBeDefined();
+      expect(e!.kind, theme).toBe('music');
+      expect(e!.scope, theme).toBe('game:pair-pals');
+      expect(e!.onDemand, theme).toBe(true);
+      expect(existsSync(onDisk(e!.url)), e!.url).toBe(true);
+    }
+    // Only these load on demand.
+    const onDemand = AUDIO_MANIFEST.filter((x) => x.onDemand).map((x) => x.key);
+    expect(new Set(onDemand)).toEqual(new Set(Object.values(PAIR_PALS_MUSIC)));
   });
 
   it('the math games are every game but the puzzles', () => {

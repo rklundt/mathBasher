@@ -4,6 +4,7 @@
 
 import type { GameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
+import type { PairPalsTheme } from '@/core/config';
 
 /**
  * Stable string keys for every preloadable audio asset. Mirrors the
@@ -316,7 +317,7 @@ export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BA
  * owner's tile flips (its own); the second plays the result, borrowed from
  * Bunny Garden and Balance Scale (owner: their success and fail sounds until
  * Pair Pals has its own), so those load with Pair Pals too (`audioAlsoFor`).
- * Its music (`PairPalsLoop1`) is its own.
+ * Its music is its own, one track per card theme (`PAIR_PALS_MUSIC`).
  */
 const TILE_FLIP_KEYS = ['tile-flip-1', 'tile-flip-2', 'tile-flip-3', 'tile-flip-4'] as const;
 const PAIR_PALS_MATCH_KEYS = [...BUNNY_POP_KEYS, ...BALANCE_SUCCESS_KEYS] as const;
@@ -466,8 +467,16 @@ export const MusicKeys = {
   GardenLoop1: 'loop-9',
   /** Balance Scale gameplay loop (sprint 2.12, the owner's track). 60 s stereo, `--kind music --no-trim`. */
   BalanceLoop1: 'loop-10',
-  /** Pair Pals' background music (sprint 2.13, owner's; ~45 s loop). The owner may add one per card theme. */
+  /** Pair Pals' background music, one per card theme (sprint 2.13, owner's): dragons (~45 s). */
   PairPalsLoop1: 'loop-11',
+  /** Pair Pals: dinosaurs (60 s). */
+  PairPalsDinoLoop1: 'loop-12',
+  /** Pair Pals: desserts (60 s). */
+  PairPalsDessertLoop1: 'loop-13',
+  /** Pair Pals: cute animals (60 s). */
+  PairPalsAnimalLoop1: 'loop-14',
+  /** Pair Pals: aliens (60 s; raised 1.4 dB to sit with the others). */
+  PairPalsAlienLoop1: 'loop-15',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -491,6 +500,18 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
  * gameId, so no observer pattern is needed — they just read the map
  * directly.
  */
+/**
+ * Sprint 2.13 — Pair Pals' music per card theme (owner's tracks). Loaded on demand (`onDemand`).
+ */
+export const PAIR_PALS_MUSIC: Readonly<Record<PairPalsTheme, MusicKey>> = {
+  animals: MusicKeys.PairPalsAnimalLoop1,
+  desserts: MusicKeys.PairPalsDessertLoop1,
+  dinosaurs: MusicKeys.PairPalsDinoLoop1,
+  dragons: MusicKeys.PairPalsLoop1,
+  aliens: MusicKeys.PairPalsAlienLoop1,
+};
+const PAIR_PALS_MUSIC_KEYS: ReadonlySet<string> = new Set(Object.values(PAIR_PALS_MUSIC));
+
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
@@ -503,6 +524,7 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'penguin-slide': MusicKeys.SnowLoop1,
   'bunny-garden': MusicKeys.GardenLoop1,
   'balance-scale': MusicKeys.BalanceLoop1,
+  // Sprint 2.13 — Pair Pals plays its card theme's track instead (`PAIR_PALS_MUSIC`); this is the default.
   'pair-pals': MusicKeys.PairPalsLoop1,
 };
 
@@ -626,6 +648,12 @@ export interface AudioManifestEntry {
    * Balance Scale's success and fail sounds.
    */
   readonly alsoFor?: readonly GameId[];
+  /**
+   * Sprint 2.13 — not in its game's bundle: the scene loads it when it's
+   * needed (`loadAudioOnDemand`). Pair Pals' four theme tracks (about
+   * 1 MB each) load one at a time, in the background, for the theme played.
+   */
+  readonly onDemand?: true;
 }
 
 /**
@@ -677,14 +705,15 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   // Sprint 2.13 — Pair Pals' music and its own tile flips.
-  if (key === MusicKeys.PairPalsLoop1) return 'game:pair-pals';
+  if (PAIR_PALS_MUSIC_KEYS.has(key)) return 'game:pair-pals';
   if ((TILE_FLIP_KEYS as readonly string[]).includes(key)) return 'game:pair-pals';
   return 'eager';
 }
 
 /** Sprint 2.13 — the games that borrow a sound scoped to another game (see `alsoFor`): Pair Pals' success and fail sounds. */
 const PAIR_PALS_BORROWED: ReadonlySet<string> = new Set([...PAIR_PALS_MATCH_KEYS, ...PAIR_PALS_MISS_KEYS]);
-function audioAlsoFor(key: AudioKey): { alsoFor?: readonly GameId[] } {
+function audioAlsoFor(key: AudioKey): { alsoFor?: readonly GameId[]; onDemand?: true } {
+  if (PAIR_PALS_MUSIC_KEYS.has(key)) return { onDemand: true };
   return PAIR_PALS_BORROWED.has(key) ? { alsoFor: ['pair-pals'] } : {};
 }
 
