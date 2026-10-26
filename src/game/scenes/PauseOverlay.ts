@@ -21,12 +21,14 @@ import type { QuitDestination } from '@/game/scenes/gameSceneContract';
  * Translucent overlay that floats above GameScene + HudScene while a round
  * is paused: the pause card.
  *
- * Sprint 2.13 — a puzzle (Pair Pals) passes `puzzleQuitFn` instead of
- * `quitFn` and gets Resume, then Settings · Change Cards · Quit to Menu.
+ * Sprint 2.13 — the pause buttons gain Change Difficulty (this game's
+ * Difficulty; the round ends unscored). A puzzle (Pair Pals) passes
+ * `puzzleQuitFn` instead of `quitFn` and gets Resume, then Change Cards or
+ * Difficulty (its setup) · Settings · Quit to Menu.
  *
  * Two views (sprint 2.9):
- *  - **Pause buttons:** Resume, then a 2 × 2 grid: Settings, Change
- *    challenge, Change game, Quit to menu.
+ *  - **Pause buttons:** Resume, then a grid: Settings, Change
+ *    challenge, Change difficulty, Change game, Quit to menu.
  *  - **Challenge buttons** (after Change challenge): "Pick your challenge!"
  *    and the same buttons as the challenge picker, inside this card. Back
  *    (or Esc, or the same challenge) returns to the pause buttons with the
@@ -45,7 +47,7 @@ import type { QuitDestination } from '@/game/scenes/gameSceneContract';
  * DOM strip below the canvas (sprint 2.5.2), so it stays visible while paused
  * regardless of scene order.
  */
-/** Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the puzzle's setup (Change Cards). */
+/** Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the puzzle's setup (Change Cards or Difficulty). */
 export type PuzzleQuitDestination = 'menu' | 'setup';
 
 export interface PauseOverlayInit {
@@ -55,7 +57,7 @@ export interface PauseOverlayInit {
   quitFn?: (destination: QuitDestination) => void;
   /**
    * Sprint 2.13 — a puzzle's pause card (given instead of `quitFn`): Resume,
-   * then Settings · Change Cards · Quit to Menu. No challenge, no Game Select.
+   * then Change Cards or Difficulty · Settings · Quit to Menu. No challenge, no Game Select.
    */
   puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
 }
@@ -138,13 +140,16 @@ export class PauseOverlay extends Phaser.Scene {
     const items: Array<{ label: string; onClick: () => void }> =
       puzzleQuit !== undefined
         ? [
+            // The setup screen, where the cards and the difficulty are picked.
+            { label: 'Change Cards or Difficulty', onClick: () => puzzleQuit('setup') },
             { label: 'Settings', onClick: () => this.handleSettings() },
-            { label: 'Change Cards', onClick: () => puzzleQuit('setup') },
             { label: 'Quit to Menu', onClick: () => puzzleQuit('menu') },
           ]
         : [
             { label: 'Settings', onClick: () => this.handleSettings() },
             { label: 'Change Challenge', onClick: () => this.showChallengeButtons() },
+            // Sprint 2.13 — this game's Difficulty (the round ends, not scored, as with a new challenge).
+            { label: 'Change Difficulty', onClick: () => this.handleQuit('difficulty') },
             // "Change game" goes straight to Game Select (challenge and difficulty carry over).
             { label: 'Change Game', onClick: () => this.handleQuit('game-select') },
             { label: 'Quit to Menu', onClick: () => this.handleQuit('menu') },

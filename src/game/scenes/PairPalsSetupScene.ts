@@ -38,7 +38,7 @@ export function bestLine(best: number | null): string {
  * browser (`PairPalsProgress`).
  *
  * Reached through Loading (from the picker's Puzzles tab, Menu Start, the
- * win panel and the pause card's Change Cards), so the pictures are in
+ * win panel and the pause card's Change Cards or Difficulty), so the pictures are in
  * memory. Start goes straight to the board; Back to the picker on Puzzles.
  */
 export class PairPalsSetupScene extends Phaser.Scene {
@@ -99,8 +99,8 @@ export class PairPalsSetupScene extends Phaser.Scene {
       this.themeButtons.set(theme, button);
     });
 
-    // Sizes: the level first, then pairs and grid.
-    text(this, cx, S.sizeLabelY, 'Size', 'sectionLabel').setOrigin(0.5);
+    // Difficulty (the board size): the level first, then pairs and grid.
+    text(this, cx, S.sizeLabelY, 'Difficulty', 'sectionLabel').setOrigin(0.5);
     const sizes = Object.keys(config.pairPals.sizes) as PairPalsSize[];
     const T = S.sizeTile;
     const sizeX0 = cx - ((sizes.length - 1) * (T.w + T.gap)) / 2;

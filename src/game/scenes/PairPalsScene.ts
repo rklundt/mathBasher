@@ -531,25 +531,14 @@ export class PairPalsScene extends Phaser.Scene {
       label: 'Play Again',
       onClick: () => this.scene.restart(),
     }).setDepth(Z.panel);
-    const changeCards = new PlaceholderButton({
-      scene: this,
-      x: cx - 120,
-      y: cy + 148,
-      width: 220,
-      height: 64,
-      label: 'Change Cards',
-      onClick: () => this.scene.start(SceneKeys.PairPalsSetup),
-    }).setDepth(Z.panel);
-    const menu = new PlaceholderButton({
-      scene: this,
-      x: cx + 120,
-      y: cy + 148,
-      width: 220,
-      height: 64,
-      label: 'Menu',
-      onClick: () => this.scene.start(SceneKeys.Menu),
-    }).setDepth(Z.panel);
-    new KeyboardNavigator(this, [playAgain, changeCards, menu]);
+    // The setup screen, where the cards and the difficulty are picked.
+    const row = (dx: number, w: number, label: string, onClick: () => void): PlaceholderButton =>
+      new PlaceholderButton({ scene: this, x: cx + dx, y: cy + 148, width: w, height: 64, label, onClick }).setDepth(
+        Z.panel,
+      );
+    const change = row(-100, 340, 'Change Cards or Difficulty', () => this.scene.start(SceneKeys.PairPalsSetup));
+    const menu = row(190, 200, 'Menu', () => this.scene.start(SceneKeys.Menu));
+    new KeyboardNavigator(this, [playAgain, change, menu]);
   }
 
   // ----- Shared ----------------------------------------------------------

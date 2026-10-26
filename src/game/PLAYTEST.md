@@ -523,12 +523,14 @@ Phone in landscape, then desktop.
 Phone in landscape, then desktop.
 
 - [ ] "Pick your challenge!": the Math and Puzzles tabs swap the buttons below in place. Puzzles shows Pair Pals and Pattern Train ("Coming soon": a tap wiggles it and says so).
-- [ ] Pair Pals → Loading → "Pair Pals: pick your cards": five themes with a sample picture each, Easy / Medium / Hard ("6 pairs · 4 × 3"), the best line ("Your best: 9 turns · Can you do it in fewer?"). The picks are remembered after a reload. Back → the picker on Puzzles.
+- [ ] Pair Pals → Loading → "Pair Pals: pick your cards": five themes with a sample picture each, Difficulty: Easy / Medium / Hard ("6 pairs · 4 × 3"), the best line ("Your best: 9 turns · Can you do it in fewer?"). The picks are remembered after a reload. Back → the picker on Puzzles.
 - [ ] The board: "Turns" and "Pairs" in the top bar, the theme's backdrop and a mascot on the left, "👆 Tap two cards to find a match!" until the first tap. Cards fit at every size (Hard 6 × 5 on a phone).
 - [ ] First card: a flip and one of the tile-flip sounds. A match: both pop with a green ring that fades, they dim a little, sparkles, the mascot hops, a success sound. A miss: a tiny wiggle, a fail sound, both stay up about a second, then turn back; tapping any card during that turns them back at once.
 - [ ] A face-up or matched card does nothing when tapped and costs no turn.
+- [ ] No two matching cards start next to each other (side, above / below or corner), at any size.
 - [ ] The last pair: the cards wave, then "You did it!", "You found all N pairs in T turns!" and "Your first win!" / "New best!" / "Your best is B turns". Play Again deals new cards; Change Cards → setup; Menu.
-- [ ] Pause (button or Esc): Resume · Settings · Change Cards · Quit to Menu; Esc resumes. Keys: arrows show and move a yellow ring, Space or Enter turns the card.
+- [ ] Pause (button or Esc): Resume · Change Cards or Difficulty (the setup) · Settings · Quit to Menu; Esc resumes. The win panel has Play Again, then Change Cards or Difficulty · Menu.
+- [ ] Any math game's pause card: Change Difficulty ends the round (not scored) and opens that game's Difficulty. Keys: arrows show and move a yellow ring, Space or Enter turns the card.
 - [ ] Menu Start after Pair Pals opens its setup; after picking a math challenge, Game Select (with the space backdrop). Every math game, its Difficulty and Game Over unchanged.
 - [ ] Each theme looks right (cute animals, desserts, dinosaurs, dragons, aliens), and Pair Pals' own music plays.
 
