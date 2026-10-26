@@ -6,7 +6,8 @@ import type Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import type { MathId, SpeedKey } from '@/core/config';
-import { Settings, type GameId } from '@/services/Settings';
+import { Settings } from '@/services/Settings';
+import type { MathGameId } from '@/core/gameIds';
 import { SessionTotalScore } from '@/services/SessionTotalScore';
 import { getMyScores } from '@/services/MyScores';
 import { roundBonuses } from '@/services/ScoreCalculator';
@@ -79,7 +80,7 @@ export interface GameSceneLifecycleOpts {
   /** The scene being managed (used for scene.scene.X calls + telemetry binding). */
   readonly scene: Phaser.Scene;
   /** Which game mode this scene represents. Used in `Settings.setGameId` + every telemetry props object. */
-  readonly gameId: GameId;
+  readonly gameId: MathGameId;
   /** Selected math type for this round. Forwarded to telemetry + GameOver scene init. */
   readonly mathId: MathId;
   /** Selected speed for this round. Forwarded to telemetry + GameOver scene init. */
@@ -309,7 +310,8 @@ export class GameSceneLifecycle {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
     if (!this.settle(false, roundController.score)) return;
     // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
-    // challenge is already set; this game's Difficulty shows it).
+    // challenge is already set; this game's Difficulty shows it) and, since
+    // 2.13, its Change Difficulty.
     const target =
       destination === 'game-select'
         ? SceneKeys.GameSelect

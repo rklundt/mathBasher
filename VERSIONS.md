@@ -29,6 +29,22 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.13.0] - 2026-10-26 — Puzzles and Pair Pals
+
+**Puzzles** — a second subject
+- "Pick your challenge!" now has two tabs: Math and Puzzles. Puzzles lists Pair Pals and Pattern Train (coming soon).
+- A puzzle has its own setup instead of Game Select and Difficulty. Start on the menu goes back to whatever you picked last.
+
+**Pair Pals** — a memory-match game
+- Turn two cards over each turn to find the matching pairs. A pair stays up; a miss stays up for two seconds so you can remember it, then turns back (tap to skip the wait).
+- Five sets of cards: cute animals and desserts, drawn for the game, and the owner's dinosaurs, dragons and aliens. Three sizes: Easy 4 × 3, Medium 5 × 4, Hard 6 × 5.
+- No points or timer: count your turns and try to beat your best (fewest turns) for each size, saved in this browser.
+- Matching cards are never dealt next to each other, and near look-alikes are kept apart.
+- The owner's own sounds: a tile flip, a bright hit for a match, breaking tiles for a miss, and music for each set of cards.
+
+**Every game**
+- The pause menu has Change Difficulty (the round ends, not scored, and opens that game's Difficulty).
+
 ## [2.12.1] - 2026-10-25 — Balance Scale sounds
 
 **Balance Scale**

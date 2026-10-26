@@ -1,7 +1,7 @@
 {
   "name": "mathbasher",
   "private": true,
-  "version": "2.12.1",
+  "version": "2.13.0",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "description": "A browser math game for kids: arcade mini-games for phones, tablets and computers.",
@@ -44,6 +44,7 @@
     "sprite:snowhill": "node scripts/sprites/snowhill.mjs",
     "sprite:bunny": "node scripts/sprites/bunny.mjs",
     "sprite:balance": "node scripts/sprites/balance.mjs",
+    "sprite:pairpals": "node scripts/sprites/pairpals.mjs",
     "sprite:carrot": "node scripts/sprites/carrot.mjs",
     "sprite:garden": "node scripts/sprites/garden.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"

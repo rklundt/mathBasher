@@ -4,6 +4,7 @@
 
 import type { GameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
+import type { PairPalsTheme } from '@/core/config';
 
 /**
  * Stable string keys for every preloadable sprite asset, organized by kind.
@@ -529,6 +530,12 @@ export const BgSpriteKeys = {
    * copy, `BalanceSceneryKeys.Fair`.
    */
   BalanceScale: 'balance-scale',
+  /**
+   * Pair Pals setup-screen backdrop (sprint 2.13) — the aliens backdrop
+   * drawn by `scripts/sprites/pairpals.mjs`, darkened. The board plays on
+   * each theme's bright copy (`PAIR_PALS_BACKDROP_KEYS`).
+   */
+  PairPals: 'pair-pals',
 } as const;
 
 /**
@@ -695,6 +702,32 @@ export const BALANCE_SHEETS = {
     bottomY: 228,
   },
   duck: { key: BalanceSpriteKeys.Duck, frameWidth: 120, frameHeight: 130, poses: { idle: 0, hop: 1, cheer: 2 } },
+} as const;
+/**
+ * Sprint 2.13 — Pair Pals' art, drawn (and, for the owner's creatures,
+ * packed) by `scripts/sprites/pairpals.mjs`, the source of truth for the
+ * frame sizes (a test checks them). One picture sheet per theme (20 frames,
+ * 5 across), one sheet of card backs in theme order plus the blank face, and
+ * each theme's backdrop.
+ */
+export const PAIR_PALS_PICTURE_KEYS: Readonly<Record<PairPalsTheme, string>> = {
+  animals: 'pairpals-pics-animals',
+  desserts: 'pairpals-pics-desserts',
+  dinosaurs: 'pairpals-pics-dinosaurs',
+  dragons: 'pairpals-pics-dragons',
+  aliens: 'pairpals-pics-aliens',
+};
+export const PAIR_PALS_BACKDROP_KEYS: Readonly<Record<PairPalsTheme, string>> = {
+  animals: 'pairpals-bg-animals',
+  desserts: 'pairpals-bg-desserts',
+  dinosaurs: 'pairpals-bg-dinosaurs',
+  dragons: 'pairpals-bg-dragons',
+  aliens: 'pairpals-bg-aliens',
+};
+export const PAIR_PALS_SHEETS = {
+  picture: { frame: 200 },
+  /** Frames 0–4: the card backs in `config.pairPals.themes` order; frame 5: the blank face. */
+  cards: { key: 'pairpals-cards', frame: 200, faceFrame: 5 },
 } as const;
 export const GARDEN_SHEETS = {
   carrots: { key: GardenSpriteKeys.Carrots, frame: 120, kinds: 4, frames: 2 },
@@ -935,6 +968,7 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'penguin-slide': BgSpriteKeys.PenguinSlide,
   'bunny-garden': BgSpriteKeys.BunnyGarden,
   'balance-scale': BgSpriteKeys.BalanceScale,
+  'pair-pals': BgSpriteKeys.PairPals,
 };
 
 /**
@@ -954,6 +988,7 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'penguin-slide': { stars: false, bottomFade: false },
   'bunny-garden': { stars: false, bottomFade: false },
   'balance-scale': { stars: false, bottomFade: false },
+  'pair-pals': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1351,6 +1386,29 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameWidth: s.frameWidth,
     frameHeight: s.frameHeight,
     scope: 'game:balance-scale',
+  })),
+  // Sprint 2.13 — Pair Pals: the picture sheets, the cards and the backdrops, all game-scoped.
+  ...Object.values(PAIR_PALS_PICTURE_KEYS).map<SpriteManifestEntry>((key) => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth: PAIR_PALS_SHEETS.picture.frame,
+    frameHeight: PAIR_PALS_SHEETS.picture.frame,
+    scope: 'game:pair-pals',
+  })),
+  {
+    kind: 'hero',
+    key: PAIR_PALS_SHEETS.cards.key,
+    url: spritePath('hero', PAIR_PALS_SHEETS.cards.key),
+    frameWidth: PAIR_PALS_SHEETS.cards.frame,
+    frameHeight: PAIR_PALS_SHEETS.cards.frame,
+    scope: 'game:pair-pals',
+  },
+  ...Object.values(PAIR_PALS_BACKDROP_KEYS).map<SpriteManifestEntry>((key) => ({
+    kind: 'bg',
+    key,
+    url: spritePath('bg', key),
+    scope: 'game:pair-pals',
   })),
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
   // BEFORE MenuScene (first-run picker) + on every MenuScene mount

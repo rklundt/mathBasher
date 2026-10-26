@@ -12,7 +12,7 @@ import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
 import type { HeroChooserSceneInit } from '@/game/scenes/HeroChooserScene';
-import type { ChallengePickerInit } from '@/game/services/challengeSelection';
+import { menuStartTarget, openPuzzle, type ChallengePickerInit } from '@/game/services/challengeSelection';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 /**
@@ -75,14 +75,25 @@ export class MenuScene extends Phaser.Scene {
    * challenge picker; after that, Start goes straight to Game Select. A
    * reload forgets the challenge (it's in memory only), so the picker opens
    * again on the next visit. Back on the picker returns here.
+   *
+   * Sprint 2.13 — Start goes back to the visit's last pick: a puzzle opens
+   * its setup (`menuStartTarget`).
    */
   private start(): void {
-    if (Settings.round.challengeId === null) {
-      const init: ChallengePickerInit = { next: SceneKeys.GameSelect, back: SceneKeys.Menu, source: 'menu' };
-      this.scene.start(SceneKeys.ChallengePicker, init);
-      return;
+    const target = menuStartTarget(Settings.lastPick, Settings.round.challengeId);
+    switch (target.kind) {
+      case 'picker': {
+        const init: ChallengePickerInit = { next: SceneKeys.GameSelect, back: SceneKeys.Menu, source: 'menu' };
+        this.scene.start(SceneKeys.ChallengePicker, init);
+        return;
+      }
+      case 'game-select':
+        this.scene.start(SceneKeys.GameSelect);
+        return;
+      case 'puzzle':
+        openPuzzle(this, target.puzzle);
+        return;
     }
-    this.scene.start(SceneKeys.GameSelect);
   }
 
   /**

@@ -4,6 +4,7 @@
 
 import type { GameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
+import type { PairPalsTheme } from '@/core/config';
 
 /**
  * Stable string keys for every preloadable audio asset. Mirrors the
@@ -129,6 +130,22 @@ export const SfxKeys = {
   BalanceSuccess2: 'balance-success-2',
   BalanceSuccess3: 'balance-success-3',
   BalanceSuccess4: 'balance-success-4',
+  /** Sprint 2.13 — Pair Pals: the first card of a turn flipping over, one of four (owner's). */
+  TileFlip1: 'tile-flip-1',
+  TileFlip2: 'tile-flip-2',
+  TileFlip3: 'tile-flip-3',
+  TileFlip4: 'tile-flip-4',
+  /** Sprint 2.13 — Pair Pals: a turn's second card makes a pair, one of five (owner's orchestral hits). */
+  PairPalsMatch1: 'pairpals-match-1',
+  PairPalsMatch2: 'pairpals-match-2',
+  PairPalsMatch3: 'pairpals-match-3',
+  PairPalsMatch4: 'pairpals-match-4',
+  PairPalsMatch5: 'pairpals-match-5',
+  /** Sprint 2.13 — Pair Pals: a turn's second card doesn't match, one of four (owner's tiles / bricks breaking). */
+  PairPalsMiss1: 'pairpals-miss-1',
+  PairPalsMiss2: 'pairpals-miss-2',
+  PairPalsMiss3: 'pairpals-miss-3',
+  PairPalsMiss4: 'pairpals-miss-4',
 } as const;
 
 /**
@@ -306,6 +323,44 @@ export function pickBalanceClankSfx(rng: () => number = Math.random): (typeof BA
   return nextBalanceClank(rng);
 }
 
+/**
+ * Sprint 2.13 — Pair Pals' sounds, all the owner's and all its own: the first
+ * card of a turn flips; the second plays a match or a miss. Its music is one
+ * track per card theme (`PAIR_PALS_MUSIC`).
+ */
+const TILE_FLIP_KEYS = ['tile-flip-1', 'tile-flip-2', 'tile-flip-3', 'tile-flip-4'] as const;
+const PAIR_PALS_MATCH_KEYS = [
+  'pairpals-match-1',
+  'pairpals-match-2',
+  'pairpals-match-3',
+  'pairpals-match-4',
+  'pairpals-match-5',
+] as const;
+const PAIR_PALS_MISS_KEYS = ['pairpals-miss-1', 'pairpals-miss-2', 'pairpals-miss-3', 'pairpals-miss-4'] as const;
+const PAIR_PALS_SFX_KEYS: ReadonlySet<string> = new Set([
+  ...TILE_FLIP_KEYS,
+  ...PAIR_PALS_MATCH_KEYS,
+  ...PAIR_PALS_MISS_KEYS,
+]);
+const nextTileFlip = noRepeatPicker(TILE_FLIP_KEYS);
+const nextPairPalsMatch = noRepeatPicker(PAIR_PALS_MATCH_KEYS);
+const nextPairPalsMiss = noRepeatPicker(PAIR_PALS_MISS_KEYS);
+
+/** The first card of a turn flips over. */
+export function pickTileFlipSfx(rng: () => number = Math.random): (typeof TILE_FLIP_KEYS)[number] {
+  return nextTileFlip(rng);
+}
+
+/** The second card makes a pair. */
+export function pickPairPalsMatchSfx(rng: () => number = Math.random): (typeof PAIR_PALS_MATCH_KEYS)[number] {
+  return nextPairPalsMatch(rng);
+}
+
+/** The second card doesn't match. */
+export function pickPairPalsMissSfx(rng: () => number = Math.random): (typeof PAIR_PALS_MISS_KEYS)[number] {
+  return nextPairPalsMiss(rng);
+}
+
 /** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
 const BONUS_CHEER_KEYS = ['bonus-cheer-1', 'bonus-cheer-2', 'bonus-cheer-3', 'bonus-cheer-4'] as const;
 const nextBonusCheer = noRepeatPicker(BONUS_CHEER_KEYS);
@@ -432,6 +487,16 @@ export const MusicKeys = {
   GardenLoop1: 'loop-9',
   /** Balance Scale gameplay loop (sprint 2.12, the owner's track). 60 s stereo, `--kind music --no-trim`. */
   BalanceLoop1: 'loop-10',
+  /** Pair Pals' background music, one per card theme (sprint 2.13, owner's): dragons (~45 s). */
+  PairPalsLoop1: 'loop-11',
+  /** Pair Pals: dinosaurs (60 s). */
+  PairPalsDinoLoop1: 'loop-12',
+  /** Pair Pals: desserts (60 s). */
+  PairPalsDessertLoop1: 'loop-13',
+  /** Pair Pals: cute animals (60 s). */
+  PairPalsAnimalLoop1: 'loop-14',
+  /** Pair Pals: aliens (60 s; raised 1.4 dB to sit with the others). */
+  PairPalsAlienLoop1: 'loop-15',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -455,6 +520,18 @@ export type AudioKey = SfxKey | MidgroundKey | MusicKey;
  * gameId, so no observer pattern is needed — they just read the map
  * directly.
  */
+/**
+ * Sprint 2.13 — Pair Pals' music per card theme (owner's tracks). Loaded on demand (`onDemand`).
+ */
+export const PAIR_PALS_MUSIC: Readonly<Record<PairPalsTheme, MusicKey>> = {
+  animals: MusicKeys.PairPalsAnimalLoop1,
+  desserts: MusicKeys.PairPalsDessertLoop1,
+  dinosaurs: MusicKeys.PairPalsDinoLoop1,
+  dragons: MusicKeys.PairPalsLoop1,
+  aliens: MusicKeys.PairPalsAlienLoop1,
+};
+const PAIR_PALS_MUSIC_KEYS: ReadonlySet<string> = new Set(Object.values(PAIR_PALS_MUSIC));
+
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
   'asteroid-field': MusicKeys.Loop3,
@@ -467,6 +544,8 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'penguin-slide': MusicKeys.SnowLoop1,
   'bunny-garden': MusicKeys.GardenLoop1,
   'balance-scale': MusicKeys.BalanceLoop1,
+  // Sprint 2.13 — not read: Pair Pals plays its card theme's track (`PAIR_PALS_MUSIC`); the map just covers every game.
+  'pair-pals': MusicKeys.PairPalsLoop1,
 };
 
 /**
@@ -498,6 +577,7 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'bunny-garden': [],
   // Sprint 2.12 — music only.
   'balance-scale': [],
+  'pair-pals': [],
 };
 
 /**
@@ -582,6 +662,12 @@ export interface AudioManifestEntry {
    * to `'game:<id>'` so it defers until the matching game is picked.
    */
   readonly scope: AssetScope;
+  /**
+   * Sprint 2.13 — not in its game's bundle: the scene loads it when it's
+   * needed (`loadAudioOnDemand`). Pair Pals' four theme tracks (about
+   * 1 MB each) load one at a time, in the background, for the theme played.
+   */
+  readonly onDemand?: true;
 }
 
 /**
@@ -632,7 +718,14 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
   if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
+  // Sprint 2.13 — Pair Pals' music, flips, matches and misses.
+  if (PAIR_PALS_MUSIC_KEYS.has(key) || PAIR_PALS_SFX_KEYS.has(key)) return 'game:pair-pals';
   return 'eager';
+}
+
+/** Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`): Pair Pals' theme tracks. */
+function audioOnDemand(key: AudioKey): { onDemand?: true } {
+  return PAIR_PALS_MUSIC_KEYS.has(key) ? { onDemand: true } : {};
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -641,17 +734,20 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     kind: 'sfx',
     url: sfxPath(key),
     scope: audioScopeFor(key),
+    ...audioOnDemand(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
     scope: audioScopeFor(key),
+    ...audioOnDemand(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
     scope: audioScopeFor(key),
+    ...audioOnDemand(key),
   })),
 ];

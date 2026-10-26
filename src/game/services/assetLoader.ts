@@ -48,7 +48,9 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
 
   // Audio manifest entries (sfx / midground / music — all loaded via
   // load.audio regardless of kind; AudioManager binds them later).
+  // Sprint 2.13 — minus the ones its scene loads when needed (`onDemand`).
   for (const entry of AUDIO_MANIFEST) {
+    if (entry.onDemand) continue;
     if (!isGameScope(entry.scope, gameId)) continue;
     loader.audio(entry.key, entry.url);
   }
@@ -76,4 +78,24 @@ export function loadGameBundle(scene: Phaser.Scene, gameId: GameId): void {
  */
 export function shouldLoadAtBoot<T extends { scope: AssetScope }>(entry: T): boolean {
   return isBootScope(entry.scope);
+}
+
+/**
+ * Sprint 2.13 — load one on-demand sound (`onDemand` in the manifest) in the
+ * background and call `onReady` once it's decoded, or at once if it's
+ * already cached. Nothing happens if the scene has stopped by then (the
+ * kid left), or if the key isn't in the manifest.
+ */
+export function loadAudioOnDemand(scene: Phaser.Scene, key: string, onReady: () => void): void {
+  if (scene.cache.audio.exists(key)) {
+    onReady();
+    return;
+  }
+  const entry = AUDIO_MANIFEST.find((e) => e.key === key);
+  if (entry === undefined) return;
+  scene.load.once(`filecomplete-audio-${key}`, () => {
+    if (scene.sys.isActive()) onReady();
+  });
+  scene.load.audio(key, entry.url);
+  scene.load.start();
 }

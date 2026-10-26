@@ -74,7 +74,15 @@ export type TelemetryPropName =
   | 'finishBonus'
   | 'perfectBonus'
   // Sprint 2.11 — RoundEnded: the round's speed-bonus points (rounded).
-  | 'speedBonus';
+  | 'speedBonus'
+  // Sprint 2.13 — puzzles: which puzzle was picked, and a Pair Pals game's
+  // card theme, board size ("easy" | "medium" | "hard"), turns taken and
+  // whether that was a new best ("true" | "false").
+  | 'puzzleId'
+  | 'theme'
+  | 'boardSize'
+  | 'turns'
+  | 'newBest';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so
