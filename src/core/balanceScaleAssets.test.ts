@@ -8,7 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import sharp from 'sharp';
 import { BALANCE_SHEETS, BalanceSceneryKeys, BgSpriteKeys, GAME_BG_MAP, SPRITE_MANIFEST } from '@/core/spriteKeys';
-import { AUDIO_MANIFEST, GAME_MIDGROUND_MAP, GAME_MUSIC_MAP } from '@/core/audioKeys';
+import {
+  AUDIO_MANIFEST,
+  GAME_MIDGROUND_MAP,
+  GAME_MUSIC_MAP,
+  audioGainFor,
+  pickBalanceClankSfx,
+} from '@/core/audioKeys';
 import { config } from '@/core/config';
 
 /**
@@ -80,6 +86,22 @@ describe('Balance Scale assets (sprint 2.12)', () => {
     const music = AUDIO_MANIFEST.find((e) => e.key === 'loop-10');
     expect(music?.scope).toBe('game:balance-scale');
     expect(existsSync(onDisk(music?.url ?? ''))).toBe(true);
+  });
+
+  it("the owner's mismatch clank: three, game-scoped, quieter than other sounds, never twice running", () => {
+    const clanks = AUDIO_MANIFEST.filter((e) => e.key.startsWith('balance-clank-'));
+    expect(clanks).toHaveLength(3);
+    for (const e of clanks) {
+      expect(e.scope, e.key).toBe('game:balance-scale');
+      expect(existsSync(onDisk(e.url)), e.url).toBe(true);
+      expect(audioGainFor(e.key)).toBeLessThan(1);
+    }
+    let prev = pickBalanceClankSfx();
+    for (let i = 0; i < 30; i++) {
+      const next = pickBalanceClankSfx();
+      expect(next).not.toBe(prev);
+      prev = next;
+    }
   });
 
   it('the tray has room for five weights', () => {
