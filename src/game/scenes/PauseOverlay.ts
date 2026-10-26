@@ -60,6 +60,8 @@ export interface PauseOverlayInit {
    * then Change Cards or Difficulty · Settings · Quit to Menu. No challenge, no Game Select.
    */
   puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
+  /** Sprint 2.14 — the puzzle's "change" button (Pair Pals: "Change Cards or Difficulty"; the puzzle pack: "Change Difficulty"). */
+  puzzleChangeLabel?: string;
 }
 
 export class PauseOverlay extends Phaser.Scene {
@@ -68,6 +70,7 @@ export class PauseOverlay extends Phaser.Scene {
   private resumeFn?: () => void;
   private quitFn?: (destination: QuitDestination) => void;
   private puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
+  private puzzleChangeLabel = 'Change Cards or Difficulty';
   /** Everything in the card's current view (destroyed when the view changes). */
   private view: Phaser.GameObjects.GameObject[] = [];
   private nav?: KeyboardNavigator;
@@ -81,6 +84,7 @@ export class PauseOverlay extends Phaser.Scene {
     this.resumeFn = data.resumeFn;
     this.quitFn = data.quitFn;
     this.puzzleQuitFn = data.puzzleQuitFn;
+    this.puzzleChangeLabel = data.puzzleChangeLabel ?? 'Change Cards or Difficulty';
   }
 
   create(): void {
@@ -141,7 +145,7 @@ export class PauseOverlay extends Phaser.Scene {
       puzzleQuit !== undefined
         ? [
             // The setup screen, where the cards and the difficulty are picked.
-            { label: 'Change Cards or Difficulty', onClick: () => puzzleQuit('setup') },
+            { label: this.puzzleChangeLabel, onClick: () => puzzleQuit('setup') },
             { label: 'Settings', onClick: () => this.handleSettings() },
             { label: 'Quit to Menu', onClick: () => puzzleQuit('menu') },
           ]

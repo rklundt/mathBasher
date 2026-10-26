@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright 2026 Ray Klundt
+// mathBasher is also available under a commercial license — see COMMERCIAL.md
+
+import { describe, expect, it } from 'vitest';
+import { config, type PuzzleLevel } from '@/core/config';
+import type { PickPuzzleId } from '@/core/gameIds';
+import { mulberry32 } from '@/test-utils/mulberry32';
+import { generatePick, generatePickRound, type PickPuzzle } from '@/game/systems/puzzles/pickPuzzles';
+import { lookOf, sameLook, spinCells, type ShapeToken, type Token } from '@/game/systems/puzzles/tokens';
+
+const P = config.puzzles;
+const LEVELS: PuzzleLevel[] = ['easy', 'medium', 'hard'];
+const IDS: PickPuzzleId[] = ['pattern-train', 'missing-piece', 'odd-one-out', 'magic-wand', 'spin-match'];
+
+function each(fn: (p: PickPuzzle, id: PickPuzzleId, level: PuzzleLevel, seed: number) => void): void {
+  for (const id of IDS)
+    for (const level of LEVELS)
+      for (let seed = 1; seed <= 300; seed++) fn(generatePick(id, level, mulberry32(seed * 31 + 7)), id, level, seed);
+}
+
+const valid = (t: Token): boolean => {
+  switch (t.kind) {
+    case 'shape':
+      return (
+        t.shape >= 0 &&
+        t.shape < P.shapes.length &&
+        t.colour >= 0 &&
+        t.colour < P.colours.length &&
+        t.size >= 0 &&
+        t.size <= 2 &&
+        t.turn >= 0 &&
+        t.turn <= 3 &&
+        t.count >= 1 &&
+        t.count <= 3 &&
+        (t.hat === null || (t.hat >= 0 && t.hat < P.hats.length))
+      );
+    case 'spin':
+      return (
+        t.shape >= 0 &&
+        t.shape < P.spinCells.length &&
+        t.colour >= 0 &&
+        t.colour < P.spinColours &&
+        t.turn >= 0 &&
+        t.turn <= 3
+      );
+    case 'picture':
+      return t.frame >= 0 && t.frame < config.pairPals.picturesPerTheme;
+  }
+};
+
+describe('the pick-one puzzles (sprint 2.14)', () => {
+  it('every puzzle: the right number of choices, all different, the answer among them, all valid', () => {
+    each((p, id, level, seed) => {
+      const tag = `${id} ${level} seed ${String(seed)}`;
+      const want = id === 'odd-one-out' ? P.oddOneOut.items[level] : P.choices[level];
+      expect(p.choices.length, tag).toBe(want);
+      expect(p.answer, tag).toBeGreaterThanOrEqual(0);
+      expect(p.answer, tag).toBeLessThan(p.choices.length);
+      if (id !== 'odd-one-out') expect(new Set(p.choices.map(lookOf)).size, tag).toBe(p.choices.length);
+      expect(p.choices.every(valid), tag).toBe(true);
+      expect(p.why.length, tag).toBeGreaterThan(0);
+    });
+  });
+
+  it('Pattern Train: the answer continues what the cars show, and the cars are the right length', () => {
+    each((p, id, level) => {
+      if (id !== 'pattern-train' || p.stage.kind !== 'train') return;
+      expect(p.stage.cars.length).toBe(P.patternTrain.cars[level]);
+      expect(p.stage.cars.every(valid)).toBe(true);
+    });
+  });
+
+  it('Missing Piece: 9 panes, one missing; on Easy each row shares a shape and each column a colour', () => {
+    each((p, id, level) => {
+      if (id !== 'missing-piece' || p.stage.kind !== 'window') return;
+      const cells = p.stage.cells;
+      expect(cells.length).toBe(9);
+      expect(cells.filter((c) => c === null).length).toBe(1);
+      if (level !== 'easy') return;
+      const full = cells.map((c) => c ?? p.choices[p.answer]) as ShapeToken[];
+      for (let r = 0; r < 3; r++) expect(new Set(full.slice(r * 3, r * 3 + 3).map((t) => t.shape)).size).toBe(1);
+      for (let c = 0; c < 3; c++) expect(new Set([0, 1, 2].map((r) => full[r * 3 + c].colour)).size).toBe(1);
+    });
+  });
+
+  it('Odd One Out: the odd one looks different from every other one', () => {
+    each((p, id) => {
+      if (id !== 'odd-one-out') return;
+      const odd = p.choices[p.answer];
+      p.choices.forEach((c, i) => {
+        if (i !== p.answer) expect(sameLook(c, odd)).toBe(false);
+      });
+    });
+  });
+
+  it('Magic Wand: the change shows (from ≠ to), and the right answer is not the shape left unchanged', () => {
+    each((p, id) => {
+      if (id !== 'magic-wand' || p.stage.kind !== 'wand') return;
+      expect(sameLook(p.stage.from, p.stage.to)).toBe(false);
+      expect(sameLook(p.choices[p.answer], p.stage.next)).toBe(false);
+    });
+  });
+
+  it('Spin Match: the answer is the target turned (never flipped, never looking the same)', () => {
+    each((p, id) => {
+      if (id !== 'spin-match' || p.stage.kind !== 'spin') return;
+      const target = p.stage.target;
+      const answer = p.choices[p.answer];
+      if (target.kind !== 'spin' || answer.kind !== 'spin') throw new Error('spin tokens expected');
+      expect(answer.shape).toBe(target.shape);
+      expect(answer.flip).toBe(target.flip);
+      expect(lookOf(answer)).not.toBe(lookOf(target));
+      // No wrong choice is the same shape merely turned.
+      p.choices.forEach((c, i) => {
+        if (i === p.answer || c.kind !== 'spin' || c.shape !== target.shape) return;
+        const turns = [0, 1, 2, 3].map((t) => spinCells(target.shape, t, target.flip));
+        expect(turns).not.toContain(spinCells(c.shape, c.turn, c.flip));
+      });
+    });
+  });
+
+  it('a round has 8 puzzles, all different', () => {
+    for (const id of IDS)
+      for (const level of LEVELS) {
+        const round = generatePickRound(id, level, P.perRound, mulberry32(42));
+        expect(round.length).toBe(P.perRound);
+        const keys = round.map((p) => JSON.stringify(p.stage) + p.choices.map(lookOf).sort().join('|'));
+        expect(new Set(keys).size, `${id} ${level}`).toBe(round.length);
+      }
+  });
+});
+
+describe('spin shapes (sprint 2.14)', () => {
+  it('every one looks different flipped than any way it is turned (so "turned" and "mirrored" never match)', () => {
+    for (let s = 0; s < P.spinCells.length; s++) {
+      const turned = [0, 1, 2, 3].map((t) => spinCells(s, t, false));
+      for (let t = 0; t < 4; t++) expect(turned, `shape ${String(s)}`).not.toContain(spinCells(s, t, true));
+    }
+  });
+
+  it('no two spin shapes are the same shape', () => {
+    const all = P.spinCells.map(
+      (_, s) => [0, 1, 2, 3].flatMap((t) => [spinCells(s, t, false), spinCells(s, t, true)]).sort()[0],
+    );
+    expect(new Set(all).size).toBe(all.length);
+  });
+});

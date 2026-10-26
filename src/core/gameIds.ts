@@ -29,7 +29,34 @@ export type MathGameId =
  * screen. Math-only code (Difficulty, Game Over, round scoring) takes
  * `MathGameId`, so a puzzle can't reach it by mistake.
  */
-export type PuzzleGameId = 'pair-pals';
+export type PuzzleGameId = 'pair-pals' | RoundPuzzleId;
+
+/**
+ * Sprint 2.14 — the puzzle pack: rounds of 8 puzzles, one per family of
+ * question on children's ability tests. The first five are "pick one"
+ * puzzles (one scene draws them all); Copy Cat and Symbol Hunt have their own.
+ */
+export type PickPuzzleId = 'pattern-train' | 'missing-piece' | 'odd-one-out' | 'magic-wand' | 'spin-match';
+export type RoundPuzzleId = PickPuzzleId | 'copy-cat' | 'symbol-hunt';
+
+/** The puzzle pack, in picker order. */
+export const ROUND_PUZZLE_IDS: readonly RoundPuzzleId[] = [
+  'pattern-train',
+  'missing-piece',
+  'odd-one-out',
+  'magic-wand',
+  'spin-match',
+  'copy-cat',
+  'symbol-hunt',
+];
+
+export function isRoundPuzzleId(id: GameId): id is RoundPuzzleId {
+  return (ROUND_PUZZLE_IDS as readonly GameId[]).includes(id);
+}
+
+export function isPickPuzzleId(id: GameId): id is PickPuzzleId {
+  return isRoundPuzzleId(id) && id !== 'copy-cat' && id !== 'symbol-hunt';
+}
 
 /** Every game: the nine math games and the puzzle games. */
 export type GameId = MathGameId | PuzzleGameId;

@@ -116,6 +116,16 @@ export const SceneKeys = {
   PairPalsSetup: 'pair-pals-setup',
   PairPals: 'pair-pals',
   /**
+   * Sprint 2.14 — the puzzle pack: one setup screen for all seven (pick a
+   * level), one scene for the five "pick one" puzzles (Pattern Train,
+   * Missing Piece, Odd One Out, Magic Wand, Spin Match; it reads which from
+   * `Settings.round.gameId`), and Copy Cat and Symbol Hunt.
+   */
+  PuzzleSetup: 'puzzle-setup',
+  PickPuzzle: 'pick-puzzle',
+  CopyCat: 'copy-cat',
+  SymbolHunt: 'symbol-hunt',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -169,6 +179,16 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.BalanceScale;
     case 'pair-pals':
       return SceneKeys.PairPals;
+    case 'pattern-train':
+    case 'missing-piece':
+    case 'odd-one-out':
+    case 'magic-wand':
+    case 'spin-match':
+      return SceneKeys.PickPuzzle;
+    case 'copy-cat':
+      return SceneKeys.CopyCat;
+    case 'symbol-hunt':
+      return SceneKeys.SymbolHunt;
   }
 }
 
@@ -180,5 +200,13 @@ export function puzzleSetupSceneKeyFor(gameId: PuzzleGameId): SceneKey {
   switch (gameId) {
     case 'pair-pals':
       return SceneKeys.PairPalsSetup;
+    case 'pattern-train':
+    case 'missing-piece':
+    case 'odd-one-out':
+    case 'magic-wand':
+    case 'spin-match':
+    case 'copy-cat':
+    case 'symbol-hunt':
+      return SceneKeys.PuzzleSetup;
   }
 }

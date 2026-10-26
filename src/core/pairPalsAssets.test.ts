@@ -24,7 +24,7 @@ import {
   pickPairPalsMissSfx,
   pickTileFlipSfx,
 } from '@/core/audioKeys';
-import { MATH_GAME_IDS, isMathGameId, type MathGameId } from '@/core/gameIds';
+import { MATH_GAME_IDS, ROUND_PUZZLE_IDS, isMathGameId, type MathGameId } from '@/core/gameIds';
 import { config } from '@/core/config';
 
 /**
@@ -133,6 +133,6 @@ describe('Pair Pals assets (sprint 2.13)', () => {
     expect(isMathGameId('pair-pals')).toBe(false);
     expect(all.every(isMathGameId)).toBe(true);
     // Every game has a backdrop row (the map is keyed by every game id).
-    expect(Object.keys(GAME_BG_MAP).sort()).toEqual([...all, 'pair-pals'].sort());
+    expect(Object.keys(GAME_BG_MAP).sort()).toEqual([...all, 'pair-pals', ...ROUND_PUZZLE_IDS].sort());
   });
 });

@@ -143,6 +143,27 @@ export class LoadingScene extends Phaser.Scene {
       case 'pair-pals':
         caption = 'Loading Pair Pals…';
         break;
+      case 'pattern-train':
+        caption = 'Loading Pattern Train…';
+        break;
+      case 'missing-piece':
+        caption = 'Loading Missing Piece…';
+        break;
+      case 'odd-one-out':
+        caption = 'Loading Odd One Out…';
+        break;
+      case 'magic-wand':
+        caption = 'Loading Magic Wand…';
+        break;
+      case 'spin-match':
+        caption = 'Loading Spin Match…';
+        break;
+      case 'copy-cat':
+        caption = 'Loading Copy Cat…';
+        break;
+      case 'symbol-hunt':
+        caption = 'Loading Symbol Hunt…';
+        break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });
   }

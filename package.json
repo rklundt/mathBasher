@@ -45,6 +45,7 @@
     "sprite:bunny": "node scripts/sprites/bunny.mjs",
     "sprite:balance": "node scripts/sprites/balance.mjs",
     "sprite:pairpals": "node scripts/sprites/pairpals.mjs",
+    "sprite:puzzles": "node scripts/sprites/puzzles.mjs",
     "sprite:carrot": "node scripts/sprites/carrot.mjs",
     "sprite:garden": "node scripts/sprites/garden.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
