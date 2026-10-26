@@ -1284,7 +1284,7 @@ export const config = {
       themeY: 224,
       themeTile: { w: 196, h: 176, gap: 18 },
       /** A theme tile's sample picture (frame in its sheet) and its size. */
-      samples: { animals: 0, desserts: 0, dinosaurs: 10, dragons: 1, aliens: 0 },
+      samples: { animals: 0, desserts: 0, dinosaurs: 15, dragons: 1, aliens: 0 },
       samplePx: 116,
       sizeLabelY: 352,
       sizeY: 432,
