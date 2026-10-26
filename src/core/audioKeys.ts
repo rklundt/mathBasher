@@ -628,7 +628,7 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (PENGUIN_SFX_KEYS.has(key)) return 'game:penguin-slide';
   // Sprint 2.8 — Bunny Garden's music, tunes and time's-up sounds (its hop is the shared penguin hop).
   if (key === MusicKeys.GardenLoop1) return 'game:bunny-garden';
-  // Sprint 2.12 — Balance Scale's music (its sounds are shared, boot-loaded ones).
+  // Sprint 2.12 — Balance Scale's music, clanks and fanfares (its hop is the shared penguin hop).
   if (key === MusicKeys.BalanceLoop1) return 'game:balance-scale';
   if (BALANCE_SFX_KEYS.has(key)) return 'game:balance-scale';
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
