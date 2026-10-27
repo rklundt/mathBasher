@@ -17,7 +17,7 @@ import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
-import type { ChallengePickerInit } from '@/game/services/challengeSelection';
+import { openPuzzlePicker } from '@/game/services/challengeSelection';
 
 const LEVELS: readonly PuzzleLevel[] = ['easy', 'medium', 'hard'];
 const LEVEL_LABELS: Record<PuzzleLevel, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
@@ -131,12 +131,6 @@ export class PuzzleSetupScene extends Phaser.Scene {
 
   /** Back to the picker, on the Puzzles tab. */
   private goBack(): void {
-    const init: ChallengePickerInit = {
-      next: SceneKeys.GameSelect,
-      back: SceneKeys.Menu,
-      source: 'menu',
-      subject: 'puzzles',
-    };
-    this.scene.start(SceneKeys.ChallengePicker, init);
+    openPuzzlePicker(this);
   }
 }

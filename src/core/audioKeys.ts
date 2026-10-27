@@ -146,6 +146,10 @@ export const SfxKeys = {
   PairPalsMiss2: 'pairpals-miss-2',
   PairPalsMiss3: 'pairpals-miss-3',
   PairPalsMiss4: 'pairpals-miss-4',
+  /** Sprint 2.14 — Copy Cat: the chick, pig and whale pads' own voices (owner's). */
+  ChickPeep1: 'chick-peep-1',
+  PigOink1: 'pig-oink-1',
+  WhaleSong1: 'whale-song-1',
 } as const;
 
 /**
@@ -366,17 +370,19 @@ export function pickPairPalsMissSfx(rng: () => number = Math.random): (typeof PA
  * them (owner: "use sounds that make sense that you have"): a tap is Pair
  * Pals' tile flip, a right answer its match hit, a wrong one its miss, the
  * round's end the bonus cheer. Copy Cat's animals each have their own short
- * sound, in pad order. All of them load with every puzzle in the pack
- * (`alsoFor`).
+ * sound, in pad order (frog, chick, pig, whale, penguin, bunny); the chick,
+ * pig and whale are the owner's own. All of them load with every puzzle in
+ * the pack (`alsoFor`).
  */
 export const COPY_CAT_VOICES = [
   'frog-ribbit-1',
-  'bubble-pop-1',
-  'penguin-hop-1',
-  'tile-flip-2',
+  'chick-peep-1',
+  'pig-oink-1',
+  'whale-song-1',
   'frog-slurp-1',
   'penguin-gulp-1',
 ] as const;
+const COPY_CAT_SFX_KEYS: ReadonlySet<string> = new Set([SfxKeys.ChickPeep1, SfxKeys.PigOink1, SfxKeys.WhaleSong1]);
 const PUZZLE_PACK_SOUNDS: ReadonlySet<string> = new Set([
   ...TILE_FLIP_KEYS,
   ...PAIR_PALS_MATCH_KEYS,
@@ -647,6 +653,9 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [SfxKeys.BalanceClank1]: 0.8,
   [SfxKeys.BalanceClank2]: 0.8,
   [SfxKeys.BalanceClank3]: 0.8,
+  // Copy Cat's chick peep measures ~5 dB hotter than the other pad voices
+  // (a sub-second clip; loudnorm can't pull it down), so it plays at half.
+  [SfxKeys.ChickPeep1]: 0.5,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
@@ -763,6 +772,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   // Sprint 2.13 — Pair Pals' music, flips, matches and misses.
   if (PAIR_PALS_MUSIC_KEYS.has(key) || PAIR_PALS_SFX_KEYS.has(key)) return 'game:pair-pals';
+  // Sprint 2.14 — Copy Cat's own animal voices.
+  if (COPY_CAT_SFX_KEYS.has(key)) return 'game:copy-cat';
   return 'eager';
 }
 

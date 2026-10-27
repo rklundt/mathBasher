@@ -47,7 +47,11 @@ import type { QuitDestination } from '@/game/scenes/gameSceneContract';
  * DOM strip below the canvas (sprint 2.5.2), so it stays visible while paused
  * regardless of scene order.
  */
-/** Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the puzzle's setup (Change Cards or Difficulty). */
+/**
+ * Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the
+ * puzzle's setup (Change Cards or Difficulty). Since 2.14 a puzzle's "menu"
+ * is the game picker's Puzzles tab.
+ */
 export type PuzzleQuitDestination = 'menu' | 'setup';
 
 export interface PauseOverlayInit {

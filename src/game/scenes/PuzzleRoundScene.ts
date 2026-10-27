@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
+import { openPuzzlePicker } from '@/game/services/challengeSelection';
 import type { RoundPuzzleId } from '@/core/gameIds';
 import { puzzleById } from '@/core/puzzles';
 import { PUZZLE_BACKDROP_KEYS } from '@/core/spriteKeys';
@@ -158,7 +159,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
         changeLabel: 'Change Difficulty',
         onPlayAgain: () => this.scene.restart(),
         onChange: () => this.scene.start(SceneKeys.PuzzleSetup),
-        onMenu: () => this.scene.start(SceneKeys.Menu),
+        onMenu: () => openPuzzlePicker(this),
       }),
     );
   }
@@ -216,7 +217,8 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
       reason: destination,
       questionIndex: String(this.index),
     });
-    this.scene.start(destination === 'setup' ? SceneKeys.PuzzleSetup : SceneKeys.Menu);
+    if (destination === 'setup') this.scene.start(SceneKeys.PuzzleSetup);
+    else openPuzzlePicker(this);
   }
 
   private cleanUp(): void {

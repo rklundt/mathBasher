@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PairPalsSize, type PairPalsTheme } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
+import { openPuzzlePicker } from '@/game/services/challengeSelection';
 import {
   PAIR_PALS_BACKDROP_KEYS,
   PAIR_PALS_PICTURE_KEYS,
@@ -468,7 +469,7 @@ export class PairPalsScene extends Phaser.Scene {
     this.resume();
     _th.logToAi('PairPalsQuit', SeverityLevel.Information, { ...this.props(), reason: destination });
     if (destination === 'setup') this.scene.start(SceneKeys.PairPalsSetup);
-    else this.scene.start(SceneKeys.Menu);
+    else openPuzzlePicker(this);
   }
 
   // ----- The win ---------------------------------------------------------
@@ -537,7 +538,8 @@ export class PairPalsScene extends Phaser.Scene {
         Z.panel,
       );
     const change = row(-100, 340, 'Change Cards or Difficulty', () => this.scene.start(SceneKeys.PairPalsSetup));
-    const menu = row(190, 200, 'Menu', () => this.scene.start(SceneKeys.Menu));
+    // Menu: the game picker, on the Puzzles tab.
+    const menu = row(190, 200, 'Menu', () => openPuzzlePicker(this));
     new KeyboardNavigator(this, [playAgain, change, menu]);
   }
 

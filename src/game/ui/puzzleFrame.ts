@@ -615,6 +615,7 @@ export interface EndPanelOpts {
   newBest: boolean;
   onPlayAgain: () => void;
   onChange: () => void;
+  /** Menu: the game picker, on the Puzzles tab. */
   onMenu: () => void;
   changeLabel: string;
 }
