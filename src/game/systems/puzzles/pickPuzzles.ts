@@ -268,12 +268,12 @@ function oddOneOut(level: PuzzleLevel, rng: () => number): PickPuzzle {
       break;
     }
     case 'corners': {
-      const roundOdd = rng() < 0.5;
-      const group = roundOdd ? CORNERED : ROUND;
-      const others = shuffled(group, rng).slice(0, n - 1);
+      // Always one round shape among cornered ones: there are too few
+      // plainly round shapes to fill a shelf the other way round.
+      const others = shuffled(CORNERED, rng).slice(0, n - 1);
       same = others.map((s, i) => shapeToken(s, colours[i + 1]));
-      odd = shapeToken(pick(roundOdd ? ROUND : CORNERED, rng), colours[0]);
-      why = roundOdd ? 'The others all have corners!' : 'The others are all round!';
+      odd = shapeToken(pick(ROUND, rng), colours[0]);
+      why = 'The others all have corners!';
       break;
     }
     case 'count': {

@@ -1351,9 +1351,13 @@ export const config = {
     },
     /** Shapes that look different when turned a quarter (turn rules use only these). */
     turnable: ['triangle', 'heart', 'moon', 'drop', 'cloud', 'pentagon'],
-    /** Shapes with corners vs round ones (Odd One Out). */
+    /**
+     * Shapes with corners vs round ones (Odd One Out: one round shape among
+     * cornered ones). Owner: only shapes that are plainly round count; the
+     * drop has a point and the cloud has two bottom corners.
+     */
     cornered: ['square', 'triangle', 'star', 'diamond', 'hexagon', 'pentagon'],
-    round: ['circle', 'cloud', 'flower', 'drop'],
+    round: ['circle', 'flower'],
     colours: ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'],
     colourLabels: {
       red: 'red',
