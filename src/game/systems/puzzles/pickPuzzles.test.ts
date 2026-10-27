@@ -112,6 +112,22 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
+  it('Odd One Out corners: one plainly round shape among shapes with corners', () => {
+    const shapeOf = (t: Token): string => (t.kind === 'shape' ? P.shapes[t.shape] : '');
+    let seen = 0;
+    each((p, id) => {
+      if (id !== 'odd-one-out') return;
+      expect(p.why).not.toBe('The others are all round!');
+      if (p.why !== 'The others all have corners!') return;
+      seen++;
+      expect(P.round).toContain(shapeOf(p.choices[p.answer]));
+      p.choices.forEach((c, i) => {
+        if (i !== p.answer) expect(P.cornered).toContain(shapeOf(c));
+      });
+    });
+    expect(seen).toBeGreaterThan(0);
+  });
+
   it('Magic Wand: the change shows (from ≠ to), and the right answer is not the shape left unchanged', () => {
     each((p, id) => {
       if (id !== 'magic-wand' || p.stage.kind !== 'wand') return;
