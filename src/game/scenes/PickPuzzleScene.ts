@@ -13,7 +13,7 @@ import { Settings } from '@/services/Settings';
 import { generatePickRound, type PickPuzzle } from '@/game/systems/puzzles/pickPuzzles';
 import type { Token } from '@/game/systems/puzzles/tokens';
 import { PuzzleRoundScene } from '@/game/scenes/PuzzleRoundScene';
-import { AnswerTray, PUZZLE_DEPTH, drawToken, questionCard, tokenCard } from '@/game/ui/puzzleFrame';
+import { AnswerTray, PUZZLE_DEPTH, SandTimer, drawToken, questionCard, tokenCard } from '@/game/ui/puzzleFrame';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
 
@@ -37,8 +37,11 @@ export class PickPuzzleScene extends PuzzleRoundScene {
   private tray?: AnswerTray;
   /** Where the answer goes once found (the "?" card), if the stage has one. */
   private slot?: { x: number; y: number; w: number; h: number; card: Phaser.GameObjects.Container };
-  private firstTry = true;
+  /** Wrong picks on this puzzle (three and it goes red). */
+  private misses = 0;
   private locked = false;
+  /** The sand bar, on the timed puzzles (Pattern Train, Odd One Out). */
+  private sand?: SandTimer;
 
   constructor() {
     super(PickPuzzleScene.key);
@@ -53,6 +56,10 @@ export class PickPuzzleScene extends PuzzleRoundScene {
     if (!isPickPuzzleId(this.id)) return;
     this.puzzles = generatePickRound(this.id, this.level, P.perRound);
     this.stageObjects = [];
+    this.sand =
+      this.seconds() === null
+        ? undefined
+        : new SandTimer(this, this.scale.width / 2, P.layout.sand.y, P.layout.sand.width);
     this.tray = undefined;
     this.slot = undefined;
     const kb = this.input.keyboard;
@@ -74,9 +81,11 @@ export class PickPuzzleScene extends PuzzleRoundScene {
     this.stageObjects = [];
     this.tray?.destroy();
     this.slot = undefined;
-    this.firstTry = true;
+    this.misses = 0;
     this.locked = false;
     const p = this.puzzles[i];
+    const seconds = this.seconds();
+    if (seconds !== null) this.sand?.start(seconds, () => this.miss('Time’s up! It was this one.'));
     this.beginPuzzle(i, p.prompt);
     switch (p.stage.kind) {
       case 'train':
@@ -118,18 +127,38 @@ export class PickPuzzleScene extends PuzzleRoundScene {
     getAudioManager().play(pickTileFlipSfx(), 'sfx');
     if (c === p.answer) {
       this.locked = true;
+      this.sand?.stop();
       this.tray.right(c);
       this.fillSlot(p.choices[c]);
-      this.markRight(this.firstTry, p.why, () => this.next());
-    } else {
-      this.firstTry = false;
-      this.tray.wrong(c);
-      this.markWrong();
+      this.markRight(this.stepFor(this.misses, this.sand?.used() ?? 0), p.why, () => this.next());
+      return;
     }
+    this.misses++;
+    this.tray.wrong(c);
+    if (this.outOfTries(this.misses)) this.miss('It was this one!');
+    else this.markWrong();
+  }
+
+  /** Red: three misses, or the time ran out. Show the answer and move on. */
+  private miss(note: string): void {
+    if (this.locked || !this.tray) return;
+    this.locked = true;
+    this.sand?.stop();
+    const p = this.puzzles[this.index];
+    this.tray.reveal(p.answer);
+    this.fillSlot(p.choices[p.answer]);
+    this.markRed(note, () => this.next());
+  }
+
+  /** This puzzle's seconds at this level, or null if it isn't timed. */
+  private seconds(): number | null {
+    const timed = P.timed as Partial<Record<string, Record<string, number>>>;
+    return timed[this.id]?.[this.level] ?? null;
   }
 
   private next(): void {
     if (this.index + 1 >= this.puzzles.length) {
+      this.sand?.destroy();
       this.endRound();
       return;
     }

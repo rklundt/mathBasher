@@ -11,7 +11,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
 import { huntBoard, type HuntBoard } from '@/game/systems/puzzles/memoryAndSpeed';
 import { PuzzleRoundScene } from '@/game/scenes/PuzzleRoundScene';
-import { PUZZLE_DEPTH, sparkle, tokenCard } from '@/game/ui/puzzleFrame';
+import { PUZZLE_DEPTH, SandTimer, sparkle, tokenCard } from '@/game/ui/puzzleFrame';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
 
@@ -20,8 +20,9 @@ const H = config.puzzles.symbolHunt;
 /**
  * Sprint 2.14 — Symbol Hunt (processing speed): find every card like the
  * sign (same shape and colour) before the sand runs out. Eight boards a
- * round; Medium and Hard mix in look-alikes. A wrong tap wiggles; the sand
- * running out shows the ones left (that board isn't "first time").
+ * round; Medium and Hard mix in look-alikes. Green: all found with no wrong
+ * tap in the first half of the time; yellow: found later or after a wrong
+ * tap; red: the sand runs out or three wrong taps (the ones left are shown).
  */
 export class SymbolHuntScene extends PuzzleRoundScene {
   static readonly key = SceneKeys.SymbolHunt;
@@ -30,10 +31,10 @@ export class SymbolHuntScene extends PuzzleRoundScene {
   private cards: Phaser.GameObjects.Container[] = [];
   private objects: Phaser.GameObjects.GameObject[] = [];
   private found = new Set<number>();
-  private firstTry = true;
+  /** Wrong taps on this board (three and it goes red). */
+  private misses = 0;
   private live = false;
-  private sand?: Phaser.GameObjects.Rectangle;
-  private sandTween?: Phaser.Tweens.Tween;
+  private sand?: SandTimer;
 
   constructor() {
     super(SymbolHuntScene.key);
@@ -53,7 +54,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     this.objects = [];
     this.cards = [];
     this.found = new Set();
-    this.firstTry = true;
+    this.misses = 0;
     this.board = huntBoard(this.level);
     this.beginPuzzle(i, 'Find all of these!');
     this.updateCount();
@@ -89,23 +90,11 @@ export class SymbolHuntScene extends PuzzleRoundScene {
       this.objects.push(card, zone);
     });
 
-    // The sand: a bar that runs out.
-    const sandY = 560;
-    const w = right - left;
-    const tray = this.add.rectangle((left + right) / 2, sandY, w + 8, 22, 0x0b1020, 0.35).setDepth(PUZZLE_DEPTH.stage);
-    this.sand = this.add.rectangle(left, sandY, w, 14, 0xffd43b, 1).setOrigin(0, 0.5).setDepth(PUZZLE_DEPTH.stage);
-    this.objects.push(tray, this.sand);
+    // The sand: a bar that runs out under the grid.
+    this.sand?.destroy();
+    this.sand = new SandTimer(this, (left + right) / 2, 560, right - left);
     this.live = true;
-    this.sandTween?.stop();
-    this.sandTween = this.tweens.add({
-      targets: this.sand,
-      scaleX: 0,
-      duration: H.seconds[this.level] * 1000,
-      onUpdate: () => {
-        if (this.sand && this.sand.scaleX < 0.25) this.sand.setFillStyle(0xff8787);
-      },
-      onComplete: () => this.timeUp(),
-    });
+    this.sand.start(H.seconds[this.level], () => this.miss('Time’s up! Here they were.'));
   }
 
   private updateCount(): void {
@@ -116,7 +105,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     if (this.blocked || !this.live || this.found.has(k)) return;
     const card = this.cards[k];
     if (!this.board.matches.includes(k)) {
-      this.firstTry = false;
+      this.misses++;
       this.tweens.add({
         targets: card,
         angle: { from: -6, to: 6 },
@@ -125,7 +114,8 @@ export class SymbolHuntScene extends PuzzleRoundScene {
         repeat: 2,
         onComplete: () => card.setAngle(0),
       });
-      this.markWrong('Not that one!');
+      if (this.outOfTries(this.misses)) this.miss('Here they were!');
+      else this.markWrong('Not that one!');
       return;
     }
     getAudioManager().play(pickTileFlipSfx(), 'sfx');
@@ -135,15 +125,19 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     this.updateCount();
     if (this.found.size < this.board.matches.length) return;
     this.live = false;
-    this.sandTween?.stop();
-    this.markRight(this.firstTry, `You found all ${String(this.board.matches.length)}!`, () => this.next());
+    this.sand?.stop();
+    this.markRight(
+      this.stepFor(this.misses, this.sand?.used() ?? 0),
+      `You found all ${String(this.board.matches.length)}!`,
+      () => this.next(),
+    );
   }
 
-  /** The sand ran out: show the ones still hiding, then the next board. */
-  private timeUp(): void {
+  /** Red: the sand ran out or three wrong taps. Show the ones still hiding, then the next board. */
+  private miss(note: string): void {
     if (!this.live) return;
     this.live = false;
-    this.firstTry = false;
+    this.sand?.stop();
     for (const k of this.board.matches) {
       if (!this.found.has(k)) {
         const card = this.cards[k];
@@ -151,9 +145,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
         this.tweens.add({ targets: card, scale: 1.12, duration: 240, yoyo: true, repeat: 2 });
       }
     }
-    this.bar.mark(this.index, 'silver');
-    this.prompt.flash('Here they were!', 'retry', 1800);
-    this.time.delayedCall(1800, () => this.next());
+    this.markRed(note, () => this.next());
   }
 
   private ring(card: Phaser.GameObjects.Container, colour: number): void {
@@ -165,7 +157,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
 
   private next(): void {
     if (this.index + 1 >= config.puzzles.perRound) {
-      this.sandTween?.stop();
+      this.sand?.destroy();
       this.endRound();
       return;
     }
