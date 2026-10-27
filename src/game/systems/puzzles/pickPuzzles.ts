@@ -122,10 +122,18 @@ function patternTrain(level: PuzzleLevel, rng: () => number): PickPuzzle {
         elements(4),
       );
     } else if (kind === 1) {
-      // Growing, then starting small again.
+      // Big and small take turns (only two sizes, far apart).
       const t = shapeToken(shapes[0], colours[0]);
-      seq = (i) => ({ ...t, size: i % 3 });
-      why = 'Small, middle, big, and again!';
+      const sizes = pick(
+        [
+          { order: [1, 0], says: 'Big, small, and again!' },
+          { order: [1, 1, 0], says: 'Big, big, small, and again!' },
+          { order: [0, 0, 1], says: 'Small, small, big, and again!' },
+        ],
+        rng,
+      );
+      seq = (i) => ({ ...t, size: sizes.order[i % sizes.order.length] });
+      why = sizes.says;
     } else {
       // How many: 1, 2, 3, 1, 2, 3…
       const t = shapeToken(shapes[0], colours[0]);
@@ -151,7 +159,7 @@ function patternTrain(level: PuzzleLevel, rng: () => number): PickPuzzle {
     ...cars,
     { ...answer, colour: (answer.colour + 1 + randInt(COLOUR_COUNT - 1, rng)) % COLOUR_COUNT },
     { ...answer, shape: (answer.shape + 1 + randInt(SHAPE_COUNT - 1, rng)) % SHAPE_COUNT },
-    { ...answer, size: (answer.size + 1) % 3 },
+    { ...answer, size: 1 - answer.size },
     { ...answer, turn: (answer.turn + 2) % 4 },
   ];
   const { choices, answer: index } = buildChoices(
@@ -180,8 +188,8 @@ function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
       cell = (r, c) => shapeToken(shapes[r], colours[0], { count: c + 1 });
       why = 'Each row has its shape, and they count 1, 2, 3!';
     } else if (kind === 1) {
-      cell = (r, c) => shapeToken(shapes[0], colours[r], { size: c });
-      why = 'Each row has its colour, and they grow!';
+      cell = (r, c) => shapeToken(shapes[0], colours[r], { size: c === 1 ? 0 : 1 });
+      why = 'Each row has its colour: big, small, big!';
     } else {
       cell = (r, c) => shapeToken(shapes[c], colours[0], { count: r + 1 });
       why = 'Each column has its shape, each row its number!';
@@ -207,7 +215,7 @@ function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
     { ...answer, colour: colours[(colours.indexOf(answer.colour) + 1) % 3] },
     { ...answer, shape: shapes[(shapes.indexOf(answer.shape) + 1) % 3] },
     { ...answer, count: (answer.count % 3) + 1 },
-    { ...answer, size: (answer.size + 1) % 3 },
+    { ...answer, size: 1 - answer.size },
     { ...answer, turn: (answer.turn + 1) % 4 },
   ];
   const { choices, answer: index } = buildChoices(
@@ -254,8 +262,8 @@ function oddOneOut(level: PuzzleLevel, rng: () => number): PickPuzzle {
     case 'size': {
       const s = randInt(SHAPE_COUNT, rng);
       const big = rng() < 0.5;
-      same = colours.slice(1).map((c) => shapeToken(s, c, { size: big ? 0 : 2 }));
-      odd = shapeToken(s, colours[0], { size: big ? 2 : 0 });
+      same = colours.slice(1).map((c) => shapeToken(s, c, { size: big ? 0 : 1 }));
+      odd = shapeToken(s, colours[0], { size: big ? 1 : 0 });
       why = big ? 'The others are all small!' : 'The others are all big!';
       break;
     }
@@ -365,7 +373,7 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
   })();
   const n = 2 + randInt(2, rng);
   const hat = randInt(P.hats.length, rng);
-  const start = changes.includes('smaller') ? 2 : changes.includes('bigger') ? 0 : 1;
+  const start = changes.includes('bigger') ? 0 : 1;
   // The colour change keeps the same "from" colour on both, so the rule is plain.
   const from = shapeToken(sa, ca, { size: start });
   const next = shapeToken(changes.includes('shape') ? sa : sc, changes.includes('colour') ? ca : cc, { size: start });
@@ -373,7 +381,7 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
     let out = t;
     for (const ch of changes) {
       if (only && ch !== only) continue;
-      if (ch === 'bigger') out = { ...out, size: 2 };
+      if (ch === 'bigger') out = { ...out, size: 1 };
       if (ch === 'smaller') out = { ...out, size: 0 };
       if (ch === 'colour') out = { ...out, colour: cTo };
       if (ch === 'shape') out = { ...out, shape: sTo };
@@ -390,7 +398,7 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
     next,
     to,
     { ...answer, colour: (answer.colour + 1) % COLOUR_COUNT },
-    { ...answer, size: (answer.size + 1) % 3 },
+    { ...answer, size: 1 - answer.size },
     { ...answer, turn: (answer.turn + 2) % 4 },
     { ...answer, count: answer.count === 1 ? 2 : 1 },
     { ...answer, hat: answer.hat === null ? hat : (answer.hat + 1) % P.hats.length },

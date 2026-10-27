@@ -11,7 +11,7 @@ import { defaultRng } from '@/math/rng';
  * scenes draw them (`src/game/ui/puzzleTokens.ts`).
  *
  * A shape token's indexes point into `config.puzzles.shapes` / `colours`
- * (and so into the tokens sheet). Size 0–2 is small → big, turn 0–3 quarter
+ * (and so into the tokens sheet). Size 0 is small, 1 big, turn 0–3 quarter
  * turns clockwise, count 1–3 copies, hat an index into `config.puzzles.hats`.
  */
 export interface ShapeToken {
@@ -47,7 +47,7 @@ export const SHAPE_COUNT = config.puzzles.shapes.length;
 export const COLOUR_COUNT = config.puzzles.colours.length;
 export const SPIN_COUNT = config.puzzles.spinCells.length;
 
-/** A middle-size, upright, single, hatless shape token. */
+/** A big, upright, single, hatless shape token. */
 export function shapeToken(shape: number, colour: number, more: Partial<Omit<ShapeToken, 'kind'>> = {}): ShapeToken {
   return { kind: 'shape', shape, colour, size: 1, turn: 0, flip: false, count: 1, hat: null, ...more };
 }

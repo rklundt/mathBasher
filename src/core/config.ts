@@ -1519,8 +1519,12 @@ export const config = {
         { x: 1176, bottomY: 742, scale: 0.78 },
       ],
     },
-    /** A token's size steps (scale of its frame) for "size" rules. */
-    sizeScales: [0.62, 0.82, 1.04],
+    /**
+     * A token's two sizes (scale of its frame): small, big. Owner
+     * (2026-10-26): only two, about half and full, so a kid can tell them
+     * apart at a glance. Every token is big unless a rule makes it small.
+     */
+    sizeScales: [0.46, 0.9],
     timings: {
       popInMs: 220,
       popStaggerMs: 60,
