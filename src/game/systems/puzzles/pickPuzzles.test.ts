@@ -27,8 +27,7 @@ const valid = (t: Token): boolean => {
         t.shape < P.shapes.length &&
         t.colour >= 0 &&
         t.colour < P.colours.length &&
-        t.size >= 0 &&
-        t.size <= 2 &&
+        (t.size === 0 || t.size === 1) &&
         t.turn >= 0 &&
         t.turn <= 3 &&
         t.count >= 1 &&
