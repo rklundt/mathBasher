@@ -22,11 +22,11 @@ import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 const LEVELS: readonly PuzzleLevel[] = ['easy', 'medium', 'hard'];
 const LEVEL_LABELS: Record<PuzzleLevel, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
-/** The best line for a level: first-try answers and stars, said plainly. */
+/** The best line for a level: green answers and stars, said plainly. */
 export function puzzleBestLine(best: number | null): string {
-  if (best === null) return 'Get them right first time for ★★★!';
+  if (best === null) return 'Get them all green for ★★★!';
   const total = config.puzzles.perRound;
-  return `Your best: ${String(best)} of ${String(total)} first time ${'★'.repeat(starsFor(best))}`;
+  return `Your best: ${String(best)} of ${String(total)} green ${'★'.repeat(starsFor(best))}`;
 }
 
 /**

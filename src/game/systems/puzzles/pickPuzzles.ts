@@ -59,6 +59,22 @@ const randomShapeToken = (rng: () => number): ShapeToken =>
   shapeToken(randInt(SHAPE_COUNT, rng), randInt(COLOUR_COUNT, rng));
 const pick = <T>(items: readonly T[], rng: () => number): T => items[randInt(items.length, rng)];
 
+/**
+ * Owner (2026-10-26): a wrong choice that looks like the answer except for
+ * something the puzzle never changes (a bigger copy when sizes don't change,
+ * a turned one when nothing turns, two of it when counts don't change) is a
+ * trick, not a puzzle. A wrong choice with the answer's shape and colour may
+ * differ only in what the shown tokens themselves vary.
+ */
+const SUBTLE: readonly (keyof ShapeToken)[] = ['size', 'turn', 'flip', 'count', 'hat'];
+function fair(answer: ShapeToken, shown: readonly ShapeToken[], tweaks: readonly Token[]): Token[] {
+  const varies = (k: keyof ShapeToken): boolean => new Set(shown.map((t) => t[k])).size > 1;
+  return tweaks.filter((t) => {
+    if (t.kind !== 'shape' || t.shape !== answer.shape || t.colour !== answer.colour) return true;
+    return SUBTLE.every((k) => t[k] === answer[k] || varies(k));
+  });
+}
+
 // ---------------------------------------------------------------- Pattern Train
 
 function patternTrain(level: PuzzleLevel, rng: () => number): PickPuzzle {
@@ -140,7 +156,7 @@ function patternTrain(level: PuzzleLevel, rng: () => number): PickPuzzle {
   ];
   const { choices, answer: index } = buildChoices(
     answer,
-    shuffled(tweaks, rng),
+    shuffled(fair(answer, cars, tweaks), rng),
     choicesFor(level),
     () => randomShapeToken(rng),
     rng,
@@ -196,7 +212,7 @@ function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
   ];
   const { choices, answer: index } = buildChoices(
     answer,
-    shuffled(tweaks, rng),
+    shuffled(fair(answer, all, tweaks), rng),
     choicesFor(level),
     () => randomShapeToken(rng),
     rng,

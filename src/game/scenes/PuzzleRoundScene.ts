@@ -33,7 +33,8 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
   protected backdrop!: PuzzleBackdrop;
   /** The puzzle being played (0-based). */
   protected index = 0;
-  protected firstTryCount = 0;
+  /** Puzzles done green this round (right first try, in time). */
+  protected greens = 0;
   protected paused = false;
   protected ended = false;
   private backdropStart = 0;
@@ -61,7 +62,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.id = id;
     this.level = getPuzzleProgress().level(id);
     this.index = 0;
-    this.firstTryCount = 0;
+    this.greens = 0;
     this.paused = false;
     this.ended = false;
     this.musicKey = null;
@@ -92,12 +93,22 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     if (i > 0 && i % config.puzzles.timings.dancerSwapEvery === 0) this.dancers.swap();
   }
 
-  /** A right answer: sound, cheer, a gold or silver step, and the note. Then `next` after a moment. */
-  protected markRight(firstTry: boolean, note: string, next: () => void): void {
+  /** Green or yellow for a right answer: green needs no misses and, on a timed puzzle, little of the time used. */
+  protected stepFor(misses: number, timeUsed = 0): 'green' | 'yellow' {
+    return misses === 0 && timeUsed <= config.puzzles.steps.greenShare ? 'green' : 'yellow';
+  }
+
+  /** True once a puzzle has had all the misses it gets (it goes red). */
+  protected outOfTries(misses: number): boolean {
+    return misses >= config.puzzles.steps.maxMisses;
+  }
+
+  /** A right answer: sound, cheer, a green or yellow step, and the note. Then `next` after a moment. */
+  protected markRight(step: 'green' | 'yellow', note: string, next: () => void): void {
     getAudioManager().play(pickPairPalsMatchSfx(), 'sfx');
     this.dancers.cheer();
-    this.bar.mark(this.index, firstTry ? 'gold' : 'silver');
-    if (firstTry) this.firstTryCount++;
+    this.bar.mark(this.index, step);
+    if (step === 'green') this.greens++;
     this.prompt.flash(note, 'good', config.puzzles.timings.rightHoldMs + 400);
     this.time.delayedCall(config.puzzles.timings.rightHoldMs, next);
   }
@@ -109,11 +120,20 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.prompt.flash(msg, 'retry');
   }
 
+  /** Missed (too many misses, or the time ran out): a red step, the answer shown, then `next`. */
+  protected markRed(note: string, next: () => void): void {
+    getAudioManager().play(pickPairPalsMissSfx(), 'sfx');
+    this.dancers.oops();
+    this.bar.mark(this.index, 'red');
+    this.prompt.flash(note, 'retry', config.puzzles.steps.redHoldMs + 300);
+    this.time.delayedCall(config.puzzles.steps.redHoldMs, next);
+  }
+
   /** The round is over: record it and show the end panel. */
   protected endRound(): void {
     if (this.ended) return;
     this.ended = true;
-    const result = getPuzzleProgress().recordRound(this.id, this.level, this.firstTryCount);
+    const result = getPuzzleProgress().recordRound(this.id, this.level, this.greens);
     _th.logToAi('PuzzleRoundCompleted', SeverityLevel.Information, {
       ...this.props(),
       firstTry: String(result.firstTry),
@@ -132,7 +152,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.time.delayedCall(config.puzzles.timings.endPanelDelayMs, () =>
       showEndPanel(this, {
         title: result.stars === 3 ? 'Amazing!' : 'You did it!',
-        lines: [`${String(result.firstTry)} of ${String(total)} right first time!`, bestLine],
+        lines: [`${String(result.firstTry)} of ${String(total)} green!`, bestLine],
         stars: result.stars,
         newBest: result.newBest && result.previousBest !== null,
         changeLabel: 'Change Difficulty',

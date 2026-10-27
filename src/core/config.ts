@@ -1307,8 +1307,20 @@ export const config = {
     perRound: 8,
     /** Choices in the tray (Odd One Out: items on the shelf). */
     choices: { easy: 3, medium: 4, hard: 5 },
-    /** First-try answers for ★★★ and ★★ (fewer: ★). */
+    /** Green answers for ★★★ and ★★ (fewer: ★). */
     stars: { three: 8, two: 6 },
+    /**
+     * Each puzzle's step on the progress bar (owner, 2026-10-26): green = right
+     * first try (and, on a timed puzzle, in the first `greenShare` of its
+     * time); yellow = right after a miss or two, or slower; red = `maxMisses`
+     * misses or the time runs out, and the round moves on with the answer shown.
+     */
+    steps: { maxMisses: 3, greenShare: 0.5, redHoldMs: 1700 },
+    /** Seconds per puzzle for the timed ones (Symbol Hunt's are in `symbolHunt.seconds`). */
+    timed: {
+      'pattern-train': { easy: 20, medium: 25, hard: 30 },
+      'odd-one-out': { easy: 15, medium: 18, hard: 22 },
+    },
     shapes: [
       'circle',
       'square',
@@ -1499,6 +1511,8 @@ export const config = {
       /** The puzzle itself sits between these. */
       stage: { top: 176, bottom: 500 },
       tray: { y: 604, cardPx: 128, gapPx: 24, panelPad: 22 },
+      /** The sand bar of a timed puzzle (Pattern Train, Odd One Out), along the bottom between the dancers. */
+      sand: { y: 706, width: 740, height: 12 },
       /** Two dancing animals at the bottom corners. */
       dancers: [
         { x: 104, bottomY: 742, scale: 0.78 },

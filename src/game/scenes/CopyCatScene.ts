@@ -30,7 +30,8 @@ interface Pad {
  * Sprint 2.14 — Copy Cat (working memory): the animals light up and make
  * their sound in order; copy the order back. Eight sequences a round, the
  * first as long as the level says (2 / 3 / 4), one longer each time. A
- * mistake shows the order again; that sequence is no longer "first time".
+ * mistake shows the order again (the step goes yellow); a third one turns
+ * it red and the next sequence comes.
  */
 export class CopyCatScene extends PuzzleRoundScene {
   static readonly key = SceneKeys.CopyCat;
@@ -39,7 +40,8 @@ export class CopyCatScene extends PuzzleRoundScene {
   private lengths: number[] = [];
   private sequence: number[] = [];
   private step = 0;
-  private firstTry = true;
+  /** Mistakes on this sequence (three and it goes red). */
+  private misses = 0;
   private listening = false;
 
   constructor() {
@@ -91,7 +93,7 @@ export class CopyCatScene extends PuzzleRoundScene {
   }
 
   private startSequence(i: number): void {
-    this.firstTry = true;
+    this.misses = 0;
     this.beginPuzzle(i, 'Watch, then copy!');
     this.bar.setLeft(`Sounds: ${String(this.lengths[i])}`);
     this.sequence = copyCatSequence(this.lengths[i], this.pads.length);
@@ -131,7 +133,11 @@ export class CopyCatScene extends PuzzleRoundScene {
     this.light(i);
     if (i !== this.sequence[this.step]) {
       this.listening = false;
-      this.firstTry = false;
+      this.misses++;
+      if (this.outOfTries(this.misses)) {
+        this.markRed('Let’s try a new one!', () => this.nextSequence());
+        return;
+      }
       this.markWrong('Oops! Watch again');
       this.time.delayedCall(1300, () => this.playSequence());
       return;
@@ -141,9 +147,13 @@ export class CopyCatScene extends PuzzleRoundScene {
     this.listening = false;
     const pad = this.pads[i];
     sparkle(this, pad.root.x, pad.root.y);
-    this.markRight(this.firstTry, `You remembered ${String(this.sequence.length)}!`, () => {
-      if (this.index + 1 >= config.puzzles.perRound) this.endRound();
-      else this.startSequence(this.index + 1);
-    });
+    this.markRight(this.stepFor(this.misses), `You remembered ${String(this.sequence.length)}!`, () =>
+      this.nextSequence(),
+    );
+  }
+
+  private nextSequence(): void {
+    if (this.index + 1 >= config.puzzles.perRound) this.endRound();
+    else this.startSequence(this.index + 1);
   }
 }

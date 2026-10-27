@@ -166,7 +166,9 @@ export class PuzzleBackdrop {
 
 // ---------------------------------------------------------------- top bar + progress
 
-export type StepState = 'gold' | 'silver';
+/** A puzzle's step: green (right first try, in time), yellow (right after misses or slower), red (missed). */
+export type StepState = 'green' | 'yellow' | 'red';
+const STEP_COLOURS: Record<StepState, number> = { green: 0x4ade80, yellow: 0xfacc15, red: 0xf87171 };
 
 /** The slim top bar (name, mute, pause) and the progress bar under it: one step per puzzle. */
 export class PuzzleTopBar {
@@ -249,12 +251,12 @@ export class PuzzleTopBar {
     });
   }
 
-  /** A puzzle done: gold if right first time, silver after a retry. */
+  /** A puzzle done: green, yellow or red. */
   mark(i: number, state: StepState): void {
     const step = this.steps[i];
     if (!step) return;
     this.pulse?.stop();
-    step.setScale(1).setFillStyle(state === 'gold' ? SELECTED_AMBER : 0xcfd6e4, 1);
+    step.setScale(1).setFillStyle(STEP_COLOURS[state], 1);
     this.scene.tweens.add({ targets: step, scaleY: 1.6, duration: 160, yoyo: true, ease: 'Back.Out' });
   }
 }
@@ -512,6 +514,17 @@ export class AnswerTray {
     this.zones[i].disableInteractive();
   }
 
+  /** Red: show which one it was (an amber ring, a pulse). */
+  reveal(i: number): void {
+    const card = this.cards[i];
+    const s = this.cardPx + 14;
+    const g = this.scene.add.graphics().setDepth(PUZZLE_DEPTH.tray + 1);
+    g.lineStyle(7, SELECTED_AMBER, 1).strokeRoundedRect(card.x - s / 2, card.y - s / 2, s, s, s * 0.16);
+    this.scene.tweens.add({ targets: card, scale: 1.12, duration: 240, yoyo: true, repeat: 2 });
+    this.extras.push(g);
+    for (const z of this.zones) z.disableInteractive();
+  }
+
   /** The right pick: a pop and a green ring. */
   right(i: number): void {
     const card = this.cards[i];
@@ -529,6 +542,67 @@ export class AnswerTray {
     for (const e of this.extras) e.destroy();
     this.panel.destroy();
     this.ring.destroy();
+  }
+}
+
+// ---------------------------------------------------------------- sand timer
+
+/**
+ * A sand bar that runs out: a timed puzzle's clock (Pattern Train, Odd One
+ * Out, Symbol Hunt). It turns red near the end; pausing the scene's tweens
+ * pauses it.
+ */
+export class SandTimer {
+  private readonly tray: Phaser.GameObjects.Rectangle;
+  private readonly sand: Phaser.GameObjects.Rectangle;
+  private tween?: Phaser.Tweens.Tween;
+
+  constructor(
+    private readonly scene: Phaser.Scene,
+    x: number,
+    y: number,
+    width: number,
+    height: number = L.sand.height,
+  ) {
+    this.tray = scene.add
+      .rectangle(x, y, width + 8, height + 8, CALLOUT_INK, 0.35)
+      .setStrokeStyle(2, 0xffffff, 0.6)
+      .setDepth(PUZZLE_DEPTH.stage);
+    this.sand = scene.add
+      .rectangle(x - width / 2, y, width, height, 0xffd43b, 1)
+      .setOrigin(0, 0.5)
+      .setDepth(PUZZLE_DEPTH.stage);
+  }
+
+  /** Fill it and let it run for `seconds`; `onDone` when it's empty. */
+  start(seconds: number, onDone: () => void): void {
+    this.tween?.stop();
+    this.sand.setScale(1, 1).setFillStyle(0xffd43b, 1);
+    this.tween = this.scene.tweens.add({
+      targets: this.sand,
+      scaleX: 0,
+      duration: seconds * 1000,
+      onUpdate: () => {
+        if (this.sand.scaleX < 0.25) this.sand.setFillStyle(0xff8787, 1);
+      },
+      onComplete: onDone,
+    });
+  }
+
+  /** How much of the time is gone (0–1). */
+  used(): number {
+    return 1 - this.sand.scaleX;
+  }
+
+  stop(): void {
+    this.tween?.stop();
+    this.tween = undefined;
+  }
+
+  destroy(): void {
+    this.stop();
+    this.tray.destroy();
+    this.sand.destroy();
   }
 }
 

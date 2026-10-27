@@ -84,6 +84,25 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
+  it('Pattern Train and Missing Piece: no wrong choice is the answer changed only in a way the puzzle never changes', () => {
+    each((p, id) => {
+      if (id !== 'pattern-train' && id !== 'missing-piece') return;
+      const shown = (p.stage.kind === 'train' ? p.stage.cars : p.stage.kind === 'window' ? p.stage.cells : []).filter(
+        (t): t is ShapeToken => t !== null && t.kind === 'shape',
+      );
+      const answer = p.choices[p.answer];
+      if (answer.kind !== 'shape') return;
+      const all = [...shown, answer];
+      const varies = (k: keyof ShapeToken): boolean => new Set(all.map((t) => t[k])).size > 1;
+      p.choices.forEach((c, i) => {
+        if (i === p.answer || c.kind !== 'shape' || c.shape !== answer.shape || c.colour !== answer.colour) return;
+        for (const k of ['size', 'turn', 'flip', 'count', 'hat'] as const) {
+          if (c[k] !== answer[k]) expect(varies(k), `${id}: a choice differs only in ${k}`).toBe(true);
+        }
+      });
+    });
+  });
+
   it('Odd One Out: the odd one looks different from every other one', () => {
     each((p, id) => {
       if (id !== 'odd-one-out') return;
