@@ -61,6 +61,21 @@ export function menuStartTarget(lastPick: LastPick, challengeId: ChallengeId | n
 }
 
 /**
+ * Sprint 2.14 — the game picker, on the Puzzles tab: Back from a puzzle's
+ * setup, and Menu from a puzzle (pause card or end panel). Owner: from a
+ * puzzle, Menu means the subjects and games, not the title screen.
+ */
+export function openPuzzlePicker(scene: Phaser.Scene): void {
+  const init: ChallengePickerInit = {
+    next: SceneKeys.GameSelect,
+    back: SceneKeys.Menu,
+    source: 'menu',
+    subject: 'puzzles',
+  };
+  scene.scene.start(SceneKeys.ChallengePicker, init);
+}
+
+/**
  * Sprint 2.13 — open a puzzle's setup screen, through Loading (the setup
  * shows the puzzle's own pictures, so they're loaded first; once cached,
  * Loading passes straight through). A puzzle that isn't built does nothing.
