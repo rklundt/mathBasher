@@ -92,7 +92,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
         this.drawTrain(p.stage.cars);
         break;
       case 'window':
-        this.drawWindow(p.stage.cells);
+        this.drawWindow(p.stage.cells, p.stage.cols);
         break;
       case 'shelf':
         this.drawShelf(p.choices.length);
@@ -234,21 +234,23 @@ export class PickPuzzleScene extends PuzzleRoundScene {
     this.popIn(pieces);
   }
 
-  /** Missing Piece: a wooden window of 3 × 3 panes, one with a "?". */
-  private drawWindow(cells: readonly (Token | null)[]): void {
+  /** Missing Piece: a wooden window of 3 rows of `cols` panes, one with a "?". */
+  private drawWindow(cells: readonly (Token | null)[], cols: number): void {
     const cx = this.scale.width / 2;
     const cy = 345;
     const pane = 88;
     const gap = 10;
-    const size = pane * 3 + gap * 2 + 36;
+    const rows = Math.ceil(cells.length / cols);
+    const w = pane * cols + gap * (cols - 1) + 36;
+    const h = pane * rows + gap * (rows - 1) + 36;
     const frame = this.keep(this.add.graphics());
-    frame.fillStyle(0xa86a3c, 1).fillRoundedRect(cx - size / 2, cy - size / 2, size, size, 22);
-    frame.lineStyle(5, INK, 1).strokeRoundedRect(cx - size / 2, cy - size / 2, size, size, 22);
-    frame.fillStyle(0xfdf2dc, 1).fillRoundedRect(cx - size / 2 + 12, cy - size / 2 + 12, size - 24, size - 24, 14);
+    frame.fillStyle(0xa86a3c, 1).fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 22);
+    frame.lineStyle(5, INK, 1).strokeRoundedRect(cx - w / 2, cy - h / 2, w, h, 22);
+    frame.fillStyle(0xfdf2dc, 1).fillRoundedRect(cx - w / 2 + 12, cy - h / 2 + 12, w - 24, h - 24, 14);
     const pieces: Phaser.GameObjects.GameObject[] = [];
     cells.forEach((tok, i) => {
-      const x = cx + ((i % 3) - 1) * (pane + gap);
-      const y = cy + (Math.floor(i / 3) - 1) * (pane + gap);
+      const x = cx + ((i % cols) - (cols - 1) / 2) * (pane + gap);
+      const y = cy + (Math.floor(i / cols) - (rows - 1) / 2) * (pane + gap);
       if (tok === null) {
         const q = this.keep(questionCard(this, x, y, pane, pane));
         this.slot = { x, y, w: pane, h: pane, card: q };

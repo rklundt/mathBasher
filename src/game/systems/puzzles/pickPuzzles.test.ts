@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { config, type PuzzleLevel } from '@/core/config';
 import type { PickPuzzleId } from '@/core/gameIds';
 import { mulberry32 } from '@/test-utils/mulberry32';
-import { generatePick, generatePickRound, type PickPuzzle } from '@/game/systems/puzzles/pickPuzzles';
+import { generatePick, generatePickRound, lookAlikeShapes, type PickPuzzle } from '@/game/systems/puzzles/pickPuzzles';
 import { lookOf, sameLook, spinCells, type ShapeToken, type Token } from '@/game/systems/puzzles/tokens';
 
 const P = config.puzzles;
@@ -70,16 +70,35 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
-  it('Missing Piece: 9 panes, one missing; on Easy each row shares a shape and each column a colour', () => {
+  it('Missing Piece: 3 rows of the level’s columns, one pane missing; on Easy each row shares a shape and each column a colour', () => {
+    const seen = new Set<string>();
     each((p, id, level) => {
       if (id !== 'missing-piece' || p.stage.kind !== 'window') return;
       const cells = p.stage.cells;
-      expect(cells.length).toBe(9);
+      const [lo, hi] = P.missingPiece.cols[level];
+      expect(p.stage.cols).toBeGreaterThanOrEqual(lo);
+      expect(p.stage.cols).toBeLessThanOrEqual(hi);
+      seen.add(`${level}${String(p.stage.cols)}`);
+      expect(cells.length).toBe(P.missingPiece.rows * p.stage.cols);
       expect(cells.filter((c) => c === null).length).toBe(1);
       if (level !== 'easy') return;
       const full = cells.map((c) => c ?? p.choices[p.answer]) as ShapeToken[];
       for (let r = 0; r < 3; r++) expect(new Set(full.slice(r * 3, r * 3 + 3).map((t) => t.shape)).size).toBe(1);
       for (let c = 0; c < 3; c++) expect(new Set([0, 1, 2].map((r) => full[r * 3 + c].colour)).size).toBe(1);
+    });
+    expect([...seen].sort()).toEqual(['easy3', 'hard4', 'hard5', 'hard6', 'medium4']);
+  });
+
+  it('Missing Piece Hard: two shapes taking turns are never look-alikes', () => {
+    expect(lookAlikeShapes(P.shapes.indexOf('square'), P.shapes.indexOf('hexagon'))).toBe(true);
+    expect(lookAlikeShapes(P.shapes.indexOf('hexagon'), P.shapes.indexOf('square'))).toBe(true);
+    each((p, id, level) => {
+      if (id !== 'missing-piece' || level !== 'hard' || p.stage.kind !== 'window') return;
+      const shapes = [
+        ...new Set(p.stage.cells.filter((c): c is ShapeToken => c?.kind === 'shape').map((c) => c.shape)),
+      ];
+      if (shapes.length !== 2) return;
+      expect(lookAlikeShapes(shapes[0], shapes[1])).toBe(false);
     });
   });
 

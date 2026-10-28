@@ -1539,7 +1539,7 @@ export const config = {
     /** The setup screen's line under each level, per puzzle. */
     levelNotes: {
       'pattern-train': { easy: 'Short patterns', medium: 'Longer patterns', hard: 'Two patterns at once' },
-      'missing-piece': { easy: 'Shape and colour', medium: 'How many and size', hard: 'Tricky windows' },
+      'missing-piece': { easy: 'Shape and colour', medium: 'Moving shapes and turns', hard: 'Wide windows, two rules' },
       'odd-one-out': { easy: 'Shape or colour', medium: 'Size, corners, how many', hard: 'Kinds and flips' },
       'magic-wand': { easy: 'Size and colour', medium: 'Shape, turns, how many', hard: 'Two changes at once' },
       'spin-match': { easy: 'Spot the same shape', medium: 'Watch for mirrors', hard: 'All look alike' },
@@ -1584,6 +1584,12 @@ export const config = {
     },
     /** Pattern Train: cars shown before the "?" car. */
     patternTrain: { cars: { easy: 5, medium: 6, hard: 6 } },
+    /**
+     * Missing Piece: the window is 3 rows of `cols` panes. Owner
+     * (2026-10-28): the old Hard puzzles are Medium now, a column wider;
+     * Hard is 4–6 columns (picked per puzzle) with two rules at once.
+     */
+    missingPiece: { rows: 3, cols: { easy: [3, 3], medium: [4, 4], hard: [4, 6] } },
     /** Odd One Out: items on the shelf (one is odd). */
     oddOneOut: { items: { easy: 4, medium: 4, hard: 5 } },
     copyCat: {
