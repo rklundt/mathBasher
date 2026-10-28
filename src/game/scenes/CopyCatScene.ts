@@ -95,9 +95,19 @@ export class CopyCatScene extends PuzzleRoundScene {
   private startSequence(i: number): void {
     this.misses = 0;
     this.beginPuzzle(i, 'Watch, then copy!');
-    this.bar.setLeft(`Sounds: ${String(this.lengths[i])}`);
+    this.refreshTopLeft();
     this.sequence = copyCatSequence(this.lengths[i], this.pads.length);
     this.time.delayedCall(i === 0 ? 900 : C.betweenMs, () => this.playSequence());
+  }
+
+  protected topLeftLabel(): string {
+    const length = this.lengths.at(this.index) ?? 0;
+    return `Sounds: ${String(length)}  ·  ${super.topLeftLabel()}`;
+  }
+
+  /** The speed bonus counts against so many seconds per sound, from "Your turn!". */
+  protected speedSeconds(): number {
+    return config.puzzles.points.copyCatSecondsPerTap * this.sequence.length;
   }
 
   /** Light each pad in order, then it's the child's turn. */
@@ -111,6 +121,7 @@ export class CopyCatScene extends PuzzleRoundScene {
     this.time.delayedCall(this.sequence.length * (C.litMs + C.gapMs), () => {
       this.listening = true;
       this.prompt.setText('Your turn!');
+      this.restartClock();
     });
   }
 
@@ -147,9 +158,7 @@ export class CopyCatScene extends PuzzleRoundScene {
     this.listening = false;
     const pad = this.pads[i];
     sparkle(this, pad.root.x, pad.root.y);
-    this.markRight(this.stepFor(this.misses), `You remembered ${String(this.sequence.length)}!`, () =>
-      this.nextSequence(),
-    );
+    this.markRight(this.misses, null, `You remembered ${String(this.sequence.length)}!`, () => this.nextSequence());
   }
 
   private nextSequence(): void {

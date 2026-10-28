@@ -528,6 +528,7 @@ Phone in landscape, then desktop.
 - [ ] First card: a flip and one of the tile-flip sounds. A match: both pop with a green ring that fades, they dim a little, sparkles, the mascot hops, a bright orchestral hit. A miss: a tiny wiggle, a breaking-tiles sound, both stay up about two seconds, then turn back; tapping any card during that turns them back at once.
 - [ ] A face-up or matched card does nothing when tapped and costs no turn.
 - [ ] No two matching cards start next to each other (side, above / below or corner), at any size.
+- [ ] The win panel shows points: full (Easy 2,400 · Medium 3,000 · Hard 3,600) in at most one turn per card, 10 % less per extra 10 % of the cards in turns.
 - [ ] The last pair: the cards wave, then "You did it!", "You found all N pairs in T turns!" and "Your first win!" / "New best!" / "Your best is B turns". Play Again deals new cards; Change Cards → setup; Menu → the game picker's Puzzles tab.
 - [ ] Pause (button or Esc): Resume · Change Cards or Difficulty (the setup) · Settings · Quit to Menu (the game picker's Puzzles tab); Esc resumes. The win panel has Play Again, then Change Cards or Difficulty · Menu.
 - [ ] Any math game's pause card: Change Difficulty ends the round (not scored) and opens that game's Difficulty. Keys: arrows show and move a yellow ring, Space or Enter turns the card.
@@ -542,7 +543,9 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] The round: the progress bar (8 steps), the prompt, the backdrop changing a little each puzzle, two animals swaying at the bottom corners (they cheer on a right answer, "Oh!" on a wrong one, new ones every few puzzles); the puzzle's music.
 - [ ] A wrong answer greys out with "Try again!" in the prompt; the right one gets a green ring, fills the "?" and says why ("The others are all stars!"). The step: green (first try, and in the first half of the time when timed), yellow (after a miss or slower), red (three misses or time up: the answer is shown, the round moves on).
 - [ ] Pattern Train, Odd One Out and Symbol Hunt have a sand bar; no wrong choice is the answer in another size, turn or number unless the puzzle changes those.
-- [ ] Only two sizes anywhere: big, and small at about half. Easy to tell apart on a phone.
+- [ ] Only two sizes anywhere: big (filling most of the card) and small at about half. Easy to tell apart on a phone. A hat stays on its card.
+- [ ] Points: "Points: N" top left grows on each right answer with a "+N" (and ⚡ when quick); the end panel shows the total. Easy all green and quick ≈ 1,200; Hard ≈ 1,800. Then My Scores lists it under Puzzles, and a math game's "This visit" includes it.
+- [ ] Magic Wand Hard: every puzzle changes two things (a flip comes with a new colour; a hat with a colour or shape).
 - [ ] Pattern Train: the train and the "?" car. Missing Piece: the window. Odd One Out: the shelf (tap one on it). Magic Wand: from → to, so → ?, the wand. Spin Match: the shape on its turntable; mirrors on Medium / Hard.
 - [ ] Copy Cat: the chick peeps, the pig oinks, the whale sings, none louder than the others. The animals light up and sound in order ("Watch…" then "Your turn!"); a mistake shows the order again; the sequence grows each round.
 - [ ] Symbol Hunt: the sign, the grid, the sand bar; found cards ring green; a wrong tap wiggles; the sand running out shows the ones left.

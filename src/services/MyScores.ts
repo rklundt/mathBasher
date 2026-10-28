@@ -3,7 +3,9 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { _th, SeverityLevel } from '@/core/telemetry';
-import { CHALLENGE_SUBJECTS, type ChallengeId, type ChallengeSubject } from '@/core/subjects';
+import { config } from '@/core/config';
+import { SUBJECTS, type ChallengeId, type Subject } from '@/core/subjects';
+import type { PuzzleId } from '@/core/puzzles';
 import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
 
 /**
@@ -15,7 +17,8 @@ import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
  * Every round that earned something is recorded once, from
  * `GameSceneLifecycle`: reaching Game Over (out of lives included) counts as
  * finished; leaving mid-round (Quit to Menu, Change Game, Change Challenge)
- * counts as ended early, with the points earned so far.
+ * counts as ended early, with the points earned so far. Sprint 2.14 — the
+ * puzzles record theirs too (by puzzle id, under Puzzles).
  *
  * One storage entry. Days are LOCAL dates ("today" starts at the child's
  * midnight). Days older than `KEEP_DAYS` fold into one `earlier` total on
@@ -46,6 +49,9 @@ export interface RoundTally {
 
 type TallyMap = Record<string, RoundTally>;
 
+/** What a tally is kept by: a math challenge, or (sprint 2.14) a puzzle. */
+export type ScoreId = ChallengeId | PuzzleId;
+
 interface SavedScores {
   v: 1;
   /** The first day anything was recorded (YYYY-MM-DD, local). */
@@ -57,20 +63,20 @@ interface SavedScores {
 }
 
 export interface ChallengeScores {
-  readonly id: ChallengeId;
+  readonly id: ScoreId;
   readonly tally: RoundTally;
 }
 
 export interface SubjectScores {
-  readonly subject: ChallengeSubject;
+  readonly subject: Subject;
   readonly points: number;
-  /** Only challenges played, in picker order. */
+  /** Only challenges (or puzzles) played, in picker order. */
   readonly challenges: readonly ChallengeScores[];
 }
 
 export interface ScoresView {
   readonly points: number;
-  /** Only subjects played, in `CHALLENGE_SUBJECTS` order (puzzles have no points). */
+  /** Only subjects played, in `SUBJECTS` order. */
   readonly subjects: readonly SubjectScores[];
 }
 
@@ -147,9 +153,10 @@ function addInto(target: TallyMap, from: TallyMap): void {
 /** Group tallies by subject → challenge, in picker order, played ones only. */
 export function groupBySubject(tallies: Readonly<TallyMap>): ScoresView {
   const subjects: SubjectScores[] = [];
-  for (const subject of CHALLENGE_SUBJECTS) {
+  for (const subject of SUBJECTS) {
     const challenges: ChallengeScores[] = [];
-    for (const id of subject.challenges) {
+    const ids: readonly ScoreId[] = subject.kind === 'challenges' ? subject.challenges : subject.puzzles;
+    for (const id of ids) {
       const t = tallies[id];
       if (t && (t.points > 0 || t.finished > 0 || t.unfinished > 0)) challenges.push({ id, tally: { ...t } });
     }
@@ -191,7 +198,7 @@ export class ScoreLedger {
    * Record one round. `finished` = it reached Game Over. Re-reads storage
    * first, so another tab's rounds aren't overwritten.
    */
-  record(challengeId: ChallengeId, earned: number, finished: boolean): void {
+  record(challengeId: ScoreId, earned: number, finished: boolean): void {
     this.refresh();
     const today = localDayKey(this.now());
     const day = (this.data.days[today] ??= {});
@@ -203,7 +210,8 @@ export class ScoreLedger {
     this.foldOldDays();
     this.save();
     _th.logToAi('MyScores.RoundRecorded', SeverityLevel.Verbose, {
-      mathId: challengeId,
+      // A puzzle is a game, not a math challenge.
+      [challengeId in config.scoring.mathDifficulty ? 'mathId' : 'gameId']: challengeId,
       roundScore: String(points(earned)),
       reason: finished ? 'finished' : 'ended-early',
     });

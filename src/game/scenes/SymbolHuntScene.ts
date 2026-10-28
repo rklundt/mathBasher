@@ -126,10 +126,8 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     if (this.found.size < this.board.matches.length) return;
     this.live = false;
     this.sand?.stop();
-    this.markRight(
-      this.stepFor(this.misses, this.sand?.used() ?? 0),
-      `You found all ${String(this.board.matches.length)}!`,
-      () => this.next(),
+    this.markRight(this.misses, this.sand?.used() ?? null, `You found all ${String(this.board.matches.length)}!`, () =>
+      this.next(),
     );
   }
 

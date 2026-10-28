@@ -351,16 +351,19 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
       ? [['bigger'], ['smaller'], ['colour']]
       : level === 'medium'
         ? [['shape'], ['turn'], ['count'], ['colour']]
-        : [
-            ['hat'],
-            ['flip' as Change],
+        : // Owner (2026-10-28): Hard says "two changes at once", so every
+          // one has two (a hat alone, or a flip alone, was only one).
+          [
+            ['hat', 'colour'],
+            ['flip' as Change, 'colour'],
             ['bigger', 'colour'],
             ['turn', 'colour'],
             ['count', 'colour'],
             ['smaller', 'hat'],
+            ['shape', 'hat'],
           ];
   const changes = pick(pool, rng);
-  if ((changes as string[]).includes('flip')) return magicFlip(level, rng);
+  if ((changes as string[]).includes('flip')) return magicFlip(level, rng, changes.includes('colour'));
 
   const turnRule = changes.includes('turn');
   const shapePool = turnRule ? TURNABLE : Array.from({ length: SHAPE_COUNT }, (_, i) => i);
@@ -420,27 +423,35 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
 }
 
 /** Hard: the wand flips (mirrors) a lopsided shape. */
-function magicFlip(level: PuzzleLevel, rng: () => number): PickPuzzle {
+/**
+ * A mirror flip (a spin shape, so the flip shows). With `recolour` the
+ * colour changes too, to the same new colour on both, and the next shape
+ * starts in the same colour as the first, so the rule reads plainly.
+ */
+function magicFlip(level: PuzzleLevel, rng: () => number, recolour = false): PickPuzzle {
   const [sa, sc] = pickDistinct(SPIN_COUNT, 2, rng);
-  const ca = randInt(P.spinColours, rng);
-  const cc = (ca + 1 + randInt(P.spinColours - 1, rng)) % P.spinColours;
+  const [ca, cOther, cTo] = pickDistinct(P.spinColours, 3, rng);
+  const cc = recolour ? ca : cOther;
+  const cEnd = recolour ? cTo : cc;
   const from = spinToken(sa, ca, 0, false);
-  const to = spinToken(sa, ca, 0, true);
+  const to = spinToken(sa, recolour ? cTo : ca, 0, true);
   const next = spinToken(sc, cc, 0, false);
-  const answer = spinToken(sc, cc, 0, true);
+  const answer = spinToken(sc, cEnd, 0, true);
   const tweaks: Token[] = [
+    // One change but not the other first: the near misses.
+    ...(recolour ? [spinToken(sc, cEnd, 0, false), spinToken(sc, cc, 0, true)] : []),
     next,
-    spinToken(sc, cc, 1, false),
-    spinToken(sc, cc, 2, false),
-    spinToken(sc, cc, 3, false),
+    spinToken(sc, cEnd, 1, false),
+    spinToken(sc, cEnd, 2, false),
+    spinToken(sc, cEnd, 3, false),
     to,
-    spinToken(sc, cc, 2, true),
+    spinToken(sc, cEnd, 2, true),
   ];
   const { choices, answer: index } = buildChoices(
     answer,
     shuffled(tweaks, rng),
     choicesFor(level),
-    () => spinToken(randInt(SPIN_COUNT, rng), cc, randInt(4, rng), rng() < 0.5),
+    () => spinToken(randInt(SPIN_COUNT, rng), cEnd, randInt(4, rng), rng() < 0.5),
     rng,
   );
   return {
@@ -448,7 +459,7 @@ function magicFlip(level: PuzzleLevel, rng: () => number): PickPuzzle {
     prompt: 'Make the same magic change!',
     choices,
     answer: index,
-    why: 'Flipped, like a mirror!',
+    why: recolour ? 'Flipped like a mirror, and a new colour!' : 'Flipped, like a mirror!',
   };
 }
 

@@ -130,7 +130,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
       this.sand?.stop();
       this.tray.right(c);
       this.fillSlot(p.choices[c]);
-      this.markRight(this.stepFor(this.misses, this.sand?.used() ?? 0), p.why, () => this.next());
+      this.markRight(this.misses, this.sand?.used() ?? null, p.why, () => this.next());
       return;
     }
     this.misses++;

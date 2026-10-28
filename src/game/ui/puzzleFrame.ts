@@ -50,7 +50,10 @@ export function drawToken(scene: Phaser.Scene, token: Token, px: number): Phaser
     return box;
   }
   const frame = token.colour * PUZZLE_SHEETS.tokens.cols + token.shape;
-  const size = px * P.sizeScales[token.size];
+  // A hat needs head room: a hatted shape is drawn a little smaller and lower,
+  // so a big one's hat stays on the card (still far bigger than small).
+  const hatFit = token.hat !== null ? 0.82 : 1;
+  const size = px * P.sizeScales[token.size] * hatFit;
   // Copies: one in the middle; two side by side; three in a triangle.
   const spots =
     token.count === 1
@@ -67,7 +70,7 @@ export function drawToken(scene: Phaser.Scene, token: Token, px: number): Phaser
           ];
   const each = token.count === 1 ? size : size * 0.5;
   for (const [dx, dy] of spots) {
-    const piece = scene.add.container(dx * px, dy * px);
+    const piece = scene.add.container(dx * px, dy * px + (token.hat !== null ? each * 0.14 : 0));
     const img = scene.add.image(0, 0, PUZZLE_SHEETS.tokens.key, frame).setDisplaySize(each, each);
     img.setFlipX(token.flip);
     piece.add(img);
@@ -231,6 +234,24 @@ export class PuzzleTopBar {
 
   setLeft(label: string): void {
     this.leftText.setText(label);
+  }
+
+  /** "+156 ⚡⚡" rising from under the left label, then gone. */
+  popPoints(label: string): void {
+    const B = L.topBar;
+    const pop = text(this.scene, 24, B.y + B.height * 0.75, label, 'accent')
+      .setOrigin(0, 0.5)
+      .setDepth(PUZZLE_DEPTH.note);
+    applyTextOutline(pop);
+    this.scene.tweens.add({
+      targets: pop,
+      y: pop.y + 26,
+      alpha: { from: 1, to: 0 },
+      delay: 500,
+      duration: 700,
+      ease: 'Sine.In',
+      onComplete: () => pop.destroy(),
+    });
   }
 
   /** The puzzle being played pulses. */
@@ -610,7 +631,8 @@ export class SandTimer {
 
 export interface EndPanelOpts {
   title: string;
-  lines: readonly [string, string];
+  /** What happened, the points, and the best line. */
+  lines: readonly [string, string, string];
   stars: number;
   newBest: boolean;
   onPlayAgain: () => void;
@@ -620,27 +642,30 @@ export interface EndPanelOpts {
   changeLabel: string;
 }
 
-/** The end of a round: stars, what happened, Play Again / Change Difficulty / Menu. */
+/** The end of a round: stars, what happened, the points, the best; Play Again / Change Difficulty / Menu. */
 export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const { width, height } = scene.scale;
   const cx = width / 2;
   const cy = height / 2;
   const D = PUZZLE_DEPTH.panel;
   scene.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(D);
-  scene.add.rectangle(cx, cy, 700, 470, 0x1f2740, 0.96).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
-  text(scene, cx, cy - 170, o.title, 'success')
+  scene.add.rectangle(cx, cy, 700, 520, 0x1f2740, 0.96).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
+  text(scene, cx, cy - 192, o.title, 'success')
     .setOrigin(0.5)
     .setDepth(D);
-  const stars = text(scene, cx, cy - 100, '★'.repeat(o.stars) + '☆'.repeat(3 - o.stars), 'stars')
+  const stars = text(scene, cx, cy - 126, '★'.repeat(o.stars) + '☆'.repeat(3 - o.stars), 'stars')
     .setOrigin(0.5)
     .setDepth(D)
     .setFontSize(60)
     .setScale(0.4);
   scene.tweens.add({ targets: stars, scale: 1, duration: 360, ease: 'Back.Out' });
-  text(scene, cx, cy - 34, o.lines[0], 'bodyLarge')
+  text(scene, cx, cy - 64, o.lines[0], 'bodyLarge')
     .setOrigin(0.5)
     .setDepth(D);
-  const best = text(scene, cx, cy + 8, o.lines[1], o.newBest ? 'accent' : 'bodyAccent')
+  text(scene, cx, cy - 22, o.lines[1], 'accent')
+    .setOrigin(0.5)
+    .setDepth(D);
+  const best = text(scene, cx, cy + 18, o.lines[2], o.newBest ? 'accent' : 'bodyAccent')
     .setOrigin(0.5)
     .setDepth(D);
   if (o.newBest) scene.tweens.add({ targets: best, scale: { from: 0.6, to: 1 }, duration: 320, ease: 'Back.Out' });
@@ -648,7 +673,7 @@ export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const again = new PlaceholderButton({
     scene,
     x: cx,
-    y: cy + 88,
+    y: cy + 106,
     width: 320,
     height: 72,
     label: 'Play Again',
@@ -657,7 +682,7 @@ export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const change = new PlaceholderButton({
     scene,
     x: cx - 110,
-    y: cy + 178,
+    y: cy + 194,
     width: 260,
     height: 64,
     label: o.changeLabel,
@@ -666,7 +691,7 @@ export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const menu = new PlaceholderButton({
     scene,
     x: cx + 170,
-    y: cy + 178,
+    y: cy + 194,
     width: 180,
     height: 64,
     label: 'Menu',

@@ -6,8 +6,10 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { CHALLENGE_SUBJECTS, type SubjectId } from '@/core/subjects';
+import type { SubjectId } from '@/core/subjects';
 import { generators } from '@/math/registry';
+import { puzzleById, type PuzzleId } from '@/core/puzzles';
+import type { MathId } from '@/core/config';
 import { formatPoints } from '@/services/challengePoints';
 import { dayKeyToDate, getMyScores, roundsLabel, type ScoresView } from '@/services/MyScores';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
@@ -19,11 +21,16 @@ import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 type Tab = 'today' | 'all-time';
 
+/** A row's name: the challenge's, or the puzzle's. */
+function rowLabel(kind: 'challenges' | 'puzzles', id: string): string {
+  return kind === 'puzzles' ? puzzleById(id as PuzzleId).label : generators[id as MathId].label;
+}
+
 /** Remembered for the visit: the tab, and which subjects are open. */
 let visitTab: Tab = 'today';
 const visitOpen = new Map<SubjectId, boolean>();
-/** With one subject of points (Math today) it starts open; with several, closed (puzzles have no points). */
-const isOpen = (id: SubjectId): boolean => visitOpen.get(id) ?? CHALLENGE_SUBJECTS.length === 1;
+/** A subject starts open when it's the only one with points; with several, closed. */
+const isOpen = (id: SubjectId, subjects: number): boolean => visitOpen.get(id) ?? subjects === 1;
 
 /** A subject row in the list, in list coordinates (0 = the list's top, unscrolled). */
 interface SubjectRow {
@@ -220,7 +227,7 @@ export class MyScoresScene extends Phaser.Scene {
     const right = L.w / 2 - 24;
     let y = 0;
     for (const s of scores.subjects) {
-      const open = isOpen(s.subject.id);
+      const open = isOpen(s.subject.id, scores.subjects.length);
       const index = focusables.length;
       const button = new PlaceholderButton({
         scene: this,
@@ -258,7 +265,7 @@ export class MyScoresScene extends Phaser.Scene {
       for (const c of s.challenges) {
         const mid = y + L.challengeRowH / 2;
         this.list.add([
-          this.add.text(left, mid, generators[c.id].label, textStyle('body')).setOrigin(0, 0.5),
+          this.add.text(left, mid, rowLabel(s.subject.kind, c.id), textStyle('body')).setOrigin(0, 0.5),
           this.add.text(-90, mid, roundsLabel(c.tally), textStyle('bodyMuted')).setOrigin(0, 0.5),
           this.add
             .text(right, mid, `${formatPoints(c.tally.points)} points`, textStyle('bodyAccent'))
