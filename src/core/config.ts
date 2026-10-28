@@ -1337,6 +1337,23 @@ export const config = {
       speedSeconds: { 'missing-piece': 30, 'magic-wand': 30, 'spin-match': 30 },
       copyCatSecondsPerTap: 4,
     },
+    /**
+     * Owner (2026-10-28, focus group): more going on in the background
+     * (`game/ui/puzzleAmbience.ts`): floating bubbles and stars, twinkles,
+     * a slow drift and zoom on the backdrop. Pair Pals too.
+     */
+    ambience: {
+      floaters: 14,
+      /** The rest are bubbles. */
+      starShare: 0.3,
+      sizePx: [22, 52],
+      alpha: [0.3, 0.6],
+      riseSecs: [14, 26],
+      swayPx: 40,
+      twinkleEveryMs: 1100,
+      tints: [0xffc21a, 0xff6fa8, 0x9b6bff, 0x37c3ff, 0x4ade80],
+      drift: { scaleFrom: 1.04, scaleTo: 1.1, panPx: 20, ms: 16000 },
+    },
     /** Seconds per puzzle for the timed ones (Symbol Hunt's are in `symbolHunt.seconds`). */
     timed: {
       'pattern-train': { easy: 20, medium: 25, hard: 30 },
@@ -1527,7 +1544,7 @@ export const config = {
       'magic-wand': { easy: 'Size and colour', medium: 'Shape, turns, how many', hard: 'Two changes at once' },
       'spin-match': { easy: 'Spot the same shape', medium: 'Watch for mirrors', hard: 'All look alike' },
       'copy-cat': { easy: '4 animals, from 2 sounds', medium: '5 animals, from 3', hard: '6 animals, from 4' },
-      'symbol-hunt': { easy: '12 cards', medium: '18 cards, look-alikes', hard: '21 cards, many look-alikes' },
+      'symbol-hunt': { easy: '12 cards', medium: '18 cards, look-alikes', hard: '24 cards, all look-alikes' },
     },
     layout: {
       topBar: { height: 66, y: 33 },
@@ -1561,6 +1578,8 @@ export const config = {
       swayMs: 2600,
       swayDeg: 5,
       dancerSwapEvery: 3,
+      /** Between a dancer's little idle hops (ms, random in the range). */
+      dancerIdleMs: [2200, 4800],
       endPanelDelayMs: 700,
     },
     /** Pattern Train: cars shown before the "?" car. */
@@ -1578,10 +1597,41 @@ export const config = {
       betweenMs: 900,
     },
     symbolHunt: {
-      cards: { easy: 12, medium: 18, hard: 21 },
-      cols: { easy: 4, medium: 6, hard: 7 },
+      // Owner (2026-10-28, focus group): Hard wasn't hard enough: a column more (7 → 8).
+      cards: { easy: 12, medium: 18, hard: 24 },
+      cols: { easy: 4, medium: 6, hard: 8 },
       targets: { easy: [2, 3], medium: [3, 4], hard: [3, 5] },
       seconds: { easy: 40, medium: 40, hard: 45 },
+      /** Share of the other cards that are look-alikes (the sign's shape in another colour, or its colour on another shape). */
+      lookalikes: { easy: 0, medium: 0.45, hard: 1 },
+      /** Share of the look-alikes that are near ones: a neighbouring colour, or a similar shape (below). */
+      near: { easy: 0, medium: 0, hard: 0.6 },
+      /** Colours that sit close together. */
+      nearColours: {
+        red: ['orange', 'pink'],
+        orange: ['red', 'yellow'],
+        yellow: ['orange'],
+        green: ['teal'],
+        teal: ['green', 'blue'],
+        blue: ['teal', 'purple'],
+        purple: ['blue', 'pink'],
+        pink: ['red', 'purple'],
+      },
+      /** Shapes that look alike at a glance. */
+      nearShapes: {
+        circle: ['flower', 'hexagon'],
+        square: ['diamond', 'hexagon'],
+        triangle: ['diamond', 'drop'],
+        star: ['flower'],
+        heart: ['drop'],
+        diamond: ['square', 'triangle'],
+        hexagon: ['pentagon', 'circle'],
+        moon: ['drop'],
+        drop: ['heart', 'moon'],
+        cloud: ['flower'],
+        flower: ['circle', 'star'],
+        pentagon: ['hexagon'],
+      },
     },
   },
   /**

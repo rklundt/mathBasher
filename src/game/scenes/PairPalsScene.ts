@@ -33,6 +33,7 @@ import {
   type Direction,
 } from '@/game/systems/pairPalsMath';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { PuzzleAmbience, driftBackdrop } from '@/game/ui/puzzleAmbience';
 import { loadAudioOnDemand, loadGameBundle } from '@/game/services/assetLoader';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline, createTapHint, type TapHint } from '@/game/ui/callouts';
@@ -51,7 +52,7 @@ interface CardView {
   readonly ring: Phaser.GameObjects.Graphics;
 }
 
-const Z = { board: 10, focus: 12, mascot: 8, bar: 20, hint: 30, panel: 40 };
+const Z = { ambience: 2, board: 10, focus: 12, mascot: 8, bar: 20, hint: 30, panel: 40 };
 
 /** "You found all 6 pairs in 9 turns!" and what it did to the best. */
 export function winLines(pairs: number, result: GameResult): [string, string] {
@@ -127,7 +128,9 @@ export class PairPalsScene extends Phaser.Scene {
     const { cols, rows } = this.cfg.sizes[this.size];
     this.board = newBoard(deal(cols, rows, this.cfg.picturesPerTheme, this.cfg.twinGroups[this.theme]));
 
-    this.add.image(0, 0, PAIR_PALS_BACKDROP_KEYS[this.theme]).setOrigin(0);
+    // Sprint 2.14 — a little life behind the board: the backdrop drifts, bubbles and sparkles float.
+    driftBackdrop(this, this.add.image(0, 0, PAIR_PALS_BACKDROP_KEYS[this.theme]).setOrigin(0));
+    new PuzzleAmbience(this, Z.ambience);
     this.buildBoard();
     this.buildMascot();
     this.buildTopBar();

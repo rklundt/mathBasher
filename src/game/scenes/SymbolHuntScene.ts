@@ -98,7 +98,14 @@ export class SymbolHuntScene extends PuzzleRoundScene {
   }
 
   private updateCount(): void {
-    this.bar.setLeft(`Found ${String(this.found.size)} / ${String(this.board.matches.length)}`);
+    this.refreshTopLeft();
+  }
+
+  /** "Found 1 / 3 · Points: 150". */
+  protected topLeftLabel(): string {
+    const board = this.board as HuntBoard | undefined;
+    const found = board === undefined ? '' : `Found ${String(this.found.size)} / ${String(board.matches.length)}  ·  `;
+    return found + super.topLeftLabel();
   }
 
   private tap(k: number): void {

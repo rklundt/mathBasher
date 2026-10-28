@@ -65,6 +65,41 @@ describe('Symbol Hunt (sprint 2.14)', () => {
     expect(hardLookalikes / 100).toBeGreaterThan(8);
   });
 
+  it('Hard: every other card shares the sign’s shape or colour, many of them a near one', () => {
+    const H = P.symbolHunt;
+    const nearColours = H.nearColours as Readonly<Record<string, readonly string[]>>;
+    const nearShapes = H.nearShapes as Readonly<Record<string, readonly string[]>>;
+    let others = 0;
+    let near = 0;
+    for (let seed = 1; seed <= 100; seed++) {
+      const h = huntBoard('hard', mulberry32(seed));
+      const tShape = P.shapes[h.target.shape];
+      const tColour = P.colours[h.target.colour];
+      h.cards.forEach((c, i) => {
+        if (h.matches.includes(i)) return;
+        others++;
+        expect(c.shape === h.target.shape || c.colour === h.target.colour).toBe(true);
+        if (nearColours[tColour].includes(P.colours[c.colour]) || nearShapes[tShape].includes(P.shapes[c.shape]))
+          near++;
+      });
+    }
+    expect(near / others).toBeGreaterThan(0.45);
+  });
+
+  it('near colours and shapes name real ones, never themselves', () => {
+    const H = P.symbolHunt;
+    for (const [c, list] of Object.entries(H.nearColours)) {
+      for (const n of list) expect(P.colours as readonly string[]).toContain(n);
+      expect(list).not.toContain(c);
+    }
+    for (const [s, list] of Object.entries(H.nearShapes)) {
+      for (const n of list) expect(P.shapes as readonly string[]).toContain(n);
+      expect(list).not.toContain(s);
+    }
+    expect(Object.keys(H.nearColours).sort()).toEqual([...P.colours].sort());
+    expect(Object.keys(H.nearShapes).sort()).toEqual([...P.shapes].sort());
+  });
+
   it('the grid fits the level’s columns', () => {
     for (const level of LEVELS) expect(P.symbolHunt.cards[level] % P.symbolHunt.cols[level]).toBe(0);
   });

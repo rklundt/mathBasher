@@ -545,6 +545,8 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] Pattern Train, Odd One Out and Symbol Hunt have a sand bar; no wrong choice is the answer in another size, turn or number unless the puzzle changes those.
 - [ ] Only two sizes anywhere: big (filling most of the card) and small at about half. Easy to tell apart on a phone. A hat stays on its card.
 - [ ] Points: "Points: N" top left grows on each right answer with a "+N" (and ⚡ when quick); the end panel shows the total. Easy all green and quick ≈ 1,200; Hard ≈ 1,800. Then My Scores lists it under Puzzles, and a math game's "This visit" includes it.
+- [ ] The background moves a little: the backdrop drifts and zooms slowly, bubbles and small stars float up, a sparkle twinkles now and then, and the dancers hop on their own. Never in the way, never a shape you could mistake for an answer. Pair Pals too.
+- [ ] Symbol Hunt Hard: 8 columns; almost every other card shares the sign's shape or colour, many in a near colour or a similar shape. Top left: "Found 1 / 3 · Points: N".
 - [ ] Magic Wand Hard: every puzzle changes two things (a flip comes with a new colour; a hat with a colour or shape).
 - [ ] Pattern Train: the train and the "?" car. Missing Piece: the window. Odd One Out: the shelf (tap one on it). Magic Wand: from → to, so → ?, the wand. Spin Match: the shape on its turntable; mirrors on Medium / Hard.
 - [ ] Copy Cat: the chick peeps, the pig oinks, the whale sings, none louder than the others. The animals light up and sound in order ("Watch…" then "Your turn!"); a mistake shows the order again; the sequence grows each round.

@@ -13,6 +13,7 @@ import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { CALLOUT_INK, SELECTED_AMBER } from '@/game/ui/uiPalette';
+import { PuzzleAmbience, driftBackdrop } from '@/game/ui/puzzleAmbience';
 
 /**
  * Sprint 2.14 — the puzzle pack's shared frame: the pieces every puzzle's
@@ -28,7 +29,16 @@ const INK = 0x3a2420;
 const CARD = 0xfffaf0;
 
 /** Depths every puzzle scene shares. */
-export const PUZZLE_DEPTH = { backdrop: 0, dancers: 5, stage: 10, tray: 20, bar: 30, note: 40, panel: 50 } as const;
+export const PUZZLE_DEPTH = {
+  backdrop: 0,
+  ambience: 2,
+  dancers: 5,
+  stage: 10,
+  tray: 20,
+  bar: 30,
+  note: 40,
+  panel: 50,
+} as const;
 
 // ---------------------------------------------------------------- tokens
 
@@ -146,6 +156,9 @@ export class PuzzleBackdrop {
     keys: readonly string[],
   ) {
     this.images = keys.map((k) => scene.add.image(0, 0, k).setOrigin(0).setAlpha(0).setDepth(PUZZLE_DEPTH.backdrop));
+    // A little life: the backdrops drift, and bubbles and sparkles float over them.
+    for (const img of this.images) driftBackdrop(scene, img);
+    new PuzzleAmbience(scene, PUZZLE_DEPTH.ambience);
   }
 
   /** Show backdrop `i` (wrapping), fading from the one before. */
@@ -293,6 +306,8 @@ export class PuzzleDancers {
   private readonly sprites: Phaser.GameObjects.Sprite[] = [];
   private readonly hops: (Phaser.Tweens.Tween | undefined)[] = [];
   private animals: number[] = [];
+  /** No idle hop until then (a cheer or an "Oh!" is showing). */
+  private busyUntil = 0;
 
   constructor(private readonly scene: Phaser.Scene) {
     const C = BALANCE_SHEETS.crowd;
@@ -316,6 +331,33 @@ export class PuzzleDancers {
       this.sprites.push(s);
     });
     this.swap(true);
+    this.scheduleIdle();
+  }
+
+  /** Every few seconds one dancer does a little happy hop on its own. */
+  private scheduleIdle(): void {
+    const [lo, hi] = P.timings.dancerIdleMs;
+    this.scene.time.delayedCall(lo + Math.random() * (hi - lo), () => {
+      this.idleHop(Math.floor(Math.random() * this.sprites.length));
+      this.scheduleIdle();
+    });
+  }
+
+  private idleHop(i: number): void {
+    const s = this.sprites[i];
+    if (this.scene.time.now < this.busyUntil || this.hops[i]?.isPlaying()) return;
+    const base = L.dancers[i].bottomY;
+    s.setFrame(this.frame(i, 1)).setY(base);
+    this.hops[i] = this.scene.tweens.add({
+      targets: s,
+      y: base - 14,
+      duration: 200,
+      yoyo: true,
+      ease: 'Quad.Out',
+      onComplete: () => {
+        if (this.scene.time.now >= this.busyUntil) s.setFrame(this.frame(i, 0));
+      },
+    });
   }
 
   /** The crowd sheet is each animal's poses in a row (idle, happy, oops). */
@@ -355,6 +397,7 @@ export class PuzzleDancers {
 
   /** A right answer: a happy hop. */
   cheer(): void {
+    this.busyUntil = this.scene.time.now + 1000;
     this.pose(1);
     this.sprites.forEach((s, i) => {
       // Always hop from the resting spot (quick answers mustn't stack the hops).
@@ -375,6 +418,7 @@ export class PuzzleDancers {
 
   /** A wrong answer: "Oh!" for a moment. */
   oops(): void {
+    this.busyUntil = this.scene.time.now + 800;
     this.pose(2);
     this.scene.time.delayedCall(700, () => this.pose(0));
   }
