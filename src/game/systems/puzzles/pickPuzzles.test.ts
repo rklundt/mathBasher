@@ -136,6 +136,17 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
+  it('Magic Wand Hard: every change is two changes at once', () => {
+    const keys = ['shape', 'colour', 'size', 'turn', 'flip', 'count', 'hat'] as const;
+    each((p, id, level) => {
+      if (id !== 'magic-wand' || level !== 'hard' || p.stage.kind !== 'wand') return;
+      const from = p.stage.from as unknown as Record<string, unknown>;
+      const to = p.stage.to as unknown as Record<string, unknown>;
+      const changed = keys.filter((k) => k in from && from[k] !== to[k]);
+      expect(changed.length, changed.join(', ')).toBe(2);
+    });
+  });
+
   it('Spin Match: the answer is the target turned (never flipped, never looking the same)', () => {
     each((p, id) => {
       if (id !== 'spin-match' || p.stage.kind !== 'spin') return;

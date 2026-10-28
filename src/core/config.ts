@@ -1266,6 +1266,14 @@ export const config = {
     flipLiftScale: 1.06,
     /** A miss stays up this long so it can be remembered (a tap skips it); owner: 1.2 s → 2.2 s, 2026-10-26. */
     missHoldMs: 2200,
+    /**
+     * Owner (2026-10-28): a win is worth up to a whole Add to 10 round at the
+     * same difficulty (`services/puzzlePoints.ts`). Full points in at most
+     * `fullTurnsPerCard` × the cards in turns; past that, every
+     * `stepShareOfCards` of the cards in extra turns (rounded up, the
+     * player's way) takes `dropPerStep` off. 30 cards: 33 turns = 90 %.
+     */
+    points: { fullTurnsPerCard: 1, stepShareOfCards: 0.1, dropPerStep: 0.1 },
     missWiggleDeg: 4,
     matchPopScale: 1.14,
     matchPopMs: 220,
@@ -1316,6 +1324,19 @@ export const config = {
      * misses or the time runs out, and the round moves on with the answer shown.
      */
     steps: { maxMisses: 3, greenShare: 0.5, redHoldMs: 1700 },
+    /**
+     * Owner (2026-10-28): points, measured against an Add to 10 round at the
+     * same difficulty (`services/puzzlePoints.ts`). A puzzle round is worth
+     * up to `roundShare` of one. The speed bonus is math's
+     * (`scoring.speedBonus`); the untimed puzzles count it against
+     * `speedSeconds`, Copy Cat against `copyCatSecondsPerTap` per tap of
+     * the sequence (from "Your turn!").
+     */
+    points: {
+      roundShare: 0.5,
+      speedSeconds: { 'missing-piece': 30, 'magic-wand': 30, 'spin-match': 30 },
+      copyCatSecondsPerTap: 4,
+    },
     /** Seconds per puzzle for the timed ones (Symbol Hunt's are in `symbolHunt.seconds`). */
     timed: {
       'pattern-train': { easy: 20, medium: 25, hard: 30 },
@@ -1527,8 +1548,10 @@ export const config = {
      * A token's two sizes (scale of its frame): small, big. Owner
      * (2026-10-26): only two, about half and full, so a kid can tell them
      * apart at a glance. Every token is big unless a rule makes it small.
+     * 2026-10-28: big grew into the card's margin (0.9 → 1.04) so the
+     * difference is plain for the youngest.
      */
-    sizeScales: [0.46, 0.9],
+    sizeScales: [0.46, 1.04],
     timings: {
       popInMs: 220,
       popStaggerMs: 60,
