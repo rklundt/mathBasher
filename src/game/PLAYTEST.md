@@ -548,6 +548,7 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] The background moves a little: the backdrop drifts and zooms slowly, bubbles and small stars float up, a sparkle twinkles now and then, and the dancers hop on their own. Never in the way, never a shape you could mistake for an answer. Pair Pals too.
 - [ ] Symbol Hunt Hard: 8 columns; almost every other card shares the sign's shape or colour, many in a near colour or a similar shape. Top left: "Found 1 / 3 · Points: N".
 - [ ] Magic Wand Hard: every puzzle changes two things (a flip comes with a new colour; a hat with a colour or shape).
+- [ ] Missing Piece: Easy 3 × 3, Medium 3 × 4, Hard 3 rows of 4 to 6 columns, the window centred and clear of the prompt and the tray.
 - [ ] Pattern Train: the train and the "?" car. Missing Piece: the window. Odd One Out: the shelf (tap one on it). Magic Wand: from → to, so → ?, the wand. Spin Match: the shape on its turntable; mirrors on Medium / Hard.
 - [ ] Copy Cat: the chick peeps, the pig oinks, the whale sings, none louder than the others. The animals light up and sound in order ("Watch…" then "Your turn!"); a mistake shows the order again; the sequence grows each round.
 - [ ] Symbol Hunt: the sign, the grid, the sand bar; found cards ring green; a wrong tap wiggles; the sand running out shows the ones left.

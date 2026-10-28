@@ -32,7 +32,7 @@ import {
 /** What sits above the tray. Odd One Out has no tray: its choices stand on the shelf. */
 export type PickStage =
   | { readonly kind: 'train'; readonly cars: readonly Token[] }
-  | { readonly kind: 'window'; readonly cells: readonly (Token | null)[] }
+  | { readonly kind: 'window'; readonly cells: readonly (Token | null)[]; readonly cols: number }
   | { readonly kind: 'shelf' }
   | { readonly kind: 'wand'; readonly from: Token; readonly to: Token; readonly next: Token }
   | { readonly kind: 'spin'; readonly target: Token };
@@ -55,6 +55,10 @@ const CORNERED = P.cornered.map((s) => shapeIndex(s));
 const ROUND = P.round.map((s) => shapeIndex(s));
 
 const choicesFor = (level: PuzzleLevel): number => P.choices[level];
+const NEAR_SHAPES = P.symbolHunt.nearShapes as Readonly<Record<string, readonly string[]>>;
+/** Shapes that look alike at a glance (either way round). */
+export const lookAlikeShapes = (a: number, b: number): boolean =>
+  NEAR_SHAPES[P.shapes[a]].includes(P.shapes[b]) || NEAR_SHAPES[P.shapes[b]].includes(P.shapes[a]);
 const randomShapeToken = (rng: () => number): ShapeToken =>
   shapeToken(randInt(SHAPE_COUNT, rng), randInt(COLOUR_COUNT, rng));
 const pick = <T>(items: readonly T[], rng: () => number): T => items[randInt(items.length, rng)];
@@ -175,45 +179,58 @@ function patternTrain(level: PuzzleLevel, rng: () => number): PickPuzzle {
 // ---------------------------------------------------------------- Missing Piece
 
 function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
-  const shapes = pickDistinct(SHAPE_COUNT, 3, rng);
-  const colours = pickDistinct(COLOUR_COUNT, 3, rng);
+  const M = P.missingPiece;
+  const [lo, hi] = M.cols[level];
+  const cols = lo + randInt(hi - lo + 1, rng);
+  let shapes = pickDistinct(SHAPE_COUNT, Math.max(cols, M.rows), rng);
+  const colours = pickDistinct(COLOUR_COUNT, Math.max(cols, M.rows), rng);
   let cell: (r: number, c: number) => ShapeToken;
   let why: string;
   if (level === 'easy') {
     cell = (r, c) => shapeToken(shapes[r], colours[c]);
     why = 'Each row has its shape, each column its colour!';
   } else if (level === 'medium') {
-    const kind = randInt(3, rng);
-    if (kind === 0) {
-      cell = (r, c) => shapeToken(shapes[r], colours[0], { count: c + 1 });
-      why = 'Each row has its shape, and they count 1, 2, 3!';
-    } else if (kind === 1) {
-      cell = (r, c) => shapeToken(shapes[0], colours[r], { size: c === 1 ? 0 : 1 });
-      why = 'Each row has its colour: big, small, big!';
+    if (randInt(2, rng) === 0) {
+      // The same shapes in every row, moved along one each row.
+      cell = (r, c) => shapeToken(shapes[(r + c) % cols], colours[r]);
+      why = 'Every row has each shape once, moved along one!';
     } else {
-      cell = (r, c) => shapeToken(shapes[c], colours[0], { count: r + 1 });
-      why = 'Each column has its shape, each row its number!';
-    }
-  } else {
-    const kind = randInt(2, rng);
-    if (kind === 0) {
-      // Every row and every column has all three shapes once.
-      cell = (r, c) => shapeToken(shapes[(r + c) % 3], colours[r]);
-      why = 'Every row has each shape once!';
-    } else {
-      const turnable = pickDistinct(TURNABLE.length, 3, rng).map((i) => TURNABLE[i]);
-      cell = (r, c) => shapeToken(turnable[r], colours[r], { turn: c });
+      shapes = pickDistinct(TURNABLE.length, M.rows, rng).map((i) => TURNABLE[i]);
+      cell = (r, c) => shapeToken(shapes[r], colours[r], { turn: c % 4 });
       why = 'Each one turns a little more!';
     }
+  } else {
+    // Two rules at once.
+    const kind = randInt(3, rng);
+    if (kind === 0) {
+      cell = (r, c) => shapeToken(shapes[(r + c) % cols], colours[c]);
+      why = 'The shapes move along one each row, and each column has its colour!';
+    } else if (kind === 1) {
+      shapes = pickDistinct(TURNABLE.length, M.rows, rng).map((i) => TURNABLE[i]);
+      cell = (r, c) => shapeToken(shapes[r], colours[r], { turn: (r + c) % 4 });
+      why = 'Each one turns a little more, and each row starts one turn further!';
+    } else {
+      // Two shapes that are easy to tell apart, even small (no hexagon next to a pentagon).
+      const first = shapes[0];
+      const others = Array.from({ length: SHAPE_COUNT }, (_, i) => i).filter(
+        (s) => s !== first && !lookAlikeShapes(first, s),
+      );
+      shapes = [first, pick(others, rng)];
+      cell = (r, c) => shapeToken(shapes[c % 2], colours[r], { count: r + 1 });
+      why = 'Two shapes take turns, and each row has one more!';
+    }
   }
-  const missing = level === 'easy' ? 8 : randInt(9, rng);
-  const all = Array.from({ length: 9 }, (_, i) => cell(Math.floor(i / 3), i % 3));
+  const total = M.rows * cols;
+  const missing = level === 'easy' ? total - 1 : randInt(total, rng);
+  const all = Array.from({ length: total }, (_, i) => cell(Math.floor(i / cols), i % cols));
   const answer = all[missing];
   const cells = all.map((t, i) => (i === missing ? null : t));
+  const used = (k: 'shape' | 'colour'): number[] => [...new Set(all.map((t) => t[k]))];
+  const next = (items: number[], v: number): number => items[(items.indexOf(v) + 1) % items.length];
   const tweaks: Token[] = [
     ...all.filter((_, i) => i !== missing),
-    { ...answer, colour: colours[(colours.indexOf(answer.colour) + 1) % 3] },
-    { ...answer, shape: shapes[(shapes.indexOf(answer.shape) + 1) % 3] },
+    { ...answer, colour: next(used('colour'), answer.colour) },
+    { ...answer, shape: next(used('shape'), answer.shape) },
     { ...answer, count: (answer.count % 3) + 1 },
     { ...answer, size: 1 - answer.size },
     { ...answer, turn: (answer.turn + 1) % 4 },
@@ -225,7 +242,13 @@ function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
     () => randomShapeToken(rng),
     rng,
   );
-  return { stage: { kind: 'window', cells }, prompt: 'Which piece fits the window?', choices, answer: index, why };
+  return {
+    stage: { kind: 'window', cells, cols },
+    prompt: 'Which piece fits the window?',
+    choices,
+    answer: index,
+    why,
+  };
 }
 
 // ---------------------------------------------------------------- Odd One Out
