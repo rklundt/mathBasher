@@ -190,14 +190,21 @@ function missingPiece(level: PuzzleLevel, rng: () => number): PickPuzzle {
     cell = (r, c) => shapeToken(shapes[r], colours[c]);
     why = 'Each row has its shape, each column its colour!';
   } else if (level === 'medium') {
-    if (randInt(2, rng) === 0) {
+    const kind = randInt(4, rng);
+    if (kind === 0) {
       // The same shapes in every row, moved along one each row.
       cell = (r, c) => shapeToken(shapes[(r + c) % cols], colours[r]);
       why = 'Every row has each shape once, moved along one!';
-    } else {
+    } else if (kind === 1) {
       shapes = pickDistinct(TURNABLE.length, M.rows, rng).map((i) => TURNABLE[i]);
       cell = (r, c) => shapeToken(shapes[r], colours[r], { turn: c % 4 });
       why = 'Each one turns a little more!';
+    } else if (kind === 2) {
+      cell = (r, c) => shapeToken(shapes[c], colours[0], { count: r + 1 });
+      why = 'Each column has its shape, each row its number!';
+    } else {
+      cell = (r, c) => shapeToken(shapes[0], colours[r], { size: c % 2 === 0 ? 1 : 0 });
+      why = 'Each row has its colour: big, small, big, small!';
     }
   } else {
     // Two rules at once.

@@ -1539,7 +1539,11 @@ export const config = {
     /** The setup screen's line under each level, per puzzle. */
     levelNotes: {
       'pattern-train': { easy: 'Short patterns', medium: 'Longer patterns', hard: 'Two patterns at once' },
-      'missing-piece': { easy: 'Shape and colour', medium: 'Moving shapes and turns', hard: 'Wide windows, two rules' },
+      'missing-piece': {
+        easy: 'Shape and colour',
+        medium: 'Turns, how many and size',
+        hard: 'Wide windows, two rules',
+      },
       'odd-one-out': { easy: 'Shape or colour', medium: 'Size, corners, how many', hard: 'Kinds and flips' },
       'magic-wand': { easy: 'Size and colour', medium: 'Shape, turns, how many', hard: 'Two changes at once' },
       'spin-match': { easy: 'Spot the same shape', medium: 'Watch for mirrors', hard: 'All look alike' },

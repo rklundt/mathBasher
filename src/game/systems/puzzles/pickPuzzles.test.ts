@@ -72,6 +72,7 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
 
   it('Missing Piece: 3 rows of the level’s columns, one pane missing; on Easy each row shares a shape and each column a colour', () => {
     const seen = new Set<string>();
+    const mediumRules = new Set<string>();
     each((p, id, level) => {
       if (id !== 'missing-piece' || p.stage.kind !== 'window') return;
       const cells = p.stage.cells;
@@ -79,6 +80,7 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
       expect(p.stage.cols).toBeGreaterThanOrEqual(lo);
       expect(p.stage.cols).toBeLessThanOrEqual(hi);
       seen.add(`${level}${String(p.stage.cols)}`);
+      if (level === 'medium') mediumRules.add(p.why);
       expect(cells.length).toBe(P.missingPiece.rows * p.stage.cols);
       expect(cells.filter((c) => c === null).length).toBe(1);
       if (level !== 'easy') return;
@@ -87,6 +89,8 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
       for (let c = 0; c < 3; c++) expect(new Set([0, 1, 2].map((r) => full[r * 3 + c].colour)).size).toBe(1);
     });
     expect([...seen].sort()).toEqual(['easy3', 'hard4', 'hard5', 'hard6', 'medium4']);
+    // Moving shapes, turns, how many, big / small.
+    expect(mediumRules.size).toBe(4);
   });
 
   it('Missing Piece Hard: two shapes taking turns are never look-alikes', () => {
