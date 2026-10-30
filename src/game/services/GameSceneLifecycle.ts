@@ -146,7 +146,7 @@ export class GameSceneLifecycle {
   /**
    * Called from `scene.create()` after subsystems are ready. Handles:
    *  - Defensive `Settings.setGameId(this.gameId)` invariant (closes
-   *    the gap if a future entry path bypassed GameSelectScene).
+   *    the gap if a future entry path bypassed the chooser).
    *  - `setupScene` lifecycle telemetry (Started/Completed pair).
    *  - `RoundStarted` domain event.
    *  - HudScene launch (parallel scene, guarded against double-launch).
@@ -156,7 +156,7 @@ export class GameSceneLifecycle {
   enter(): void {
     const { scene, gameId, mathId, speed } = this.opts;
     // Defensive: assert the gameId matches the active scene. Normally
-    // GameSelectScene's tile click already sets this; the redundant
+    // the chooser's tile tap already sets this; the redundant
     // set here closes the gap if a future entry path (Play Again,
     // deep link, HMR-survived state) forgets to update Settings.
     // Without this, downstream code branching on

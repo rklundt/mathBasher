@@ -19,13 +19,14 @@ import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
  *
  * Full-screen 4-option picker the kid hits ONCE on first visit
  * (BootScene routes here when `Settings.getChosenHero() === null`,
- * otherwise straight to MenuScene). After first pick, persisted via
- * `Settings.setChosenHero(...)`; subsequent visits skip this scene
- * but it's reachable mid-session by tapping the chosen-hero avatar
- * in MenuScene's corner.
+ * otherwise straight to the Title Screen). After first pick, persisted via
+ * `Settings.setChosenHero(...)`; subsequent visits skip this scene.
+ *
+ * Sprint 2.15 — paused with the avatar (`config.features.avatar`): Boot
+ * doesn't open it and nothing links to it. The code stays, switched off.
  *
  * Init data:
- *  - `fromMenu: true` → mid-session re-open. Esc / back goes to Menu.
+ *  - `fromMenu: true` → mid-session re-open. Esc / back goes to the Title Screen.
  *    The Skip button is hidden (the kid already has a choice; this is
  *    a deliberate swap, not a forced first-run pick).
  *  - omitted / `fromMenu: false` → first-run, hard gate. Esc does
@@ -41,8 +42,9 @@ import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 
 export interface HeroChooserSceneInit {
   /**
-   * True when launched from MenuScene's avatar-tap (mid-session
-   * swap). False / omitted means first-run hard gate.
+   * True for a mid-session swap (it was the old menu's avatar tap;
+   * nothing opens it that way while the avatar is paused). False /
+   * omitted means first-run hard gate.
    */
   fromMenu?: boolean;
 }

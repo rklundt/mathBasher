@@ -24,10 +24,9 @@ export const SceneKeys = {
   Background: 'background',
   /**
    * Sprint 2.5 story 4 — Hero Chooser. Full-screen scene showing the
-   * 4 diverse hero options on first visit (before MenuScene). Once
-   * the kid picks one, BootScene routes directly to Menu on
-   * subsequent visits. The scene is also reachable mid-session
-   * from a small avatar-tap in MenuScene's corner.
+   * 4 diverse hero options on first visit (before the Title Screen).
+   * Sprint 2.15: paused with the avatar (`config.features.avatar`), so
+   * Boot doesn't open it; the scene stays for when it comes back.
    */
   HeroChooser: 'hero-chooser',
   /**
@@ -45,18 +44,13 @@ export const SceneKeys = {
    * each with its points, and Start. It replaced Difficulty.
    */
   MathSetup: 'math-setup',
-  Menu: 'menu',
-  GameSelect: 'game-select',
-  Difficulty: 'difficulty',
-  /**
-   * Sprint 2.9 — "Pick your challenge!": subject (Math) → challenge type.
-   * Opens on the first Start of a visit and from the challenge chip, Game
-   * Over and (as a card inside) Pause.
-   */
-  ChallengePicker: 'challenge-picker',
+  // Sprint 2.15 retired 'menu', 'game-select', 'difficulty' and
+  // 'challenge-picker' (the Title Screen, the Game Chooser and the setup
+  // screens replaced them).
   /**
    * Sprint 2.9.2 — "My Scores": points by subject and challenge, Today and
-   * All-Time, saved in this browser. From the Menu.
+   * All-Time, saved in this browser. Sprint 2.15: from the chooser's and the
+   * setup screens' top bar; Back returns there.
    */
   MyScores: 'my-scores',
   /**
@@ -141,7 +135,7 @@ export const SceneKeys = {
   CopyCat: 'copy-cat',
   SymbolHunt: 'symbol-hunt',
   /**
-   * Loading intermediate (sprint 2.1.8) — sits between Difficulty and
+   * Loading intermediate (sprint 2.1.8) — sits between the setup screen and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
    * timing means a loading bar attached in the target scene's own
@@ -166,9 +160,9 @@ export type SceneKey = (typeof SceneKeys)[keyof typeof SceneKeys];
  * fourth game mode is a TypeScript error here until the new case is
  * filled in (ADR-0011's per-game-mode dispatch pattern).
  *
- * Used by DifficultyScene (to pick which scene to launch via LoadingScene)
- * and GameOverScene (to route "Play Again" back to the matching mode).
- * Was originally inlined in DifficultyScene; lifted to this shared module
+ * Used by the math setup screen (to pick which scene to launch via
+ * LoadingScene) and GameOverScene (to route "Play Again" back to the
+ * matching mode). Was originally inlined in the old Difficulty screen; lifted to this shared module
  * in sprint 2.2 after the Climb "Play Again routes to Alien Shoot" bug
  * showed the second call site had silently drifted.
  */

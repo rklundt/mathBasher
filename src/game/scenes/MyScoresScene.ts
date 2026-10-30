@@ -111,8 +111,8 @@ export class MyScoresScene extends Phaser.Scene {
       scene: this,
       x: cx,
       y: M.backY,
-      width: config.layout.challengeFlow.backButton.w,
-      height: config.layout.challengeFlow.backButton.h,
+      width: config.layout.myScores.backButton.w,
+      height: config.layout.myScores.backButton.h,
       label: 'Back',
       onClick: goBack,
     });

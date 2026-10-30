@@ -118,7 +118,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
   // cached. The previous `loadGameBundle + attachLoadingOverlay` here
   // was a no-op (totalToLoad === 0 → overlay short-circuited) and
   // existed only as a "direct-entry safety net" — but no direct-entry
-  // path exists in production (DifficultyScene always routes through
+  // path exists in production (the math setup always routes through
   // LoadingScene; GameOver Play Again routes back through it; Phaser
   // hot-reload re-runs BootScene). Removing the redundant calls
   // makes "what assets does this scene depend on?" answerable in
@@ -135,7 +135,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     createAlienAnims(this);
 
     const { challengeId: mathId, speed } = Settings.round;
-    // Defensive defaults — DifficultyScene gates progress on isReady() so
+    // Defensive defaults — the math setup gates Start on isReady() so
     // these should always be set, but if a future flow lands here without
     // selections (e.g. dev hotload), pick reasonable fallbacks.
     this.mathId = mathId ?? 'add-to-10';
@@ -250,7 +250,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
     // with the visual fire. Phaser caches the decoded buffer at preload, so
     // play() is effectively zero-latency. AudioManager respects the mute
     // toggle + per-kind volume slider; if init() hasn't fired yet (e.g. dev
-    // hot reload skips MenuScene) play() is a silent no-op rather than a
+    // hot reload skips the splash) play() is a silent no-op rather than a
     // crash. Kind is explicit ('sfx') for clarity even though it's the
     // default — makes the playback category obvious at the call site.
     getAudioManager().play(SfxKeys.Fire1, 'sfx');
@@ -543,7 +543,7 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
    * and `RoundAbandoned` telemetry surfaces this for analysis).
    *
    * Cleanup is the same as scene shutdown — `cleanup()` runs via the
-   * shutdown event when MenuScene takes over.
+   * shutdown event when the next screen takes over.
    */
   quitRound(destination: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +

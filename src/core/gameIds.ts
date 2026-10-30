@@ -25,8 +25,8 @@ export type MathGameId =
 
 /**
  * Sprint 2.13 — the puzzle games (the Puzzles subject). They have no
- * challenge, points, Game Select or Difficulty: each has its own setup
- * screen. Math-only code (Difficulty, Game Over, round scoring) takes
+ * math type or speed: each has its own setup screen. Math-only code (the
+ * math setup, Game Over, round scoring) takes
  * `MathGameId`, so a puzzle can't reach it by mistake.
  */
 export type PuzzleGameId = 'pair-pals' | RoundPuzzleId;
@@ -61,7 +61,7 @@ export function isPickPuzzleId(id: GameId): id is PickPuzzleId {
 /** Every game: the nine math games and the puzzle games. */
 export type GameId = MathGameId | PuzzleGameId;
 
-/** The math games, in Game Select order (a test keeps it complete). */
+/** Every math game (a test keeps it complete); the chooser's order is the groups'. */
 export const MATH_GAME_IDS: readonly MathGameId[] = [
   'alien-shoot',
   'asteroid-field',
@@ -74,7 +74,7 @@ export const MATH_GAME_IDS: readonly MathGameId[] = [
   'balance-scale',
 ];
 
-/** True for the math games (they go through Game Select, Difficulty and Game Over). */
+/** True for the math games (they go through the math setup screen and Game Over). */
 export function isMathGameId(id: GameId): id is MathGameId {
   return (MATH_GAME_IDS as readonly GameId[]).includes(id);
 }

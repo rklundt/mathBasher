@@ -34,7 +34,7 @@ import { screenBanner } from '@/game/ui/callouts';
  * since sprint 2.1 added `gameSceneKey` plumbing).
  *
  * Round structure:
- *   1. Player picks "Asteroid Field" at GameSelectScene → DifficultyScene
+ *   1. Player picks "Asteroid Field" on the Game Chooser → its setup screen
  *   2. Picks a math type + speed → this scene starts
  *   3. RoundController draws first question (4 candidate answers + the
  *      math prompt). Scene spawns 4 asteroids with those answers.

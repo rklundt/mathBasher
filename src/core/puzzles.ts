@@ -6,7 +6,7 @@ import type { PuzzleGameId } from '@/core/gameIds';
 
 /**
  * Sprint 2.13 — the Puzzles subject's games, in picker order. A puzzle is a
- * game with its own setup screen (no challenge, Game Select or Difficulty).
+ * game with its own setup screen (no math type or speed).
  * Sprint 2.14 added the puzzle pack (one puzzle per family of question on
  * children's ability tests).
  *

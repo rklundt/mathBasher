@@ -224,16 +224,15 @@ export const HeroSpriteKeys = {
  * Sprint 2.5 story 4 — Hero Chooser sprites. Four diverse Midjourney-
  * generated characters (female/male × dark/light skin tone matrix) the
  * kid picks from on first visit; choice persists via
- * `Settings.chosenHero` and surfaces as the MenuScene avatar +
- * GameOver banner. Purely cosmetic — does NOT affect in-game sprites
+ * `Settings.chosenHero` and surfaces as the in-game top bar avatar +
+ * GameOver banner (sprint 2.15: paused, `config.features.avatar`). Purely cosmetic — does NOT affect in-game sprites
  * (Alien Shoot stays on Speeders, Climb stays on its skin picker,
  * Asteroid Field stays on its asteroid-heroes round-robin).
  *
  * Lossless WebP at 192×192 per the alpha-sprites-are-lossless
  * convention. Eager-scoped because the picker appears BEFORE
- * MenuScene (on first run) and the chosen hero is shown on every
- * MenuScene mount thereafter — both pre-game-pick, so they're not
- * in any per-game scope.
+ * the Title Screen (on first run), before any game is picked, so
+ * they're not in any per-game scope.
  *
  * If a fifth diversity-representation hero lands later, add it here
  * + extend the `ChosenHeroKey` union in `Settings.ts` + the picker
@@ -797,7 +796,7 @@ export const PUZZLE_BACKDROP_KEYS: Readonly<Record<RoundPuzzleId, readonly strin
  */
 export const TITLE_ART_KEY = 'title-splash-1';
 /**
- * Sprint 2.13.1 — the Game Select tile pictures: one 96 px frame per math
+ * Sprint 2.13.1 — the math game tile pictures (the Game Chooser): one 96 px frame per math
  * game, cut from each game's own art by `scripts/sprites/game-icons.mjs`
  * (its `ORDER` must match `frames`; a test checks). Boot-loaded (≈40 KB):
  * the game sheets the pictures come from load only when their game starts.
@@ -1577,16 +1576,16 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     scope: 'game:pair-pals',
   })),
   // Sprint 2.5 story 4 — Hero Chooser sprites. Eager scope: shown
-  // BEFORE MenuScene (first-run picker) + on every MenuScene mount
-  // (avatar). +96 KB across the 4 lossless WebPs is acceptable
-  // first-load cost for a feature kids hit on every visit.
+  // before the Title Screen (first-run picker). +96 KB across the 4
+  // lossless WebPs (sprint 2.15: the picker is paused, but the pictures
+  // stay so turning the avatar back on is one flag).
   ...(Object.values(HeroChooserKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'hero',
     key,
     url: spritePath('hero', key),
     scope: 'eager',
   })),
-  // Sprint 2.13.1 — the Game Select tile pictures. Eager: Game Select comes before any game loads.
+  // Sprint 2.13.1 — the math game tile pictures. Eager: the chooser comes before any game loads.
   {
     kind: 'hero',
     key: GAME_ICON_SHEET.key,

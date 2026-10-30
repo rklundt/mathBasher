@@ -32,7 +32,7 @@ export interface PlaceholderButtonOpts {
   /** Sprint 2.9 — a colour for the subtitle (the challenge buttons' "1.5x Points!"). */
   subtitleColor?: string;
   /**
-   * Sprint 2.13.1 — a picture on the tile's left (the Game Select tiles):
+   * Sprint 2.13.1 — a picture on the tile's left (the old Game Select tiles):
    * any loaded texture and frame, drawn `sizePx` square with `padPx` around
    * it. The label and subtitle centre in the space to its right. A texture
    * that isn't loaded is skipped (the text keeps its place).
@@ -86,8 +86,8 @@ const ICON_TEXT_GAP_PX = 6;
  *
  * Important invariants:
  * - Disabled buttons IGNORE pointer events AND keyboard activation. This is
- *   load-bearing for DifficultyScene tile gating (a kid clicking a "Coming
- *   soon" tile must NOT trigger anything).
+ *   load-bearing for "Coming soon" tiles ("More Coming Soon" on the
+ *   chooser): a kid tapping one must NOT trigger anything.
  * - Text inside disabled buttons does NOT have its alpha reduced — only the
  *   background and border dim. This keeps text contrast above WCAG 1.4.3
  *   (~4.5:1) on the dark canvas background. Reducing alpha on the whole

@@ -11,7 +11,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 /**
  * Top-right mute icon — shared helper so every scene that wants the
  * one-tap mute affordance uses the same look + behavior. Mirrors what
- * MenuScene and HudScene built inline before sprint 2.2 wrap-up
+ * the old menu and HudScene built inline before sprint 2.2 wrap-up
  * extracted them to a single source.
  *
  * Visual: 44×36 warm-amber-tinted `IconButton` background carrying a
@@ -44,7 +44,7 @@ export function createMuteIconButton(
     hoverFill: MUTE_ICON_HOVER,
     render: (container) => {
       // Container-anchored — TextKind 'iconGlyph' is the same shared
-      // style HudScene + MenuScene use for their corner icon glyphs.
+      // style the HUD and the top bar use for their icon glyphs.
       const speakerGlyph = scene.add.text(0, 1, '🔊', textStyle('iconGlyph')).setOrigin(0.5);
       container.add(speakerGlyph);
 

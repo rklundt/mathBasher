@@ -17,7 +17,8 @@ import { addScreenTag } from '@/game/ui/screenTag';
 import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
 
 /**
- * Settings screen. Reachable from MenuScene and from PauseOverlay. Two
+ * Settings screen. Reachable from the Title Screen, the chooser and setup
+ * screens' top bar, the end of a round and PauseOverlay. Two
  * concerns share the panel: AUDIO settings (always present — volume
  * sliders for sfx / midground / music) and GAME settings (per-game-mode
  * options, visible only when the current round's game has any to show).
@@ -32,8 +33,8 @@ import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
  *
  * Launched as a parallel scene, NOT started in place: the caller passes
  * `onBack` via `init({ onBack })` and SettingsScene calls it when the
- * user clicks Back or presses Esc. From MenuScene the underlying scene
- * is Menu; from PauseOverlay the underlying scenes are Game + Hud +
+ * user clicks Back or presses Esc. From a menu screen that screen stays
+ * underneath; from PauseOverlay the underlying scenes are Game + Hud +
  * PauseOverlay (in z-order). Either way SettingsScene knows nothing
  * about its caller.
  *

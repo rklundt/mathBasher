@@ -13,7 +13,7 @@ import { SceneKeys } from '@/core/sceneKeys';
  *
  * Usage from a scene's `create()`:
  *
- *   wireEscBack(this, () => this.scene.start(SceneKeys.GameSelect));
+ *   wireEscBack(this, () => this.goBack());
  *
  * The handler is registered with `on` (not `once`) so a kid pressing Esc
  * multiple times mid-navigation never strands the scene without a back
