@@ -49,4 +49,5 @@ Don't write one for:
 | [0011](ADR-0011-per-game-mode-dispatch.md) | Per-game-mode dispatch via `Record<GameId, X>` maps (and the new-game checklist) |
 | [0012](ADR-0012-static-web-apps-hosting.md) | Azure Static Web Apps hosting; Express server kept but not deployed |
 | [0013](ADR-0013-lint-and-format-toolchain.md) | ESLint + Prettier, committed git hooks, and a release-age guard |
-| [0014](ADR-0014-subjects-and-challenge-first-flow.md) | Subjects, challenge types, and the challenge-first flow |
+| [0014](ADR-0014-subjects-and-challenge-first-flow.md) | Subjects, challenge types, and the challenge-first flow (part 1 superseded by 0015) |
+| [0015](ADR-0015-game-first-screen-flow.md) | The game-first screen flow: Title Screen, Game Chooser, setup screens |

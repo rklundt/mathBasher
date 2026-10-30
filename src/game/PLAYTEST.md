@@ -15,7 +15,41 @@ pnpm dev
 ```
 
 Open the URL Vite prints (typically `http://localhost:5183`). Click through
-to a round (Menu → Pick a Game → Pick Difficulty → Start).
+to a round (Title Screen → Play → Math → a group → a game → Start).
+
+**Sprint 2.15 renamed the screens.** Older sections below still say Menu,
+Game Select, Difficulty or "Pick your challenge!": read them as the Title
+Screen, the Game Chooser and the game's setup screen. Every menu screen shows
+its name in the bottom-left corner locally and on the dev site
+("DEV · GameChooserScene · math groups"); use it to name a screen in a note.
+
+## Screen flow (sprint 2.15)
+
+Walk each path with the mouse, the keyboard and touch, at 1280 × 720 and on
+a phone in landscape (844 × 390).
+
+| ✓ | Check |
+|---|---|
+|   | First visit (clear site data): no hero picker; the Title Screen shows mathBasher, "Math and puzzle games", Play, Settings, the art and mute |
+|   | Play → "What do you want to play?": Math, Puzzles and a "More Coming Soon" tile that does nothing |
+|   | Math → "Aliens or animals?" (mathBasher, Math Fun; the trail says Math) → a group → its games (trail: Math › mathBasher) |
+|   | Puzzles opens its eight puzzles straight away (no group step); Back from there goes to the subjects |
+|   | A trail chip goes back to its step; Back walks up one step; from the subjects, Back goes to the Title Screen |
+|   | My Scores (top bar) from any chooser step or setup screen, then Back → the same step or screen |
+|   | Settings (top bar, Title Screen, pause card, end of round) opens over the screen; its Back or Esc returns to it (Esc doesn't also go back a step) |
+|   | Math Fun → Frog Splash → setup shows Add to 10 and Medium selected; Start plays |
+|   | Reload: the same picks are selected; the chooser's subject and group are ringed; Frog Splash says "Last Played" |
+|   | Switch to Alien Shoot: the math type is kept, the speed is Alien Shoot's own |
+|   | Math setup: the 11 types with "1.5x Points!" under each; the levels' "Up to N points!" follows the type; a fraction type shows Same bottoms / Mixed numbers / Different bottoms |
+|   | Space Escape's setup says "How tough?" and "12 floors per round"; Alien Shoot and Asteroid Field say "How fast?" |
+|   | Puzzle setup: How tough? with "Up to 1,200 / 1,500 / 1,800 points!"; Pair Pals: Which cards? (a picture each) and How tough? ("Up to 2,400 / 3,000 / 3,600 points!") |
+|   | Pause (math): Resume, Change Game (that game's list), Change Math or Speed (its setup, picks kept), Settings |
+|   | Pause (puzzle): Change Difficulty; Pair Pals: Change Cards or Difficulty |
+|   | End of round (Game Over, puzzle end panel, Pair Pals' win panel): Play Again replays; Change Game, Change …, Settings as on pause; no Main Menu |
+|   | Esc on Game Over → Change Game |
+|   | Tab order on a setup screen: top bar, trail, the picks, Start; focus starts on Start |
+|   | The avatar is nowhere (no picker, nothing in the in-game top bar or on Game Over), even for a player who picked one before |
+|   | `pnpm build` (no variable) then `pnpm preview`: no screen-name tag anywhere |
 
 ---
 
@@ -79,10 +113,10 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 
 | ✓ | Check |
 |---|---|
-|   | Menu → GameSelect → Difficulty → Start → GameScene loads cleanly |
+|   | Title → Play → Math → mathBasher → Alien Shoot → Start → GameScene loads cleanly |
 |   | GameOver → "Play Again" → GameScene starts a fresh round on the same difficulty |
-|   | GameOver → "Change Difficulty" → DifficultyScene preserves nothing weird |
-|   | GameOver → "Main Menu" → returns home; from there, a fresh round works |
+|   | GameOver → "Change Math or Speed" → the setup screen, with this round's picks selected |
+|   | GameOver → "Change Game" → the games list; from there, a fresh round works |
 |   | If you spam-click "Play Again" the round restarts cleanly (no stuck wave from the previous round) |
 
 ## Keyboard accessibility
@@ -93,7 +127,7 @@ to a round (Menu → Pick a Game → Pick Difficulty → Start).
 |   | Shift+Tab cycles backwards |
 |   | Enter / Space activates the focused button |
 |   | The blue keyboard-focus ring is visually distinct from the amber selected ring on the same button |
-|   | Difficulty selection works keyboard-only end to end (Tab to a math, Enter, Tab to a speed, Enter, Tab to Start, Enter) |
+|   | The setup screen works keyboard-only end to end (Tab to a math type, Enter, Tab to a speed, Enter, Tab to Start, Enter) |
 
 ## HUD and visuals
 
@@ -261,26 +295,26 @@ This sprint is **internal-only refactor + a one-knob tuning change** — no new 
 
 | ✓ | Check |
 |---|---|
-|   | Start a round, press **Esc** → pause overlay appears with "Paused" title, Resume + Quit-to-Menu buttons |
+|   | Start a round, press **Esc** → pause overlay appears with "Paused" title, Resume, Change Game, Change Math or Speed and Settings (sprint 2.15) |
 |   | While paused, **aliens stop descending** — they hold at their exact Y positions, no drift |
 |   | While paused, the **question countdown / hero motion freezes** — no time pressure accrues |
 |   | While paused, **fire input is dropped** — Space and clicks do not produce projectiles |
 |   | Press **Esc** while paused → overlay closes, gameplay resumes from exactly where it left off (no snap) |
 |   | Click the **Pause icon button** (top-right of HUD bar) → same pause flow as Esc |
 |   | While paused, click **Resume** button → same as Esc-to-resume |
-|   | While paused, click **Quit to Menu** → returns to MenuScene; the round score is NOT saved (Q: counter resets next round; no new high-score entry recorded for this combo) |
+|   | While paused, click **Change Game** → the games list; no high score is saved for this combo (the points so far count in My Scores as ended early) |
 |   | Pause for ~30 seconds, then resume → round continues normally, no auto-fail / timeout penalty |
 |   | Mash Esc + Pause-button repeatedly → only ONE pause overlay ever appears (no stacking) |
 |   | After resume, wrong-shot speed penalty still works (try a wrong answer) |
 |   | After resume, the question counter still increments correctly through to round end |
-|   | Tab on PauseOverlay cycles Resume → Quit; Enter activates the focused button |
-|   | Esc on **DifficultyScene** → returns to GameSelectScene |
-|   | Esc on **GameSelectScene** → returns to MenuScene |
-|   | Esc on **MenuScene** → no-op (top of stack) |
-|   | Esc on **GameOverScene** → returns to MenuScene (matches the existing "Main Menu" button) |
-|   | Navigate Menu → GameSelect → Difficulty → back via Esc 3+ times — no Esc handler accumulation (each scene's listener cleans up on shutdown) |
+|   | Tab on PauseOverlay cycles Resume → Change Game → Change … → Settings; Enter activates the focused button |
+|   | Esc on a **setup screen** → the games list (sprint 2.15) |
+|   | Esc on the **Game Chooser** → up one step; from the subjects, the Title Screen |
+|   | Esc on the **Title Screen** → no-op (top of stack) |
+|   | Esc on **GameOverScene** → Change Game (the games list) |
+|   | Navigate Title → chooser → setup → back via Esc 3+ times — no Esc handler accumulation (each scene's listener cleans up on shutdown) |
 |   | Console shows `GamePaused` / `GameResumed` events with `mathId`, `speed`, `questionIndex` |
-|   | After Quit-to-Menu, console shows `RoundAbandoned` with `mathId`, `speed`, `questionsCompleted` |
+|   | After Change Game or Change Math or Speed, console shows `RoundAbandoned` with `mathId`, `speed`, `questionsCompleted` and where it went (`sceneKey`) |
 
 ---
 
