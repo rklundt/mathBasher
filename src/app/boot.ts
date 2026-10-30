@@ -10,6 +10,8 @@ import { BootScene } from '@/game/scenes/BootScene';
 import { BackgroundScene } from '@/game/scenes/BackgroundScene';
 import { HeroChooserScene } from '@/game/scenes/HeroChooserScene';
 import { TitleScene } from '@/game/scenes/TitleScene';
+import { GameChooserScene } from '@/game/scenes/GameChooserScene';
+import { MathSetupScene } from '@/game/scenes/MathSetupScene';
 import { MenuScene } from '@/game/scenes/MenuScene';
 import { GameSelectScene } from '@/game/scenes/GameSelectScene';
 import { DifficultyScene } from '@/game/scenes/DifficultyScene';
@@ -136,6 +138,8 @@ export function bootGame(): void {
       BackgroundScene,
       HeroChooserScene,
       TitleScene,
+      GameChooserScene,
+      MathSetupScene,
       MenuScene,
       GameSelectScene,
       DifficultyScene,

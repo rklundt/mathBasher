@@ -4,10 +4,11 @@
 
 import { _th, SeverityLevel } from '@/core/telemetry';
 import type { SpeedKey } from '@/core/config';
-import type { GameId } from '@/core/gameIds';
+import { isMathGameId, type GameId } from '@/core/gameIds';
 import type { ChallengeId } from '@/core/subjects';
 import type { PuzzleId } from '@/core/puzzles';
 import { createObservable } from '@/services/observable';
+import { getRememberedPicks } from '@/services/RememberedPicks';
 
 /**
  * Cross-scene round selection state. The user picks `challengeId` (Add to
@@ -64,8 +65,9 @@ export type LastPick = 'challenge' | PuzzleId | null;
 
 export interface RoundSettings {
   gameId: GameId;
-  /** The challenge (null until picked; a reload resets it, so the picker opens on the first Start of a visit). */
+  /** The challenge (the math type): null until the first pick, then saved in this browser (sprint 2.15). */
   challengeId: ChallengeId | null;
+  /** The current math game's speed (sprint 2.15: each game keeps its own, saved); null for a puzzle. */
   speed: SpeedKey | null;
 }
 
@@ -138,9 +140,7 @@ function readPersistedChosenHero(): ChosenHero | null {
 
 const _chosenHero = createObservable<ChosenHero | null>('chosenHero', readPersistedChosenHero());
 
-const state: Omit<RoundSettings, 'gameId'> & { lastPick: LastPick } = {
-  challengeId: null,
-  speed: null,
+const state: { lastPick: LastPick } = {
   lastPick: null,
 };
 
@@ -148,11 +148,17 @@ export const Settings = {
   /**
    * Snapshot of the current selection. Read-only access for scenes.
    * `gameId` is sourced from the observable; `challengeId` + `speed` from
-   * the local state (they're not observable — read once at scene
-   * `create` time, no reactive consumers today).
+   * the remembered picks (sprint 2.15: saved in this browser; not
+   * observable — read once at scene `create` time).
    */
   get round(): Readonly<RoundSettings> {
-    return { gameId: _gameId.get(), challengeId: state.challengeId, speed: state.speed };
+    const gameId = _gameId.get();
+    const picks = getRememberedPicks();
+    return {
+      gameId,
+      challengeId: picks.challenge,
+      speed: isMathGameId(gameId) ? picks.speedFor(gameId) : null,
+    };
   },
 
   setGameId(id: GameId): void {
@@ -168,7 +174,7 @@ export const Settings = {
 
   /** Telemetry keeps the `mathId` property name (cross-version queries; today every challenge is a math type). */
   setChallenge(id: ChallengeId): void {
-    state.challengeId = id;
+    getRememberedPicks().setChallenge(id);
     _th.logToAi('Settings.setChallenge', SeverityLevel.Information, { mathId: id });
   },
 
@@ -181,14 +187,18 @@ export const Settings = {
     state.lastPick = pick;
   },
 
+  /** The current math game's speed (sprint 2.15: kept per game). Ignored while a puzzle is the game. */
   setSpeed(s: SpeedKey): void {
-    state.speed = s;
+    const gameId = _gameId.get();
+    if (!isMathGameId(gameId)) return;
+    getRememberedPicks().setSpeed(gameId, s);
     _th.logToAi('Settings.setSpeed', SeverityLevel.Information, { speed: s });
   },
 
   /** True when both math and speed are picked — the Start button uses this. */
   isReady(): boolean {
-    return state.challengeId !== null && state.speed !== null;
+    const { challengeId, speed } = this.round;
+    return challengeId !== null && speed !== null;
   },
 
   // ----- Asteroid Field visual-mode toggle (sprint 2.1 playtest) -----

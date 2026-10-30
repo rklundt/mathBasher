@@ -35,6 +35,16 @@ export const SceneKeys = {
    * It replaced the main menu (`Menu`).
    */
   Title: 'title',
+  /**
+   * Sprint 2.15 — the Game Chooser: subject › group › games, one scene that
+   * redraws per step. It replaced the challenge picker and Game Select.
+   */
+  GameChooser: 'game-chooser',
+  /**
+   * Sprint 2.15 — a math game's setup: the math type and the game's speed,
+   * each with its points, and Start. It replaced Difficulty.
+   */
+  MathSetup: 'math-setup',
   Menu: 'menu',
   GameSelect: 'game-select',
   Difficulty: 'difficulty',

@@ -90,6 +90,7 @@ export function createChoiceTile(o: ChoiceTileOpts): PlaceholderButton {
       wordWrap: { width: wrap, useAdvancedWrap: true },
     });
     t.setOrigin(0.5).setLineSpacing(-2);
+    balanceWrap(t, wrap);
     tile.add(t);
     parts.push(t);
     heights.push(t.height);
@@ -112,4 +113,23 @@ export function createChoiceTile(o: ChoiceTileOpts): PlaceholderButton {
     tile.add([pill, label]);
   }
   return tile;
+}
+
+/**
+ * Even out a wrapped line ("Blast aliens with / your brain power!", not
+ * "Blast aliens with your brain / power!"): the narrowest wrap width that
+ * keeps the same number of lines, like CSS `text-wrap: balance`.
+ */
+function balanceWrap(t: Phaser.GameObjects.Text, maxW: number): void {
+  const lines = t.getWrappedText().length;
+  if (lines <= 1) return;
+  let lo = maxW / lines;
+  let hi = maxW;
+  while (hi - lo > 4) {
+    const mid = (lo + hi) / 2;
+    t.setWordWrapWidth(mid, true);
+    if (t.getWrappedText().length > lines) lo = mid;
+    else hi = mid;
+  }
+  t.setWordWrapWidth(hi, true);
 }

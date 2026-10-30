@@ -27,7 +27,8 @@ export interface GameGroup {
 export const GAME_GROUPS: readonly GameGroup[] = [
   {
     id: 'math-basher',
-    label: 'Math Basher',
+    // Sprint 2.15 — one word, like the game's name (owner, 2026-10-30).
+    label: 'mathBasher',
     games: ['alien-shoot', 'asteroid-field', 'number-climb', 'space-shooter'],
   },
   {

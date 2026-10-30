@@ -1935,6 +1935,29 @@ export const config = {
       tilePadPx: 20,
       /** A tile swap fades the tiles in. */
       swapFadeMs: 160,
+      /** The setup screens: the best line and Start along the bottom. */
+      setup: { sidePadPx: 68, bottomY: 644, startW: 260, startH: 76, washColor: 0x0b1020, washAlpha: 0.62 },
+      /** Math setup: "What math?" (11 chips, 4 to a row, points under each), then "How fast?". */
+      mathSetup: {
+        mathHeadingY: 174,
+        chips: { firstRowY: 216, cellW: 277, cellH: 52, gapX: 12, gapY: 30, perRow: 4 },
+        /** "1.5x Points!" this far under a chip's bottom edge. */
+        pointsGapPx: 2,
+        speedHeadingY: 458,
+        speeds: { y: 522, w: 370, h: 88, gapX: 17 },
+        /** "Up to 3,000 points!" this far under a speed tile. */
+        upToGapPx: 6,
+      },
+      /** Puzzle and Pair Pals setups. */
+      puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 8 },
+      pairPalsSetup: {
+        cardsHeadingY: 174,
+        themes: { y: 290, w: 196, h: 190, gapX: 18 },
+        sampleY: -24,
+        levelsHeadingY: 412,
+        levels: { y: 482, w: 340, h: 92, gapX: 32 },
+        upToGapPx: 6,
+      },
     },
     /**
      * Sprint 2.9.2 — My Scores. Only the list (between `list.top` and
