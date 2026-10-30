@@ -11,6 +11,15 @@
  * generator registry. No engine changes required.
  */
 export const config = {
+  /**
+   * Sprint 2.15 — switches for whole features. `avatar`: the first-visit hero
+   * picker and the chosen hero's picture (Title, the in-game top bar, the end
+   * of a round). Paused for now (owner, 2026-10-29); the code and a saved
+   * pick stay, so turning it back on is this one line.
+   */
+  features: {
+    avatar: false,
+  },
   round: {
     // Sprint 2.2.1 story 10 — arcade modes (Alien Shoot, Asteroid
     // Field) dropped 20 → 12 to match Number Climb's 12-floor round

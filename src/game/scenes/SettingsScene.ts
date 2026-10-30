@@ -13,6 +13,7 @@ import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
 import { Settings, type HeroSkin } from '@/services/Settings';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
 
 /**
@@ -145,6 +146,7 @@ export class SettingsScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('SettingsScene Started', SeverityLevel.Information);
+    addScreenTag(this, 'SettingsScene');
 
     const { width, height } = this.scale;
 

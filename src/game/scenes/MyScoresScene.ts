@@ -17,6 +17,7 @@ import { KeyboardNavigator, type Focusable } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 
 type Tab = 'today' | 'all-time';
@@ -80,6 +81,7 @@ export class MyScoresScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    addScreenTag(this, 'MyScoresScene');
     this.view = [];
     this.nav = undefined;
     this.rows = [];

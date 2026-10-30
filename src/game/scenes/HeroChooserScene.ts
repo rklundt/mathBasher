@@ -9,6 +9,7 @@ import { Settings, type ChosenHero } from '@/services/Settings';
 import { HeroChooserKeys } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { emitButtonClicked } from '@/game/ui/buttonTelemetry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
@@ -89,6 +90,7 @@ export class HeroChooserScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    addScreenTag(this, 'HeroChooserScene');
     this.picking = false; // reset across Phaser scene-instance reuse
     _th.logToAi('HeroChooser.entered', SeverityLevel.Information, {
       reason: this.fromMenu ? 'menu-reopen' : 'first-run',
