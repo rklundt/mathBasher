@@ -70,6 +70,10 @@ export class PauseOverlay extends Phaser.Scene {
     // A dark wash over the game, then the card.
     this.add.rectangle(0, 0, width, height, 0x000000, P.washAlpha).setOrigin(0, 0);
     const card = this.add.graphics();
+    const shadow = config.layout.corners.panelShadow;
+    card
+      .fillStyle(shadow.color, 1)
+      .fillRoundedRect(cx - P.card.w / 2, P.card.y + shadow.px, P.card.w, P.card.h, P.card.radius);
     card.fillStyle(SLATE_BG, 1).fillRoundedRect(cx - P.card.w / 2, P.card.y, P.card.w, P.card.h, P.card.radius);
     card.lineStyle(4, BORDER_GREY, 1).strokeRoundedRect(cx - P.card.w / 2, P.card.y, P.card.w, P.card.h, P.card.radius);
     text(this, cx, P.titleY, 'Paused', 'headline').setOrigin(0.5);

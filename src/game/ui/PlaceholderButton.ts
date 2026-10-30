@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { config } from '@/core/config';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelemetry';
@@ -52,6 +53,16 @@ export interface PlaceholderButtonOpts {
   /** Sprint 2.15 — the label's text style (default `'buttonLabel'`). */
   labelKind?: TextKind;
   /**
+   * Sprint 2.15 — the corner radius. Left out, it follows the height
+   * (`config.layout.corners`); a value at least half the height makes a pill.
+   */
+  radius?: number;
+  /**
+   * Sprint 2.15 — a darker strip under the button, so it looks raised (the
+   * big tiles). Primary buttons have one unless this is null.
+   */
+  shadow?: ButtonShadow | null;
+  /**
    * Sprint 2.9.2 — false: the button takes no taps itself; the scene finds
    * the tapped button and calls `activate('pointer')`. For buttons in a
    * scrolling list (My Scores): Phaser's input ignores masks, so a button
@@ -67,6 +78,18 @@ export interface ButtonIcon {
   frame?: string | number;
   sizePx: number;
   padPx: number;
+}
+
+/** The darker strip under a raised button: how far it shows below, and its colour. */
+export interface ButtonShadow {
+  px: number;
+  color: number;
+}
+
+/** A button's corner radius from its height (`config.layout.corners`). */
+export function buttonRadius(height: number): number {
+  const C = config.layout.corners;
+  return Math.min(C.buttonMaxPx, Math.max(C.buttonMinPx, Math.round(height * C.buttonFrac)));
 }
 
 /** Gap between the label and the subtitle on a tile with a picture. */
@@ -106,6 +129,7 @@ const ICON_TEXT_GAP_PX = 6;
 export class PlaceholderButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly border: Phaser.GameObjects.Rectangle;
+  private readonly shadow?: Phaser.GameObjects.Rectangle;
   private readonly textChildren: Phaser.GameObjects.Text[] = [];
   /** Sprint 2.13.1 — the tile picture, when there is one. */
   private icon?: Phaser.GameObjects.Image;
@@ -141,8 +165,16 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // world-to-local transform via its parent container automatically. Net:
     // the entire button surface is clickable, regardless of where the text
     // sits.
-    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, SLATE_BG);
-    this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height);
+    // Sprint 2.15 — rounded corners; the hit area stays the full rectangle.
+    const radius = opts.radius ?? buttonRadius(opts.height);
+    const shadow =
+      opts.shadow === undefined ? (this.primary ? config.layout.corners.primaryShadow : null) : opts.shadow;
+    if (shadow !== null) {
+      this.shadow = opts.scene.add.rectangle(0, shadow.px, opts.width, opts.height, shadow.color).setRounded(radius);
+      this.add(this.shadow);
+    }
+    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, SLATE_BG).setRounded(radius);
+    this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height).setRounded(radius);
     this.border.setStrokeStyle(2, BORDER_GREY);
     this.border.setFillStyle();
     this.add([this.bg, this.border]);
@@ -369,6 +401,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
       this.border.setAlpha(0.7);
       this.textChildren.forEach((t) => t.setAlpha(1));
       this.icon?.setAlpha(0.6); // the picture dims with the tile; the text stays readable
+      this.shadow?.setVisible(false); // a disabled tile sits flat
       this.setAlpha(1); // container itself stays full-alpha
       return;
     }
@@ -377,6 +410,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.border.setAlpha(1);
     this.textChildren.forEach((t) => t.setAlpha(1));
     this.icon?.setAlpha(1);
+    this.shadow?.setVisible(true);
 
     // Sprint 2.15 — a primary button stays yellow; focus adds the blue ring.
     if (this.primary) {

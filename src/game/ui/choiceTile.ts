@@ -4,7 +4,7 @@
 
 import type Phaser from 'phaser';
 import { config } from '@/core/config';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { PlaceholderButton, type ButtonShadow } from '@/game/ui/PlaceholderButton';
 import { textStyle, type TextKind } from '@/game/ui/typography';
 import { PRIMARY_FILL } from '@/game/ui/uiPalette';
 
@@ -31,6 +31,10 @@ export interface ChoiceTileOpts {
   badge?: string;
   selected?: boolean;
   disabled?: boolean;
+  /** Corner radius (`config.layout.corners`); left out, it follows the height. */
+  radius?: number;
+  /** The darker strip under a raised tile (the chooser's tiles). */
+  shadow?: ButtonShadow;
   onClick?: () => void;
 }
 
@@ -52,6 +56,8 @@ export function createChoiceTile(o: ChoiceTileOpts): PlaceholderButton {
     label: '',
     selected: o.selected ?? false,
     disabled: o.disabled ?? false,
+    ...(o.radius !== undefined && { radius: o.radius }),
+    ...(o.shadow !== undefined && { shadow: o.shadow }),
     ...(o.onClick !== undefined && { onClick: o.onClick }),
   });
 
@@ -106,7 +112,8 @@ export function createChoiceTile(o: ChoiceTileOpts): PlaceholderButton {
 
   if (o.badge !== undefined) {
     const label = scene.add.text(0, 0, o.badge, textStyle('tilePill')).setOrigin(0.5);
-    const pill = scene.add.rectangle(0, 0, label.width + 28, label.height + 4, PRIMARY_FILL);
+    const pillH = label.height + 4;
+    const pill = scene.add.rectangle(0, 0, label.width + 28, pillH, PRIMARY_FILL).setRounded(pillH / 2);
     const top = -o.height / 2;
     pill.setY(top);
     label.setY(top);

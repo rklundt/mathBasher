@@ -49,6 +49,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - End of a round: Play Again, then the same three. No more Main Menu.
 
 **Also**
+- Buttons, tiles and panels have rounded corners, and the big tiles and yellow buttons sit on a darker strip so they look raised, as in the wireframes.
 - The hero picker and the hero picture are switched off for now (a saved pick is kept).
 
 ## [2.14.0] - 2026-10-30 — Puzzle pack

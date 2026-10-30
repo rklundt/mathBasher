@@ -1792,6 +1792,26 @@ export const config = {
       playAgainY: 452,
     },
     /**
+     * Sprint 2.15 — rounded corners and the darker strip under the big
+     * buttons and tiles, as in the approved wireframes.
+     */
+    corners: {
+      /** A button's corner: this × its height, kept between min and max. */
+      buttonFrac: 0.22,
+      buttonMinPx: 12,
+      buttonMaxPx: 20,
+      /** Subject and group tiles; game and puzzle-level tiles; the math speeds and Pair Pals sizes. */
+      bigTilePx: 28,
+      tilePx: 24,
+      levelTilePx: 18,
+      /** The pause card and the end-of-round panels. */
+      panelPx: 28,
+      /** The darker strip under a raised box: how far it shows, and its colour. */
+      tileShadow: { px: 8, color: 0x141a2e },
+      primaryShadow: { px: 6, color: 0xb48a00 },
+      panelShadow: { px: 10, color: 0x0b0f1d },
+    },
+    /**
      * Sprint 2.15 — the Title Screen, the Game Chooser (subject › group ›
      * games) and the setup screens, laid out as in the approved wireframes.
      * Every target is at least 64 design px tall (about 32 CSS px on a phone).
@@ -1855,7 +1875,7 @@ export const config = {
       /** The end of a round (Game Over, the puzzle end panels): Play Again, then Change Game · Change … · Settings. */
       roundEnd: { playAgainW: 360, playAgainH: 80, rowGapY: 22, rowH: 72, gapX: 18, widths: [240, 340, 210] },
       /** Puzzle and Pair Pals setups. */
-      puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 8 },
+      puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 16 },
       pairPalsSetup: {
         cardsHeadingY: 174,
         themes: { y: 290, w: 196, h: 190, gapX: 18 },

@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import type { Focusable } from '@/game/ui/KeyboardNavigator';
+import { buttonRadius } from '@/game/ui/PlaceholderButton';
 import { SLATE_BG, SLATE_HOVER, BORDER_GREY, FOCUS_BLUE } from '@/game/ui/uiPalette';
 
 export interface IconButtonOpts {
@@ -73,7 +74,7 @@ export function createIconButton(opts: IconButtonOpts): IconButtonInstance {
   const hoverFill = opts.hoverFill ?? SLATE_HOVER;
 
   const container = scene.add.container(x, y) as IconButtonInstance;
-  const bg = scene.add.rectangle(0, 0, w, h, baseFill);
+  const bg = scene.add.rectangle(0, 0, w, h, baseFill).setRounded(buttonRadius(h));
   bg.setStrokeStyle(2, BORDER_GREY);
   container.add(bg);
 

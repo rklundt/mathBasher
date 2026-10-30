@@ -538,7 +538,12 @@ export class PairPalsScene extends Phaser.Scene {
     const cx = width / 2;
     const cy = height / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(Z.panel);
-    this.add.rectangle(cx, cy, 900, 480, 0x1f2740, 0.96).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
+    const K = config.layout.corners;
+    this.add
+      .rectangle(cx, cy + K.panelShadow.px, 900, 480, K.panelShadow.color)
+      .setRounded(K.panelPx)
+      .setDepth(Z.panel);
+    this.add.rectangle(cx, cy, 900, 480, 0x1f2740).setRounded(K.panelPx).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
     const [found, best] = winLines(totalPairs(this.board), result);
     text(this, cx, cy - 176, 'You did it!', 'success')
       .setOrigin(0.5)

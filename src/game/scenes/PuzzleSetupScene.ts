@@ -87,6 +87,8 @@ export class PuzzleSetupScene extends Phaser.Scene {
         name: LEVEL_LABELS[level],
         nameKind: 'tileNameLarge',
         lines: [{ text: config.puzzles.levelNotes[gameId][level], kind: 'tileLine' }],
+        radius: config.layout.corners.tilePx,
+        shadow: config.layout.corners.tileShadow,
         onClick: () => this.pick(level),
       });
       text(this, x, T.y + T.h / 2 + P.upToGapPx, puzzleUpToLabel(level), 'upTo').setOrigin(0.5, 0);

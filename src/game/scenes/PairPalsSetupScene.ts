@@ -113,6 +113,7 @@ export class PairPalsSetupScene extends Phaser.Scene {
         name: config.pairPals.sizes[size].label,
         nameKind: 'tileName',
         lines: [{ text: sizeSubtitle(size), kind: 'tileLine' }],
+        radius: config.layout.corners.levelTilePx,
         onClick: () => this.pickSize(size),
       });
       const upTo = `Up to ${formatPoints(pairPalsMaxPoints(size))} points!`;

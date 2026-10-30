@@ -704,7 +704,12 @@ export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const cy = height / 2;
   const D = PUZZLE_DEPTH.panel;
   scene.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(D);
-  scene.add.rectangle(cx, cy, 900, 520, 0x1f2740, 0.96).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
+  const K = config.layout.corners;
+  scene.add
+    .rectangle(cx, cy + K.panelShadow.px, 900, 520, K.panelShadow.color)
+    .setRounded(K.panelPx)
+    .setDepth(D);
+  scene.add.rectangle(cx, cy, 900, 520, 0x1f2740).setRounded(K.panelPx).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
   text(scene, cx, cy - 192, o.title, 'success')
     .setOrigin(0.5)
     .setDepth(D);
