@@ -126,13 +126,16 @@ export class PairPalsSetupScene extends Phaser.Scene {
     this.refresh();
   }
 
+  // Picks are saved now, not on Start, so a trip to My Scores (or the games list) keeps them.
   private pickTheme(theme: PairPalsTheme): void {
     this.theme = theme;
+    getPairPalsProgress().choose(this.theme, this.size);
     this.refresh();
   }
 
   private pickSize(size: PairPalsSize): void {
     this.size = size;
+    getPairPalsProgress().choose(this.theme, this.size);
     this.refresh();
   }
 

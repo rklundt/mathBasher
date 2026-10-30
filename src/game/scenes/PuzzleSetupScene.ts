@@ -100,6 +100,8 @@ export class PuzzleSetupScene extends Phaser.Scene {
 
   private pick(level: PuzzleLevel): void {
     this.level = level;
+    // Saved now, not on Start, so a trip to My Scores (or the games list) keeps it.
+    getPuzzleProgress().setLevel(this.id, level);
     this.refresh();
   }
 

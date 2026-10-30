@@ -159,6 +159,12 @@ export class SettingsScene extends Phaser.Scene {
     // subtle hint of background atmosphere without the visual noise.
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.92);
     backdrop.setOrigin(0, 0);
+    // Sprint 2.15 — the backdrop takes taps, so a tap on an empty part of
+    // Settings (or a label) never reaches the screen underneath: Phaser only
+    // stops a tap at the top scene when something there is interactive.
+    // Without this, a tap over Game Over's Play Again started a round under
+    // the open Settings panel.
+    backdrop.setInteractive();
 
     // Title (persists across tab switches).
     text(this, width / 2, height * 0.1, 'Settings', 'h2').setOrigin(0.5);
