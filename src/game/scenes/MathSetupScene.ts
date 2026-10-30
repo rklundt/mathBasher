@@ -144,6 +144,7 @@ export class MathSetupScene extends Phaser.Scene {
         nameKind: 'tileName',
         lines: [{ text: fractionLevelNote(mathId, key) ?? display.subtitle, kind: 'tileLine' }],
         selected: key === speed,
+        radius: config.layout.corners.levelTilePx,
         onClick: () => this.pickSpeed(key),
       });
       const upTo = text(this, x, T.y + T.h / 2 + M.upToGapPx, upToPointsLabel(this.gameId, mathId, key), 'upTo');

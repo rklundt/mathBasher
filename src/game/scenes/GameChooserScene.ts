@@ -166,6 +166,8 @@ export class GameChooserScene extends Phaser.Scene {
         nameKind: 'tileNameLarge',
         lines: [{ text: t.line, kind: 'tileLine' }],
         selected: s.id === remembered,
+        radius: config.layout.corners.bigTilePx,
+        shadow: config.layout.corners.tileShadow,
         onClick: () => this.pickSubject(s.id),
       });
     });
@@ -176,6 +178,7 @@ export class GameChooserScene extends Phaser.Scene {
       nameKind: 'tileName',
       lines: [{ text: MORE_COMING_SOON.line, kind: 'tileLine' }],
       disabled: true,
+      radius: config.layout.corners.bigTilePx,
     });
     const focusAt = SUBJECTS.findIndex((s) => s.id === remembered);
     return { tiles: [...tiles, more], focusAt };
@@ -200,6 +203,8 @@ export class GameChooserScene extends Phaser.Scene {
           { text: `${String(g.games.length)} ${t.gamesNoun}`, kind: 'tileLine' },
         ],
         selected: g.id === remembered,
+        radius: config.layout.corners.bigTilePx,
+        shadow: config.layout.corners.tileShadow,
         onClick: () => this.pickGroup(subject, g.id),
       });
     });
@@ -226,6 +231,8 @@ export class GameChooserScene extends Phaser.Scene {
         nameKind: 'tileName',
         lines: [{ text: line, kind: 'tileLine' }],
         ...(id === last && { badge: 'Last Played', selected: true }),
+        radius: config.layout.corners.tilePx,
+        shadow: config.layout.corners.tileShadow,
         onClick: () => openSetup(this, id),
       });
     });

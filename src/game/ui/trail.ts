@@ -41,6 +41,7 @@ export function createTrail(
       height: T.h,
       label: chip.label,
       labelKind: 'pickLabel',
+      radius: T.h / 2,
       onClick: () => onPick(chip),
     });
     buttons.push(button);
