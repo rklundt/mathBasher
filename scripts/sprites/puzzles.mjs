@@ -71,7 +71,7 @@ export const COLOURS = {
   orange: '#ffa94d',
   yellow: '#ffd43b',
   green: '#69db7c',
-  teal: '#38d9a9',
+  teal: '#1098ad',
   blue: '#4dabf7',
   purple: '#9775fa',
   pink: '#f783ac',

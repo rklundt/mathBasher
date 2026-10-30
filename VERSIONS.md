@@ -50,6 +50,9 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 **Also**
 - Buttons, tiles and panels have rounded corners, and the big tiles and yellow buttons sit on a darker strip so they look raised, as in the wireframes.
+- The Game Over screen sits on a rounded card.
+- Symbol Hunt: the sand runs out faster (20 / 25 / 30 seconds, was 40 / 40 / 45).
+- The teal shapes are a deeper teal, so they no longer look like the green ones on some screens.
 - The hero picker and the hero picture are switched off for now (a saved pick is kept).
 
 ## [2.14.0] - 2026-10-30 — Puzzle pack

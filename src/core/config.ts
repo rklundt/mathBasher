@@ -1606,7 +1606,8 @@ export const config = {
       cards: { easy: 12, medium: 18, hard: 24 },
       cols: { easy: 4, medium: 6, hard: 8 },
       targets: { easy: [2, 3], medium: [3, 4], hard: [3, 5] },
-      seconds: { easy: 40, medium: 40, hard: 45 },
+      // Owner (2026-10-30): the sand ran far too slowly (it was 40 / 40 / 45).
+      seconds: { easy: 20, medium: 25, hard: 30 },
       /** Share of the other cards that are look-alikes (the sign's shape in another colour, or its colour on another shape). */
       lookalikes: { easy: 0, medium: 0.45, hard: 1 },
       /** Share of the look-alikes that are near ones: a neighbouring colour, or a similar shape (below). */
@@ -1784,12 +1785,14 @@ export const config = {
       /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score (2.11: speed first). */
       bonusY: 266,
       bonusGapPx: 40,
-      /** Sprint 2.11 — the row shrinks to fit inside this width (three bonuses at hard math are wide). */
-      bonusMaxW: 1160,
+      /** Sprint 2.11 — the row shrinks to fit inside this width (three bonuses at hard math are wide; 2.15: inside the card). */
+      bonusMaxW: 820,
       starsY: 316,
       badgeY: 372,
       /** Sprint 2.15 — Play Again; Change Game · Change Math or Speed · Settings under it (`chooser.roundEnd`). */
       playAgainY: 452,
+      /** Sprint 2.15 — the rounded card behind it all, as in the wireframe (top edge, size). */
+      card: { y: 62, w: 900, h: 568 },
     },
     /**
      * Sprint 2.15 — rounded corners and the darker strip under the big
