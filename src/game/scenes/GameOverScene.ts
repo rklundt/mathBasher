@@ -21,6 +21,7 @@ import { getAudioManager } from '@/services/audioManagerFactory';
 import { pickBonusCheerSfx } from '@/core/audioKeys';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { BORDER_GREY, SLATE_BG } from '@/game/ui/uiPalette';
 
 export interface GameOverData {
   /** The round's total, bonuses included. */
@@ -130,6 +131,7 @@ export class GameOverScene extends Phaser.Scene {
     // the picker has run before any round is played, but the guard
     // means a test path that bypasses Boot still renders cleanly).
     if (config.features.avatar) this.buildHeroBanner();
+    this.buildCard(cx);
 
     // Sprint 0.7 Story 9 — entrance tween for the headline. Scale 0.7 +
     // alpha 0 → final, Back.Out ease for a small overshoot "pop." Reads
@@ -387,6 +389,15 @@ export class GameOverScene extends Phaser.Scene {
    * a null persisted choice or missing texture → no render, don't throw.
    * Sprint 2.15: only while `config.features.avatar` is on.
    */
+  /** Sprint 2.15 — the rounded card behind the results and buttons, on its darker strip (as in the wireframe). */
+  private buildCard(cx: number): void {
+    const C = config.layout.gameOver.card;
+    const K = config.layout.corners;
+    const cy = C.y + C.h / 2;
+    this.add.rectangle(cx, cy + K.panelShadow.px, C.w, C.h, K.panelShadow.color).setRounded(K.panelPx);
+    this.add.rectangle(cx, cy, C.w, C.h, SLATE_BG).setRounded(K.panelPx).setStrokeStyle(4, BORDER_GREY);
+  }
+
   private buildHeroBanner(): void {
     const hero = Settings.getChosenHero();
     if (hero === null) return;
