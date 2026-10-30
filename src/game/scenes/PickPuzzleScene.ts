@@ -77,7 +77,16 @@ export class PickPuzzleScene extends PuzzleRoundScene {
   }
 
   private showPuzzle(i: number): void {
-    for (const o of this.stageObjects) o.destroy();
+    // Stop the looping tweens on the old pieces (the "?" pulse, the wand's
+    // wobble, the turntable's wiggle) before they go, so none outlive them.
+    const stopTweens = (o: Phaser.GameObjects.GameObject): void => {
+      this.tweens.killTweensOf(o);
+      if (o instanceof Phaser.GameObjects.Container) o.list.forEach(stopTweens);
+    };
+    for (const o of this.stageObjects) {
+      stopTweens(o);
+      o.destroy();
+    }
     this.stageObjects = [];
     this.tray?.destroy();
     this.slot = undefined;
@@ -122,7 +131,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
   }
 
   private pick(c: number): void {
-    if (this.blocked || this.locked || !this.tray || c >= this.tray.cards.length) return;
+    if (this.blocked || this.locked || !this.tray || c >= this.tray.cards.length || this.tray.isTried(c)) return;
     const p = this.puzzles[this.index];
     getAudioManager().play(pickTileFlipSfx(), 'sfx');
     if (c === p.answer) {

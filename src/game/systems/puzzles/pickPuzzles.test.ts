@@ -106,12 +106,18 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
-  it('Pattern Train and Missing Piece: no wrong choice is the answer changed only in a way the puzzle never changes', () => {
+  it('Pattern Train, Missing Piece and Magic Wand: no wrong choice is the answer changed only in a way the puzzle never changes', () => {
     each((p, id) => {
-      if (id !== 'pattern-train' && id !== 'missing-piece') return;
-      const shown = (p.stage.kind === 'train' ? p.stage.cars : p.stage.kind === 'window' ? p.stage.cells : []).filter(
-        (t): t is ShapeToken => t !== null && t.kind === 'shape',
-      );
+      if (id !== 'pattern-train' && id !== 'missing-piece' && id !== 'magic-wand') return;
+      const shown = (
+        p.stage.kind === 'train'
+          ? p.stage.cars
+          : p.stage.kind === 'window'
+            ? p.stage.cells
+            : p.stage.kind === 'wand'
+              ? [p.stage.from, p.stage.to, p.stage.next]
+              : []
+      ).filter((t): t is ShapeToken => t !== null && t.kind === 'shape');
       const answer = p.choices[p.answer];
       if (answer.kind !== 'shape') return;
       const all = [...shown, answer];

@@ -31,6 +31,8 @@ export class SymbolHuntScene extends PuzzleRoundScene {
   private cards: Phaser.GameObjects.Container[] = [];
   private objects: Phaser.GameObjects.GameObject[] = [];
   private found = new Set<number>();
+  /** Cards already tapped wrong on this board: greyed, and a second tap costs nothing. */
+  private tried = new Set<number>();
   /** Wrong taps on this board (three and it goes red). */
   private misses = 0;
   private live = false;
@@ -54,6 +56,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     this.objects = [];
     this.cards = [];
     this.found = new Set();
+    this.tried = new Set();
     this.misses = 0;
     this.board = huntBoard(this.level);
     this.beginPuzzle(i, 'Find all of these!');
@@ -109,10 +112,12 @@ export class SymbolHuntScene extends PuzzleRoundScene {
   }
 
   private tap(k: number): void {
-    if (this.blocked || !this.live || this.found.has(k)) return;
+    if (this.blocked || !this.live || this.found.has(k) || this.tried.has(k)) return;
     const card = this.cards[k];
     if (!this.board.matches.includes(k)) {
       this.misses++;
+      this.tried.add(k);
+      card.setAlpha(0.45);
       this.tweens.add({
         targets: card,
         angle: { from: -6, to: 6 },

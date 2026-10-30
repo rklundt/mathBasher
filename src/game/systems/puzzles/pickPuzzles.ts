@@ -436,11 +436,20 @@ function magicWand(level: PuzzleLevel, rng: () => number): PickPuzzle {
     { ...answer, count: answer.count === 1 ? 2 : 1 },
     { ...answer, hat: answer.hat === null ? hat : (answer.hat + 1) % P.hats.length },
   ];
+  // The near misses first, then the rest; both kept fair (a small copy of
+  // the answer is a trick when the wand never changes size).
+  const shown = [from, to, next, answer];
   const { choices, answer: index } = buildChoices(
     answer,
-    shuffled(tweaks.slice(0, changes.length + 2), rng).concat(shuffled(tweaks.slice(changes.length + 2), rng)),
+    shuffled(fair(answer, shown, tweaks.slice(0, changes.length + 2)), rng).concat(
+      shuffled(fair(answer, shown, tweaks.slice(changes.length + 2)), rng),
+    ),
     choicesFor(level),
-    () => randomShapeToken(rng),
+    () => {
+      let t = randomShapeToken(rng);
+      while (t.shape === answer.shape && t.colour === answer.colour) t = randomShapeToken(rng);
+      return t;
+    },
     rng,
   );
   return {
