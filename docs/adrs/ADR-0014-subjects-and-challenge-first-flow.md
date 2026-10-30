@@ -1,6 +1,6 @@
 # ADR-0014: Subjects, challenge types, and the challenge-first flow
 
-**Status:** Accepted (2026-10-22, sprint 2.9)
+**Status:** Accepted (2026-10-22, sprint 2.9). Part 1 (the challenge-first flow) superseded by [ADR-0015](ADR-0015-game-first-screen-flow.md) (2026-10-30, sprint 2.15); part 2 stands.
 **Builds on:** [ADR-0006](ADR-0006-folder-discipline.md) (folder rules), [ADR-0011](ADR-0011-per-game-mode-dispatch.md) (per-game dispatch)
 
 ## Context

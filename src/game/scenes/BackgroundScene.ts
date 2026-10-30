@@ -88,8 +88,8 @@ export class BackgroundScene extends Phaser.Scene {
     // invisible.
     //
     // Subscribes to `Settings.onGameIdChange` so the backdrop swaps
-    // live when the player picks a different game mode at
-    // GameSelectScene (the change fires BEFORE the game scene mounts,
+    // live when the player picks a different game on the Game
+    // Chooser (the change fires BEFORE the game scene mounts,
     // so the new backdrop is already showing by the time gameplay
     // starts). BackgroundScene runs for the lifetime of the page —
     // listener never needs to unsubscribe.

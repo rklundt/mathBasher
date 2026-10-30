@@ -11,6 +11,15 @@
  * generator registry. No engine changes required.
  */
 export const config = {
+  /**
+   * Sprint 2.15 — switches for whole features. `avatar`: the first-visit hero
+   * picker and the chosen hero's picture (Title, the in-game top bar, the end
+   * of a round). Paused for now (owner, 2026-10-29); the code and a saved
+   * pick stay, so turning it back on is this one line.
+   */
+  features: {
+    avatar: false,
+  },
   round: {
     // Sprint 2.2.1 story 10 — arcade modes (Alien Shoot, Asteroid
     // Field) dropped 20 → 12 to match Number Climb's 12-floor round
@@ -1286,22 +1295,10 @@ export const config = {
     sparkleCount: 10,
     hint: { y: 120, heightPx: 56, backdropAlpha: 0.6 },
     /** The setup screen ("Pair Pals: pick your cards"). */
+    /** The setup screen's theme tiles: each one's sample picture (a frame in its sheet) and its size (sprint 2.15: layout in `layout.chooser.pairPalsSetup`). */
     setup: {
-      headingY: 52,
-      themeLabelY: 112,
-      themeY: 224,
-      themeTile: { w: 196, h: 176, gap: 18 },
-      /** A theme tile's sample picture (frame in its sheet) and its size. */
       samples: { animals: 0, desserts: 0, dinosaurs: 15, dragons: 1, aliens: 0 },
-      samplePx: 116,
-      sizeLabelY: 352,
-      sizeY: 432,
-      sizeTile: { w: 270, h: 104, gap: 26 },
-      bestY: 516,
-      buttonsY: 622,
-      startW: 240,
-      backW: 200,
-      buttonH: 72,
+      samplePx: 112,
     },
   },
   /**
@@ -1534,8 +1531,6 @@ export const config = {
       ],
     ],
     spinColours: 4,
-    /** The shared setup screen ("Pattern Train: how tough?"). */
-    setup: { headingY: 70, introY: 150, tileY: 300, tile: { w: 280, h: 120, gapX: 34 }, bestY: 420, buttonsY: 600 },
     /** The setup screen's line under each level, per puzzle. */
     levelNotes: {
       'pattern-train': { easy: 'Short patterns', medium: 'Longer patterns', hard: 'Two patterns at once' },
@@ -1780,114 +1775,94 @@ export const config = {
       pulseMinAlpha: 0.6,
     },
     /**
-     * Canonical button dimensions across all menu scenes. Tuned for
-     * mouse + touch + keyboard accessibility:
-     *  - primary actions (Start, Resume, Play Again, Quit, Change Difficulty,
-     *    Main Menu): 280×64 — large enough to dominate the layout
-     *  - secondary actions (Settings, Back): 200×56 — clearly subordinate
-     *  - game-mode tiles (Alien Shoot, Coming soon): 320×200 — large
-     *    pictographic targets
-     *  - dense rows (Settings −/+ buttons, difficulty/speed tiles in
-     *    DifficultyScene): 56×56 / 160×64 / 200×80 — tight grid layouts
-     *
-     * All values respect the 44×44 Apple HIG minimum hit area. Pre-refactor
-     * (sprint 0.5.5) these numbers were sprinkled across 6 scenes; centralizing
-     * here means a "make all primary buttons 320 wide" change is a 1-line edit.
+     * Game Over (sprint 2.9; sprint 2.15 retired the rest of the challenge-first
+     * flow's layout with its screens). Sized for a phone, where 1 CSS px is
+     * about 2 canvas px.
      */
-    button: {
-      primaryW: 280,
-      primaryH: 64,
-      secondaryW: 200,
-      secondaryH: 56,
-      /** Gap between buttons stacked vertically (`stackButtons`). */
-      stackGapPx: 12,
-      /**
-       * Gap between buttons side by side (`rowButtons`, sprint 2.6.1) — wide
-       * enough that a thumb aimed at one doesn't land on its neighbour.
-       */
-      rowGapPx: 32,
-      tileW: 320,
-      tileH: 200,
+    gameOver: {
+      summaryY: 208,
+      /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score (2.11: speed first). */
+      bonusY: 266,
+      bonusGapPx: 40,
+      /** Sprint 2.11 — the row shrinks to fit inside this width (three bonuses at hard math are wide). */
+      bonusMaxW: 1160,
+      starsY: 316,
+      badgeY: 372,
+      /** Sprint 2.15 — Play Again; Change Game · Change Math or Speed · Settings under it (`chooser.roundEnd`). */
+      playAgainY: 452,
     },
     /**
-     * Sprint 2.9 — the challenge-first flow: the challenge picker (and the
-     * same grid inside the pause card), the challenge chip on Game Select
-     * and Difficulty, the per-game Difficulty tiles, and the Pause / Game
-     * Over button grids. Sized for a phone, where 1 CSS px is about 2
-     * canvas px: every target is at least 72 canvas px tall.
+     * Sprint 2.15 — the Title Screen, the Game Chooser (subject › group ›
+     * games) and the setup screens, laid out as in the approved wireframes.
+     * Every target is at least 64 design px tall (about 32 CSS px on a phone).
      */
-    challengeFlow: {
-      /** The challenge buttons: 4 + 4 + 3, the name and its "1.5x Points!" inside each. */
-      grid: { cellW: 280, cellH: 96, gapX: 16, gapY: 16, perRow: 4 },
-      picker: {
-        headingY: 58,
-        subjectTabY: 135,
-        subjectTab: { w: 220, h: 64 },
-        gridTopY: 230,
-        backY: 610,
-        /** Sprint 2.13 — the Puzzles tab's game tiles (two across). */
-        puzzleGrid: { firstRowY: 290, cellW: 292, cellH: 132, gapX: 14, gapY: 16, perRow: 4 },
-        /** The picture on each puzzle tile (sprint 2.14). */
-        puzzleIcon: { sizePx: 84, padPx: 10 },
-        /** A tab swap fades the buttons below in. */
-        swapFadeMs: 160,
+    chooser: {
+      title: {
+        /** The left column (name, line, Play, Settings) is centred here. */
+        textX: 342,
+        nameY: 232,
+        lineY: 312,
+        playY: 420,
+        settingsY: 516,
+        buttonW: 320,
+        playH: 84,
+        settingsH: 72,
+        /** The art on the right. */
+        art: { x: 944, y: 360, size: 600 },
       },
-      backButton: { w: 220, h: 72 },
-      /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
-      chip: { w: 440, h: 72 },
-      /**
-       * Sprint 2.13.1 — the games in two tabs (Math Basher, Math Fun; see
-       * `core/gameGroups.ts`), each tab's tiles in two rows (4 → 2 + 2,
-       * 5 → 3 + 2). A tile shows the game's picture on its left.
-       */
-      gameSelect: {
-        headingY: 50,
-        chipY: 128,
-        tabY: 212,
-        tab: { w: 240, h: 60, gapX: 16 },
-        grid: { firstRowY: 334, cellW: 390, cellH: 150, gapX: 16, gapY: 16, rows: 2 },
-        /** The picture on each tile: its size and the space around it. */
-        icon: { sizePx: 92, padPx: 12 },
-        backY: 636,
-        /** A tab swap fades the tiles in. */
-        swapFadeMs: 160,
+      /** Back · title · My Scores · Settings · mute, on every chooser and setup screen. */
+      topBar: { y: 52, h: 64, sidePadPx: 28, backW: 150, scoresW: 200, iconW: 64, gapPx: 14 },
+      /** The "where you are" chips under the title. */
+      trail: { y: 126, h: 48, padX: 22, gapPx: 12 },
+      /** The tiles sit between here and `bottom` (the screen tag goes under). */
+      content: { top: 168, topNoTrail: 108, bottom: 676 },
+      subjects: { cellW: 344, cellH: 470, gapX: 36, gapY: 0, perRow: 3 },
+      groups: { cellW: 460, cellH: 450, gapX: 44, gapY: 0, perRow: 2 },
+      /** Game and puzzle tiles: 4 to a row; one row is taller. */
+      games: { cellW: 272, cellH: 300, cellH2Rows: 236, gapX: 24, gapY: 22, perRow: 4 },
+      /** Pictures on the tiles (96 px sheet frames). */
+      picturePx: { subject: 96, group: 96, game: 96, puzzle: 84 },
+      /** Gaps inside a tile, top to bottom. */
+      tileGapPx: 12,
+      tilePadPx: 20,
+      /** A tile swap fades the tiles in. */
+      swapFadeMs: 160,
+      /** The setup screens: the best line and Start along the bottom. */
+      setup: { sidePadPx: 68, bottomY: 644, startW: 260, startH: 76, washColor: 0x0b1020, washAlpha: 0.62 },
+      /** Math setup: "What math?" (11 chips, 4 to a row, points under each), then "How fast?". */
+      mathSetup: {
+        mathHeadingY: 174,
+        chips: { firstRowY: 216, cellW: 277, cellH: 52, gapX: 12, gapY: 30, perRow: 4 },
+        /** "1.5x Points!" this far under a chip's bottom edge. */
+        pointsGapPx: 2,
+        speedHeadingY: 458,
+        speeds: { y: 522, w: 370, h: 88, gapX: 17 },
+        /** "Up to 3,000 points!" this far under a speed tile. */
+        upToGapPx: 6,
       },
-      difficulty: {
-        headingY: 58,
-        chipY: 150,
-        /** Space Escape's "12 floors per round" line. */
-        floorsY: 222,
-        tileY: 320,
-        tile: { w: 260, h: 96, gapX: 40 },
-        /** "Up to 1,500 points!" under each tile, then a fraction challenge's level note. */
-        upToGapPx: 14,
-        noteGapPx: 44,
-        buttonsY: 600,
-        startW: 240,
-        backW: 200,
-        buttonH: 72,
-      },
-      /** Pause: Resume, then a 2 × 2 grid; the challenge view reuses `grid`. */
+      /** The pause card: Resume, then Change Game, the game's Change button, Settings. */
       pause: {
-        titleY: 190,
-        resume: { y: 300, w: 360, h: 80 },
-        grid: { topY: 400, cellW: 300, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
-        challengeHeadingY: 130,
-        challengeGridTopY: 230,
-        challengeBackY: 590,
+        washAlpha: 0.6,
+        card: { y: 80, w: 600, h: 540, radius: 28 },
+        titleY: 150,
+        resumeY: 250,
+        resumeH: 84,
+        firstButtonY: 360,
+        buttonW: 500,
+        buttonH: 72,
+        gapPx: 18,
       },
-      /** Game Over: Play again, then a 2 × 2 grid; the bonuses, stars and the badge sit above. */
-      gameOver: {
-        summaryY: 208,
-        /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score (2.11: speed first). */
-        bonusY: 266,
-        bonusGapPx: 40,
-        /** Sprint 2.11 — the row shrinks to fit inside this width (three bonuses at hard math are wide). */
-        bonusMaxW: 1160,
-        starsY: 316,
-        badgeY: 372,
-        playAgain: { y: 440, w: 360, h: 80 },
-        grid: { topY: 532, cellW: 280, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+      /** The end of a round (Game Over, the puzzle end panels): Play Again, then Change Game · Change … · Settings. */
+      roundEnd: { playAgainW: 360, playAgainH: 80, rowGapY: 22, rowH: 72, gapX: 18, widths: [240, 340, 210] },
+      /** Puzzle and Pair Pals setups. */
+      puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 8 },
+      pairPalsSetup: {
+        cardsHeadingY: 174,
+        themes: { y: 290, w: 196, h: 190, gapX: 18 },
+        sampleY: -24,
+        levelsHeadingY: 412,
+        levels: { y: 482, w: 340, h: 92, gapX: 32 },
+        upToGapPx: 6,
       },
     },
     /**
@@ -1920,6 +1895,7 @@ export const config = {
       },
       noteY: 594,
       backY: 652,
+      backButton: { w: 220, h: 72 },
     },
     /**
      * Floating "+N" points popup on a correct answer (HudScene, every

@@ -16,7 +16,7 @@ import { AudioManager, type AudioKind, type LoopHandle, type MinimalStorage } fr
  * `scene.sound`, which is itself a thin wrapper over a `WebAudioSoundManager`
  * shared across the whole game. Holding a scene reference (rather than the
  * sound manager directly) lets `init` be called from whichever scene first
- * handles a user gesture (MenuScene's Start button) — the scene reference
+ * handles a user gesture (the first menu screen after the splash tap) — the scene reference
  * gets updated as scenes change but the underlying sound manager is the
  * same instance, so loaded assets persist.
  *

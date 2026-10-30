@@ -9,6 +9,7 @@ import { Settings, type ChosenHero } from '@/services/Settings';
 import { HeroChooserKeys } from '@/core/spriteKeys';
 import { text } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { emitButtonClicked } from '@/game/ui/buttonTelemetry';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
@@ -18,13 +19,14 @@ import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
  *
  * Full-screen 4-option picker the kid hits ONCE on first visit
  * (BootScene routes here when `Settings.getChosenHero() === null`,
- * otherwise straight to MenuScene). After first pick, persisted via
- * `Settings.setChosenHero(...)`; subsequent visits skip this scene
- * but it's reachable mid-session by tapping the chosen-hero avatar
- * in MenuScene's corner.
+ * otherwise straight to the Title Screen). After first pick, persisted via
+ * `Settings.setChosenHero(...)`; subsequent visits skip this scene.
+ *
+ * Sprint 2.15 — paused with the avatar (`config.features.avatar`): Boot
+ * doesn't open it and nothing links to it. The code stays, switched off.
  *
  * Init data:
- *  - `fromMenu: true` → mid-session re-open. Esc / back goes to Menu.
+ *  - `fromMenu: true` → mid-session re-open. Esc / back goes to the Title Screen.
  *    The Skip button is hidden (the kid already has a choice; this is
  *    a deliberate swap, not a forced first-run pick).
  *  - omitted / `fromMenu: false` → first-run, hard gate. Esc does
@@ -40,8 +42,9 @@ import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 
 export interface HeroChooserSceneInit {
   /**
-   * True when launched from MenuScene's avatar-tap (mid-session
-   * swap). False / omitted means first-run hard gate.
+   * True for a mid-session swap (it was the old menu's avatar tap;
+   * nothing opens it that way while the avatar is paused). False /
+   * omitted means first-run hard gate.
    */
   fromMenu?: boolean;
 }
@@ -89,6 +92,7 @@ export class HeroChooserScene extends Phaser.Scene {
 
   create(): void {
     setupScene(this);
+    addScreenTag(this, 'HeroChooserScene');
     this.picking = false; // reset across Phaser scene-instance reuse
     _th.logToAi('HeroChooser.entered', SeverityLevel.Information, {
       reason: this.fromMenu ? 'menu-reopen' : 'first-run',
@@ -145,7 +149,7 @@ export class HeroChooserScene extends Phaser.Scene {
       // Ignored while a pick's pop-and-transition is in flight, so the
       // only transition after a pick is the one the pop started.
       wireEscBack(this, () => {
-        if (!this.picking) this.scene.start(SceneKeys.Menu);
+        if (!this.picking) this.scene.start(SceneKeys.Title);
       });
       new PlaceholderButton({
         scene: this,
@@ -157,7 +161,7 @@ export class HeroChooserScene extends Phaser.Scene {
         onClick: () => {
           if (this.picking) return;
           emitButtonClicked('HeroChooser:Back', this.scene.key, 'pointer');
-          this.scene.start(SceneKeys.Menu);
+          this.scene.start(SceneKeys.Title);
         },
       });
     }
@@ -242,7 +246,7 @@ export class HeroChooserScene extends Phaser.Scene {
       scale: { from: 1, to: PICK_POP_SCALE },
       duration: PICK_POP_DURATION_MS,
       ease: 'Back.Out',
-      onComplete: () => this.scene.start(SceneKeys.Menu),
+      onComplete: () => this.scene.start(SceneKeys.Title),
     });
   }
 }

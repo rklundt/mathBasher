@@ -705,7 +705,7 @@ export class NumberClimbScene extends Phaser.Scene implements GameSceneContract 
     this.lifecycle.resume();
   }
 
-  quitToMenu(destination?: QuitDestination): void {
-    this.lifecycle.quitToMenu(destination);
+  quitRound(destination: QuitDestination): void {
+    this.lifecycle.quitRound(destination);
   }
 }

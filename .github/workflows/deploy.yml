@@ -70,6 +70,13 @@ jobs:
       - name: Resolve source URL
         run: echo "VITE_SOURCE_URL=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
+      # Sprint 2.15 — the dev site shows each menu screen's name in its corner
+      # (`addScreenTag`), so the owner can name screens while testing. Never on
+      # prod: the variable is only set for the development branch.
+      - name: Show screen names (dev only)
+        if: github.ref_name == 'development'
+        run: echo "VITE_SHOW_SCREEN_NAMES=true" >> "$GITHUB_ENV"
+
       - name: Build
         run: pnpm build:client
 

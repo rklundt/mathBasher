@@ -11,9 +11,9 @@ import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
 
 /**
  * Sprint 2.1.8 — intermediate load-progress scene. Sits between
- * `DifficultyScene` and the target game scene (Alien Shoot or
- * Asteroid Field) to render a visible loading bar during the
- * per-game asset preload.
+ * a setup screen (sprint 2.15: the math setup's Start, or the chooser
+ * opening a puzzle's setup) and the target scene to render a visible
+ * loading bar during the per-game asset preload.
  *
  * Why this scene exists: Phaser's mid-session scene-transition
  * timing means a loading bar attached IN the target game scene's
@@ -26,7 +26,7 @@ import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
  * Putting the load + bar in a dedicated scene that's ALREADY
  * painting (this one) sidesteps the timing problem. Flow:
  *
- *   DifficultyScene
+ *   MathSetupScene (Start)
  *     → scene.start(Loading, { targetSceneKey: 'asteroid-field' })
  *   LoadingScene.preload()
  *     → loadGameBundle(this, gameId)  // queues per-game assets
@@ -42,7 +42,7 @@ import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
  * shows the bar.
  *
  * Game-mode-bg continuity: BackgroundScene already swapped to the
- * correct backdrop when DifficultyScene fired `Settings.setGameId`
+ * correct backdrop when the chooser fired `Settings.setGameId`
  * (sprint 2.1.5). LoadingScene renders against that already-correct
  * bg, so the visual reads as "loading INTO the game" rather than a
  * neutral interstitial.
@@ -53,7 +53,7 @@ export interface LoadingSceneInit {
    * `GameId` is derived from `Settings.round.gameId` rather than
    * passed separately to keep the init payload narrow + avoid
    * gameId/sceneKey drift (the two are 1:1 today via `GAME_BG_MAP`
-   * etc., but DifficultyScene already set Settings to the right
+   * etc., but the chooser already set Settings to the right
    * gameId before calling scene.start here).
    */
   targetSceneKey: string;
@@ -93,9 +93,9 @@ export class LoadingScene extends Phaser.Scene {
         reason: `targetSceneKey=${String(data.targetSceneKey)} gameId=${String(data.gameId)}`,
       });
       // Defensive defaults — if the caller forgot init data, fall
-      // back to the menu so the player isn't stranded on a blank
+      // back to the Game Chooser so the player isn't stranded on a blank
       // loading screen.
-      this.targetSceneKey = SceneKeys.Menu;
+      this.targetSceneKey = SceneKeys.GameChooser;
       this.gameId = 'alien-shoot';
       return;
     }

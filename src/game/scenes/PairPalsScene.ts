@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PairPalsSize, type PairPalsTheme } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { openPuzzlePicker } from '@/game/services/challengeSelection';
+import { openGamesFor } from '@/game/services/chooserNavigation';
+import { createRoundEndButtons } from '@/game/ui/roundEndButtons';
 import {
   PAIR_PALS_BACKDROP_KEYS,
   PAIR_PALS_PICTURE_KEYS,
@@ -39,9 +40,9 @@ import { text } from '@/game/ui/typography';
 import { applyTextOutline, createTapHint, type TapHint } from '@/game/ui/callouts';
 import { createIconButton } from '@/game/ui/IconButton';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import type { PauseOverlayInit, PuzzleQuitDestination } from '@/game/scenes/PauseOverlay';
+import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
+import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 
 /** One card on the board: the back, the cream face with its picture, and the ring a match gets. */
 interface CardView {
@@ -461,7 +462,8 @@ export class PairPalsScene extends Phaser.Scene {
     _th.logToAi('GamePaused', SeverityLevel.Information, this.props());
     const init: PauseOverlayInit = {
       resumeFn: () => this.resume(),
-      puzzleQuitFn: (destination) => this.quit(destination),
+      quitFn: (destination) => this.quit(destination),
+      changeLabel: 'Change Cards or Difficulty',
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -476,12 +478,12 @@ export class PairPalsScene extends Phaser.Scene {
     _th.logToAi('GameResumed', SeverityLevel.Information, this.props());
   }
 
-  private quit(destination: PuzzleQuitDestination): void {
+  private quit(destination: QuitDestination): void {
     this.resume();
     _th.logToAi('PairPalsQuit', SeverityLevel.Information, { ...this.props(), reason: destination });
     this.settle(false, 0);
     if (destination === 'setup') this.scene.start(SceneKeys.PairPalsSetup);
-    else openPuzzlePicker(this);
+    else openGamesFor(this, 'pair-pals');
   }
 
   // ----- The win ---------------------------------------------------------
@@ -536,7 +538,7 @@ export class PairPalsScene extends Phaser.Scene {
     const cx = width / 2;
     const cy = height / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(Z.panel);
-    this.add.rectangle(cx, cy, 680, 480, 0x1f2740, 0.96).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
+    this.add.rectangle(cx, cy, 900, 480, 0x1f2740, 0.96).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
     const [found, best] = winLines(totalPairs(this.board), result);
     text(this, cx, cy - 176, 'You did it!', 'success')
       .setOrigin(0.5)
@@ -553,24 +555,17 @@ export class PairPalsScene extends Phaser.Scene {
       this.tweens.add({ targets: bestText, scale: { from: 0.6, to: 1 }, duration: 320, ease: 'Back.Out' });
     }
 
-    const playAgain = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: cy + 56,
-      width: 320,
-      height: 72,
-      label: 'Play Again',
-      onClick: () => this.scene.restart(),
-    }).setDepth(Z.panel);
-    // The setup screen, where the cards and the difficulty are picked.
-    const row = (dx: number, w: number, label: string, onClick: () => void): PlaceholderButton =>
-      new PlaceholderButton({ scene: this, x: cx + dx, y: cy + 148, width: w, height: 64, label, onClick }).setDepth(
-        Z.panel,
-      );
-    const change = row(-100, 340, 'Change Cards or Difficulty', () => this.scene.start(SceneKeys.PairPalsSetup));
-    // Menu: the game picker, on the Puzzles tab.
-    const menu = row(190, 200, 'Menu', () => openPuzzlePicker(this));
-    new KeyboardNavigator(this, [playAgain, change, menu]);
+    // Sprint 2.15 — Play Again, then Change Game · Change Cards or Difficulty · Settings.
+    const buttons = createRoundEndButtons(this, {
+      cx,
+      playAgainY: cy + 56,
+      changeLabel: 'Change Cards or Difficulty',
+      onPlayAgain: () => this.scene.restart(),
+      onChangeGame: () => openGamesFor(this, 'pair-pals'),
+      onChange: () => this.scene.start(SceneKeys.PairPalsSetup),
+      depth: Z.panel,
+    });
+    new KeyboardNavigator(this, buttons);
   }
 
   // ----- Shared ----------------------------------------------------------

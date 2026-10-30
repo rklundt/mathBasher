@@ -9,9 +9,9 @@ import { createAudioManager } from '@/services/audioManagerFactory';
 import { BootScene } from '@/game/scenes/BootScene';
 import { BackgroundScene } from '@/game/scenes/BackgroundScene';
 import { HeroChooserScene } from '@/game/scenes/HeroChooserScene';
-import { MenuScene } from '@/game/scenes/MenuScene';
-import { GameSelectScene } from '@/game/scenes/GameSelectScene';
-import { DifficultyScene } from '@/game/scenes/DifficultyScene';
+import { TitleScene } from '@/game/scenes/TitleScene';
+import { GameChooserScene } from '@/game/scenes/GameChooserScene';
+import { MathSetupScene } from '@/game/scenes/MathSetupScene';
 import { LoadingScene } from '@/game/scenes/LoadingScene';
 import { GameScene } from '@/game/scenes/GameScene';
 import { AsteroidFieldScene } from '@/game/scenes/AsteroidFieldScene';
@@ -28,7 +28,6 @@ import { PuzzleSetupScene } from '@/game/scenes/PuzzleSetupScene';
 import { PickPuzzleScene } from '@/game/scenes/PickPuzzleScene';
 import { CopyCatScene } from '@/game/scenes/CopyCatScene';
 import { SymbolHuntScene } from '@/game/scenes/SymbolHuntScene';
-import { ChallengePickerScene } from '@/game/scenes/ChallengePickerScene';
 import { MyScoresScene } from '@/game/scenes/MyScoresScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
@@ -134,10 +133,9 @@ export function bootGame(): void {
       BootScene,
       BackgroundScene,
       HeroChooserScene,
-      MenuScene,
-      GameSelectScene,
-      DifficultyScene,
-      ChallengePickerScene,
+      TitleScene,
+      GameChooserScene,
+      MathSetupScene,
       MyScoresScene,
       LoadingScene,
       GameScene,

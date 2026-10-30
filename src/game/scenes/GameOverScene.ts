@@ -11,9 +11,9 @@ import type { MathGameId } from '@/core/gameIds';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
-import type { ChallengePickerInit } from '@/game/services/challengeSelection';
+import { createRoundEndButtons } from '@/game/ui/roundEndButtons';
+import { addScreenTag } from '@/game/ui/screenTag';
+import { openGamesFor } from '@/game/services/chooserNavigation';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { formatPoints } from '@/services/challengePoints';
@@ -124,12 +124,12 @@ export class GameOverScene extends Phaser.Scene {
     const cx = width / 2;
 
     // Sprint 2.5 story 4 — chosen-hero banner. Top-left corner, larger
-    // than MenuScene's avatar (88 px vs 56) so the kid sees their
+    // than the HUD's avatar so the kid sees their
     // hero present at the round-end celebration. Skipped silently if
     // no hero is persisted (defensive — BootScene's routing ensures
     // the picker has run before any round is played, but the guard
     // means a test path that bypasses Boot still renders cleanly).
-    this.buildHeroBanner();
+    if (config.features.avatar) this.buildHeroBanner();
 
     // Sprint 0.7 Story 9 — entrance tween for the headline. Scale 0.7 +
     // alpha 0 → final, Back.Out ease for a small overshoot "pop." Reads
@@ -164,7 +164,7 @@ export class GameOverScene extends Phaser.Scene {
     // than text() so we can layer in `align: 'center'` for the two-line
     // string.
     const scoreSummary = this.add
-      .text(cx, config.layout.challengeFlow.gameOver.summaryY, '', { ...textStyle('summary'), align: 'center' })
+      .text(cx, config.layout.gameOver.summaryY, '', { ...textStyle('summary'), align: 'center' })
       .setOrigin(0.5);
     applyTextOutline(scoreSummary);
     // Round size — Number Climb passes 10 here (10 floors); other modes
@@ -211,25 +211,16 @@ export class GameOverScene extends Phaser.Scene {
     // refactored to 3 distinct game objects so each can animate
     // independently. Stagger 200ms between stars; first star starts
     // 500ms after scene mount so the headline pop reads first.
-    this.buildStarRow(cx, config.layout.challengeFlow.gameOver.starsY);
+    this.buildStarRow(cx, config.layout.gameOver.starsY);
 
-    // Sprint 2.9 — Play again on its own, then a 2 × 2 grid: Change
-    // difficulty · Change challenge / Change game · Main menu. Four in a row
-    // don't fit a phone; the grid keeps every target 72 tall and clear of
-    // the "New High Score!" badge above.
-    const G = config.layout.challengeFlow.gameOver;
-    const playAgain = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: G.playAgain.y,
-      width: G.playAgain.w,
-      height: G.playAgain.h,
-      label: 'Play Again',
-      onClick: () => {
-        // Defensive: re-set Settings to the round we just played, so
-        // Play Again works even if a future code path resets Settings.
-        // The destination scene reads Settings on create, so this
-        // preserves the user's intent across the bounce.
+    // Sprint 2.15 — Play Again, then Change Game · Change Math or Speed ·
+    // Settings (no main menu). Play Again re-sets the round just played, so it
+    // replays even if something changed the picks in between.
+    const buttons = createRoundEndButtons(this, {
+      cx,
+      playAgainY: config.layout.gameOver.playAgainY,
+      changeLabel: 'Change Math or Speed',
+      onPlayAgain: () => {
         Settings.setGameId(gameId);
         if (this.roundData.mathId) Settings.setChallenge(this.roundData.mathId);
         if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
@@ -237,44 +228,17 @@ export class GameOverScene extends Phaser.Scene {
         // the canonical helper (exhaustive against the GameId union).
         this.scene.start(gameSceneKeyFor(gameId));
       },
+      onChangeGame: () => openGamesFor(this, gameId),
+      onChange: () => {
+        Settings.setGameId(gameId);
+        this.scene.start(SceneKeys.MathSetup);
+      },
     });
-    const changeChallenge = (): void => {
-      // Back on the picker goes to this game's Difficulty, not back here:
-      // re-entering Game Over would replay it and save the score again.
-      Settings.setGameId(gameId);
-      const init: ChallengePickerInit = {
-        next: SceneKeys.Difficulty,
-        back: SceneKeys.Difficulty,
-        source: 'gameOver',
-      };
-      this.scene.start(SceneKeys.ChallengePicker, init);
-    };
-    const items: Array<{ label: string; onClick: () => void }> = [
-      { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
-      { label: 'Change Challenge', onClick: changeChallenge },
-      // Challenge + difficulty carry over (Settings keeps them).
-      { label: 'Change Game', onClick: () => this.scene.start(SceneKeys.GameSelect) },
-      { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
-    ];
-    const slots = computeGridSlots(cx, G.grid.topY, items.length, G.grid);
-    const grid = items.map(
-      (item, i) =>
-        new PlaceholderButton({
-          scene: this,
-          x: slots[i].x,
-          y: slots[i].y,
-          width: slots[i].width,
-          height: slots[i].height,
-          label: item.label,
-          onClick: item.onClick,
-        }),
-    );
-    const buttons = [playAgain, ...grid];
-
     new KeyboardNavigator(this, buttons);
+    addScreenTag(this, `GameOverScene · ${gameId}`);
 
-    // Esc on Game Over = Main Menu (matches the existing button's destination).
-    wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+    // Esc = Change Game (there's no main menu to go back to).
+    wireEscBack(this, () => openGamesFor(this, gameId));
   }
 
   /**
@@ -290,7 +254,7 @@ export class GameOverScene extends Phaser.Scene {
     bonuses: ReadonlyArray<{ label: string; points: number }>,
     countOn: (subtotal: number, atMs: number) => void,
   ): number {
-    const G = config.layout.challengeFlow.gameOver;
+    const G = config.layout.gameOver;
     // Under half a point rounds to "+0": not worth a pop.
     const parts = bonuses.filter((p) => p.points >= 0.5);
     if (parts.length === 0) return 0;
@@ -401,13 +365,7 @@ export class GameOverScene extends Phaser.Scene {
     if (isNewHighScore && this.scene.isActive()) {
       const { width } = this.scale;
       // TextKind 'badge' — 26px warm-amber bold (Sprint 0.7.5 Story 3).
-      const badge = text(
-        this,
-        width / 2,
-        config.layout.challengeFlow.gameOver.badgeY,
-        '★ New High Score! ★',
-        'badge',
-      ).setOrigin(0.5);
+      const badge = text(this, width / 2, config.layout.gameOver.badgeY, '★ New High Score! ★', 'badge').setOrigin(0.5);
       applyTextOutline(badge);
       // Sprint 2.10 — after the bonuses have popped in (it used to land mid-count).
       badge.setAlpha(0);
@@ -424,10 +382,10 @@ export class GameOverScene extends Phaser.Scene {
 
   /**
    * Sprint 2.5 story 4 — chosen-hero banner. Top-left corner;
-   * larger than MenuScene's avatar (88 px vs 56) so the kid sees
-   * their hero present at the round-end celebration. Identical
-   * defensive guards as MenuScene's `buildHeroAvatar` (null
-   * persisted choice or missing texture → no render, don't throw).
+   * larger than the HUD's avatar so the kid sees
+   * their hero present at the round-end celebration. Defensive guards:
+   * a null persisted choice or missing texture → no render, don't throw.
+   * Sprint 2.15: only while `config.features.avatar` is on.
    */
   private buildHeroBanner(): void {
     const hero = Settings.getChosenHero();

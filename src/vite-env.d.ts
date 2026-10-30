@@ -8,6 +8,8 @@
 interface ImportMetaEnv {
   /** AGPL §13 source link shown in the footer: the exact commit being built. Unset locally. */
   readonly VITE_SOURCE_URL?: string;
+  /** Sprint 2.15 — 'true' shows each menu screen's name in its corner (set for the dev site only). */
+  readonly VITE_SHOW_SCREEN_NAMES?: string;
 }
 
 interface ImportMeta {

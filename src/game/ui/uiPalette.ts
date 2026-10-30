@@ -42,6 +42,13 @@ export const BORDER_GREY_DISABLED = 0x374151; // #374151
 export const FOCUS_BLUE = 0x60a5fa; // #60a5fa
 /** Selected-state border (amber) — the "you picked this" indicator. */
 export const SELECTED_AMBER = 0xfacc15; // #facc15
+/**
+ * Sprint 2.15 — the big yellow buttons (Play, Start, Play Again, Resume):
+ * the one thing to press on a screen. Dark ink on amber.
+ */
+export const PRIMARY_FILL = 0xfacc15; // #facc15
+export const PRIMARY_HOVER = 0xfde047; // #fde047
+export const PRIMARY_INK_CSS = '#1c1400';
 
 // --- HUD-icon variants ------------------------------------------------------
 
