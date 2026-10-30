@@ -28,6 +28,13 @@ export interface PlaceholderButtonOpts {
   subtitle?: string;
   /** Sprint 2.9 — a colour for the subtitle (the challenge buttons' "1.5x Points!"). */
   subtitleColor?: string;
+  /**
+   * Sprint 2.13.1 — a picture on the tile's left (the Game Select tiles):
+   * any loaded texture and frame, drawn `sizePx` square with `padPx` around
+   * it. The label and subtitle centre in the space to its right. A texture
+   * that isn't loaded is skipped (the text keeps its place).
+   */
+  icon?: ButtonIcon;
   /** Disabled buttons render dimmer and ignore pointer + keyboard activation. */
   disabled?: boolean;
   /** Selected buttons get an amber border to indicate active choice. */
@@ -43,6 +50,17 @@ export interface PlaceholderButtonOpts {
    */
   pointerInput?: boolean;
 }
+
+/** A tile picture: a texture key and frame, and how big to draw it. */
+export interface ButtonIcon {
+  key: string;
+  frame?: string | number;
+  sizePx: number;
+  padPx: number;
+}
+
+/** Gap between the label and the subtitle on a tile with a picture. */
+const ICON_TEXT_GAP_PX = 6;
 
 /**
  * Reusable placeholder button — rounded rectangle with a centered label and
@@ -79,6 +97,8 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly border: Phaser.GameObjects.Rectangle;
   private readonly textChildren: Phaser.GameObjects.Text[] = [];
+  /** Sprint 2.13.1 — the tile picture, when there is one. */
+  private icon?: Phaser.GameObjects.Image;
   private readonly label: string;
   private _disabled: boolean;
   private _selected: boolean;
@@ -135,27 +155,10 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // stays centered at y=0 (unchanged). For TALLER tiles (GameSelect
     // 200px), the centered text block leaves more padding top/bottom,
     // which still reads cleanly.
-    const label = opts.scene.add.text(0, opts.subtitle ? -28 : 0, opts.label, textStyle('buttonLabel'));
-    label.setOrigin(0.5);
-    this.add(label);
-    this.textChildren.push(label);
-
-    if (opts.subtitle) {
-      // Phaser wordWrap so long descriptions (e.g. "Two numbers, sum at
-      // most 10." on the Add to 10 tile) wrap to a second line instead
-      // of bleeding past the tile's right edge after the Story 1 font
-      // bump. 16px of total horizontal padding (8 each side) keeps text
-      // away from the border. Centered alignment keeps wrapped lines
-      // visually balanced under the label above them.
-      const subtitle = opts.scene.add.text(0, 22, opts.subtitle, {
-        ...textStyle('buttonSubtitle'),
-        wordWrap: { width: opts.width - 16 },
-        align: 'center',
-        ...(opts.subtitleColor !== undefined && { color: opts.subtitleColor }),
-      });
-      subtitle.setOrigin(0.5);
-      this.add(subtitle);
-      this.textChildren.push(subtitle);
+    if (opts.icon) {
+      this.addIconLayout(opts, opts.icon);
+    } else {
+      this.addTextLayout(opts);
     }
 
     // Container size is still set so layout consumers (KeyboardNavigator focus
@@ -193,6 +196,73 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     });
 
     this.refreshAppearance();
+  }
+
+  /** The usual layout: the label centred, the subtitle (if any) under it. */
+  private addTextLayout(opts: PlaceholderButtonOpts): void {
+    const label = opts.scene.add.text(0, opts.subtitle ? -28 : 0, opts.label, textStyle('buttonLabel'));
+    label.setOrigin(0.5);
+    this.add(label);
+    this.textChildren.push(label);
+
+    if (opts.subtitle) {
+      // Phaser wordWrap so long descriptions (e.g. "Two numbers, sum at
+      // most 10." on the Add to 10 tile) wrap to a second line instead
+      // of bleeding past the tile's right edge after the Story 1 font
+      // bump. 16px of total horizontal padding (8 each side) keeps text
+      // away from the border. Centered alignment keeps wrapped lines
+      // visually balanced under the label above them.
+      const subtitle = opts.scene.add.text(0, 22, opts.subtitle, {
+        ...textStyle('buttonSubtitle'),
+        wordWrap: { width: opts.width - 16 },
+        align: 'center',
+        ...(opts.subtitleColor !== undefined && { color: opts.subtitleColor }),
+      });
+      subtitle.setOrigin(0.5);
+      this.add(subtitle);
+      this.textChildren.push(subtitle);
+    }
+  }
+
+  /**
+   * Sprint 2.13.1 — the picture on the left, the label and subtitle centred
+   * in the space to its right. The text block is measured and centred
+   * vertically, so a subtitle that wraps to three lines still fits.
+   */
+  private addIconLayout(opts: PlaceholderButtonOpts, icon: ButtonIcon): void {
+    const left = -opts.width / 2;
+    if (opts.scene.textures.exists(icon.key)) {
+      this.icon = opts.scene.add.image(left + icon.padPx + icon.sizePx / 2, 0, icon.key, icon.frame);
+      this.icon.setDisplaySize(icon.sizePx, icon.sizePx);
+      this.add(this.icon);
+    }
+    const textLeft = left + icon.padPx * 2 + icon.sizePx;
+    const textW = opts.width / 2 - icon.padPx - textLeft;
+    const textX = textLeft + textW / 2;
+
+    const label = opts.scene.add.text(textX, 0, opts.label, {
+      ...textStyle('buttonLabel'),
+      wordWrap: { width: textW },
+      align: 'center',
+    });
+    label.setOrigin(0.5);
+    this.add(label);
+    this.textChildren.push(label);
+    if (!opts.subtitle) return;
+
+    const subtitle = opts.scene.add.text(textX, 0, opts.subtitle, {
+      ...textStyle('buttonSubtitle'),
+      wordWrap: { width: textW },
+      align: 'center',
+      ...(opts.subtitleColor !== undefined && { color: opts.subtitleColor }),
+    });
+    subtitle.setOrigin(0.5);
+    this.add(subtitle);
+    this.textChildren.push(subtitle);
+
+    const top = -(label.height + ICON_TEXT_GAP_PX + subtitle.height) / 2;
+    label.setY(top + label.height / 2);
+    subtitle.setY(top + label.height + ICON_TEXT_GAP_PX + subtitle.height / 2);
   }
 
   /**
@@ -280,6 +350,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
       this.border.setStrokeStyle(2, BORDER_GREY_DISABLED);
       this.border.setAlpha(0.7);
       this.textChildren.forEach((t) => t.setAlpha(1));
+      this.icon?.setAlpha(0.6); // the picture dims with the tile; the text stays readable
       this.setAlpha(1); // container itself stays full-alpha
       return;
     }
@@ -287,6 +358,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.bg.setAlpha(1);
     this.border.setAlpha(1);
     this.textChildren.forEach((t) => t.setAlpha(1));
+    this.icon?.setAlpha(1);
 
     // Border colors: focus > selected > normal. Focus uses a distinct blue
     // so it never gets confused with the amber selected state.

@@ -47,7 +47,11 @@ import type { QuitDestination } from '@/game/scenes/gameSceneContract';
  * DOM strip below the canvas (sprint 2.5.2), so it stays visible while paused
  * regardless of scene order.
  */
-/** Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the puzzle's setup (Change Cards or Difficulty). */
+/**
+ * Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the
+ * puzzle's setup (Change Cards or Difficulty). Since 2.14 a puzzle's "menu"
+ * is the game picker's Puzzles tab.
+ */
 export type PuzzleQuitDestination = 'menu' | 'setup';
 
 export interface PauseOverlayInit {
@@ -60,6 +64,8 @@ export interface PauseOverlayInit {
    * then Change Cards or Difficulty · Settings · Quit to Menu. No challenge, no Game Select.
    */
   puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
+  /** Sprint 2.14 — the puzzle's "change" button (Pair Pals: "Change Cards or Difficulty"; the puzzle pack: "Change Difficulty"). */
+  puzzleChangeLabel?: string;
 }
 
 export class PauseOverlay extends Phaser.Scene {
@@ -68,6 +74,7 @@ export class PauseOverlay extends Phaser.Scene {
   private resumeFn?: () => void;
   private quitFn?: (destination: QuitDestination) => void;
   private puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
+  private puzzleChangeLabel = 'Change Cards or Difficulty';
   /** Everything in the card's current view (destroyed when the view changes). */
   private view: Phaser.GameObjects.GameObject[] = [];
   private nav?: KeyboardNavigator;
@@ -81,6 +88,7 @@ export class PauseOverlay extends Phaser.Scene {
     this.resumeFn = data.resumeFn;
     this.quitFn = data.quitFn;
     this.puzzleQuitFn = data.puzzleQuitFn;
+    this.puzzleChangeLabel = data.puzzleChangeLabel ?? 'Change Cards or Difficulty';
   }
 
   create(): void {
@@ -141,7 +149,7 @@ export class PauseOverlay extends Phaser.Scene {
       puzzleQuit !== undefined
         ? [
             // The setup screen, where the cards and the difficulty are picked.
-            { label: 'Change Cards or Difficulty', onClick: () => puzzleQuit('setup') },
+            { label: this.puzzleChangeLabel, onClick: () => puzzleQuit('setup') },
             { label: 'Settings', onClick: () => this.handleSettings() },
             { label: 'Quit to Menu', onClick: () => puzzleQuit('menu') },
           ]

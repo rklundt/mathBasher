@@ -16,7 +16,7 @@ import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
 import { loadGameBundle } from '@/game/services/assetLoader';
-import type { ChallengePickerInit } from '@/game/services/challengeSelection';
+import { openPuzzlePicker } from '@/game/services/challengeSelection';
 
 /** "6 pairs · 4 × 3" under a size's name. */
 export function sizeSubtitle(size: PairPalsSize): string {
@@ -171,12 +171,6 @@ export class PairPalsSetupScene extends Phaser.Scene {
 
   /** Back to the picker, on the Puzzles tab. */
   private goBack(): void {
-    const init: ChallengePickerInit = {
-      next: SceneKeys.GameSelect,
-      back: SceneKeys.Menu,
-      source: 'menu',
-      subject: 'puzzles',
-    };
-    this.scene.start(SceneKeys.ChallengePicker, init);
+    openPuzzlePicker(this);
   }
 }

@@ -179,6 +179,7 @@ A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no challeng
 - Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Change Cards or Difficulty · Settings · Quit to Menu).
 - Sounds big enough to matter (Pair Pals' music, one track per card theme) can be `onDemand` in the audio manifest: left out of the game's bundle and loaded by the scene when needed (`loadAudioOnDemand`).
 - Steps 7, 10 (Difficulty), 11, 11c–11e and 12 don't apply.
+- **The puzzle pack (sprint 2.14)** shares more: one setup scene (`PuzzleSetupScene`, a level per puzzle), one scene for the five "pick one" puzzles (`PickPuzzleScene`; `gameSceneKeyFor` sends all five there and it reads which from `Settings.round.gameId`), and a base class for every round (`PuzzleRoundScene`: frame, progress bar, dancers, pause, music, the end panel). A new pick-one puzzle is a generator in `src/game/systems/puzzles/pickPuzzles.ts` and a stage drawing in `PickPuzzleScene`. Sprites shared between games list the others in `alsoFor` on their manifest entry, as sounds do.
 
 If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.
 
