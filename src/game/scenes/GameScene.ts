@@ -545,9 +545,9 @@ export class GameScene extends Phaser.Scene implements GameSceneContract {
    * Cleanup is the same as scene shutdown — `cleanup()` runs via the
    * shutdown event when MenuScene takes over.
    */
-  quitToMenu(destination?: QuitDestination): void {
+  quitRound(destination: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
     // scene.start(Menu) consolidated in the lifecycle helper.
-    this.lifecycle.quitToMenu(destination);
+    this.lifecycle.quitRound(destination);
   }
 }

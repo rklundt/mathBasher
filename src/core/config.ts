@@ -1871,7 +1871,7 @@ export const config = {
         challengeGridTopY: 230,
         challengeBackY: 590,
       },
-      /** Game Over: Play again, then a 2 × 2 grid; the bonuses, stars and the badge sit above. */
+      /** Game Over: Play Again, then a row of three; the bonuses, stars and the badge sit above. */
       gameOver: {
         summaryY: 208,
         /** Sprint 2.10 — "Finish Bonus! +300   Perfect Round! +300", under the score (2.11: speed first). */
@@ -1881,8 +1881,8 @@ export const config = {
         bonusMaxW: 1160,
         starsY: 316,
         badgeY: 372,
-        playAgain: { y: 440, w: 360, h: 80 },
-        grid: { topY: 532, cellW: 280, cellH: 72, gapX: 24, gapY: 16, perRow: 2 },
+        /** Sprint 2.15 — Play Again; Change Game · Change Math or Speed · Settings under it (`chooser.roundEnd`). */
+        playAgainY: 452,
       },
     },
     /**
@@ -1934,6 +1934,20 @@ export const config = {
         /** "Up to 3,000 points!" this far under a speed tile. */
         upToGapPx: 6,
       },
+      /** The pause card: Resume, then Change Game, the game's Change button, Settings. */
+      pause: {
+        washAlpha: 0.6,
+        card: { y: 80, w: 600, h: 540, radius: 28 },
+        titleY: 150,
+        resumeY: 250,
+        resumeH: 84,
+        firstButtonY: 360,
+        buttonW: 500,
+        buttonH: 72,
+        gapPx: 18,
+      },
+      /** The end of a round (Game Over, the puzzle end panels): Play Again, then Change Game · Change … · Settings. */
+      roundEnd: { playAgainW: 360, playAgainH: 80, rowGapY: 22, rowH: 72, gapX: 18, widths: [240, 340, 210] },
       /** Puzzle and Pair Pals setups. */
       puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 8 },
       pairPalsSetup: {

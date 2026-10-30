@@ -683,8 +683,8 @@ export class FrogSplashScene extends Phaser.Scene implements GameSceneContract {
     return [...(this.fly ? [this.fly] : []), ...this.splashes];
   }
 
-  quitToMenu(destination?: QuitDestination): void {
+  quitRound(destination: QuitDestination): void {
     this.time.paused = false;
-    this.lifecycle.quitToMenu(destination);
+    this.lifecycle.quitRound(destination);
   }
 }

@@ -11,9 +11,9 @@ import type { MathGameId } from '@/core/gameIds';
 import { getScoreStore } from '@/services/scoreStoreFactory';
 import type { ScoreEntry, ScoreFilter } from '@/services/IScoreStore';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
-import type { ChallengePickerInit } from '@/game/services/challengeSelection';
+import { createRoundEndButtons } from '@/game/ui/roundEndButtons';
+import { addScreenTag } from '@/game/ui/screenTag';
+import { openGamesFor } from '@/game/services/chooserNavigation';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle, FONT_FAMILY, TEXT_AMBER } from '@/game/ui/typography';
 import { formatPoints } from '@/services/challengePoints';
@@ -129,7 +129,7 @@ export class GameOverScene extends Phaser.Scene {
     // no hero is persisted (defensive — BootScene's routing ensures
     // the picker has run before any round is played, but the guard
     // means a test path that bypasses Boot still renders cleanly).
-    this.buildHeroBanner();
+    if (config.features.avatar) this.buildHeroBanner();
 
     // Sprint 0.7 Story 9 — entrance tween for the headline. Scale 0.7 +
     // alpha 0 → final, Back.Out ease for a small overshoot "pop." Reads
@@ -213,23 +213,14 @@ export class GameOverScene extends Phaser.Scene {
     // 500ms after scene mount so the headline pop reads first.
     this.buildStarRow(cx, config.layout.challengeFlow.gameOver.starsY);
 
-    // Sprint 2.9 — Play again on its own, then a 2 × 2 grid: Change
-    // difficulty · Change challenge / Change game · Main menu. Four in a row
-    // don't fit a phone; the grid keeps every target 72 tall and clear of
-    // the "New High Score!" badge above.
-    const G = config.layout.challengeFlow.gameOver;
-    const playAgain = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: G.playAgain.y,
-      width: G.playAgain.w,
-      height: G.playAgain.h,
-      label: 'Play Again',
-      onClick: () => {
-        // Defensive: re-set Settings to the round we just played, so
-        // Play Again works even if a future code path resets Settings.
-        // The destination scene reads Settings on create, so this
-        // preserves the user's intent across the bounce.
+    // Sprint 2.15 — Play Again, then Change Game · Change Math or Speed ·
+    // Settings (no main menu). Play Again re-sets the round just played, so it
+    // replays even if something changed the picks in between.
+    const buttons = createRoundEndButtons(this, {
+      cx,
+      playAgainY: config.layout.challengeFlow.gameOver.playAgainY,
+      changeLabel: 'Change Math or Speed',
+      onPlayAgain: () => {
         Settings.setGameId(gameId);
         if (this.roundData.mathId) Settings.setChallenge(this.roundData.mathId);
         if (this.roundData.speed) Settings.setSpeed(this.roundData.speed);
@@ -237,44 +228,17 @@ export class GameOverScene extends Phaser.Scene {
         // the canonical helper (exhaustive against the GameId union).
         this.scene.start(gameSceneKeyFor(gameId));
       },
+      onChangeGame: () => openGamesFor(this, gameId),
+      onChange: () => {
+        Settings.setGameId(gameId);
+        this.scene.start(SceneKeys.MathSetup);
+      },
     });
-    const changeChallenge = (): void => {
-      // Back on the picker goes to this game's Difficulty, not back here:
-      // re-entering Game Over would replay it and save the score again.
-      Settings.setGameId(gameId);
-      const init: ChallengePickerInit = {
-        next: SceneKeys.Difficulty,
-        back: SceneKeys.Difficulty,
-        source: 'gameOver',
-      };
-      this.scene.start(SceneKeys.ChallengePicker, init);
-    };
-    const items: Array<{ label: string; onClick: () => void }> = [
-      { label: 'Change Difficulty', onClick: () => this.scene.start(SceneKeys.Difficulty) },
-      { label: 'Change Challenge', onClick: changeChallenge },
-      // Challenge + difficulty carry over (Settings keeps them).
-      { label: 'Change Game', onClick: () => this.scene.start(SceneKeys.GameSelect) },
-      { label: 'Main Menu', onClick: () => this.scene.start(SceneKeys.Menu) },
-    ];
-    const slots = computeGridSlots(cx, G.grid.topY, items.length, G.grid);
-    const grid = items.map(
-      (item, i) =>
-        new PlaceholderButton({
-          scene: this,
-          x: slots[i].x,
-          y: slots[i].y,
-          width: slots[i].width,
-          height: slots[i].height,
-          label: item.label,
-          onClick: item.onClick,
-        }),
-    );
-    const buttons = [playAgain, ...grid];
-
     new KeyboardNavigator(this, buttons);
+    addScreenTag(this, `GameOverScene · ${gameId}`);
 
-    // Esc on Game Over = Main Menu (matches the existing button's destination).
-    wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+    // Esc = Change Game (there's no main menu to go back to).
+    wireEscBack(this, () => openGamesFor(this, gameId));
   }
 
   /**

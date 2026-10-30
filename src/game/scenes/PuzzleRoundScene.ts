@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
-import { openPuzzlePicker } from '@/game/services/challengeSelection';
+import { openChooser, openGamesFor } from '@/game/services/chooserNavigation';
 import type { RoundPuzzleId } from '@/core/gameIds';
 import { puzzleById } from '@/core/puzzles';
 import { PUZZLE_BACKDROP_KEYS } from '@/core/spriteKeys';
@@ -22,7 +22,8 @@ import { speedMarks } from '@/game/ui/speedPhrases';
 import { setupScene } from '@/game/scenes/sceneSetup';
 import { loadAudioOnDemand, loadGameBundle } from '@/game/services/assetLoader';
 import { PromptPill, PuzzleBackdrop, PuzzleDancers, PuzzleTopBar, showEndPanel } from '@/game/ui/puzzleFrame';
-import type { PauseOverlayInit, PuzzleQuitDestination } from '@/game/scenes/PauseOverlay';
+import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
+import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 
 /**
  * Sprint 2.14 — what every puzzle-pack round shares: the frame (backdrops,
@@ -69,7 +70,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     const id = this.puzzleId();
     if (id === null) {
       _th.logToAi(`${this.scene.key}.notItsPuzzle`, SeverityLevel.Warning, { gameId: Settings.round.gameId });
-      this.scene.start(SceneKeys.Menu);
+      openChooser(this);
       return;
     }
     this.id = id;
@@ -217,7 +218,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
         changeLabel: 'Change Difficulty',
         onPlayAgain: () => this.scene.restart(),
         onChange: () => this.scene.start(SceneKeys.PuzzleSetup),
-        onMenu: () => openPuzzlePicker(this),
+        onChangeGame: () => openGamesFor(this, this.id),
       }),
     );
   }
@@ -252,8 +253,8 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     _th.logToAi('GamePaused', SeverityLevel.Information, this.props());
     const init: PauseOverlayInit = {
       resumeFn: () => this.resume(),
-      puzzleQuitFn: (destination) => this.quit(destination),
-      puzzleChangeLabel: 'Change Difficulty',
+      quitFn: (destination) => this.quit(destination),
+      changeLabel: 'Change Difficulty',
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -268,7 +269,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     _th.logToAi('GameResumed', SeverityLevel.Information, this.props());
   }
 
-  private quit(destination: PuzzleQuitDestination): void {
+  private quit(destination: QuitDestination): void {
     this.resume();
     _th.logToAi('PuzzleRoundQuit', SeverityLevel.Information, {
       ...this.props(),
@@ -278,7 +279,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     });
     this.settle(false);
     if (destination === 'setup') this.scene.start(SceneKeys.PuzzleSetup);
-    else openPuzzlePicker(this);
+    else openGamesFor(this, this.id);
   }
 
   /**

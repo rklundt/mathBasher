@@ -161,13 +161,17 @@ describe('computeGridSlots (sprint 2.9)', () => {
     }
   });
 
-  it('keeps the Pause and Game Over 2 × 2 grids above the bottom gutter', () => {
-    const { pause, gameOver } = config.layout.challengeFlow;
-    for (const g of [pause.grid, gameOver.grid]) {
-      const slots = computeGridSlots(640, g.topY, 4, g);
-      const bottom = Math.max(...slots.map((s) => s.y + s.height / 2));
-      expect(bottom).toBeLessThanOrEqual(688);
-    }
+  it('keeps the pause card and the end-of-round buttons on screen, above the bottom gutter (sprint 2.15)', () => {
+    const { pause, roundEnd } = config.layout.chooser;
+    const lastPauseButton = pause.firstButtonY + 2 * (pause.buttonH + pause.gapPx) + pause.buttonH / 2;
+    expect(lastPauseButton).toBeLessThanOrEqual(pause.card.y + pause.card.h);
+    expect(pause.card.y + pause.card.h).toBeLessThanOrEqual(688);
+
+    const rowW = roundEnd.widths.reduce((sum, w) => sum + w, 0) + roundEnd.gapX * (roundEnd.widths.length - 1);
+    expect(rowW).toBeLessThanOrEqual(900 - 40); // inside the puzzle end panels (900 wide)
+    const rowBottom =
+      config.layout.challengeFlow.gameOver.playAgainY + roundEnd.playAgainH / 2 + roundEnd.rowGapY + roundEnd.rowH;
+    expect(rowBottom).toBeLessThanOrEqual(688);
   });
 
   it('handles nothing to lay out', () => {

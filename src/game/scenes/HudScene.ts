@@ -440,6 +440,7 @@ export class HudScene extends Phaser.Scene {
     const init: PauseOverlayInit = {
       resumeFn: () => this.closePauseOverlay(),
       quitFn: (destination) => this.handleQuitFromOverlay(destination),
+      changeLabel: 'Change Math or Speed',
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -458,9 +459,9 @@ export class HudScene extends Phaser.Scene {
       this.scene.stop(SceneKeys.PauseOverlay);
     }
     // Resume before quit so any frozen tweens don't carry over to the next
-    // round if the user starts a new game from MenuScene.
+    // screen (the games list or the setup).
     gameScene?.resume();
-    gameScene?.quitToMenu(destination);
+    gameScene?.quitRound(destination);
   }
 
   /**

@@ -18,6 +18,7 @@ import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 import type { HudSceneInit } from '@/game/scenes/gameSceneContract';
 import type { RoundController } from '@/game/services/RoundController';
 import type { GameOverData } from '@/game/scenes/GameOverScene';
+import { openGamesFor } from '@/game/services/chooserNavigation';
 
 /**
  * Sprint 2.1.9 — game-mode-AGNOSTIC scene lifecycle helper. Extracted
@@ -62,7 +63,7 @@ import type { GameOverData } from '@/game/scenes/GameOverScene';
  * this.lifecycle.endRound();
  * ```
  *
- * Inside `pause()` / `resume()` / `quitToMenu()` — call AFTER the
+ * Inside `pause()` / `resume()` / `quitRound()` — call AFTER the
  * scene's own subsystem pause/resume (waveSystem.pause, etc) so the
  * lifecycle's telemetry reflects "we paused everything":
  *
@@ -97,7 +98,7 @@ export interface GameSceneLifecycleOpts {
 export class GameSceneLifecycle {
   /**
    * Sprint 2.9.2 — set once the round is scored (Game Over or a quit), so a
-   * second `endRound` / `quitToMenu` (a double tap, a timer firing in the
+   * second `endRound` / `quitRound` (a double tap, a timer firing in the
    * same frame) can't count it twice: My Scores saves it for good.
    */
   private settled = false;
@@ -203,7 +204,7 @@ export class GameSceneLifecycle {
    * Called from the scene's `endRound()`. Contributes this round's
    * score to the session total and My Scores (as finished), fires
    * `RoundEnded` telemetry, stops HUD, transitions to GameOver.
-   * Quit-to-menu mid-round does NOT route through here — `quitToMenu()`
+   * Leaving mid-round does NOT route through here — `quitRound()`
    * instead. A second call (the round is already scored) does nothing.
    *
    * Sprint 2.1.9 default: uses `roundController.passed` + `.stars`
@@ -296,38 +297,34 @@ export class GameSceneLifecycle {
   }
 
   /**
-   * Called from the scene's `quitToMenu()`. Fires `RoundAbandoned`
+   * Called from the scene's `quitRound()`. Fires `RoundAbandoned`
    * telemetry, resumes tweens (so the next scene doesn't inherit
-   * paused tweens — they'd freeze its animations), starts Menu or, for
-   * the pause menu's "Change Game" (sprint 2.6.5), Game Select.
+   * paused tweens — they'd freeze its animations), then opens where the
+   * pause card said.
    *
    * Sprint 2.9.2 — the points earned so far now count: they go to the
    * "This visit" total and to My Scores as a round that ended early (if
    * the child answered at least once). The high-score store still ignores
    * unfinished rounds. A call after the round is scored does nothing.
+   *
+   * Sprint 2.15 — two places to go (there's no main menu any more): the
+   * games list this game is on (Change Game) or its setup screen (Change
+   * Math or Speed).
    */
-  quitToMenu(destination: QuitDestination = 'menu'): void {
+  quitRound(destination: QuitDestination): void {
     const { scene, gameId, mathId, speed, roundController } = this.opts;
     if (!this.settle(false, roundController.score)) return;
-    // Sprint 2.9 — 'difficulty': the pause card's Change challenge (a new
-    // challenge is already set; this game's Difficulty shows it) and, since
-    // 2.13, its Change Difficulty.
-    const target =
-      destination === 'game-select'
-        ? SceneKeys.GameSelect
-        : destination === 'difficulty'
-          ? SceneKeys.Difficulty
-          : SceneKeys.Menu;
+    const target = destination === 'setup' ? SceneKeys.MathSetup : SceneKeys.GameChooser;
     _th.logToAi('RoundAbandoned', SeverityLevel.Information, {
       gameId,
       mathId,
       speed,
       questionsCompleted: String(roundController.questionIndex),
-      // Where the player went: the menu, Game Select (pause → Change Game) or
-      // Difficulty (pause → a new challenge).
+      // Where the player went: the games list or this game's setup.
       sceneKey: target,
     });
     scene.tweens.resumeAll();
-    scene.scene.start(target);
+    if (destination === 'setup') scene.scene.start(SceneKeys.MathSetup);
+    else openGamesFor(scene, gameId);
   }
 }
