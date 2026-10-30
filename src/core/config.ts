@@ -1900,6 +1900,43 @@ export const config = {
       },
     },
     /**
+     * Sprint 2.15 — the Title Screen, the Game Chooser (subject › group ›
+     * games) and the setup screens, laid out as in the approved wireframes.
+     * Every target is at least 64 design px tall (about 32 CSS px on a phone).
+     */
+    chooser: {
+      title: {
+        /** The left column (name, line, Play, Settings) is centred here. */
+        textX: 342,
+        nameY: 232,
+        lineY: 312,
+        playY: 420,
+        settingsY: 516,
+        buttonW: 320,
+        playH: 84,
+        settingsH: 72,
+        /** The art on the right. */
+        art: { x: 944, y: 360, size: 600 },
+      },
+      /** Back · title · My Scores · Settings · mute, on every chooser and setup screen. */
+      topBar: { y: 52, h: 64, sidePadPx: 28, backW: 150, scoresW: 200, iconW: 64, gapPx: 14 },
+      /** The "where you are" chips under the title. */
+      trail: { y: 126, h: 48, padX: 22, gapPx: 12 },
+      /** The tiles sit between here and `bottom` (the screen tag goes under). */
+      content: { top: 168, topNoTrail: 108, bottom: 676 },
+      subjects: { cellW: 344, cellH: 470, gapX: 36, gapY: 0, perRow: 3 },
+      groups: { cellW: 460, cellH: 450, gapX: 44, gapY: 0, perRow: 2 },
+      /** Game and puzzle tiles: 4 to a row; one row is taller. */
+      games: { cellW: 272, cellH: 300, cellH2Rows: 236, gapX: 24, gapY: 22, perRow: 4 },
+      /** Pictures on the tiles (96 px sheet frames). */
+      picturePx: { subject: 96, group: 96, game: 96, puzzle: 84 },
+      /** Gaps inside a tile, top to bottom. */
+      tileGapPx: 12,
+      tilePadPx: 20,
+      /** A tile swap fades the tiles in. */
+      swapFadeMs: 160,
+    },
+    /**
      * Sprint 2.9.2 — My Scores. Only the list (between `list.top` and
      * `list.bottom`) scrolls; the heading, tabs, total, date, note and Back
      * stay put. About 8 rows show at once.

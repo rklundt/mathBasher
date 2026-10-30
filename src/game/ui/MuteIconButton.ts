@@ -26,14 +26,20 @@ import { getAudioManager } from '@/services/audioManagerFactory';
  * already muted at the moment of activation, the visual flip is the
  * confirmation).
  */
-export function createMuteIconButton(scene: Phaser.Scene, centerX: number, centerY: number): IconButtonInstance {
+export function createMuteIconButton(
+  scene: Phaser.Scene,
+  centerX: number,
+  centerY: number,
+  /** Sprint 2.15 — the chooser's top bar uses a bigger, square one. */
+  size: { width: number; height: number } = { width: 44, height: 36 },
+): IconButtonInstance {
   const audio = getAudioManager();
   return createIconButton({
     scene,
     x: centerX,
     y: centerY,
-    width: 44,
-    height: 36,
+    width: size.width,
+    height: size.height,
     baseFill: MUTE_ICON_BG,
     hoverFill: MUTE_ICON_HOVER,
     render: (container) => {

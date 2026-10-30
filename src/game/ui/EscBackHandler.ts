@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import type Phaser from 'phaser';
+import { SceneKeys } from '@/core/sceneKeys';
 
 /**
  * Wires Esc on a menu scene to a "go back" callback, with paired cleanup on
@@ -24,7 +25,12 @@ export function wireEscBack(scene: Phaser.Scene, onBack: () => void): void {
     // Test environments may lack the keyboard plugin.
     return;
   }
-  const handler = (): void => onBack();
+  // Sprint 2.15 — Settings opens over the chooser and setup screens; its Esc
+  // closes Settings only, not this screen too (Phaser sends keys to both).
+  const handler = (): void => {
+    if (scene.scene.key !== SceneKeys.Settings && scene.scene.isActive(SceneKeys.Settings)) return;
+    onBack();
+  };
   scene.input.keyboard.on('keydown-ESC', handler);
 
   const cleanup = (): void => {

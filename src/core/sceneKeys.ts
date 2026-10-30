@@ -30,6 +30,11 @@ export const SceneKeys = {
    * from a small avatar-tap in MenuScene's corner.
    */
   HeroChooser: 'hero-chooser',
+  /**
+   * Sprint 2.15 — the Title Screen: Play (the Game Chooser) and Settings.
+   * It replaced the main menu (`Menu`).
+   */
+  Title: 'title',
   Menu: 'menu',
   GameSelect: 'game-select',
   Difficulty: 'difficulty',

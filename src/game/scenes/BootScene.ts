@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
+import { config } from '@/core/config';
 import { AUDIO_MANIFEST } from '@/core/audioKeys';
 import {
   ALIEN_SPRITE_KEYS,
@@ -218,7 +219,11 @@ export class BootScene extends Phaser.Scene {
     // this. ?autostart still flows through Menu (the dev shortcut is
     // exercised after the picker, not before — flagging here in case
     // future work needs to override).
-    const nextScene = Settings.getChosenHero() === null ? SceneKeys.HeroChooser : SceneKeys.Menu;
+    //
+    // Sprint 2.15 — the avatar is paused (`config.features.avatar`): no
+    // picker, straight to the Title Screen.
+    const pickHero = config.features.avatar && Settings.getChosenHero() === null;
+    const nextScene = pickHero ? SceneKeys.HeroChooser : SceneKeys.Title;
     this.scene.start(nextScene);
 
     _th.logToAi('BootScene Completed', SeverityLevel.Information);

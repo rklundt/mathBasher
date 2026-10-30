@@ -147,7 +147,7 @@ export class HeroChooserScene extends Phaser.Scene {
       // Ignored while a pick's pop-and-transition is in flight, so the
       // only transition after a pick is the one the pop started.
       wireEscBack(this, () => {
-        if (!this.picking) this.scene.start(SceneKeys.Menu);
+        if (!this.picking) this.scene.start(SceneKeys.Title);
       });
       new PlaceholderButton({
         scene: this,
@@ -159,7 +159,7 @@ export class HeroChooserScene extends Phaser.Scene {
         onClick: () => {
           if (this.picking) return;
           emitButtonClicked('HeroChooser:Back', this.scene.key, 'pointer');
-          this.scene.start(SceneKeys.Menu);
+          this.scene.start(SceneKeys.Title);
         },
       });
     }
@@ -244,7 +244,7 @@ export class HeroChooserScene extends Phaser.Scene {
       scale: { from: 1, to: PICK_POP_SCALE },
       duration: PICK_POP_DURATION_MS,
       ease: 'Back.Out',
-      onComplete: () => this.scene.start(SceneKeys.Menu),
+      onComplete: () => this.scene.start(SceneKeys.Title),
     });
   }
 }

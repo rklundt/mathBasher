@@ -791,6 +791,12 @@ export const PUZZLE_BACKDROP_KEYS: Readonly<Record<RoundPuzzleId, readonly strin
   'symbol-hunt': ['puzzle-symbol-hunt-1', 'puzzle-symbol-hunt-2', 'puzzle-symbol-hunt-3'],
 };
 /**
+ * Sprint 2.15 — the Title Screen's art (a girl with a blaster and an alien
+ * pal, `Title-Splash-1`), cut down to 768 px. Boot-loaded: it's the first
+ * screen.
+ */
+export const TITLE_ART_KEY = 'title-splash-1';
+/**
  * Sprint 2.13.1 — the Game Select tile pictures: one 96 px frame per math
  * game, cut from each game's own art by `scripts/sprites/game-icons.mjs`
  * (its `ORDER` must match `frames`; a test checks). Boot-loaded (≈40 KB):
@@ -1589,6 +1595,8 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameHeight: GAME_ICON_SHEET.frame,
     scope: 'eager',
   },
+  // Sprint 2.15 — the Title Screen's art. Eager: it's the first screen.
+  { kind: 'bg', key: TITLE_ART_KEY, url: spritePath('bg', TITLE_ART_KEY), scope: 'eager' },
   // Sprint 2.14 — the picker's puzzle tile pictures, boot-loaded.
   {
     kind: 'hero',
