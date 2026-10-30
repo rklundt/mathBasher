@@ -82,7 +82,12 @@ export type TelemetryPropName =
   | 'theme'
   | 'boardSize'
   | 'turns'
-  | 'newBest';
+  | 'newBest'
+  // Sprint 2.14 — the puzzle pack: the level ("easy" | "medium" | "hard"),
+  // a round's first-try answers and its stars (both stringified).
+  | 'level'
+  | 'firstTry'
+  | 'stars';
 
 /**
  * Strongly-typed telemetry props. Limits keys to the documented reserved set so

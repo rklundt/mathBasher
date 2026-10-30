@@ -7,6 +7,8 @@ import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
 import { isMathGameId, type MathGameId } from '@/core/gameIds';
+import { GAME_GROUPS, gameGroupById, gameGroupOf, type GameGroupId } from '@/core/gameGroups';
+import { GAME_ICON_SHEET } from '@/core/spriteKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
@@ -18,12 +20,47 @@ import { createChallengeChip } from '@/game/ui/ChallengeChip';
 import type { ChallengePickerInit } from '@/game/services/challengeSelection';
 
 /**
- * Game-mode selection: "Pick a game!", the challenge chip (sprint 2.9:
- * the challenge is picked first and stays put while you hop between games),
- * and nine tiles in a 3 × 3 grid (sprint 2.12).
+ * Each game's tile: its name and one line about it. Alien Shoot (the
+ * original lane-drop gameplay), Asteroid Field (sprint 2.1 free-aim), Space
+ * Escape! (sprint 2.2 climb), Math-a-lotl (sprint 2.5.4 underwater bubbles),
+ * Frog Splash (sprint 2.5.6 river hop), Space Shooter (sprint 2.6 cockpit
+ * window), Penguin Slide (sprint 2.7 snowy hill), Bunny Garden (sprint 2.8
+ * carrot patch) and Balance Scale (sprint 2.12 missing numbers on a scale).
+ */
+const TILES: Readonly<Record<MathGameId, { label: string; subtitle: string }>> = {
+  'alien-shoot': { label: 'Alien Shoot', subtitle: 'Aliens carry answers. Shoot the right one.' },
+  'asteroid-field': { label: 'Asteroid Field', subtitle: 'Aim at floating asteroids. Beat the timer.' },
+  'number-climb': { label: 'Space Escape!', subtitle: 'Climb to escape the burning station.' },
+  'math-a-lotl': { label: 'Math-a-lotl', subtitle: 'Help the axolotl catch the right bubble.' },
+  'frog-splash': { label: 'Frog Splash', subtitle: 'Hop across the river on the right lily pads.' },
+  'space-shooter': { label: 'Space Shooter', subtitle: 'From your cockpit, blast the right alien ship.' },
+  'penguin-slide': { label: 'Penguin Slide', subtitle: 'Slide down and catch the right fish.' },
+  'bunny-garden': { label: 'Bunny Garden', subtitle: 'Tap the carrot with the right answer.' },
+  'balance-scale': { label: 'Balance Scale', subtitle: 'Find the missing number that balances the scale.' },
+};
+
+/**
+ * Game-mode selection: "Pick a game!", the challenge chip (sprint 2.9: the
+ * challenge is picked first and stays put while you hop between games), and
+ * the games.
+ *
+ * Sprint 2.13.1 — the games sit in two tabs (`core/gameGroups.ts`): **Math
+ * Basher** (the space and arcade games) and **Math Fun** (the cute ones).
+ * Tapping a tab swaps the tiles below in place, like the challenge picker's
+ * subject tabs. Each tile shows the game's picture (`GAME_ICON_SHEET`). The
+ * scene opens on the tab picked last this visit, else on the current game's.
  */
 export class GameSelectScene extends Phaser.Scene {
   static readonly key = SceneKeys.GameSelect;
+
+  /** The tab picked last; kept on the scene, so it lasts until the page reloads. */
+  private groupId: GameGroupId | null = null;
+  private chip!: PlaceholderButton;
+  private tabs: PlaceholderButton[] = [];
+  private backButton!: PlaceholderButton;
+  /** The game tiles (rebuilt on a tab swap). */
+  private tiles: PlaceholderButton[] = [];
+  private nav?: KeyboardNavigator;
 
   constructor() {
     super(GameSelectScene.key);
@@ -32,15 +69,20 @@ export class GameSelectScene extends Phaser.Scene {
   create(): void {
     setupScene(this);
     // Sprint 2.13 — back from a puzzle: the math games' default backdrop, not the puzzle's.
-    if (!isMathGameId(Settings.round.gameId)) Settings.setGameId('alien-shoot');
+    const current = Settings.round.gameId;
+    if (!isMathGameId(current)) Settings.setGameId('alien-shoot');
+    const currentGame: MathGameId = isMathGameId(current) ? current : 'alien-shoot';
+    this.groupId ??= gameGroupOf(currentGame).id;
+    this.tiles = [];
+    this.nav = undefined;
 
-    const { width, height } = this.scale;
+    const { width } = this.scale;
     const cx = width / 2;
 
     const L = config.layout.challengeFlow.gameSelect;
     text(this, cx, L.headingY, 'Pick a game!', 'h2').setOrigin(0.5);
     // Sprint 2.9 — the challenge chip: tap to swap the challenge, then back here.
-    const chip = createChallengeChip(this, cx, L.chipY, () => {
+    this.chip = createChallengeChip(this, cx, L.chipY, () => {
       const init: ChallengePickerInit = {
         next: SceneKeys.GameSelect,
         back: SceneKeys.GameSelect,
@@ -53,74 +95,95 @@ export class GameSelectScene extends Phaser.Scene {
     // the affordance is in the same spot every screen.
     createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
-    // Sprint 2.12 — nine games in a 3 × 3 grid (sprint 2.8 had two rows of
-    // four). Tiles 360 × 104: wide enough that the subtitles fit in two lines,
-    // tall enough to tap on a phone.
-    const slots = computeGridSlots(cx, L.grid.firstRowY, 9, L.grid);
-    let slotIndex = 0;
-    const tile = (label: string, subtitle: string, gameId: MathGameId): PlaceholderButton => {
-      const s = slots[slotIndex++];
+    // One tab per game group; the open one is ringed.
+    this.tabs = GAME_GROUPS.map(
+      (g, i) =>
+        new PlaceholderButton({
+          scene: this,
+          x: cx + (i - (GAME_GROUPS.length - 1) / 2) * (L.tab.w + L.tab.gapX),
+          y: L.tabY,
+          width: L.tab.w,
+          height: L.tab.h,
+          label: g.label,
+          selected: g.id === this.groupId,
+          onClick: () => this.showGroup(g.id),
+        }),
+    );
+
+    const goBack = (): void => {
+      this.scene.start(SceneKeys.Menu);
+    };
+    this.backButton = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y: L.backY,
+      width: config.layout.challengeFlow.backButton.w,
+      height: config.layout.challengeFlow.backButton.h,
+      label: 'Back',
+      onClick: goBack,
+    });
+
+    this.buildTiles(false, currentGame);
+
+    // Esc returns to the previous step in the menu stack.
+    wireEscBack(this, goBack);
+  }
+
+  /** Swap the tab: the tiles below change in place (with a quick fade-in, so the change is noticed). */
+  private showGroup(id: GameGroupId): void {
+    if (id === this.groupId) return;
+    this.groupId = id;
+    this.tabs.forEach((tab, i) => tab.setSelected(GAME_GROUPS[i].id === id));
+    this.buildTiles(true, null);
+  }
+
+  /** This tab's tiles in two rows, then the Tab order: chip, tabs, tiles, Back. */
+  private buildTiles(fade: boolean, focusGame: MathGameId | null): void {
+    this.nav?.destroy();
+    for (const tile of this.tiles) tile.destroy();
+
+    const L = config.layout.challengeFlow.gameSelect;
+    const group = gameGroupById(this.groupId ?? GAME_GROUPS[0].id);
+    const perRow = Math.ceil(group.games.length / L.grid.rows);
+    const slots = computeGridSlots(this.scale.width / 2, L.grid.firstRowY, group.games.length, {
+      ...L.grid,
+      perRow,
+    });
+    this.tiles = group.games.map((gameId, i) => {
+      const s = slots[i];
       return new PlaceholderButton({
         scene: this,
         x: s.x,
         y: s.y,
         width: s.width,
         height: s.height,
-        label,
-        subtitle,
+        label: TILES[gameId].label,
+        subtitle: TILES[gameId].subtitle,
+        icon: {
+          key: GAME_ICON_SHEET.key,
+          frame: GAME_ICON_SHEET.frames[gameId],
+          sizePx: L.icon.sizePx,
+          padPx: L.icon.padPx,
+        },
         onClick: () => {
           Settings.setGameId(gameId);
           this.scene.start(SceneKeys.Difficulty);
         },
       });
-    };
-
-    // Alien Shoot (the original lane-drop gameplay), Asteroid Field
-    // (sprint 2.1 free-aim), Space Escape! (sprint 2.2 climb), Math-a-lotl
-    // (sprint 2.5.4 underwater bubbles), Frog Splash (sprint 2.5.6 river
-    // hop), Space Shooter (sprint 2.6 cockpit window), Penguin Slide
-    // (sprint 2.7 snowy hill), Bunny Garden (sprint 2.8 carrot patch) and
-    // Balance Scale (sprint 2.12 missing numbers on a scale).
-    const alienShoot = tile('Alien Shoot', 'Aliens carry answers. Shoot the right one.', 'alien-shoot');
-    const asteroidField = tile('Asteroid Field', 'Aim at floating asteroids. Beat the timer.', 'asteroid-field');
-    const numberClimb = tile('Space Escape!', 'Climb to escape the burning station.', 'number-climb');
-    const mathALotl = tile('Math-a-lotl', 'Help the axolotl catch the right bubble.', 'math-a-lotl');
-    const frogSplash = tile('Frog Splash', 'Hop across the river on the right lily pads.', 'frog-splash');
-    const spaceShooter = tile('Space Shooter', 'From your cockpit, blast the right alien ship.', 'space-shooter');
-    const penguinSlide = tile('Penguin Slide', 'Slide down and catch the right fish.', 'penguin-slide');
-    const bunnyGarden = tile('Bunny Garden', 'Tap the carrot with the right answer.', 'bunny-garden');
-    const balanceScale = tile('Balance Scale', 'Find the missing number that balances the scale.', 'balance-scale');
-
-    const back = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: height * 0.85,
-      width: 200,
-      height: 56,
-      label: 'Back',
-      onClick: () => this.scene.start(SceneKeys.Menu),
     });
 
-    // The chip is first in Tab order, but focus lands on the first game.
-    new KeyboardNavigator(
-      this,
-      [
-        chip,
-        alienShoot,
-        asteroidField,
-        numberClimb,
-        mathALotl,
-        frogSplash,
-        spaceShooter,
-        penguinSlide,
-        bunnyGarden,
-        balanceScale,
-        back,
-      ],
-      { initialIndex: 1 },
-    );
+    // The chip and tabs come first in Tab order, but focus lands on a game:
+    // the current one when it's in this tab, else the first.
+    const order = [this.chip, ...this.tabs, ...this.tiles, this.backButton];
+    const focusAt = focusGame === null ? -1 : group.games.indexOf(focusGame);
+    const initialIndex = 1 + this.tabs.length + Math.max(0, focusAt);
+    this.nav = new KeyboardNavigator(this, order, { initialIndex });
 
-    // Esc returns to the previous step in the menu stack.
-    wireEscBack(this, () => this.scene.start(SceneKeys.Menu));
+    if (fade) {
+      for (const tile of this.tiles) {
+        tile.setAlpha(0);
+        this.tweens.add({ targets: tile, alpha: 1, duration: L.swapFadeMs, ease: 'Sine.Out' });
+      }
+    }
   }
 }

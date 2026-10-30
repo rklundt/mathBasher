@@ -66,6 +66,21 @@ describe('ScoreLedger', () => {
     expect(ledger.since()).toBe('2026-10-23');
   });
 
+  it('puzzles are recorded too, under Puzzles after Math, in picker order', () => {
+    const ledger = new ScoreLedger(new InMemoryStorage(), () => oct23);
+    ledger.record('copy-cat', 900, true);
+    ledger.record('add-to-10', 1200, true);
+    ledger.record('pair-pals', 3600, true);
+    ledger.record('pair-pals', 0, false);
+
+    const today = ledger.today();
+    expect(today.points).toBe(5700);
+    expect(today.subjects.map((s) => s.subject.id)).toEqual(['math', 'puzzles']);
+    expect(today.subjects[1].points).toBe(4500);
+    expect(today.subjects[1].challenges.map((c) => c.id)).toEqual(['pair-pals', 'copy-cat']);
+    expect(today.subjects[1].challenges[0].tally).toEqual({ points: 3600, finished: 1, unfinished: 1 });
+  });
+
   it('Today starts at local midnight; All-Time keeps every day', () => {
     const c = clock(new Date(2026, 9, 22, 23, 59));
     const ledger = new ScoreLedger(new InMemoryStorage(), c.now);

@@ -1266,6 +1266,14 @@ export const config = {
     flipLiftScale: 1.06,
     /** A miss stays up this long so it can be remembered (a tap skips it); owner: 1.2 s → 2.2 s, 2026-10-26. */
     missHoldMs: 2200,
+    /**
+     * Owner (2026-10-28): a win is worth up to a whole Add to 10 round at the
+     * same difficulty (`services/puzzlePoints.ts`). Full points in at most
+     * `fullTurnsPerCard` × the cards in turns; past that, every
+     * `stepShareOfCards` of the cards in extra turns (rounded up, the
+     * player's way) takes `dropPerStep` off. 30 cards: 33 turns = 90 %.
+     */
+    points: { fullTurnsPerCard: 1, stepShareOfCards: 0.1, dropPerStep: 0.1 },
     missWiggleDeg: 4,
     matchPopScale: 1.14,
     matchPopMs: 220,
@@ -1294,6 +1302,346 @@ export const config = {
       startW: 240,
       backW: 200,
       buttonH: 72,
+    },
+  },
+  /**
+   * Sprint 2.14 — the puzzle pack (Pattern Train, Missing Piece, Odd One
+   * Out, Magic Wand, Spin Match, Copy Cat, Symbol Hunt): rounds of 8 puzzles,
+   * no lives or points; first-try answers fill the progress bar gold and
+   * earn the stars. Art from `scripts/sprites/puzzles.mjs` (the shapes and
+   * colours below mirror its `SHAPES` / `COLOURS`; a test checks them).
+   */
+  puzzles: {
+    perRound: 8,
+    /** Choices in the tray (Odd One Out: items on the shelf). */
+    choices: { easy: 3, medium: 4, hard: 5 },
+    /** Green answers for ★★★ and ★★ (fewer: ★). */
+    stars: { three: 8, two: 6 },
+    /**
+     * Each puzzle's step on the progress bar (owner, 2026-10-26): green = right
+     * first try (and, on a timed puzzle, in the first `greenShare` of its
+     * time); yellow = right after a miss or two, or slower; red = `maxMisses`
+     * misses or the time runs out, and the round moves on with the answer shown.
+     */
+    steps: { maxMisses: 3, greenShare: 0.5, redHoldMs: 1700 },
+    /**
+     * Owner (2026-10-28): points, measured against an Add to 10 round at the
+     * same difficulty (`services/puzzlePoints.ts`). A puzzle round is worth
+     * up to `roundShare` of one. The speed bonus is math's
+     * (`scoring.speedBonus`); the untimed puzzles count it against
+     * `speedSeconds`, Copy Cat against `copyCatSecondsPerTap` per tap of
+     * the sequence (from "Your turn!").
+     */
+    points: {
+      roundShare: 0.5,
+      speedSeconds: { 'missing-piece': 30, 'magic-wand': 30, 'spin-match': 30 },
+      copyCatSecondsPerTap: 4,
+    },
+    /**
+     * Owner (2026-10-28, focus group): more going on in the background
+     * (`game/ui/puzzleAmbience.ts`): floating bubbles and stars, twinkles,
+     * a slow drift and zoom on the backdrop. Pair Pals too.
+     */
+    ambience: {
+      floaters: 14,
+      /** The rest are bubbles. */
+      starShare: 0.3,
+      sizePx: [22, 52],
+      alpha: [0.3, 0.6],
+      riseSecs: [14, 26],
+      swayPx: 40,
+      twinkleEveryMs: 1100,
+      tints: [0xffc21a, 0xff6fa8, 0x9b6bff, 0x37c3ff, 0x4ade80],
+      drift: { scaleFrom: 1.04, scaleTo: 1.1, panPx: 20, ms: 16000 },
+    },
+    /** Seconds per puzzle for the timed ones (Symbol Hunt's are in `symbolHunt.seconds`). */
+    timed: {
+      'pattern-train': { easy: 20, medium: 25, hard: 30 },
+      'odd-one-out': { easy: 15, medium: 18, hard: 22 },
+    },
+    shapes: [
+      'circle',
+      'square',
+      'triangle',
+      'star',
+      'heart',
+      'diamond',
+      'hexagon',
+      'moon',
+      'drop',
+      'cloud',
+      'flower',
+      'pentagon',
+    ],
+    shapeLabels: {
+      circle: 'circles',
+      square: 'squares',
+      triangle: 'triangles',
+      star: 'stars',
+      heart: 'hearts',
+      diamond: 'diamonds',
+      hexagon: 'hexagons',
+      moon: 'moons',
+      drop: 'drops',
+      cloud: 'clouds',
+      flower: 'flowers',
+      pentagon: 'pentagons',
+    },
+    /** Shapes that look different when turned a quarter (turn rules use only these). */
+    turnable: ['triangle', 'heart', 'moon', 'drop', 'cloud', 'pentagon'],
+    /**
+     * Shapes with corners vs round ones (Odd One Out: one round shape among
+     * cornered ones). Owner: only shapes that are plainly round count; the
+     * drop has a point and the cloud has two bottom corners.
+     */
+    cornered: ['square', 'triangle', 'star', 'diamond', 'hexagon', 'pentagon'],
+    round: ['circle', 'flower'],
+    colours: ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'],
+    colourLabels: {
+      red: 'red',
+      orange: 'orange',
+      yellow: 'yellow',
+      green: 'green',
+      teal: 'teal',
+      blue: 'blue',
+      purple: 'purple',
+      pink: 'pink',
+    },
+    hats: ['party', 'bow', 'crown', 'glasses', 'cap', 'flower', 'tophat', 'headphones'],
+    /** Spin Match's 16 lopsided shapes as grid cells [col, row] (mirrors SPIN_CELLS in puzzles.mjs). */
+    spinCells: [
+      [
+        [1, 0],
+        [2, 0],
+        [0, 1],
+        [1, 1],
+        [1, 2],
+      ],
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [1, 3],
+      ],
+      [
+        [1, 0],
+        [1, 1],
+        [0, 2],
+        [1, 2],
+        [0, 3],
+      ],
+      [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [0, 2],
+      ],
+      [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [1, 2],
+        [1, 3],
+      ],
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [2, 2],
+      ],
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [1, 3],
+        [2, 3],
+      ],
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [1, 3],
+        [2, 3],
+      ],
+      [
+        [0, 0],
+        [0, 1],
+        [1, 1],
+        [1, 2],
+        [2, 2],
+        [2, 3],
+      ],
+      [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [2, 1],
+        [2, 2],
+        [2, 3],
+      ],
+      [
+        [0, 0],
+        [1, 0],
+        [2, 0],
+        [0, 1],
+        [0, 2],
+        [1, 2],
+      ],
+      [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [1, 2],
+        [2, 2],
+      ],
+      [
+        [1, 0],
+        [1, 1],
+        [0, 2],
+        [1, 2],
+        [2, 2],
+        [2, 3],
+      ],
+      [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [2, 0],
+        [3, 0],
+      ],
+      [
+        [0, 1],
+        [0, 2],
+        [1, 1],
+        [2, 0],
+        [2, 1],
+        [3, 1],
+      ],
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 1],
+        [2, 1],
+      ],
+    ],
+    spinColours: 4,
+    /** The shared setup screen ("Pattern Train: how tough?"). */
+    setup: { headingY: 70, introY: 150, tileY: 300, tile: { w: 280, h: 120, gapX: 34 }, bestY: 420, buttonsY: 600 },
+    /** The setup screen's line under each level, per puzzle. */
+    levelNotes: {
+      'pattern-train': { easy: 'Short patterns', medium: 'Longer patterns', hard: 'Two patterns at once' },
+      'missing-piece': {
+        easy: 'Shape and colour',
+        medium: 'Turns, how many and size',
+        hard: 'Wide windows, two rules',
+      },
+      'odd-one-out': { easy: 'Shape or colour', medium: 'Size, corners, how many', hard: 'Kinds and flips' },
+      'magic-wand': { easy: 'Size and colour', medium: 'Shape, turns, how many', hard: 'Two changes at once' },
+      'spin-match': { easy: 'Spot the same shape', medium: 'Watch for mirrors', hard: 'All look alike' },
+      'copy-cat': { easy: '4 animals, from 2 sounds', medium: '5 animals, from 3', hard: '6 animals, from 4' },
+      'symbol-hunt': { easy: '12 cards', medium: '18 cards, look-alikes', hard: '24 cards, all look-alikes' },
+    },
+    layout: {
+      topBar: { height: 66, y: 33 },
+      progress: { y: 92, width: 560, height: 20, gap: 8 },
+      prompt: { y: 140, heightPx: 52 },
+      /** The puzzle itself sits between these. */
+      stage: { top: 176, bottom: 500 },
+      tray: { y: 604, cardPx: 128, gapPx: 24, panelPad: 22 },
+      /** The sand bar of a timed puzzle (Pattern Train, Odd One Out), along the bottom between the dancers. */
+      sand: { y: 706, width: 740, height: 12 },
+      /** Two dancing animals at the bottom corners. */
+      dancers: [
+        { x: 104, bottomY: 742, scale: 0.78 },
+        { x: 1176, bottomY: 742, scale: 0.78 },
+      ],
+    },
+    /**
+     * A token's two sizes (scale of its frame): small, big. Owner
+     * (2026-10-26): only two, about half and full, so a kid can tell them
+     * apart at a glance. Every token is big unless a rule makes it small.
+     * 2026-10-28: big grew into the card's margin (0.9 → 1.04) so the
+     * difference is plain for the youngest.
+     */
+    sizeScales: [0.46, 1.04],
+    timings: {
+      popInMs: 220,
+      popStaggerMs: 60,
+      wrongWiggleMs: 70,
+      rightHoldMs: 1100,
+      backdropFadeMs: 600,
+      swayMs: 2600,
+      swayDeg: 5,
+      dancerSwapEvery: 3,
+      /** Between a dancer's little idle hops (ms, random in the range). */
+      dancerIdleMs: [2200, 4800],
+      endPanelDelayMs: 700,
+    },
+    /** Pattern Train: cars shown before the "?" car. */
+    patternTrain: { cars: { easy: 5, medium: 6, hard: 6 } },
+    /**
+     * Missing Piece: the window is 3 rows of `cols` panes. Owner
+     * (2026-10-28): the old Hard puzzles are Medium now, a column wider;
+     * Hard is 4–6 columns (picked per puzzle) with two rules at once.
+     */
+    missingPiece: { rows: 3, cols: { easy: [3, 3], medium: [4, 4], hard: [4, 6] } },
+    /** Odd One Out: items on the shelf (one is odd). */
+    oddOneOut: { items: { easy: 4, medium: 4, hard: 5 } },
+    copyCat: {
+      pads: { easy: 4, medium: 5, hard: 6 },
+      startLength: { easy: 2, medium: 3, hard: 4 },
+      /** Pair Pals' cute animals (frames) that sit on the pads, in pad order. */
+      animals: [7, 5, 6, 19, 12, 2],
+      litMs: 600,
+      gapMs: 260,
+      /** After a turn, before the next sequence plays. */
+      betweenMs: 900,
+    },
+    symbolHunt: {
+      // Owner (2026-10-28, focus group): Hard wasn't hard enough: a column more (7 → 8).
+      cards: { easy: 12, medium: 18, hard: 24 },
+      cols: { easy: 4, medium: 6, hard: 8 },
+      targets: { easy: [2, 3], medium: [3, 4], hard: [3, 5] },
+      seconds: { easy: 40, medium: 40, hard: 45 },
+      /** Share of the other cards that are look-alikes (the sign's shape in another colour, or its colour on another shape). */
+      lookalikes: { easy: 0, medium: 0.45, hard: 1 },
+      /** Share of the look-alikes that are near ones: a neighbouring colour, or a similar shape (below). */
+      near: { easy: 0, medium: 0, hard: 0.6 },
+      /** Colours that sit close together. */
+      nearColours: {
+        red: ['orange', 'pink'],
+        orange: ['red', 'yellow'],
+        yellow: ['orange'],
+        green: ['teal'],
+        teal: ['green', 'blue'],
+        blue: ['teal', 'purple'],
+        purple: ['blue', 'pink'],
+        pink: ['red', 'purple'],
+      },
+      /** Shapes that look alike at a glance. */
+      nearShapes: {
+        circle: ['flower', 'hexagon'],
+        square: ['diamond', 'hexagon'],
+        triangle: ['diamond', 'drop'],
+        star: ['flower'],
+        heart: ['drop'],
+        diamond: ['square', 'triangle'],
+        hexagon: ['pentagon', 'circle'],
+        moon: ['drop'],
+        drop: ['heart', 'moon'],
+        cloud: ['flower'],
+        flower: ['circle', 'star'],
+        pentagon: ['hexagon'],
+      },
     },
   },
   /**
@@ -1478,18 +1826,31 @@ export const config = {
         gridTopY: 230,
         backY: 610,
         /** Sprint 2.13 — the Puzzles tab's game tiles (two across). */
-        puzzleGrid: { firstRowY: 360, cellW: 340, cellH: 150, gapX: 28, gapY: 16, perRow: 2 },
+        puzzleGrid: { firstRowY: 290, cellW: 292, cellH: 132, gapX: 14, gapY: 16, perRow: 4 },
+        /** The picture on each puzzle tile (sprint 2.14). */
+        puzzleIcon: { sizePx: 84, padPx: 10 },
         /** A tab swap fades the buttons below in. */
         swapFadeMs: 160,
       },
       backButton: { w: 220, h: 72 },
       /** "Challenge: Add to 10 🔄" on Game Select and Difficulty. */
       chip: { w: 440, h: 72 },
-      /** Sprint 2.12 — nine games: a 3 × 3 grid (five across left phone tiles too narrow). */
+      /**
+       * Sprint 2.13.1 — the games in two tabs (Math Basher, Math Fun; see
+       * `core/gameGroups.ts`), each tab's tiles in two rows (4 → 2 + 2,
+       * 5 → 3 + 2). A tile shows the game's picture on its left.
+       */
       gameSelect: {
-        headingY: 86,
-        chipY: 172,
-        grid: { firstRowY: 268, cellW: 360, cellH: 104, gapX: 12, gapY: 12, perRow: 3 },
+        headingY: 50,
+        chipY: 128,
+        tabY: 212,
+        tab: { w: 240, h: 60, gapX: 16 },
+        grid: { firstRowY: 334, cellW: 390, cellH: 150, gapX: 16, gapY: 16, rows: 2 },
+        /** The picture on each tile: its size and the space around it. */
+        icon: { sizePx: 92, padPx: 12 },
+        backY: 636,
+        /** A tab swap fades the tiles in. */
+        swapFadeMs: 160,
       },
       difficulty: {
         headingY: 58,
@@ -1602,6 +1963,11 @@ export type MathId = keyof typeof config.scoring.mathDifficulty;
 /** Sprint 2.13 — a Pair Pals card theme and board size. */
 export type PairPalsTheme = (typeof config.pairPals.themes)[number];
 export type PairPalsSize = keyof typeof config.pairPals.sizes;
+/** Sprint 2.14 — a puzzle level (the puzzle pack and Pair Pals share the three). */
+export type PuzzleLevel = keyof typeof config.puzzles.choices;
+export type PuzzleShape = (typeof config.puzzles.shapes)[number];
+export type PuzzleColour = (typeof config.puzzles.colours)[number];
+export type PuzzleHat = (typeof config.puzzles.hats)[number];
 
 /** Sprint 2.5.7 — time-limit multiplier for a math type (1 = as configured per difficulty). */
 export function mathTimeScale(mathId: MathId | null): number {

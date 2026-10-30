@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PairPalsSize, type PairPalsTheme } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
+import { openPuzzlePicker } from '@/game/services/challengeSelection';
 import {
   PAIR_PALS_BACKDROP_KEYS,
   PAIR_PALS_PICTURE_KEYS,
@@ -16,6 +17,10 @@ import { PAIR_PALS_MUSIC, pickPairPalsMatchSfx, pickPairPalsMissSfx, pickTileFli
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
 import { getPairPalsProgress, type GameResult } from '@/services/PairPalsProgress';
+import { pairPalsPoints } from '@/services/puzzlePoints';
+import { SessionTotalScore } from '@/services/SessionTotalScore';
+import { getMyScores } from '@/services/MyScores';
+import { formatPoints } from '@/services/challengePoints';
 import {
   boardLayout,
   deal,
@@ -28,6 +33,7 @@ import {
   type Direction,
 } from '@/game/systems/pairPalsMath';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { PuzzleAmbience, driftBackdrop } from '@/game/ui/puzzleAmbience';
 import { loadAudioOnDemand, loadGameBundle } from '@/game/services/assetLoader';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline, createTapHint, type TapHint } from '@/game/ui/callouts';
@@ -46,7 +52,7 @@ interface CardView {
   readonly ring: Phaser.GameObjects.Graphics;
 }
 
-const Z = { board: 10, focus: 12, mascot: 8, bar: 20, hint: 30, panel: 40 };
+const Z = { ambience: 2, board: 10, focus: 12, mascot: 8, bar: 20, hint: 30, panel: 40 };
 
 /** "You found all 6 pairs in 9 turns!" and what it did to the best. */
 export function winLines(pairs: number, result: GameResult): [string, string] {
@@ -59,9 +65,10 @@ export function winLines(pairs: number, result: GameResult): [string, string] {
 /**
  * Sprint 2.13 — Pair Pals, the first puzzle game: a memory-match board.
  * Turn two cards per turn; a pair stays up, a miss shows long enough to
- * remember and turns back (a tap skips the wait). No points, timer or
- * lives: the top bar counts turns and pairs; the win panel shows the turns
- * and the best for this size (`PairPalsProgress`).
+ * remember and turns back (a tap skips the wait). No timer or lives: the
+ * top bar counts turns and pairs; the win panel shows the turns, the best
+ * for this size (`PairPalsProgress`) and (sprint 2.14) the points, fewer
+ * the more turns past one per card (`services/puzzlePoints.ts`).
  *
  * The rules are `pairPalsMath.ts` (pure, tested); this scene animates them.
  * It doesn't use HudScene or GameSceneLifecycle (no questions or points):
@@ -88,6 +95,8 @@ export class PairPalsScene extends Phaser.Scene {
   private lockedUntil = 0;
   private paused = false;
   private won = false;
+  /** The game's points are counted (a win or leaving); never twice. */
+  private settled = false;
   /** Esc that resumed the pause card mustn't pause again in the same key press. */
   private resumedAt = 0;
   /** The track this game plays (null once the scene has shut down). */
@@ -113,12 +122,15 @@ export class PairPalsScene extends Phaser.Scene {
     this.lockedUntil = 0;
     this.paused = false;
     this.won = false;
+    this.settled = false;
     this.holdTimer = undefined;
 
     const { cols, rows } = this.cfg.sizes[this.size];
     this.board = newBoard(deal(cols, rows, this.cfg.picturesPerTheme, this.cfg.twinGroups[this.theme]));
 
-    this.add.image(0, 0, PAIR_PALS_BACKDROP_KEYS[this.theme]).setOrigin(0);
+    // Sprint 2.14 — a little life behind the board: the backdrop drifts, bubbles and sparkles float.
+    driftBackdrop(this, this.add.image(0, 0, PAIR_PALS_BACKDROP_KEYS[this.theme]).setOrigin(0));
+    new PuzzleAmbience(this, Z.ambience);
     this.buildBoard();
     this.buildMascot();
     this.buildTopBar();
@@ -467,20 +479,36 @@ export class PairPalsScene extends Phaser.Scene {
   private quit(destination: PuzzleQuitDestination): void {
     this.resume();
     _th.logToAi('PairPalsQuit', SeverityLevel.Information, { ...this.props(), reason: destination });
+    this.settle(false, 0);
     if (destination === 'setup') this.scene.start(SceneKeys.PairPalsSetup);
-    else this.scene.start(SceneKeys.Menu);
+    else openPuzzlePicker(this);
   }
 
   // ----- The win ---------------------------------------------------------
+
+  /**
+   * Count the game's points once: "This visit" and My Scores (finished = a
+   * win). Left before the first turn, it isn't a game.
+   */
+  private settle(finished: boolean, points: number): void {
+    if (this.settled) return;
+    this.settled = true;
+    SessionTotalScore.add(points);
+    if (finished || this.board.turns > 0) getMyScores().record('pair-pals', points, finished);
+  }
 
   private win(): void {
     this.won = true;
     this.focusRing?.clear();
     const result = getPairPalsProgress().recordWin(this.size, this.board.turns);
+    const { cols, rows } = this.cfg.sizes[this.size];
+    const points = pairPalsPoints(this.size, cols * rows, this.board.turns);
+    this.settle(true, points);
     _th.logToAi('PairPalsCompleted', SeverityLevel.Information, {
       ...this.props(),
       turns: String(result.turns),
       newBest: String(result.newBest),
+      roundScore: String(points),
     });
     // Every card does a little wave, in reading order, and the mascot cheers.
     this.cards.forEach((card, i) => {
@@ -500,23 +528,26 @@ export class PairPalsScene extends Phaser.Scene {
         this.time.delayedCall(k * 180, () => this.sparkle(width * (0.3 + 0.13 * k), height * 0.4));
       }
     });
-    this.time.delayedCall(this.cfg.winPanelDelayMs, () => this.showWinPanel(result));
+    this.time.delayedCall(this.cfg.winPanelDelayMs, () => this.showWinPanel(result, points));
   }
 
-  private showWinPanel(result: GameResult): void {
+  private showWinPanel(result: GameResult, points: number): void {
     const { width, height } = this.scale;
     const cx = width / 2;
     const cy = height / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(Z.panel);
-    this.add.rectangle(cx, cy, 680, 440, 0x1f2740, 0.96).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
+    this.add.rectangle(cx, cy, 680, 480, 0x1f2740, 0.96).setStrokeStyle(4, 0xfacc15).setDepth(Z.panel);
     const [found, best] = winLines(totalPairs(this.board), result);
-    text(this, cx, cy - 150, 'You did it!', 'success')
+    text(this, cx, cy - 176, 'You did it!', 'success')
       .setOrigin(0.5)
       .setDepth(Z.panel);
-    text(this, cx, cy - 78, found, 'bodyLarge')
+    text(this, cx, cy - 104, found, 'bodyLarge')
       .setOrigin(0.5)
       .setDepth(Z.panel);
-    const bestText = text(this, cx, cy - 30, best, result.newBest ? 'accent' : 'bodyAccent');
+    text(this, cx, cy - 60, `${formatPoints(points)} points!`, 'accent')
+      .setOrigin(0.5)
+      .setDepth(Z.panel);
+    const bestText = text(this, cx, cy - 18, best, result.newBest ? 'accent' : 'bodyAccent');
     bestText.setOrigin(0.5).setDepth(Z.panel);
     if (result.newBest) {
       this.tweens.add({ targets: bestText, scale: { from: 0.6, to: 1 }, duration: 320, ease: 'Back.Out' });
@@ -537,7 +568,8 @@ export class PairPalsScene extends Phaser.Scene {
         Z.panel,
       );
     const change = row(-100, 340, 'Change Cards or Difficulty', () => this.scene.start(SceneKeys.PairPalsSetup));
-    const menu = row(190, 200, 'Menu', () => this.scene.start(SceneKeys.Menu));
+    // Menu: the game picker, on the Puzzles tab.
+    const menu = row(190, 200, 'Menu', () => openPuzzlePicker(this));
     new KeyboardNavigator(this, [playAgain, change, menu]);
   }
 

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { config } from '@/core/config';
 import { CHALLENGE_SUBJECTS, SUBJECTS, subjectById, subjectOf } from '@/core/subjects';
 import { PUZZLES } from '@/core/puzzles';
+import { ROUND_PUZZLE_IDS } from '@/core/gameIds';
 import { generators } from '@/math/registry';
 
 // Lives in src/math (not core) because it checks the subjects against the math generators.
@@ -36,12 +37,13 @@ describe('subjects (sprint 2.9.1, Puzzles sprint 2.13)', () => {
     expect(subjectOf('add-fractions').id).toBe('math');
   });
 
-  it('Puzzles lists every puzzle, in order; only built ones name a game', () => {
+  it('Puzzles lists every puzzle, in order; each names its game', () => {
     const puzzles = subjectById('puzzles');
     expect(puzzles.kind).toBe('puzzles');
     if (puzzles.kind !== 'puzzles') return;
     expect(puzzles.puzzles).toEqual(PUZZLES.map((p) => p.id));
     expect(PUZZLES.find((p) => p.id === 'pair-pals')?.gameId).toBe('pair-pals');
-    expect(PUZZLES.find((p) => p.id === 'pattern-train')?.gameId).toBeNull();
+    expect(PUZZLES.every((p) => p.gameId === p.id)).toBe(true);
+    expect(PUZZLES.map((p) => p.id)).toEqual(['pair-pals', ...ROUND_PUZZLE_IDS]);
   });
 });

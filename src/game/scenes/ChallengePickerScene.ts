@@ -8,6 +8,7 @@ import { SceneKeys, type SceneKey } from '@/core/sceneKeys';
 import { getImplementedIds } from '@/math/registry';
 import { SUBJECTS, subjectById, subjectOf, type PuzzleSubject, type SubjectId } from '@/core/subjects';
 import { puzzleById } from '@/core/puzzles';
+import { PUZZLE_ICON_SHEET } from '@/core/spriteKeys';
 import { Settings } from '@/services/Settings';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
@@ -186,6 +187,12 @@ export class ChallengePickerScene extends Phaser.Scene {
         height: slots[i].height,
         label: puzzle.label,
         subtitle: puzzle.blurb,
+        icon: {
+          key: PUZZLE_ICON_SHEET.key,
+          frame: PUZZLE_ICON_SHEET.frames[id],
+          sizePx: config.layout.challengeFlow.picker.puzzleIcon.sizePx,
+          padPx: config.layout.challengeFlow.picker.puzzleIcon.padPx,
+        },
         selected: Settings.lastPick === id,
         onClick: () => {
           if (ready) {

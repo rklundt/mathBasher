@@ -2,7 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import type { GameId } from '@/core/gameIds';
+import { ROUND_PUZZLE_IDS, type GameId } from '@/core/gameIds';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -146,6 +146,10 @@ export const SfxKeys = {
   PairPalsMiss2: 'pairpals-miss-2',
   PairPalsMiss3: 'pairpals-miss-3',
   PairPalsMiss4: 'pairpals-miss-4',
+  /** Sprint 2.14 — Copy Cat: the chick, pig and whale pads' own voices (owner's). */
+  ChickPeep1: 'chick-peep-1',
+  PigOink1: 'pig-oink-1',
+  WhaleSong1: 'whale-song-1',
 } as const;
 
 /**
@@ -361,6 +365,31 @@ export function pickPairPalsMissSfx(rng: () => number = Math.random): (typeof PA
   return nextPairPalsMiss(rng);
 }
 
+/**
+ * Sprint 2.14 — the puzzle pack's sounds, borrowed until the owner swaps
+ * them (owner: "use sounds that make sense that you have"): a tap is Pair
+ * Pals' tile flip, a right answer its match hit, a wrong one its miss, the
+ * round's end the bonus cheer. Copy Cat's animals each have their own short
+ * sound, in pad order (frog, chick, pig, whale, penguin, bunny); the chick,
+ * pig and whale are the owner's own. All of them load with every puzzle in
+ * the pack (`alsoFor`).
+ */
+export const COPY_CAT_VOICES = [
+  'frog-ribbit-1',
+  'chick-peep-1',
+  'pig-oink-1',
+  'whale-song-1',
+  'frog-slurp-1',
+  'penguin-gulp-1',
+] as const;
+const COPY_CAT_SFX_KEYS: ReadonlySet<string> = new Set([SfxKeys.ChickPeep1, SfxKeys.PigOink1, SfxKeys.WhaleSong1]);
+const PUZZLE_PACK_SOUNDS: ReadonlySet<string> = new Set([
+  ...TILE_FLIP_KEYS,
+  ...PAIR_PALS_MATCH_KEYS,
+  ...PAIR_PALS_MISS_KEYS,
+  ...COPY_CAT_VOICES,
+]);
+
 /** Sprint 2.10 — Game Over's bonus cheers; never the same one twice running (a perfect round plays two). */
 const BONUS_CHEER_KEYS = ['bonus-cheer-1', 'bonus-cheer-2', 'bonus-cheer-3', 'bonus-cheer-4'] as const;
 const nextBonusCheer = noRepeatPicker(BONUS_CHEER_KEYS);
@@ -546,6 +575,14 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'balance-scale': MusicKeys.BalanceLoop1,
   // Sprint 2.13 — not read: Pair Pals plays its card theme's track (`PAIR_PALS_MUSIC`); the map just covers every game.
   'pair-pals': MusicKeys.PairPalsLoop1,
+  // Sprint 2.14 — the puzzle pack borrows Pair Pals' tracks (loaded on demand by its scenes).
+  'pattern-train': MusicKeys.PairPalsAnimalLoop1,
+  'missing-piece': MusicKeys.PairPalsDessertLoop1,
+  'odd-one-out': MusicKeys.PairPalsDinoLoop1,
+  'magic-wand': MusicKeys.PairPalsAlienLoop1,
+  'spin-match': MusicKeys.PairPalsLoop1,
+  'copy-cat': MusicKeys.PairPalsAnimalLoop1,
+  'symbol-hunt': MusicKeys.PairPalsDessertLoop1,
 };
 
 /**
@@ -578,6 +615,13 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   // Sprint 2.12 — music only.
   'balance-scale': [],
   'pair-pals': [],
+  'pattern-train': [],
+  'missing-piece': [],
+  'odd-one-out': [],
+  'magic-wand': [],
+  'spin-match': [],
+  'copy-cat': [],
+  'symbol-hunt': [],
 };
 
 /**
@@ -609,6 +653,9 @@ export const AUDIO_GAIN: Readonly<Partial<Record<AudioKey, number>>> = {
   [SfxKeys.BalanceClank1]: 0.8,
   [SfxKeys.BalanceClank2]: 0.8,
   [SfxKeys.BalanceClank3]: 0.8,
+  // Copy Cat's chick peep measures ~5 dB hotter than the other pad voices
+  // (a sub-second clip; loudnorm can't pull it down), so it plays at half.
+  [SfxKeys.ChickPeep1]: 0.5,
 };
 
 /** Playback gain for an asset key (1 when not listed in `AUDIO_GAIN`). */
@@ -662,6 +709,11 @@ export interface AudioManifestEntry {
    * to `'game:<id>'` so it defers until the matching game is picked.
    */
   readonly scope: AssetScope;
+  /**
+   * Sprint 2.14 — other games that play this sound and load it with their
+   * own (`scope` names one game): the puzzle pack's borrowed sounds.
+   */
+  readonly alsoFor?: readonly GameId[];
   /**
    * Sprint 2.13 — not in its game's bundle: the scene loads it when it's
    * needed (`loadAudioOnDemand`). Pair Pals' four theme tracks (about
@@ -720,12 +772,19 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (BUNNY_SFX_KEYS.has(key)) return 'game:bunny-garden';
   // Sprint 2.13 — Pair Pals' music, flips, matches and misses.
   if (PAIR_PALS_MUSIC_KEYS.has(key) || PAIR_PALS_SFX_KEYS.has(key)) return 'game:pair-pals';
+  // Sprint 2.14 — Copy Cat's own animal voices.
+  if (COPY_CAT_SFX_KEYS.has(key)) return 'game:copy-cat';
   return 'eager';
 }
 
-/** Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`): Pair Pals' theme tracks. */
-function audioOnDemand(key: AudioKey): { onDemand?: true } {
-  return PAIR_PALS_MUSIC_KEYS.has(key) ? { onDemand: true } : {};
+/**
+ * Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`):
+ * Pair Pals' theme tracks (the puzzle pack plays them too). Sprint 2.14 —
+ * the puzzle pack's borrowed sounds load with each of its puzzles (`alsoFor`).
+ */
+function audioExtras(key: AudioKey): { onDemand?: true; alsoFor?: readonly GameId[] } {
+  if (PAIR_PALS_MUSIC_KEYS.has(key)) return { onDemand: true };
+  return PUZZLE_PACK_SOUNDS.has(key) ? { alsoFor: ROUND_PUZZLE_IDS } : {};
 }
 
 export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
@@ -734,20 +793,20 @@ export const AUDIO_MANIFEST: ReadonlyArray<AudioManifestEntry> = [
     kind: 'sfx',
     url: sfxPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
   ...Object.values(MidgroundKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'midground',
     url: midgroundPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
   ...Object.values(MusicKeys).map<AudioManifestEntry>((key) => ({
     key,
     kind: 'music',
     url: musicPath(key),
     scope: audioScopeFor(key),
-    ...audioOnDemand(key),
+    ...audioExtras(key),
   })),
 ];

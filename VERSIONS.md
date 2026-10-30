@@ -29,6 +29,34 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 _Nothing yet._
 
+## [2.14.0] - 2026-10-30 — Puzzle pack
+
+**Seven new puzzles** on the Puzzles tab, beside Pair Pals, each with its own picture
+- **Pattern Train:** what rides on the "?" car?
+- **Missing Piece:** which piece finishes the window? Hard windows are 4 to 6 panes wide, with two rules at once.
+- **Odd One Out:** tap the one that doesn't belong.
+- **Magic Wand:** A turns into B; make the same change to C.
+- **Spin Match:** which one is the same shape, just turned?
+- **Copy Cat:** watch the animals light up and sing, then copy the order.
+- **Symbol Hunt:** find every card like the sign before the sand runs out.
+
+**Every puzzle**
+- Easy, Medium and Hard, remembered for each puzzle. 8 puzzles a round with a progress bar: green for right first time, yellow after a miss (or slower), red after three misses or when the time runs out (the answer is shown and the round moves on).
+- Sand timers on Pattern Train, Odd One Out and Symbol Hunt.
+- Points: a round is worth up to 1,200 on Easy, 1,500 on Medium and 1,800 on Hard, with the speed bonus, the Finish Bonus and Perfect Round. Stars count the greens, and the best for each level is saved in this browser. Puzzles now show in My Scores and This visit.
+- Changing textured backgrounds with drifting bubbles and twinkles, and two dancing animals that cheer you on.
+- Copy Cat's animals include new chick, pig and whale voices. Music: Pair Pals' tracks, one per puzzle.
+- Menu from any puzzle (pause card or end panel) goes back to the Puzzles tab.
+
+**Pair Pals**
+- Points: a win is worth up to 2,400 on Easy, 3,000 on Medium and 3,600 on Hard. Full points in one turn per card, a little less for every few extra turns.
+
+## [2.13.1] - 2026-10-30 — Game groups and pictures
+
+**Game Select**
+- Two tabs: **Math Basher** (Alien Shoot, Asteroid Field, Space Escape!, Space Shooter) and **Math Fun** (Math-a-lotl, Frog Splash, Penguin Slide, Bunny Garden, Balance Scale). The tab you picked last opens again this visit.
+- Every game tile shows a picture of the game's own character.
+
 ## [2.13.0] - 2026-10-26 — Puzzles and Pair Pals
 
 **Puzzles** — a second subject
