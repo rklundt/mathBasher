@@ -1295,22 +1295,10 @@ export const config = {
     sparkleCount: 10,
     hint: { y: 120, heightPx: 56, backdropAlpha: 0.6 },
     /** The setup screen ("Pair Pals: pick your cards"). */
+    /** The setup screen's theme tiles: each one's sample picture (a frame in its sheet) and its size (sprint 2.15: layout in `layout.chooser.pairPalsSetup`). */
     setup: {
-      headingY: 52,
-      themeLabelY: 112,
-      themeY: 224,
-      themeTile: { w: 196, h: 176, gap: 18 },
-      /** A theme tile's sample picture (frame in its sheet) and its size. */
       samples: { animals: 0, desserts: 0, dinosaurs: 15, dragons: 1, aliens: 0 },
-      samplePx: 116,
-      sizeLabelY: 352,
-      sizeY: 432,
-      sizeTile: { w: 270, h: 104, gap: 26 },
-      bestY: 516,
-      buttonsY: 622,
-      startW: 240,
-      backW: 200,
-      buttonH: 72,
+      samplePx: 112,
     },
   },
   /**
@@ -1543,8 +1531,6 @@ export const config = {
       ],
     ],
     spinColours: 4,
-    /** The shared setup screen ("Pattern Train: how tough?"). */
-    setup: { headingY: 70, introY: 150, tileY: 300, tile: { w: 280, h: 120, gapX: 34 }, bestY: 420, buttonsY: 600 },
     /** The setup screen's line under each level, per puzzle. */
     levelNotes: {
       'pattern-train': { easy: 'Short patterns', medium: 'Longer patterns', hard: 'Two patterns at once' },
