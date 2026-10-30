@@ -496,6 +496,8 @@ export function sparkle(scene: Phaser.Scene, x: number, y: number, count = 12): 
 export class AnswerTray {
   readonly cards: Phaser.GameObjects.Container[] = [];
   private readonly zones: Phaser.GameObjects.Zone[] = [];
+  /** Cards already picked wrong: greyed, and no longer pickable by tap or key. */
+  private readonly tried = new Set<number>();
   /** Rings drawn on top of the cards (removed with them). */
   private readonly extras: Phaser.GameObjects.GameObject[] = [];
   private readonly panel: Phaser.GameObjects.Graphics;
@@ -545,11 +547,19 @@ export class AnswerTray {
 
   private readonly cardPx: number;
 
-  /** Keyboard: move the focus ring. */
+  /** Keyboard: move the focus ring, skipping cards already picked wrong. */
   moveFocus(d: number): void {
     const n = this.cards.length;
-    this.focus = this.focus < 0 ? 0 : (this.focus + d + n) % n;
+    let f = this.focus < 0 ? 0 : (this.focus + d + n) % n;
+    const step = d < 0 ? -1 : 1;
+    for (let k = 0; k < n && this.tried.has(f); k++) f = (f + step + n) % n;
+    this.focus = f;
     this.drawRing();
+  }
+
+  /** Whether this card was already picked wrong. */
+  isTried(i: number): boolean {
+    return this.tried.has(i);
   }
 
   focused(): number {
@@ -576,6 +586,7 @@ export class AnswerTray {
       onComplete: () => card.setAngle(0),
     });
     card.setAlpha(0.45);
+    this.tried.add(i);
     this.zones[i].disableInteractive();
   }
 
