@@ -46,7 +46,7 @@ a phone in landscape (844 × 390).
 |   | Pause (math): Resume, Change Game (that game's list), Change Math or Speed (its setup, picks kept), Settings |
 |   | Pause (puzzle): Change Difficulty; Pair Pals: Change Cards or Difficulty |
 |   | End of round (Game Over, puzzle end panel, Pair Pals' win panel): Play Again replays; Change Game, Change …, Settings as on pause; no Main Menu |
-|   | Esc on Game Over → Change Game |
+|   | Esc on Game Over, the puzzle end panel and Pair Pals' win panel → Change Game |
 |   | Tab order on a setup screen: top bar, trail, the picks, Start; focus starts on Start |
 |   | The avatar is nowhere (no picker, nothing in the in-game top bar or on Game Over), even for a player who picked one before |
 |   | `pnpm build` (no variable) then `pnpm preview`: no screen-name tag anywhere |
