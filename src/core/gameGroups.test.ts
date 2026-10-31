@@ -24,7 +24,7 @@ describe('game groups (sprint 2.13.1)', () => {
   });
 
   it('Math Basher holds the space and arcade games, Math Fun the cute ones', () => {
-    expect(GAME_GROUPS.map((g) => g.label)).toEqual(['Math Basher', 'Math Fun']);
+    expect(GAME_GROUPS.map((g) => g.label)).toEqual(['mathBasher', 'Math Fun']);
     expect(gameGroupOf('alien-shoot').id).toBe('math-basher');
     expect(gameGroupOf('number-climb').id).toBe('math-basher');
     expect(gameGroupOf('frog-splash').id).toBe('math-fun');

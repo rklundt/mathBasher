@@ -7,17 +7,18 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
 import { isRoundPuzzleId, type RoundPuzzleId } from '@/core/gameIds';
-import { puzzleById } from '@/core/puzzles';
 import { Settings } from '@/services/Settings';
 import { getPuzzleProgress, starsFor } from '@/services/PuzzleProgress';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { getRememberedPicks } from '@/services/RememberedPicks';
+import { puzzleRoundMax } from '@/services/puzzlePoints';
+import { formatPoints } from '@/services/challengePoints';
+import type { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
-import { wireEscBack } from '@/game/ui/EscBackHandler';
+import { createChoiceTile } from '@/game/ui/choiceTile';
+import { createSetupFrame, sectionHeading, type SetupFrame } from '@/game/ui/setupFrame';
 import { text } from '@/game/ui/typography';
-import { applyTextOutline } from '@/game/ui/callouts';
 import { setupScene } from '@/game/scenes/sceneSetup';
-import { createMuteIconButton } from '@/game/ui/MuteIconButton';
-import { openPuzzlePicker } from '@/game/services/challengeSelection';
+import { openChooser } from '@/game/services/chooserNavigation';
 
 const LEVELS: readonly PuzzleLevel[] = ['easy', 'medium', 'hard'];
 const LEVEL_LABELS: Record<PuzzleLevel, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
@@ -29,13 +30,21 @@ export function puzzleBestLine(best: number | null): string {
   return `Your best: ${String(best)} of ${String(total)} green ${'★'.repeat(starsFor(best))}`;
 }
 
+/** "Up to 1,500 points!" under a level: the round's top score there. */
+export function puzzleUpToLabel(level: PuzzleLevel): string {
+  return `Up to ${formatPoints(puzzleRoundMax(level))} points!`;
+}
+
 /**
- * Sprint 2.14 — the puzzle pack's setup screen, shared by all seven:
- * "Pattern Train: how tough?", Easy / Medium / Hard with what changes, the
- * best at the chosen level, Back and Start. The level is remembered per
- * puzzle (`PuzzleProgress`). Reached through Loading (the picker's Puzzles
- * tab, Menu Start, the end panel's and the pause card's Change Difficulty);
- * Start goes straight to the puzzle, Back to the picker on Puzzles.
+ * Sprint 2.14 — the puzzle pack's setup screen, shared by all seven: Easy /
+ * Medium / Hard with what changes, the best at the chosen level, and Start.
+ * The level is remembered per puzzle (`PuzzleProgress`).
+ *
+ * Sprint 2.15 — restyled to the chooser's look: the top bar with the
+ * puzzle's picture and name, the trail (Puzzles › Missing Piece), "How
+ * tough?" with "Up to N points!" under each level, the best line and a big
+ * Start. Reached through Loading from the chooser, and from the pause card
+ * and the end panel's Change Difficulty; Back goes to the puzzles.
  */
 export class PuzzleSetupScene extends Phaser.Scene {
   static readonly key = SceneKeys.PuzzleSetup;
@@ -43,7 +52,7 @@ export class PuzzleSetupScene extends Phaser.Scene {
   private id: RoundPuzzleId = 'pattern-train';
   private level: PuzzleLevel = 'easy';
   private tiles = new Map<PuzzleLevel, PlaceholderButton>();
-  private bestText!: Phaser.GameObjects.Text;
+  private frame!: SetupFrame;
 
   constructor() {
     super(PuzzleSetupScene.key);
@@ -54,83 +63,58 @@ export class PuzzleSetupScene extends Phaser.Scene {
     const gameId = Settings.round.gameId;
     if (!isRoundPuzzleId(gameId)) {
       _th.logToAi('PuzzleSetupScene.notPuzzle', SeverityLevel.Warning, { gameId });
-      this.goBack();
+      openChooser(this);
       return;
     }
     this.id = gameId;
     this.level = getPuzzleProgress().level(gameId);
     this.tiles.clear();
 
-    const { width } = this.scale;
-    const cx = width / 2;
-    const S = config.puzzles.setup;
-    const puzzle = puzzleById(gameId);
+    this.frame = createSetupFrame(this, gameId, 'PuzzleSetupScene', () => this.start());
+    const P = config.layout.chooser.puzzleSetup;
+    sectionHeading(this, P.headingY, 'How tough?');
 
-    text(this, cx, S.headingY, `${puzzle.label}: how tough?`, 'h2').setOrigin(0.5);
-    createMuteIconButton(this, width - 16 - 22, 16 + 18);
-    const intro = text(this, cx, S.introY, puzzle.blurb, 'subtitle').setOrigin(0.5);
-    applyTextOutline(intro);
-
-    const T = S.tile;
-    const x0 = cx - T.w - T.gapX;
+    const T = P.tiles;
+    const x0 = this.scale.width / 2 - T.w - T.gapX;
     LEVELS.forEach((level, i) => {
-      const tile = new PlaceholderButton({
+      const x = x0 + i * (T.w + T.gapX);
+      const tile = createChoiceTile({
         scene: this,
-        x: x0 + i * (T.w + T.gapX),
-        y: S.tileY,
+        x,
+        y: T.y,
         width: T.w,
         height: T.h,
-        label: LEVEL_LABELS[level],
-        subtitle: config.puzzles.levelNotes[gameId][level],
+        name: LEVEL_LABELS[level],
+        nameKind: 'tileNameLarge',
+        lines: [{ text: config.puzzles.levelNotes[gameId][level], kind: 'tileLine' }],
+        radius: config.layout.corners.tilePx,
+        shadow: config.layout.corners.tileShadow,
         onClick: () => this.pick(level),
       });
+      text(this, x, T.y + T.h / 2 + P.upToGapPx, puzzleUpToLabel(level), 'upTo').setOrigin(0.5, 0);
       this.tiles.set(level, tile);
     });
 
-    this.bestText = text(this, cx, S.bestY, '', 'bodyAccent').setOrigin(0.5);
-    applyTextOutline(this.bestText);
-
-    const back = new PlaceholderButton({
-      scene: this,
-      x: cx - 140,
-      y: S.buttonsY,
-      width: 200,
-      height: 72,
-      label: 'Back',
-      onClick: () => this.goBack(),
-    });
-    const start = new PlaceholderButton({
-      scene: this,
-      x: cx + 120,
-      y: S.buttonsY,
-      width: 240,
-      height: 72,
-      label: 'Start',
-      onClick: () => this.start(),
-    });
-    const order = [...this.tiles.values(), back, start];
-    new KeyboardNavigator(this, order, { initialIndex: order.indexOf(start) });
-    wireEscBack(this, () => this.goBack());
+    const order = [...this.frame.top, ...this.tiles.values(), this.frame.start];
+    new KeyboardNavigator(this, order, { initialIndex: order.indexOf(this.frame.start) });
     this.refresh();
   }
 
   private pick(level: PuzzleLevel): void {
     this.level = level;
+    // Saved now, not on Start, so a trip to My Scores (or the games list) keeps it.
+    getPuzzleProgress().setLevel(this.id, level);
     this.refresh();
   }
 
   private refresh(): void {
     for (const [level, tile] of this.tiles) tile.setSelected(level === this.level);
-    this.bestText.setText(puzzleBestLine(getPuzzleProgress().best(this.id, this.level)));
+    this.frame.best.setText(puzzleBestLine(getPuzzleProgress().best(this.id, this.level)));
   }
 
   private start(): void {
     getPuzzleProgress().setLevel(this.id, this.level);
+    getRememberedPicks().setLastGame(this.id);
     this.scene.start(gameSceneKeyFor(this.id));
-  }
-
-  /** Back to the picker, on the Puzzles tab. */
-  private goBack(): void {
-    openPuzzlePicker(this);
   }
 }

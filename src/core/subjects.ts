@@ -6,9 +6,9 @@ import { config, type MathId } from '@/core/config';
 import { PUZZLES, type PuzzleId } from '@/core/puzzles';
 
 /**
- * Sprint 2.9.1 — subjects and their challenge types (ADR-0014). The player
- * picks Subject → Challenge type → Game → Difficulty; the challenge picker
- * shows one tab per subject here.
+ * Sprint 2.9.1 — subjects and their challenge types (ADR-0014). Sprint 2.15
+ * (ADR-0015): the Game Chooser's first step shows one tile per subject here,
+ * and the math type is picked on each game's setup screen.
  *
  * Deliberately small: this lists which challenges belong to which subject,
  * in picker order, and nothing else. A challenge's label stays with its
@@ -32,7 +32,7 @@ export type ChallengeId = MathId;
 export interface ChallengeSubject {
   readonly kind: 'challenges';
   readonly id: SubjectId;
-  /** The tab label on the challenge picker. */
+  /** The subject's name (its chooser tile and trail chip). */
   readonly label: string;
   /** Its challenges, in picker order. */
   readonly challenges: readonly ChallengeId[];

@@ -10,7 +10,7 @@ import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
 import { createIconButton } from '@/game/ui/IconButton';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
-import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
+import { createRoundEndButtons } from '@/game/ui/roundEndButtons';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { CALLOUT_INK, SELECTED_AMBER } from '@/game/ui/uiPalette';
 import { PuzzleAmbience, driftBackdrop } from '@/game/ui/puzzleAmbience';
@@ -692,19 +692,24 @@ export interface EndPanelOpts {
   newBest: boolean;
   onPlayAgain: () => void;
   onChange: () => void;
-  /** Menu: the game picker, on the Puzzles tab. */
-  onMenu: () => void;
+  /** Change Game: the puzzles list (sprint 2.15; it was Menu). */
+  onChangeGame: () => void;
   changeLabel: string;
 }
 
-/** The end of a round: stars, what happened, the points, the best; Play Again / Change Difficulty / Menu. */
+/** The end of a round: stars, what happened, the points, the best; Play Again, then Change Game · Change Difficulty · Settings. */
 export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
   const { width, height } = scene.scale;
   const cx = width / 2;
   const cy = height / 2;
   const D = PUZZLE_DEPTH.panel;
   scene.add.rectangle(0, 0, width, height, 0x000000, 0.45).setOrigin(0).setDepth(D);
-  scene.add.rectangle(cx, cy, 700, 520, 0x1f2740, 0.96).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
+  const K = config.layout.corners;
+  scene.add
+    .rectangle(cx, cy + K.panelShadow.px, 900, 520, K.panelShadow.color)
+    .setRounded(K.panelPx)
+    .setDepth(D);
+  scene.add.rectangle(cx, cy, 900, 520, 0x1f2740).setRounded(K.panelPx).setStrokeStyle(4, SELECTED_AMBER).setDepth(D);
   text(scene, cx, cy - 192, o.title, 'success')
     .setOrigin(0.5)
     .setDepth(D);
@@ -725,32 +730,14 @@ export function showEndPanel(scene: Phaser.Scene, o: EndPanelOpts): void {
     .setDepth(D);
   if (o.newBest) scene.tweens.add({ targets: best, scale: { from: 0.6, to: 1 }, duration: 320, ease: 'Back.Out' });
 
-  const again = new PlaceholderButton({
-    scene,
-    x: cx,
-    y: cy + 106,
-    width: 320,
-    height: 72,
-    label: 'Play Again',
-    onClick: o.onPlayAgain,
-  }).setDepth(D);
-  const change = new PlaceholderButton({
-    scene,
-    x: cx - 110,
-    y: cy + 194,
-    width: 260,
-    height: 64,
-    label: o.changeLabel,
-    onClick: o.onChange,
-  }).setDepth(D);
-  const menu = new PlaceholderButton({
-    scene,
-    x: cx + 170,
-    y: cy + 194,
-    width: 180,
-    height: 64,
-    label: 'Menu',
-    onClick: o.onMenu,
-  }).setDepth(D);
-  new KeyboardNavigator(scene, [again, change, menu]);
+  const buttons = createRoundEndButtons(scene, {
+    cx,
+    playAgainY: cy + 106,
+    changeLabel: o.changeLabel,
+    onPlayAgain: o.onPlayAgain,
+    onChangeGame: o.onChangeGame,
+    onChange: o.onChange,
+    depth: D,
+  });
+  new KeyboardNavigator(scene, buttons);
 }

@@ -6,7 +6,7 @@ import type { PuzzleGameId } from '@/core/gameIds';
 
 /**
  * Sprint 2.13 — the Puzzles subject's games, in picker order. A puzzle is a
- * game with its own setup screen (no challenge, Game Select or Difficulty).
+ * game with its own setup screen (no math type or speed).
  * Sprint 2.14 added the puzzle pack (one puzzle per family of question on
  * children's ability tests).
  *
@@ -20,21 +20,21 @@ export interface Puzzle {
   readonly id: PuzzleId;
   /** The tile's name on the picker. */
   readonly label: string;
-  /** The tile's line under the name. */
+  /** The tile's line under the name (sprint 2.15: the livelier wording from the wireframes). */
   readonly blurb: string;
   /** The game it starts, or null while it's still coming. */
   readonly gameId: PuzzleGameId | null;
 }
 
 export const PUZZLES: readonly Puzzle[] = [
-  { id: 'pair-pals', label: 'Pair Pals', blurb: 'Find the matching pairs!', gameId: 'pair-pals' },
-  { id: 'pattern-train', label: 'Pattern Train', blurb: 'What comes next?', gameId: 'pattern-train' },
-  { id: 'missing-piece', label: 'Missing Piece', blurb: 'Which piece fits?', gameId: 'missing-piece' },
-  { id: 'odd-one-out', label: 'Odd One Out', blurb: 'Spot the different one!', gameId: 'odd-one-out' },
-  { id: 'magic-wand', label: 'Magic Wand', blurb: 'Make the same change!', gameId: 'magic-wand' },
-  { id: 'spin-match', label: 'Spin Match', blurb: 'Same shape, just spun?', gameId: 'spin-match' },
-  { id: 'copy-cat', label: 'Copy Cat', blurb: 'Watch, then copy!', gameId: 'copy-cat' },
-  { id: 'symbol-hunt', label: 'Symbol Hunt', blurb: 'Find them all, fast!', gameId: 'symbol-hunt' },
+  { id: 'pair-pals', label: 'Pair Pals', blurb: 'Flip two cards. Find the twins!', gameId: 'pair-pals' },
+  { id: 'pattern-train', label: 'Pattern Train', blurb: 'Choo choo! What rides next?', gameId: 'pattern-train' },
+  { id: 'missing-piece', label: 'Missing Piece', blurb: 'Oops, a hole! Which piece fits?', gameId: 'missing-piece' },
+  { id: 'odd-one-out', label: 'Odd One Out', blurb: 'One of these is sneaky. Spot it!', gameId: 'odd-one-out' },
+  { id: 'magic-wand', label: 'Magic Wand', blurb: 'Watch the magic, then do it again!', gameId: 'magic-wand' },
+  { id: 'spin-match', label: 'Spin Match', blurb: 'Twirl it in your head. Same shape?', gameId: 'spin-match' },
+  { id: 'copy-cat', label: 'Copy Cat', blurb: 'Watch, listen, then copy me!', gameId: 'copy-cat' },
+  { id: 'symbol-hunt', label: 'Symbol Hunt', blurb: 'Find them all, fast as you can!', gameId: 'symbol-hunt' },
 ];
 
 export function puzzleById(id: PuzzleId): Puzzle {

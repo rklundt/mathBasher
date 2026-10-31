@@ -5,19 +5,19 @@
 import type { MathGameId } from '@/core/gameIds';
 
 /**
- * Sprint 2.13.1 — the math games in two groups, one tab each on Game Select:
- * **Math Basher** (the original space and arcade games) and **Math Fun** (the
+ * Sprint 2.13.1 — the math games in two groups (sprint 2.15: the Game
+ * Chooser's group step): **mathBasher** (the original space and arcade games) and **Math Fun** (the
  * cute animal games and Balance Scale). Every math game is in exactly one
  * group (a test checks), so a new game has to pick one.
  *
- * Only which game sits where; each tile's name, line and picture stay with
- * Game Select and `GAME_ICON_SHEET`.
+ * Only which game sits where; each tile's name and line live in
+ * `core/chooserTiles.ts`, its picture in `GAME_ICON_SHEET`.
  */
 export type GameGroupId = 'math-basher' | 'math-fun';
 
 export interface GameGroup {
   readonly id: GameGroupId;
-  /** The tab label on Game Select. */
+  /** The group's name (its chooser tile and trail chip). */
   readonly label: string;
   /** Its games, in tile order. */
   readonly games: readonly MathGameId[];
@@ -27,7 +27,8 @@ export interface GameGroup {
 export const GAME_GROUPS: readonly GameGroup[] = [
   {
     id: 'math-basher',
-    label: 'Math Basher',
+    // Sprint 2.15 — one word, like the game's name (owner, 2026-10-30).
+    label: 'mathBasher',
     games: ['alien-shoot', 'asteroid-field', 'number-climb', 'space-shooter'],
   },
   {

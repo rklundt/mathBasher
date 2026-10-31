@@ -59,6 +59,8 @@ export const TEXT_PRIMARY = '#eaeaf2';
 export const TEXT_MUTED = '#9ca3af';
 /** Subtitle inside a button (slightly lighter than TEXT_MUTED for in-button readability). */
 export const TEXT_BUTTON_SUBTITLE = '#cbd5e1';
+/** Sprint 2.15 — the soft grey of the lines on the chooser's tiles. */
+export const TEXT_SOFT = '#b4bbd3';
 /** Accent text — selected values, highlights. */
 export const TEXT_AMBER = '#facc15';
 /** Warning / try-again copy. */
@@ -109,7 +111,20 @@ export type TextKind =
   | 'alienAnswer' // white bold — number on the falling block (geometrically linked to plateLayers in Alien.ts)
   | 'buttonLabel' // primary — main label inside PlaceholderButton
   | 'buttonSubtitle' // button-subtitle grey — secondary line inside PlaceholderButton
-  | 'fireLabel'; // dark bold — FIRE label inside the warm-amber TouchFireButton
+  | 'fireLabel' // dark bold — FIRE label inside the warm-amber TouchFireButton
+  // --- Sprint 2.15: the Title Screen, the Game Chooser and the setup screens ---
+  | 'titleHero' // primary bold — "mathBasher" on the Title Screen
+  | 'barTitle' // primary bold — the top bar's title ("Pick a game!")
+  | 'tileNameLarge' // primary bold — a subject or group tile's name ("Math", "mathBasher")
+  | 'tileName' // primary bold — a game or puzzle tile's name; a setup level ("Easy")
+  | 'tileTagline' // primary bold — a group tile's line ("Blast aliens with your brain power!")
+  | 'tileLine' // soft grey — the line under a tile's name; "4 space games"
+  | 'tilePill' // dark bold — the "Last Played" pill
+  | 'setupHeading' // primary bold — "What math?", "How fast?"
+  | 'pickLabel' // primary bold — a math type chip ("Add to 20")
+  | 'pickPoints' // amber bold — "1.5x Points!" under a chip
+  | 'upTo' // amber bold — "Up to 3,000 points!" under a level
+  | 'bestLine'; // soft grey bold — "Your best: 2,150 points" beside Start
 
 interface TextStyle {
   fontSize: string;
@@ -185,6 +200,19 @@ const STYLES: Readonly<Record<TextKind, TextStyle>> = {
   // FIRE label uses dark canvas color on warm-amber bg → ~10:1 contrast
   // (intentional; do NOT fold into a generic primary-color buttonLabel).
   fireLabel: { fontSize: '22px', color: '#0b1020', fontStyle: 'bold' },
+  // Sprint 2.15 — sizes from the approved wireframes (1280 × 720 design px).
+  titleHero: { fontSize: '92px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  barTitle: { fontSize: '42px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  tileNameLarge: { fontSize: '60px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  tileName: { fontSize: '30px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  tileTagline: { fontSize: '28px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  tileLine: { fontSize: '21px', color: TEXT_SOFT },
+  tilePill: { fontSize: '18px', color: '#1c1400', fontStyle: 'bold' },
+  setupHeading: { fontSize: '28px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  pickLabel: { fontSize: '22px', color: TEXT_PRIMARY, fontStyle: 'bold' },
+  pickPoints: { fontSize: '18px', color: TEXT_AMBER, fontStyle: 'bold' },
+  upTo: { fontSize: '22px', color: TEXT_AMBER, fontStyle: 'bold' },
+  bestLine: { fontSize: '24px', color: TEXT_SOFT, fontStyle: 'bold' },
 };
 
 /**

@@ -244,7 +244,8 @@ export class HudScene extends Phaser.Scene {
     // so the kid's picked hero (Hero Chooser) is present during play.
     // Cosmetic only; the in-game gameplay sprite stays mode-bound. The
     // score text starts to its right by the width the avatar consumed.
-    const heroAvatarInset = this.buildHudHeroAvatar(barHeight);
+    // Sprint 2.15 — not while the avatar is paused (`config.features.avatar`).
+    const heroAvatarInset = config.features.avatar ? this.buildHudHeroAvatar(barHeight) : 0;
     this.roundScoreText = text(this, 16 + heroAvatarInset, barHeight / 2, 'This round: 0', 'body').setOrigin(0, 0.5);
     applyTextOutline(this.roundScoreText);
     this.totalScoreText = text(
@@ -288,7 +289,7 @@ export class HudScene extends Phaser.Scene {
     const buttonWidth = 44;
     const buttonGap = 24;
     const pauseBtn = this.createPauseButton(width - 16, barHeight / 2);
-    // Mute icon — shared helper across MenuScene, HudScene, GameSelectScene.
+    // Mute icon — the shared helper (the Title Screen and the top bar use it too).
     // Sprint 2.2 wrap-up consolidated the previous inline copy here.
     const muteRightX = width - 16 - buttonWidth - buttonGap;
     const muteBtn = createMuteIconButton(this, muteRightX - buttonWidth / 2, barHeight / 2);
@@ -411,8 +412,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   // Mute toggle rendering is now in `src/game/ui/MuteIconButton.ts`
-  // (sprint 2.2 wrap-up extraction; the same helper is used by
-  // MenuScene + GameSelectScene so the icon is consistent everywhere).
+  // (sprint 2.2 wrap-up extraction; the same helper is used by the
+  // Title Screen and the top bar so the icon is consistent everywhere).
 
   /**
    * Resolve the live GameScene reference. `this.scene.get(...)` returns
@@ -440,6 +441,7 @@ export class HudScene extends Phaser.Scene {
     const init: PauseOverlayInit = {
       resumeFn: () => this.closePauseOverlay(),
       quitFn: (destination) => this.handleQuitFromOverlay(destination),
+      changeLabel: 'Change Math or Speed',
     };
     this.scene.launch(SceneKeys.PauseOverlay, init);
   }
@@ -458,9 +460,9 @@ export class HudScene extends Phaser.Scene {
       this.scene.stop(SceneKeys.PauseOverlay);
     }
     // Resume before quit so any frozen tweens don't carry over to the next
-    // round if the user starts a new game from MenuScene.
+    // screen (the games list or the setup).
     gameScene?.resume();
-    gameScene?.quitToMenu(destination);
+    gameScene?.quitRound(destination);
   }
 
   /**

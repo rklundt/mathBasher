@@ -7,65 +7,41 @@ import { _th, SeverityLevel } from '@/core/telemetry';
 import { config } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { Settings } from '@/services/Settings';
-import { CHALLENGE_SUBJECTS, subjectOf } from '@/core/subjects';
 import { KeyboardNavigator } from '@/game/ui/KeyboardNavigator';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
-import { computeGridSlots } from '@/game/ui/menuLayoutGeometry';
-import { buildChallengeGrid } from '@/game/ui/ChallengeGrid';
+import { openSettings } from '@/game/ui/topBar';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { text } from '@/game/ui/typography';
-import { selectChallenge } from '@/game/services/challengeSelection';
-import type { SettingsSceneInit } from '@/game/scenes/SettingsScene';
+import { BORDER_GREY, SLATE_BG } from '@/game/ui/uiPalette';
 import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 
 /**
- * Translucent overlay that floats above GameScene + HudScene while a round
- * is paused: the pause card.
+ * Translucent overlay that floats above the game while a round is paused:
+ * the pause card.
  *
- * Sprint 2.13 — the pause buttons gain Change Difficulty (this game's
- * Difficulty; the round ends unscored). A puzzle (Pair Pals) passes
- * `puzzleQuitFn` instead of `quitFn` and gets Resume, then Change Cards or
- * Difficulty (its setup) · Settings · Quit to Menu.
- *
- * Two views (sprint 2.9):
- *  - **Pause buttons:** Resume, then a grid: Settings, Change
- *    challenge, Change difficulty, Change game, Quit to menu.
- *  - **Challenge buttons** (after Change challenge): "Pick your challenge!"
- *    and the same buttons as the challenge picker, inside this card. Back
- *    (or Esc, or the same challenge) returns to the pause buttons with the
- *    round intact; a different challenge ends the round (not scored, the
- *    same path as Change game) and goes to this game's Difficulty.
+ * Sprint 2.15 — one card for every game: **Resume**, then **Change Game**
+ * (the games list the game is on), the game's own Change button ("Change
+ * Math or Speed", "Change Difficulty", "Change Cards or Difficulty": its
+ * setup screen) and **Settings**. No main menu and no challenge buttons any
+ * more; the math type is picked on the setup screen. Leaving ends the round
+ * (the points so far count, as a round ended early).
  *
  * Lifecycle:
- *  - LAUNCHED (parallel) by GameScene.pause(); STOPPED by GameScene.resume()
- *    or by a quit. Never started in place of GameScene — that would tear
- *    down round state.
- *  - Esc on the pause buttons resumes; on the challenge buttons it goes back
- *    to the pause buttons.
+ *  - LAUNCHED (parallel) by the game's pause; STOPPED by its resume or by a
+ *    quit. Never started in place of the game — that would tear down round
+ *    state.
+ *  - Esc resumes (not while Settings is open over the card).
  *
- * Render order note: PauseOverlay is registered after GameScene/HudScene in
- * `src/app/boot.ts`, so it draws over them. The §7(b) attribution footer is a
- * DOM strip below the canvas (sprint 2.5.2), so it stays visible while paused
- * regardless of scene order.
+ * Render order note: PauseOverlay is registered after the game scenes and
+ * HudScene in `src/app/boot.ts`, so it draws over them.
  */
-/**
- * Sprint 2.13 — where a puzzle's pause card leaves to: the menu, or the
- * puzzle's setup (Change Cards or Difficulty). Since 2.14 a puzzle's "menu"
- * is the game picker's Puzzles tab.
- */
-export type PuzzleQuitDestination = 'menu' | 'setup';
-
 export interface PauseOverlayInit {
-  /** Called when the user picks Resume (or presses Esc on the pause buttons). */
+  /** Called when the user picks Resume (or presses Esc). */
   resumeFn: () => void;
-  /** Called on Change game (`game-select`), Quit to menu (`menu`) or a new challenge (`difficulty`). */
-  quitFn?: (destination: QuitDestination) => void;
-  /**
-   * Sprint 2.13 — a puzzle's pause card (given instead of `quitFn`): Resume,
-   * then Change Cards or Difficulty · Settings · Quit to Menu. No challenge, no Game Select.
-   */
-  puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
-  /** Sprint 2.14 — the puzzle's "change" button (Pair Pals: "Change Cards or Difficulty"; the puzzle pack: "Change Difficulty"). */
-  puzzleChangeLabel?: string;
+  /** Called on Change Game (`'games'`) or the game's Change button (`'setup'`). */
+  quitFn: (destination: QuitDestination) => void;
+  /** The game's Change button: "Change Math or Speed", "Change Difficulty" or "Change Cards or Difficulty". */
+  changeLabel: string;
 }
 
 export class PauseOverlay extends Phaser.Scene {
@@ -73,12 +49,7 @@ export class PauseOverlay extends Phaser.Scene {
 
   private resumeFn?: () => void;
   private quitFn?: (destination: QuitDestination) => void;
-  private puzzleQuitFn?: (destination: PuzzleQuitDestination) => void;
-  private puzzleChangeLabel = 'Change Cards or Difficulty';
-  /** Everything in the card's current view (destroyed when the view changes). */
-  private view: Phaser.GameObjects.GameObject[] = [];
-  private nav?: KeyboardNavigator;
-  private showingChallenges = false;
+  private changeLabel = 'Change Difficulty';
 
   constructor() {
     super(PauseOverlay.key);
@@ -87,180 +58,80 @@ export class PauseOverlay extends Phaser.Scene {
   init(data: Partial<PauseOverlayInit>): void {
     this.resumeFn = data.resumeFn;
     this.quitFn = data.quitFn;
-    this.puzzleQuitFn = data.puzzleQuitFn;
-    this.puzzleChangeLabel = data.puzzleChangeLabel ?? 'Change Cards or Difficulty';
+    this.changeLabel = data.changeLabel ?? 'Change Difficulty';
   }
 
   create(): void {
     _th.logToAi('PauseOverlay Started', SeverityLevel.Information, { from: 'gameplay' });
-    this.view = [];
-    this.nav = undefined;
-    this.showingChallenges = false;
-
     const { width, height } = this.scale;
+    const cx = width / 2;
+    const P = config.layout.chooser.pause;
 
-    // Translucent backdrop covers the whole canvas. Slightly darker than the
-    // HUD's 45% alpha so the paused state reads as visibly different from the
-    // active HUD bar above it.
-    const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.6);
-    backdrop.setOrigin(0, 0);
+    // A dark wash over the game, then the card.
+    this.add.rectangle(0, 0, width, height, 0x000000, P.washAlpha).setOrigin(0, 0);
+    const card = this.add.graphics();
+    const shadow = config.layout.corners.panelShadow;
+    card
+      .fillStyle(shadow.color, 1)
+      .fillRoundedRect(cx - P.card.w / 2, P.card.y + shadow.px, P.card.w, P.card.h, P.card.radius);
+    card.fillStyle(SLATE_BG, 1).fillRoundedRect(cx - P.card.w / 2, P.card.y, P.card.w, P.card.h, P.card.radius);
+    card.lineStyle(4, BORDER_GREY, 1).strokeRoundedRect(cx - P.card.w / 2, P.card.y, P.card.w, P.card.h, P.card.radius);
+    text(this, cx, P.titleY, 'Paused', 'headline').setOrigin(0.5);
 
-    this.showPauseButtons();
+    const resume = new PlaceholderButton({
+      scene: this,
+      x: cx,
+      y: P.resumeY,
+      width: P.buttonW,
+      height: P.resumeH,
+      label: '▶  Resume',
+      labelKind: 'h3',
+      variant: 'primary',
+      onClick: () => this.handleResume(),
+    });
+    const items: Array<{ label: string; onClick: () => void }> = [
+      { label: 'Change Game', onClick: () => this.quitFn?.('games') },
+      { label: this.changeLabel, onClick: () => this.quitFn?.('setup') },
+      { label: 'Settings', onClick: () => this.handleSettings() },
+    ];
+    const buttons = items.map(
+      (item, i) =>
+        new PlaceholderButton({
+          scene: this,
+          x: cx,
+          y: P.firstButtonY + i * (P.buttonH + P.gapPx),
+          width: P.buttonW,
+          height: P.buttonH,
+          label: item.label,
+          labelKind: 'setupHeading',
+          onClick: item.onClick,
+        }),
+    );
+    new KeyboardNavigator(this, [resume, ...buttons]);
+    addScreenTag(this, `PauseOverlay · over ${Settings.round.gameId}`);
 
-    if (this.input.keyboard) {
-      this.input.keyboard.on('keydown-ESC', this.handleEsc, this);
-    }
-
+    this.input.keyboard?.on('keydown-ESC', this.handleResume, this);
     this.events.once('shutdown', () => {
-      if (this.input.keyboard) {
-        this.input.keyboard.off('keydown-ESC', this.handleEsc, this);
-      }
+      this.input.keyboard?.off('keydown-ESC', this.handleResume, this);
       _th.logToAi('PauseOverlay Completed', SeverityLevel.Information);
     });
   }
 
-  private clearView(): void {
-    this.nav?.destroy();
-    this.nav = undefined;
-    for (const obj of this.view) obj.destroy();
-    this.view = [];
-  }
-
-  /** Resume, then Settings · Change challenge / Change game · Quit to menu. */
-  private showPauseButtons(): void {
-    this.clearView();
-    this.showingChallenges = false;
-    const cx = this.scale.width / 2;
-    const P = config.layout.challengeFlow.pause;
-
-    // TextKind 'headline' — 67px primary.
-    this.view.push(text(this, cx, P.titleY, 'Paused', 'headline').setOrigin(0.5));
-    const resume = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: P.resume.y,
-      width: P.resume.w,
-      height: P.resume.h,
-      label: 'Resume',
-      onClick: () => this.handleResume(),
-    });
-    const puzzleQuit = this.puzzleQuitFn;
-    const items: Array<{ label: string; onClick: () => void }> =
-      puzzleQuit !== undefined
-        ? [
-            // The setup screen, where the cards and the difficulty are picked.
-            { label: this.puzzleChangeLabel, onClick: () => puzzleQuit('setup') },
-            { label: 'Settings', onClick: () => this.handleSettings() },
-            { label: 'Quit to Menu', onClick: () => puzzleQuit('menu') },
-          ]
-        : [
-            { label: 'Settings', onClick: () => this.handleSettings() },
-            { label: 'Change Challenge', onClick: () => this.showChallengeButtons() },
-            // Sprint 2.13 — this game's Difficulty (the round ends, not scored, as with a new challenge).
-            { label: 'Change Difficulty', onClick: () => this.handleQuit('difficulty') },
-            // "Change game" goes straight to Game Select (challenge and difficulty carry over).
-            { label: 'Change Game', onClick: () => this.handleQuit('game-select') },
-            { label: 'Quit to Menu', onClick: () => this.handleQuit('menu') },
-          ];
-    const slots = computeGridSlots(cx, P.grid.topY, items.length, P.grid);
-    const grid = items.map(
-      (item, i) =>
-        new PlaceholderButton({
-          scene: this,
-          x: slots[i].x,
-          y: slots[i].y,
-          width: slots[i].width,
-          height: slots[i].height,
-          label: item.label,
-          onClick: item.onClick,
-        }),
-    );
-    this.view.push(resume, ...grid);
-    this.nav = new KeyboardNavigator(this, [resume, ...grid]);
-  }
-
-  /** "Pick your challenge!" inside the card; Back returns to the pause buttons. */
-  private showChallengeButtons(): void {
-    if (this.scene.isActive(SceneKeys.Settings)) return;
-    this.clearView();
-    this.showingChallenges = true;
-    _th.logToAi('PauseOverlay.ChallengesOpened', SeverityLevel.Information);
-    const cx = this.scale.width / 2;
-    const P = config.layout.challengeFlow.pause;
-    const L = config.layout.challengeFlow;
-
-    this.view.push(text(this, cx, P.challengeHeadingY, 'Pick your challenge!', 'h2').setOrigin(0.5));
-    const current = Settings.round.challengeId;
-    // The current challenge's subject (Math is the only subject of
-    // challenges; a math round can't swap to a puzzle from here).
-    const grid = buildChallengeGrid(this, {
-      subject: current === null ? CHALLENGE_SUBJECTS[0] : subjectOf(current),
-      centerX: cx,
-      firstRowY: P.challengeGridTopY,
-      onPick: (id) => {
-        if (id === current) {
-          this.showPauseButtons();
-          return;
-        }
-        // A new challenge ends this round (not scored) → this game's Difficulty.
-        selectChallenge(id, 'pause');
-        this.handleQuit('difficulty');
-      },
-    });
-    const back = new PlaceholderButton({
-      scene: this,
-      x: cx,
-      y: P.challengeBackY,
-      width: L.backButton.w,
-      height: L.backButton.h,
-      label: 'Back',
-      onClick: () => this.showPauseButtons(),
-    });
-    this.view.push(...grid.buttons, back);
-    this.nav = new KeyboardNavigator(this, [...grid.buttons, back], {
-      ...(grid.currentIndex >= 0 && { initialIndex: grid.currentIndex }),
-    });
-  }
-
-  /** Esc: back to the pause buttons from the challenges; otherwise resume. */
-  private handleEsc(): void {
-    if (this.showingChallenges) {
-      this.showPauseButtons();
-      return;
-    }
-    this.handleResume();
-  }
-
   private handleResume(): void {
-    // Guard: when SettingsScene is launched on top of this overlay (via the
-    // Settings button), Phaser still routes input to BOTH scenes. Pressing
-    // Esc to dismiss SettingsScene would otherwise also fire this handler
-    // and accidentally resume the game underneath. Skip when Settings is
-    // active; SettingsScene's own Esc handler closes the settings panel
-    // and a subsequent Esc on this overlay (with Settings now gone) resumes
-    // as expected. Mirrors the double-launch guard pattern in
-    // `handleSettings` below.
+    // Guard: when SettingsScene is open on top of this card, Phaser still
+    // routes keys to BOTH scenes. Esc closes Settings; it must not also
+    // resume the game underneath.
     if (this.scene.isActive(SceneKeys.Settings)) return;
     this.resumeFn?.();
   }
 
-  private handleQuit(destination: QuitDestination): void {
-    this.quitFn?.(destination);
-  }
-
   /**
-   * Open the SettingsScene STACKED on top of this overlay. Pause stays
-   * active underneath so the kid sees Settings layered over Pause; on
-   * Back, Settings stops and Pause is the foreground again. Game stays
-   * paused throughout — neither this scene nor SettingsScene resumes
-   * the game, only the explicit Resume button does.
+   * Settings STACKED on top of this card: on Back, Settings stops and the
+   * card is in front again. The game stays paused throughout — only Resume
+   * resumes it.
    */
   private handleSettings(): void {
-    if (this.scene.isActive(SceneKeys.Settings)) return; // guard double-open
     _th.logToAi('PauseOverlay.SettingsOpened', SeverityLevel.Information);
-    const init: SettingsSceneInit = {
-      onBack: () => this.scene.stop(SceneKeys.Settings),
-    };
-    this.scene.launch(SceneKeys.Settings, init);
+    openSettings(this);
   }
 }

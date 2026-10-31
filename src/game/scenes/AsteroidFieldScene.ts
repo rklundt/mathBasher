@@ -34,7 +34,7 @@ import { screenBanner } from '@/game/ui/callouts';
  * since sprint 2.1 added `gameSceneKey` plumbing).
  *
  * Round structure:
- *   1. Player picks "Asteroid Field" at GameSelectScene → DifficultyScene
+ *   1. Player picks "Asteroid Field" on the Game Chooser → its setup screen
  *   2. Picks a math type + speed → this scene starts
  *   3. RoundController draws first question (4 candidate answers + the
  *      math prompt). Scene spawns 4 asteroids with those answers.
@@ -51,7 +51,7 @@ import { screenBanner } from '@/game/ui/callouts';
  *   7. 20 questions → endRound → GameOverScene (unchanged).
  *
  * Pause / quit semantics match GameScene exactly (PauseOverlay's
- * resumeFn/quitFn callbacks bind to this scene's pause/resume/quitToMenu
+ * resumeFn/quitFn callbacks bind to this scene's pause/resume/quitRound
  * methods).
  */
 export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContract {
@@ -795,10 +795,10 @@ export class AsteroidFieldScene extends Phaser.Scene implements GameSceneContrac
     this.lifecycle.resume();
   }
 
-  quitToMenu(destination?: QuitDestination): void {
+  quitRound(destination: QuitDestination): void {
     // Sprint 2.1.9 — RoundAbandoned telemetry + tweens.resumeAll +
     // scene.start(Menu) consolidated in lifecycle helper.
-    this.lifecycle.quitToMenu(destination);
+    this.lifecycle.quitRound(destination);
   }
 
   /** Convenience getter for the HUD's countdown ring. */

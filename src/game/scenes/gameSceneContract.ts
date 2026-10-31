@@ -6,12 +6,12 @@ import type Phaser from 'phaser';
 import type { Question } from '@/math/types';
 
 /**
- * Where a mid-round quit from the pause menu goes: the main menu, straight
- * to Game Select to pick another game (sprint 2.6.5; the challenge and
- * difficulty carry over), or this game's Difficulty after a new challenge
- * was picked in the pause card (sprint 2.9).
+ * Where leaving a round goes (pause card, end of round). Sprint 2.15: the
+ * games list the game is on (Change Game) or the game's setup screen
+ * (Change Math or Speed; a puzzle's Change Difficulty). There's no main
+ * menu to quit to any more.
  */
-export type QuitDestination = 'menu' | 'game-select' | 'difficulty';
+export type QuitDestination = 'games' | 'setup';
 
 /**
  * Contract every game-mode scene must satisfy so HudScene (and other
@@ -50,8 +50,8 @@ export interface GameSceneContract extends Phaser.Scene {
   /** Reverse pause. Idempotent. */
   resume(): void;
 
-  /** Abandon the round + go to the main menu (default) or Game Select. NO score saved. */
-  quitToMenu(destination?: QuitDestination): void;
+  /** Leave the round for the games list or the setup screen (the points so far count as a round ended early). */
+  quitRound(destination: QuitDestination): void;
 
   /**
    * Snapshot of the in-flight question, used by HudScene to sync up

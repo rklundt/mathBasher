@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import Phaser from 'phaser';
+import { config } from '@/core/config';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { SfxKeys } from '@/core/audioKeys';
 import { emitButtonClicked, type ButtonClickSource } from '@/game/ui/buttonTelemetry';
@@ -14,8 +15,11 @@ import {
   BORDER_GREY_DISABLED,
   FOCUS_BLUE,
   SELECTED_AMBER,
+  PRIMARY_FILL,
+  PRIMARY_HOVER,
+  PRIMARY_INK_CSS,
 } from '@/game/ui/uiPalette';
-import { textStyle } from '@/game/ui/typography';
+import { textStyle, type TextKind } from '@/game/ui/typography';
 
 export interface PlaceholderButtonOpts {
   scene: Phaser.Scene;
@@ -29,7 +33,7 @@ export interface PlaceholderButtonOpts {
   /** Sprint 2.9 — a colour for the subtitle (the challenge buttons' "1.5x Points!"). */
   subtitleColor?: string;
   /**
-   * Sprint 2.13.1 — a picture on the tile's left (the Game Select tiles):
+   * Sprint 2.13.1 — a picture on the tile's left (the old Game Select tiles):
    * any loaded texture and frame, drawn `sizePx` square with `padPx` around
    * it. The label and subtitle centre in the space to its right. A texture
    * that isn't loaded is skipped (the text keeps its place).
@@ -41,6 +45,23 @@ export interface PlaceholderButtonOpts {
   selected?: boolean;
   /** Click / tap / Enter / Space handler. Not invoked when `disabled` is true. */
   onClick?: () => void;
+  /**
+   * Sprint 2.15 — `'primary'`: the big yellow button, dark label (Play, Start,
+   * Play Again, Resume). Default: the slate button.
+   */
+  variant?: 'normal' | 'primary';
+  /** Sprint 2.15 — the label's text style (default `'buttonLabel'`). */
+  labelKind?: TextKind;
+  /**
+   * Sprint 2.15 — the corner radius. Left out, it follows the height
+   * (`config.layout.corners`); a value at least half the height makes a pill.
+   */
+  radius?: number;
+  /**
+   * Sprint 2.15 — a darker strip under the button, so it looks raised (the
+   * big tiles). Primary buttons have one unless this is null.
+   */
+  shadow?: ButtonShadow | null;
   /**
    * Sprint 2.9.2 — false: the button takes no taps itself; the scene finds
    * the tapped button and calls `activate('pointer')`. For buttons in a
@@ -57,6 +78,18 @@ export interface ButtonIcon {
   frame?: string | number;
   sizePx: number;
   padPx: number;
+}
+
+/** The darker strip under a raised button: how far it shows below, and its colour. */
+export interface ButtonShadow {
+  px: number;
+  color: number;
+}
+
+/** A button's corner radius from its height (`config.layout.corners`). */
+export function buttonRadius(height: number): number {
+  const C = config.layout.corners;
+  return Math.min(C.buttonMaxPx, Math.max(C.buttonMinPx, Math.round(height * C.buttonFrac)));
 }
 
 /** Gap between the label and the subtitle on a tile with a picture. */
@@ -76,8 +109,8 @@ const ICON_TEXT_GAP_PX = 6;
  *
  * Important invariants:
  * - Disabled buttons IGNORE pointer events AND keyboard activation. This is
- *   load-bearing for DifficultyScene tile gating (a kid clicking a "Coming
- *   soon" tile must NOT trigger anything).
+ *   load-bearing for "Coming soon" tiles ("More Coming Soon" on the
+ *   chooser): a kid tapping one must NOT trigger anything.
  * - Text inside disabled buttons does NOT have its alpha reduced — only the
  *   background and border dim. This keeps text contrast above WCAG 1.4.3
  *   (~4.5:1) on the dark canvas background. Reducing alpha on the whole
@@ -96,6 +129,7 @@ const ICON_TEXT_GAP_PX = 6;
 export class PlaceholderButton extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly border: Phaser.GameObjects.Rectangle;
+  private readonly shadow?: Phaser.GameObjects.Rectangle;
   private readonly textChildren: Phaser.GameObjects.Text[] = [];
   /** Sprint 2.13.1 — the tile picture, when there is one. */
   private icon?: Phaser.GameObjects.Image;
@@ -104,6 +138,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
   private _selected: boolean;
   private _focused = false;
   private readonly onClick?: () => void;
+  private readonly primary: boolean;
 
   constructor(opts: PlaceholderButtonOpts) {
     super(opts.scene, opts.x, opts.y);
@@ -113,6 +148,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this._disabled = opts.disabled ?? false;
     this._selected = opts.selected ?? false;
     this.onClick = opts.onClick;
+    this.primary = opts.variant === 'primary';
 
     // Background (filled) + border (stroked).
     //
@@ -129,8 +165,16 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     // world-to-local transform via its parent container automatically. Net:
     // the entire button surface is clickable, regardless of where the text
     // sits.
-    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, SLATE_BG);
-    this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height);
+    // Sprint 2.15 — rounded corners; the hit area stays the full rectangle.
+    const radius = opts.radius ?? buttonRadius(opts.height);
+    const shadow =
+      opts.shadow === undefined ? (this.primary ? config.layout.corners.primaryShadow : null) : opts.shadow;
+    if (shadow !== null) {
+      this.shadow = opts.scene.add.rectangle(0, shadow.px, opts.width, opts.height, shadow.color).setRounded(radius);
+      this.add(this.shadow);
+    }
+    this.bg = opts.scene.add.rectangle(0, 0, opts.width, opts.height, SLATE_BG).setRounded(radius);
+    this.border = opts.scene.add.rectangle(0, 0, opts.width, opts.height).setRounded(radius);
     this.border.setStrokeStyle(2, BORDER_GREY);
     this.border.setFillStyle();
     this.add([this.bg, this.border]);
@@ -176,10 +220,10 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
     // Hover state (only when enabled).
     this.bg.on('pointerover', () => {
-      if (!this._disabled) this.bg.setFillStyle(SLATE_HOVER);
+      if (!this._disabled) this.bg.setFillStyle(this.primary ? PRIMARY_HOVER : SLATE_HOVER);
     });
     this.bg.on('pointerout', () => {
-      if (!this._disabled) this.bg.setFillStyle(SLATE_BG);
+      if (!this._disabled) this.refreshAppearance();
     });
     // Click handler uses POINTERDOWN, not pointerup. pointerup is bug-shaped
     // here for two reasons:
@@ -200,7 +244,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
 
   /** The usual layout: the label centred, the subtitle (if any) under it. */
   private addTextLayout(opts: PlaceholderButtonOpts): void {
-    const label = opts.scene.add.text(0, opts.subtitle ? -28 : 0, opts.label, textStyle('buttonLabel'));
+    const label = opts.scene.add.text(0, opts.subtitle ? -28 : 0, opts.label, this.labelStyle(opts));
     label.setOrigin(0.5);
     this.add(label);
     this.textChildren.push(label);
@@ -241,7 +285,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     const textX = textLeft + textW / 2;
 
     const label = opts.scene.add.text(textX, 0, opts.label, {
-      ...textStyle('buttonLabel'),
+      ...this.labelStyle(opts),
       wordWrap: { width: textW },
       align: 'center',
     });
@@ -263,6 +307,12 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     const top = -(label.height + ICON_TEXT_GAP_PX + subtitle.height) / 2;
     label.setY(top + label.height / 2);
     subtitle.setY(top + label.height + ICON_TEXT_GAP_PX + subtitle.height / 2);
+  }
+
+  /** The label's style: its kind, in dark ink on a primary button. */
+  private labelStyle(opts: PlaceholderButtonOpts): Phaser.Types.GameObjects.Text.TextStyle {
+    const style = textStyle(opts.labelKind ?? 'buttonLabel');
+    return opts.variant === 'primary' ? { ...style, color: PRIMARY_INK_CSS, fontStyle: 'bold' } : style;
   }
 
   /**
@@ -351,6 +401,7 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
       this.border.setAlpha(0.7);
       this.textChildren.forEach((t) => t.setAlpha(1));
       this.icon?.setAlpha(0.6); // the picture dims with the tile; the text stays readable
+      this.shadow?.setVisible(false); // a disabled tile sits flat
       this.setAlpha(1); // container itself stays full-alpha
       return;
     }
@@ -359,6 +410,14 @@ export class PlaceholderButton extends Phaser.GameObjects.Container {
     this.border.setAlpha(1);
     this.textChildren.forEach((t) => t.setAlpha(1));
     this.icon?.setAlpha(1);
+    this.shadow?.setVisible(true);
+
+    // Sprint 2.15 — a primary button stays yellow; focus adds the blue ring.
+    if (this.primary) {
+      this.bg.setFillStyle(PRIMARY_FILL);
+      this.border.setStrokeStyle(this._focused ? 4 : 2, this._focused ? FOCUS_BLUE : PRIMARY_FILL);
+      return;
+    }
 
     // Border colors: focus > selected > normal. Focus uses a distinct blue
     // so it never gets confused with the amber selected state.

@@ -27,7 +27,33 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-_Nothing yet._
+## [2.15.0] - 2026-10-30 — New screen flow
+
+**Title Screen**
+- mathBasher, "Math and puzzle games", a big yellow **Play** and **Settings**, with the title art (a girl with a blaster and her alien pal).
+
+**Game Chooser**
+- Pick what to play in steps: **Math** or **Puzzles** (and a "More Coming Soon" tile), then for Math **mathBasher** (space games) or **Math Fun** (animal games), then the game.
+- Every tile has a picture and a livelier line ("Ribbit! Hop the right lily pads across the river.", "Choo choo! What rides next?").
+- A "where you are" trail under the title (Math › mathBasher); tap a chip to go back there. Back walks up one step.
+- My Scores, Settings and mute in the top bar on every step.
+- The game you played last says **Last Played**.
+
+**Setup screens**
+- Math games: **What math?** (each type with its points, "1.5x Points!") and **How fast?** or **How tough?** (each level with "Up to N points!"), then a big Start.
+- Puzzles: **How tough?** with "Up to N points!"; Pair Pals: **Which cards?** and **How tough?**.
+- Your picks are remembered in this browser and already selected next time: the math type for every math game, the speed for each game.
+
+**Pause and the end of a round**
+- Pause: Resume, Change Game, Change Math or Speed (puzzles: Change Difficulty; Pair Pals: Change Cards or Difficulty) and Settings.
+- End of a round: Play Again, then the same three (Esc is Change Game). No more Main Menu.
+
+**Also**
+- Buttons, tiles and panels have rounded corners, and the big tiles and yellow buttons sit on a darker strip so they look raised, as in the wireframes.
+- The Game Over screen sits on a rounded card.
+- Symbol Hunt: the sand runs out faster (20 / 25 / 30 seconds, was 40 / 40 / 45).
+- The teal shapes are a deeper teal, so they no longer look like the green ones on some screens.
+- The hero picker and the hero picture are switched off for now (a saved pick is kept).
 
 ## [2.14.0] - 2026-10-30 — Puzzle pack
 

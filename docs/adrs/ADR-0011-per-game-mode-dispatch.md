@@ -17,7 +17,7 @@ Each game mode needs to differ from the others on multiple axes:
 - Background music (`Loop1` / `Loop3` / future)
 - Background midground audio (`Skittering1` / `SpaceNoises1` / future)
 - Asset bundle (alien spritesheets vs asteroid rock sprites vs future-mode art)
-- Scene-key route from `DifficultyScene`
+- Scene-key route from the setup screen (`DifficultyScene` until sprint 2.15, now `MathSetupScene`)
 - (potentially future axes — collision system, input scheme, telemetry partition)
 
 Adding a third game mode (2.2) is the trigger for documenting the dispatch pattern that emerged organically across sprints 2.1 → 2.1.8. Without a written contract, the 2.2 author would have to read 6+ files to figure out "what do I touch when I add a game mode?"
@@ -36,7 +36,7 @@ The dispatch axes today (sprint 2.1.9):
 | Space-only background layers | `GAME_BG_SPACE_LAYERS: Record<GameId, { stars; bottomFade }>` (sprint 2.5.4) | `src/core/spriteKeys.ts` | `BackgroundScene.applySpaceLayers` (reactive, same observer as the bg image) |
 | Asset bundle scope | per-entry `scope: 'game:<gameId>'` field on each `SpriteManifestEntry` / `AudioManifestEntry` | `src/core/spriteKeys.ts`, `src/core/audioKeys.ts` | `loadGameBundle(scene, gameId)` filters by scope predicate |
 | Audio scope dispatch | `audioScopeFor(key): AssetScope` | `src/core/audioKeys.ts` | `AUDIO_MANIFEST` builder calls per key |
-| Scene-key route | `gameSceneKeyFor(gameId)` — exhaustive switch, a missing arm is a compile error (since sprint 2.2) | `src/core/sceneKeys.ts` | `DifficultyScene` (via `LoadingScene`) and `GameOverScene` (Play Again) |
+| Scene-key route | `gameSceneKeyFor(gameId)` — exhaustive switch, a missing arm is a compile error (since sprint 2.2) | `src/core/sceneKeys.ts` | `MathSetupScene` (via `LoadingScene`; sprint 2.15) and `GameOverScene` (Play Again) |
 | LoadingScene caption | inline switch | `src/game/scenes/LoadingScene.ts` | rendered by `attachLoadingOverlay` |
 
 The `GameSceneLifecycle` helper (`src/game/services/GameSceneLifecycle.ts`) abstracts the scene-mount-time work that uses these maps — telemetry, HUD launch, audio loop start/stop. Game scenes construct one in `create()` and call `.enter()` / `.exit()` / `.endRound()` / `.pause()` / `.resume()` / `.quitToMenu()` instead of duplicating the bookkeeping per scene.
@@ -151,14 +151,14 @@ When sprint 2.X adds game mode `<id>`:
 
 8. **Register the scene** in `src/app/boot.ts` `scene: [...]` array. Order matters (render order = registration order); put it adjacent to other game scenes.
 
-9. **Add a `gameSceneKeyFor` arm** (`src/core/sceneKeys.ts`) returning the new scene key. It's an exhaustive switch, so step 1 already makes a missing arm a compile error; DifficultyScene and GameOverScene's Play Again both route through it.
+9. **Add a `gameSceneKeyFor` arm** (`src/core/sceneKeys.ts`) returning the new scene key. It's an exhaustive switch, so step 1 already makes a missing arm a compile error; the math setup screen and GameOverScene's Play Again both route through it.
    Also add a row to `GAME_BG_SPACE_LAYERS` (`src/core/spriteKeys.ts`) — whether BackgroundScene's parallax stars and bottom darkening band show over the new backdrop (TypeScript flags a missing row).
 
-10. **Update `LoadingScene` caption** switch — same one-line addition. In `DifficultyScene`, add the game's arm to `speedDisplayFor` and to `speedSectionTitleFor` (both exhaustive switches since sprint 2.7).
+10. **Update `LoadingScene` caption** switch — same one-line addition. In `src/game/ui/mathSpeedLabels.ts` (sprint 2.15; it was in `DifficultyScene`), add the game's arm to `speedDisplayFor` and to `speedSectionTitleFor` (both exhaustive switches since sprint 2.7).
 
-11. **Add a "Game Select" tile** in `GameSelectScene.ts` that calls `Settings.setGameId('<id>')` + transitions to `SceneKeys.Difficulty`.
+11. **Add the game's chooser tile** (sprint 2.15, ADR-0015): its name and line in `MATH_GAME_TILES` (`src/core/chooserTiles.ts`), its group in `src/core/gameGroups.ts` (a test checks every math game is in one) and its picture in `GAME_ICON_SHEET`. The chooser's tile opens the math setup screen.
 
-11b. **Add the game to `questionsPerRoundFor`** (`src/services/challengePoints.ts`, an exhaustive switch, sprint 2.9): Difficulty's "Up to N points!" uses its round length. Add its name to `gameDisplayName` in `DifficultyScene` (the "<Game>: how tough?" heading).
+11b. **Add the game to `questionsPerRoundFor`** (`src/services/challengePoints.ts`, an exhaustive switch, sprint 2.9): the setup screen's "Up to N points!" uses its round length. (Its name comes from the chooser tile, step 11.)
 
 11c. **Round end (sprint 2.10):** advance the question index only when a question is answered (so `RoundController.isRoundOver` means "reached the end" and earns the Finish Bonus); mark a miss or time-out before the right answer as `usedWrongShot` (Perfect Round); implement `isRoundEnding()` from `this.lifecycle.isRoundEnding`; and call `this.lifecycle.beginRoundEnd()` wherever the round ends after a delay that isn't the last answer ("Out of lives!", a fall).
 
@@ -172,13 +172,13 @@ When sprint 2.X adds game mode `<id>`:
 
 ### A puzzle game (sprint 2.13)
 
-A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no challenge, points, Game Select or Difficulty. `GameId` is `MathGameId | PuzzleGameId`; math-only code (Difficulty, `questionsPerRoundFor`, Game Over, `GameSceneLifecycle`) takes `MathGameId`, so a puzzle can't reach it. For a new puzzle game:
+A puzzle game (Pair Pals) belongs to the Puzzles subject (ADR-0014): no math type or speed. `GameId` is `MathGameId | PuzzleGameId`; math-only code (the math setup, `questionsPerRoundFor`, Game Over, `GameSceneLifecycle`) takes `MathGameId`, so a puzzle can't reach it. For a new puzzle game:
 
 - Steps 1–6, 8, 9 and 10 (the Loading caption only) as above, with the id added to `PuzzleGameId`; list the puzzle in `src/core/puzzles.ts` with its `gameId`.
 - Give it a setup scene and an arm in `puzzleSetupSceneKeyFor` (`src/core/sceneKeys.ts`): the picker's Puzzles tab and Menu Start open it through Loading, so its own pictures are in memory.
-- Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with `puzzleQuitFn` (Resume · Change Cards or Difficulty · Settings · Quit to Menu).
+- Its board scene doesn't use HudScene or `GameSceneLifecycle`: it draws its own top bar, starts and stops its own music, and launches `PauseOverlay` with its `quitFn` and `changeLabel` (sprint 2.15: Resume · Change Game · Change Cards or Difficulty · Settings). Its end panel uses `createRoundEndButtons`.
 - Sounds big enough to matter (Pair Pals' music, one track per card theme) can be `onDemand` in the audio manifest: left out of the game's bundle and loaded by the scene when needed (`loadAudioOnDemand`).
-- Steps 7, 10 (Difficulty), 11, 11c–11e and 12 don't apply.
+- Steps 7, 10 (the speed wording), 11 (a puzzle's tile line is its `blurb` in `core/puzzles.ts`), 11c–11e and 12 don't apply.
 - **The puzzle pack (sprint 2.14)** shares more: one setup scene (`PuzzleSetupScene`, a level per puzzle), one scene for the five "pick one" puzzles (`PickPuzzleScene`; `gameSceneKeyFor` sends all five there and it reads which from `Settings.round.gameId`), and a base class for every round (`PuzzleRoundScene`: frame, progress bar, dancers, pause, music, the end panel). A new pick-one puzzle is a generator in `src/game/systems/puzzles/pickPuzzles.ts` and a stage drawing in `PickPuzzleScene`. Sprites shared between games list the others in `alsoFor` on their manifest entry, as sounds do.
 
 If you forget step 1, you can't compile any of the others. If you forget steps 2/3/4/5, TypeScript flags the missing rows. If you forget steps 6-8, 10 or 11, the game won't START or can't be picked (no scene registered, no caption, no tile); step 9 is compiler-enforced.

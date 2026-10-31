@@ -13,10 +13,12 @@ import { text } from '@/game/ui/typography';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { AUDIO_KINDS, type AudioKind, type AudioManager } from '@/services/AudioManager';
 import { Settings, type HeroSkin } from '@/services/Settings';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
 
 /**
- * Settings screen. Reachable from MenuScene and from PauseOverlay. Two
+ * Settings screen. Reachable from the Title Screen, the chooser and setup
+ * screens' top bar, the end of a round and PauseOverlay. Two
  * concerns share the panel: AUDIO settings (always present — volume
  * sliders for sfx / midground / music) and GAME settings (per-game-mode
  * options, visible only when the current round's game has any to show).
@@ -31,8 +33,8 @@ import { ClimbHeroSkinKeys } from '@/core/spriteKeys';
  *
  * Launched as a parallel scene, NOT started in place: the caller passes
  * `onBack` via `init({ onBack })` and SettingsScene calls it when the
- * user clicks Back or presses Esc. From MenuScene the underlying scene
- * is Menu; from PauseOverlay the underlying scenes are Game + Hud +
+ * user clicks Back or presses Esc. From a menu screen that screen stays
+ * underneath; from PauseOverlay the underlying scenes are Game + Hud +
  * PauseOverlay (in z-order). Either way SettingsScene knows nothing
  * about its caller.
  *
@@ -145,6 +147,7 @@ export class SettingsScene extends Phaser.Scene {
 
   create(): void {
     _th.logToAi('SettingsScene Started', SeverityLevel.Information);
+    addScreenTag(this, 'SettingsScene');
 
     const { width, height } = this.scale;
 
@@ -156,6 +159,12 @@ export class SettingsScene extends Phaser.Scene {
     // subtle hint of background atmosphere without the visual noise.
     const backdrop = this.add.rectangle(0, 0, width, height, 0x000000, 0.92);
     backdrop.setOrigin(0, 0);
+    // Sprint 2.15 — the backdrop takes taps, so a tap on an empty part of
+    // Settings (or a label) never reaches the screen underneath: Phaser only
+    // stops a tap at the top scene when something there is interactive.
+    // Without this, a tap over Game Over's Play Again started a round under
+    // the open Settings panel.
+    backdrop.setInteractive();
 
     // Title (persists across tab switches).
     text(this, width / 2, height * 0.1, 'Settings', 'h2').setOrigin(0.5);

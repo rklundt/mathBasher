@@ -17,7 +17,9 @@ import { KeyboardNavigator, type Focusable } from '@/game/ui/KeyboardNavigator';
 import { wireEscBack } from '@/game/ui/EscBackHandler';
 import { text, textStyle } from '@/game/ui/typography';
 import { setupScene } from '@/game/scenes/sceneSetup';
+import { addScreenTag } from '@/game/ui/screenTag';
 import { createMuteIconButton } from '@/game/ui/MuteIconButton';
+import type { MyScoresInit } from '@/game/services/chooserNavigation';
 
 type Tab = 'today' | 'all-time';
 
@@ -74,12 +76,20 @@ export class MyScoresScene extends Phaser.Scene {
   private scrollY = 0;
   private press: Press | undefined;
 
+  /** Sprint 2.15 — where Back goes: the chooser step or setup screen My Scores was opened from. */
+  private backTo: MyScoresInit['back'] = { key: SceneKeys.Title };
+
   constructor() {
     super(MyScoresScene.key);
   }
 
+  init(data: Partial<MyScoresInit>): void {
+    this.backTo = data.back ?? { key: SceneKeys.Title };
+  }
+
   create(): void {
     setupScene(this);
+    addScreenTag(this, 'MyScoresScene');
     this.view = [];
     this.nav = undefined;
     this.rows = [];
@@ -95,14 +105,14 @@ export class MyScoresScene extends Phaser.Scene {
     createMuteIconButton(this, width - 16 - 22, 16 + 18);
 
     const goBack = (): void => {
-      this.scene.start(SceneKeys.Menu);
+      this.scene.start(this.backTo.key, this.backTo.data);
     };
     this.back = new PlaceholderButton({
       scene: this,
       x: cx,
       y: M.backY,
-      width: config.layout.challengeFlow.backButton.w,
-      height: config.layout.challengeFlow.backButton.h,
+      width: config.layout.myScores.backButton.w,
+      height: config.layout.myScores.backButton.h,
       label: 'Back',
       onClick: goBack,
     });

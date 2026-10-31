@@ -18,7 +18,7 @@ import '@/math/registry';
  * Sprint 2.9.2 — how a round is counted: once, at Game Over (finished) or
  * when the child leaves mid-round (ended early), in both the "This visit"
  * total and My Scores. The scene is a stub: only the calls endRound and
- * quitToMenu make.
+ * quitRound make.
  */
 function fakeScene(): { scene: Phaser.Scene; started: string[]; data: unknown[] } {
   const started: string[] = [];
@@ -80,7 +80,7 @@ describe('GameSceneLifecycle round counting', () => {
     const { lc, started } = lifecycleFor(rc);
     lc.endRound();
     lc.endRound();
-    lc.quitToMenu();
+    lc.quitRound('games');
     expect(started).toEqual([SceneKeys.GameOver]);
     expect(SessionTotalScore.get()).toBe(rc.score);
     expect(addTo10()).toEqual({
@@ -92,10 +92,11 @@ describe('GameSceneLifecycle round counting', () => {
 
   it('leaving mid-round counts the points so far, as ended early', () => {
     const rc = playedRound(2);
-    const { lc, started } = lifecycleFor(rc);
-    lc.quitToMenu('game-select');
-    lc.quitToMenu('menu');
-    expect(started).toEqual([SceneKeys.GameSelect]);
+    const { lc, started, data } = lifecycleFor(rc);
+    lc.quitRound('games');
+    lc.quitRound('setup');
+    expect(started).toEqual([SceneKeys.GameChooser]);
+    expect(data).toEqual([{ step: { kind: 'games', subject: 'math', group: 'math-basher' } }]);
     expect(rc.score).toBeGreaterThan(0);
     expect(SessionTotalScore.get()).toBe(rc.score);
     expect(addTo10()).toEqual({
@@ -107,8 +108,8 @@ describe('GameSceneLifecycle round counting', () => {
 
   it('leaving before the first answer is not a round', () => {
     const { lc, started } = lifecycleFor(playedRound(0));
-    lc.quitToMenu();
-    expect(started).toEqual([SceneKeys.Menu]);
+    lc.quitRound('setup');
+    expect(started).toEqual([SceneKeys.MathSetup]);
     expect(addTo10()).toEqual(before);
   });
 
@@ -158,9 +159,10 @@ describe('GameSceneLifecycle round counting', () => {
     rc.advanceQuestionIndex();
     expect(fast.speedTier).toBe(3);
     const { lc, data } = lifecycleFor(rc);
-    lc.quitToMenu();
+    lc.quitRound('games');
     lc.endRound();
-    expect(data).toEqual([undefined]);
+    // Leaving opens the games list the game is on (sprint 2.15); the later Game Over is ignored.
+    expect(data).toEqual([{ step: { kind: 'games', subject: 'math', group: 'math-basher' } }]);
     const rc2 = new RoundController('add-to-10', 'medium');
     rc2.drawNextQuestion();
     rc2.recordOutcome({ wasCorrect: true, usedWrongShot: false, timeUsed: 0.2 });
