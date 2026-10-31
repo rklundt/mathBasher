@@ -40,7 +40,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
   /** Wrong picks on this puzzle (three and it goes red). */
   private misses = 0;
   private locked = false;
-  /** The sand bar, on the timed puzzles (Pattern Train, Odd One Out, Spin Match). */
+  /** The sand bar (every pick-one puzzle is timed, `config.puzzles.timed`). */
   private sand?: SandTimer;
 
   constructor() {

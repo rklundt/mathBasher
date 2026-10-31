@@ -624,8 +624,8 @@ export class AnswerTray {
 // ---------------------------------------------------------------- sand timer
 
 /**
- * A sand bar that runs out: a timed puzzle's clock (Pattern Train, Odd One
- * Out, Spin Match, Symbol Hunt). It turns red near the end; pausing the scene's tweens
+ * A sand bar that runs out: a timed puzzle's clock (every puzzle but Copy
+ * Cat). It turns red near the end; pausing the scene's tweens
  * pauses it.
  */
 export class SandTimer {

@@ -128,8 +128,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
 
   /** The seconds an untimed puzzle's speed bonus counts against (Copy Cat: by its sequence). */
   protected speedSeconds(): number {
-    const seconds = config.puzzles.points.speedSeconds as Partial<Record<string, number>>;
-    return seconds[this.id] ?? 30;
+    return config.puzzles.points.untimedSpeedSeconds;
   }
 
   /** The top bar's left label: the points (Copy Cat adds its sequence length). */

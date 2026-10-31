@@ -120,7 +120,7 @@ export class SymbolHuntScene extends PuzzleRoundScene {
     this.sand?.destroy();
     this.sand = new SandTimer(this, (left + right) / 2, 560, right - left);
     this.live = true;
-    this.sand.start(H.seconds[this.level], () => this.miss('Time’s up! Here they were.'));
+    this.sand.start(config.puzzles.timed['symbol-hunt'][this.level], () => this.miss('Time’s up! Here they were.'));
   }
 
   /** Keyboard: move the ring around the grid (it stops at the edges). */
