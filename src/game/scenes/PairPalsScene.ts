@@ -247,6 +247,11 @@ export class PairPalsScene extends Phaser.Scene {
     kb.on('keydown-ENTER', () => this.tapFocused());
     kb.on('keydown-ESC', () => {
       if (Date.now() - this.resumedAt < 250) return;
+      // Sprint 2.15 — once the game is won, Esc is the win panel's Change Game (as on Game Over).
+      if (this.won) {
+        if (!this.scene.isActive(SceneKeys.Settings)) openGamesFor(this, 'pair-pals');
+        return;
+      }
       this.openPause();
     });
   }

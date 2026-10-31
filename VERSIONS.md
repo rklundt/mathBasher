@@ -27,7 +27,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-### 2.15 — New screen flow (on dev; not released yet)
+## [2.15.0] - 2026-10-30 — New screen flow
 
 **Title Screen**
 - mathBasher, "Math and puzzle games", a big yellow **Play** and **Settings**, with the title art (a girl with a blaster and her alien pal).
@@ -46,7 +46,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 **Pause and the end of a round**
 - Pause: Resume, Change Game, Change Math or Speed (puzzles: Change Difficulty; Pair Pals: Change Cards or Difficulty) and Settings.
-- End of a round: Play Again, then the same three. No more Main Menu.
+- End of a round: Play Again, then the same three (Esc is Change Game). No more Main Menu.
 
 **Also**
 - Buttons, tiles and panels have rounded corners, and the big tiles and yellow buttons sit on a darker strip so they look raised, as in the wireframes.

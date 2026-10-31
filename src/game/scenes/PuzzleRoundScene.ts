@@ -94,6 +94,11 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ESC', () => {
       if (Date.now() - this.resumedAt < 250) return;
+      // Sprint 2.15 — once the round is over, Esc is the end panel's Change Game (as on Game Over).
+      if (this.ended) {
+        if (!this.scene.isActive(SceneKeys.Settings)) openGamesFor(this, this.id);
+        return;
+      }
       this.openPause();
     });
     this.events.once('shutdown', () => this.cleanUp());
