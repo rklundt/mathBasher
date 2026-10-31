@@ -40,7 +40,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
   /** Wrong picks on this puzzle (three and it goes red). */
   private misses = 0;
   private locked = false;
-  /** The sand bar, on the timed puzzles (Pattern Train, Odd One Out). */
+  /** The sand bar, on the timed puzzles (Pattern Train, Odd One Out, Spin Match). */
   private sand?: SandTimer;
 
   constructor() {
@@ -72,7 +72,7 @@ export class PickPuzzleScene extends PuzzleRoundScene {
     };
     kb?.on('keydown-SPACE', pickFocused);
     kb?.on('keydown-ENTER', pickFocused);
-    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].forEach((k, i) => kb?.on(`keydown-${k}`, () => this.pick(i)));
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((k, i) => kb?.on(`keydown-${k}`, () => this.pick(i)));
     this.showPuzzle(0);
   }
 

@@ -14,6 +14,7 @@ import { PuzzleRoundScene } from '@/game/scenes/PuzzleRoundScene';
 import { PUZZLE_DEPTH, SandTimer, sparkle, tokenCard } from '@/game/ui/puzzleFrame';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
+import { SELECTED_AMBER } from '@/game/ui/uiPalette';
 
 const H = config.puzzles.symbolHunt;
 
@@ -23,6 +24,8 @@ const H = config.puzzles.symbolHunt;
  * round; Medium and Hard mix in look-alikes. Green: all found with no wrong
  * tap in the first half of the time; yellow: found later or after a wrong
  * tap; red: the sand runs out or three wrong taps (the ones left are shown).
+ * Keyboard (sprint 2.15.1): the arrow keys move a ring around the grid,
+ * Space or Enter taps the card under it.
  */
 export class SymbolHuntScene extends PuzzleRoundScene {
   static readonly key = SceneKeys.SymbolHunt;
@@ -37,6 +40,10 @@ export class SymbolHuntScene extends PuzzleRoundScene {
   private misses = 0;
   private live = false;
   private sand?: SandTimer;
+  /** The card under the keyboard ring (−1 until an arrow key is pressed); kept from board to board. */
+  private focus = -1;
+  private focusRing?: Phaser.GameObjects.Graphics;
+  private cardPx = 0;
 
   constructor() {
     super(SymbolHuntScene.key);
@@ -48,6 +55,18 @@ export class SymbolHuntScene extends PuzzleRoundScene {
 
   protected startRound(): void {
     this.objects = [];
+    this.focus = -1;
+    const kb = this.input.keyboard;
+    kb?.on('keydown-LEFT', () => this.moveFocus(-1, 0));
+    kb?.on('keydown-RIGHT', () => this.moveFocus(1, 0));
+    kb?.on('keydown-UP', () => this.moveFocus(0, -1));
+    kb?.on('keydown-DOWN', () => this.moveFocus(0, 1));
+    const tapFocused = (): void => {
+      if (this.focus >= 0) this.tap(this.focus);
+      else this.moveFocus(0, 0);
+    };
+    kb?.on('keydown-SPACE', tapFocused);
+    kb?.on('keydown-ENTER', tapFocused);
     this.showBoard(0);
   }
 
@@ -92,12 +111,41 @@ export class SymbolHuntScene extends PuzzleRoundScene {
       this.cards.push(card);
       this.objects.push(card, zone);
     });
+    this.cardPx = px;
+    this.focusRing = this.add.graphics().setDepth(PUZZLE_DEPTH.stage + 2);
+    this.objects.push(this.focusRing);
+    this.drawFocus();
 
     // The sand: a bar that runs out under the grid.
     this.sand?.destroy();
     this.sand = new SandTimer(this, (left + right) / 2, 560, right - left);
     this.live = true;
     this.sand.start(H.seconds[this.level], () => this.miss('Time’s up! Here they were.'));
+  }
+
+  /** Keyboard: move the ring around the grid (it stops at the edges). */
+  private moveFocus(dx: number, dy: number): void {
+    if (this.blocked || this.cards.length === 0) return;
+    const cols = H.cols[this.level];
+    const n = this.cards.length;
+    if (this.focus < 0) {
+      this.focus = 0;
+    } else {
+      const col = Phaser.Math.Clamp((this.focus % cols) + dx, 0, cols - 1);
+      const row = Phaser.Math.Clamp(Math.floor(this.focus / cols) + dy, 0, Math.ceil(n / cols) - 1);
+      this.focus = Math.min(n - 1, row * cols + col);
+    }
+    this.drawFocus();
+  }
+
+  private drawFocus(): void {
+    const g = this.focusRing;
+    if (!g) return;
+    g.clear();
+    const card = this.cards[this.focus] as Phaser.GameObjects.Container | undefined;
+    if (!card) return;
+    const s = this.cardPx + 18;
+    g.lineStyle(5, SELECTED_AMBER, 1).strokeRoundedRect(card.x - s / 2, card.y - s / 2, s, s, s * 0.16);
   }
 
   private updateCount(): void {

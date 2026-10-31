@@ -576,7 +576,7 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] The Puzzles tab shows all eight with their pictures; a puzzle → Loading → "<Name>: how tough?" with Easy / Medium / Hard and what changes; the level is remembered; Back → Puzzles tab.
 - [ ] The round: the progress bar (8 steps), the prompt, the backdrop changing a little each puzzle, two animals swaying at the bottom corners (they cheer on a right answer, "Oh!" on a wrong one, new ones every few puzzles); the puzzle's music.
 - [ ] A wrong answer greys out with "Try again!" in the prompt; the right one gets a green ring, fills the "?" and says why ("The others are all stars!"). The step: green (first try, and in the first half of the time when timed), yellow (after a miss or slower), red (three misses or time up: the answer is shown, the round moves on).
-- [ ] Pattern Train, Odd One Out and Symbol Hunt have a sand bar; no wrong choice is the answer in another size, turn or number unless the puzzle changes those.
+- [ ] Pattern Train, Odd One Out, Spin Match and Symbol Hunt have a sand bar; no wrong choice is the answer in another size, turn or number unless the puzzle changes those.
 - [ ] Only two sizes anywhere: big (filling most of the card) and small at about half. Easy to tell apart on a phone. A hat stays on its card.
 - [ ] Points: "Points: N" top left grows on each right answer with a "+N" (and ⚡ when quick); the end panel shows the total. Easy all green and quick ≈ 1,200; Hard ≈ 1,800. Then My Scores lists it under Puzzles, and a math game's "This visit" includes it.
 - [ ] The background moves a little: the backdrop drifts and zooms slowly, bubbles and small stars float up, a sparkle twinkles now and then, and the dancers hop on their own. Never in the way, never a shape you could mistake for an answer. Pair Pals too.
@@ -585,7 +585,7 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] Missing Piece: Easy 3 × 3, Medium 3 × 4, Hard 3 rows of 4 to 6 columns, the window centred and clear of the prompt and the tray.
 - [ ] Pattern Train: the train and the "?" car. Missing Piece: the window. Odd One Out: the shelf (tap one on it). Magic Wand: from → to, so → ?, the wand. Spin Match: the shape on its turntable; mirrors on Medium / Hard.
 - [ ] Copy Cat: the chick peeps, the pig oinks, the whale sings, none louder than the others. The animals light up and sound in order ("Watch…" then "Your turn!"); a mistake shows the order again; the sequence grows each round.
-- [ ] Symbol Hunt: the sign, the grid, the sand bar; found cards ring green; a wrong tap wiggles; the sand running out shows the ones left.
+- [ ] Symbol Hunt: the sign, the grid, the sand bar; found cards ring green; a wrong tap wiggles; the sand running out shows the ones left. Keyboard: the arrow keys move a yellow ring around the grid (it stops at the edges), Space or Enter taps the card under it.
 - [ ] The end: stars, "N of 8 right first time!", "Your first round at this level!" / "New best!" / "Your best is N of 8"; Play Again, Change Difficulty, Menu. Pause: Resume · Change Difficulty · Settings · Quit to Menu. Menu and Quit to Menu open the game picker on the Puzzles tab.
 - [ ] Keys: Left / Right and Space / Enter, 1–5 (Copy Cat 1–6), Esc pauses.
 

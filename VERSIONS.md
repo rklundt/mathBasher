@@ -27,6 +27,12 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+### 2.15.1 — Puzzle tune-ups (on dev; not released yet)
+
+- **Symbol Hunt:** the sand runs out faster again (12 / 15 / 18 seconds for Easy / Medium / Hard, was 20 / 25 / 30). It can be played with the keyboard now: the arrow keys move a ring around the cards, Space or Enter picks one.
+- **Odd One Out:** more on the shelf: 5 on Medium (was 4) and 6 on Hard (was 5).
+- **Spin Match:** a sand timer, 15 / 20 / 25 seconds. On Hard every choice is now the same shape (the wrong ones mirrored, as planned); before, about 1 in 5 Hard puzzles slipped in a different shape, which made it easier.
+
 ## [2.15.0] - 2026-10-30 — New screen flow
 
 **Title Screen**

@@ -194,6 +194,18 @@ describe('the pick-one puzzles (sprint 2.14)', () => {
     });
   });
 
+  it('Spin Match Hard: every choice is the same shape (the wrong ones mirrored), never another shape', () => {
+    each((p, id, level, seed) => {
+      if (id !== 'spin-match' || level !== 'hard' || p.stage.kind !== 'spin') return;
+      const target = p.stage.target;
+      if (target.kind !== 'spin') throw new Error('spin tokens expected');
+      for (const c of p.choices) {
+        if (c.kind !== 'spin') throw new Error('spin tokens expected');
+        expect(c.shape, `seed ${String(seed)}`).toBe(target.shape);
+      }
+    });
+  });
+
   it('a round has 8 puzzles, all different', () => {
     for (const id of IDS)
       for (const level of LEVELS) {
