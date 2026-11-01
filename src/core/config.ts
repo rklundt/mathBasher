@@ -1565,7 +1565,12 @@ export const config = {
       stage: { top: 176, bottom: 500 },
       tray: { y: 604, cardPx: 128, gapPx: 24, panelPad: 22 },
       /** The sand bar of a timed puzzle (all but Copy Cat), along the bottom between the dancers. */
-      sand: { y: 706, width: 740, height: 12 },
+      /**
+       * Owner (2026-10-31): the sand is green while a right answer would
+       * still be green (`steps.greenShare`, marked by a notch), then yellow;
+       * never red (red means missed). In the last `hurryShare` it pulses.
+       */
+      sand: { y: 706, width: 740, height: 12, notchPx: 6, hurryShare: 0.25, pulseMs: 320 },
       /** Two dancing animals at the bottom corners. */
       dancers: [
         { x: 104, bottomY: 742, scale: 0.78 },

@@ -625,13 +625,16 @@ export class AnswerTray {
 
 /**
  * A sand bar that runs out: a timed puzzle's clock (every puzzle but Copy
- * Cat). It turns red near the end; pausing the scene's tweens
- * pauses it.
+ * Cat). Its colour is the step a right answer would get now: green until
+ * the notch (`steps.greenShare` of the time), then yellow, pulsing in the
+ * last stretch. Pausing the scene's tweens pauses it.
  */
 export class SandTimer {
   private readonly tray: Phaser.GameObjects.Rectangle;
   private readonly sand: Phaser.GameObjects.Rectangle;
+  private readonly notch: Phaser.GameObjects.Rectangle;
   private tween?: Phaser.Tweens.Tween;
+  private pulse?: Phaser.Tweens.Tween;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -645,21 +648,37 @@ export class SandTimer {
       .setStrokeStyle(2, 0xffffff, 0.6)
       .setDepth(PUZZLE_DEPTH.stage);
     this.sand = scene.add
-      .rectangle(x - width / 2, y, width, height, 0xffd43b, 1)
+      .rectangle(x - width / 2, y, width, height, STEP_COLOURS.green, 1)
       .setOrigin(0, 0.5)
+      .setDepth(PUZZLE_DEPTH.stage);
+    // The sand runs out from the right, so green ends this far along.
+    const notchX = x - width / 2 + width * (1 - config.puzzles.steps.greenShare);
+    this.notch = scene.add
+      .rectangle(notchX, y, L.sand.notchPx, height + 18, 0xffffff, 1)
+      .setStrokeStyle(2, CALLOUT_INK, 0.9)
       .setDepth(PUZZLE_DEPTH.stage);
   }
 
   /** Fill it and let it run for `seconds`; `onDone` when it's empty. */
   start(seconds: number, onDone: () => void): void {
-    this.tween?.stop();
-    this.sand.setScale(1, 1).setFillStyle(0xffd43b, 1);
+    this.stop();
+    this.sand.setScale(1, 1).setAlpha(1).setFillStyle(STEP_COLOURS.green, 1);
     this.tween = this.scene.tweens.add({
       targets: this.sand,
       scaleX: 0,
       duration: seconds * 1000,
       onUpdate: () => {
-        if (this.sand.scaleX < 0.25) this.sand.setFillStyle(0xff8787, 1);
+        const used = 1 - this.sand.scaleX;
+        if (used > config.puzzles.steps.greenShare) this.sand.setFillStyle(STEP_COLOURS.yellow, 1);
+        if (this.sand.scaleX < L.sand.hurryShare && !this.pulse) {
+          this.pulse = this.scene.tweens.add({
+            targets: this.sand,
+            alpha: { from: 1, to: 0.35 },
+            duration: L.sand.pulseMs,
+            yoyo: true,
+            repeat: -1,
+          });
+        }
       },
       onComplete: onDone,
     });
@@ -673,12 +692,16 @@ export class SandTimer {
   stop(): void {
     this.tween?.stop();
     this.tween = undefined;
+    this.pulse?.stop();
+    this.pulse = undefined;
+    this.sand.setAlpha(1);
   }
 
   destroy(): void {
     this.stop();
     this.tray.destroy();
     this.sand.destroy();
+    this.notch.destroy();
   }
 }
 
