@@ -4,7 +4,13 @@
 
 import Phaser from 'phaser';
 import { config } from '@/core/config';
-import { BALANCE_SHEETS, PAIR_PALS_PICTURE_KEYS, PUZZLE_SHEETS } from '@/core/spriteKeys';
+import {
+  BALANCE_SHEETS,
+  PAIR_PALS_PICTURE_KEYS,
+  PUZZLE_PICS_SHEET,
+  PUZZLE_SHEETS,
+  type DancerSheet,
+} from '@/core/spriteKeys';
 import type { Token } from '@/game/systems/puzzles/tokens';
 import { text } from '@/game/ui/typography';
 import { applyTextOutline } from '@/game/ui/callouts';
@@ -48,6 +54,10 @@ export const PUZZLE_DEPTH = {
  */
 export function drawToken(scene: Phaser.Scene, token: Token, px: number): Phaser.GameObjects.Container {
   const box = scene.add.container(0, 0);
+  if (token.kind === 'text') {
+    drawWordCard(scene, box, token.text, token.pic, px, px);
+    return box;
+  }
   if (token.kind === 'picture') {
     box.add(scene.add.image(0, 0, PAIR_PALS_PICTURE_KEYS[token.sheet], token.frame).setDisplaySize(px * 0.9, px * 0.9));
     return box;
@@ -98,6 +108,32 @@ export function drawToken(scene: Phaser.Scene, token: Token, px: number): Phaser
   return box;
 }
 
+/**
+ * Sprint 2.16 — a word, number or letter (and its picture, if it has one)
+ * filling a `w` × `h` space: the picture on top, the word under it, the
+ * text as big as the space allows.
+ */
+function drawWordCard(
+  scene: Phaser.Scene,
+  box: Phaser.GameObjects.Container,
+  word: string,
+  pic: number | null,
+  w: number,
+  h: number,
+): void {
+  const hasPic = pic !== null;
+  if (hasPic) {
+    const side = Math.min(w, h) * 0.64;
+    box.add(scene.add.image(0, -h * 0.15, PUZZLE_PICS_SHEET.key, pic).setDisplaySize(side, side));
+  }
+  const label = text(scene, 0, hasPic ? h * 0.33 : 0, word, 'weightLabel').setOrigin(0.5);
+  const size = Math.round(hasPic ? h * 0.27 : h * (word.length <= 2 ? 0.66 : 0.5));
+  label.setFontSize(size);
+  const maxW = w * 0.92;
+  if (label.width > maxW) label.setFontSize(Math.floor((size * maxW) / label.width));
+  box.add(label);
+}
+
 /** A cream card (`w` × `h`) with a token on it. */
 export function tokenCard(
   scene: Phaser.Scene,
@@ -112,7 +148,12 @@ export function tokenCard(
   g.fillStyle(CARD, 1).fillRoundedRect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.14);
   g.lineStyle(4, INK, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.14);
   card.add(g);
-  if (token !== null) card.add(drawToken(scene, token, Math.min(w, h) * 0.86));
+  if (token?.kind === 'text') {
+    // Words and numbers use the card's whole shape (a wide card fits a long word).
+    const box = scene.add.container(0, 0);
+    drawWordCard(scene, box, token.text, token.pic, w * 0.9, h * 0.86);
+    card.add(box);
+  } else if (token !== null) card.add(drawToken(scene, token, Math.min(w, h) * 0.86));
   return card;
 }
 
@@ -297,6 +338,15 @@ export class PuzzleTopBar {
 
 // ---------------------------------------------------------------- dancers
 
+/** Balance Scale's crowd as a dancer sheet (the puzzle pack's dancers). */
+const CROWD: DancerSheet = {
+  key: BALANCE_SHEETS.crowd.key,
+  frameWidth: BALANCE_SHEETS.crowd.frameWidth,
+  frameHeight: BALANCE_SHEETS.crowd.frameHeight,
+  characters: BALANCE_SHEETS.crowd.animals.length,
+  poses: Object.keys(BALANCE_SHEETS.crowd.poses).length,
+};
+
 /**
  * Two animals from Balance Scale's crowd at the bottom corners, swaying
  * slowly; they cheer on a right answer and say "Oh!" on a wrong one, and
@@ -304,16 +354,21 @@ export class PuzzleTopBar {
  */
 export class PuzzleDancers {
   private readonly sprites: Phaser.GameObjects.Sprite[] = [];
+  private readonly sheet: DancerSheet;
   private readonly hops: (Phaser.Tweens.Tween | undefined)[] = [];
   private animals: number[] = [];
   /** No idle hop until then (a cheer or an "Oh!" is showing). */
   private busyUntil = 0;
 
-  constructor(private readonly scene: Phaser.Scene) {
-    const C = BALANCE_SHEETS.crowd;
+  /** Sprint 2.16 — `sheet`: a look's own dancers (Balance Scale's crowd by default). */
+  constructor(
+    private readonly scene: Phaser.Scene,
+    sheet: DancerSheet = CROWD,
+  ) {
+    this.sheet = sheet;
     L.dancers.forEach((d, i) => {
       const s = scene.add
-        .sprite(d.x, d.bottomY, C.key, 0)
+        .sprite(d.x, d.bottomY, sheet.key, 0)
         .setOrigin(0.5, 1)
         .setScale(d.scale)
         .setDepth(PUZZLE_DEPTH.dancers);
@@ -362,7 +417,7 @@ export class PuzzleDancers {
 
   /** The crowd sheet is each animal's poses in a row (idle, happy, oops). */
   private frame(slot: number, pose: number): number {
-    return this.animals[slot] * Object.keys(BALANCE_SHEETS.crowd.poses).length + pose;
+    return this.animals[slot] * this.sheet.poses + pose;
   }
 
   private pose(pose: number): void {
@@ -371,7 +426,7 @@ export class PuzzleDancers {
 
   /** New animals (never the same pair twice running). */
   swap(instant = false): void {
-    const n = BALANCE_SHEETS.crowd.animals.length;
+    const n = this.sheet.characters;
     const prev = new Set(this.animals);
     const next: number[] = [];
     while (next.length < this.sprites.length) {

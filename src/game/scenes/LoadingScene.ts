@@ -8,6 +8,7 @@ import { SceneKeys } from '@/core/sceneKeys';
 import type { GameId } from '@/services/Settings';
 import { loadGameBundle } from '@/game/services/assetLoader';
 import { attachLoadingOverlay } from '@/game/ui/LoadingOverlay';
+import { puzzleById } from '@/core/puzzles';
 
 /**
  * Sprint 2.1.8 — intermediate load-progress scene. Sits between
@@ -163,6 +164,19 @@ export class LoadingScene extends Phaser.Scene {
         break;
       case 'symbol-hunt':
         caption = 'Loading Symbol Hunt…';
+        break;
+      case 'word-train':
+      case 'odd-word-out':
+      case 'word-wand':
+      case 'missing-letter':
+      case 'word-snap':
+      case 'letter-garden':
+      case 'number-train':
+      case 'number-machine':
+      case 'odd-number-out':
+      case 'make-ten':
+      case 'quick-count':
+        caption = `Loading ${puzzleById(this.gameId).label}…`;
         break;
     }
     attachLoadingOverlay({ scene: this, caption, minDisplayMs: MIN_LOADING_DISPLAY_MS });

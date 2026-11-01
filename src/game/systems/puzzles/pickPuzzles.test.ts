@@ -45,6 +45,8 @@ const valid = (t: Token): boolean => {
       );
     case 'picture':
       return t.frame >= 0 && t.frame < config.pairPals.picturesPerTheme;
+    case 'text':
+      return false;
   }
 };
 

@@ -46,6 +46,8 @@
     "sprite:balance": "node scripts/sprites/balance.mjs",
     "sprite:pairpals": "node scripts/sprites/pairpals.mjs",
     "sprite:puzzles": "node scripts/sprites/puzzles.mjs",
+    "sprite:themes": "node scripts/sprites/themes.mjs",
+    "words:build": "node scripts/words/build-word-list.mjs",
     "sprite:carrot": "node scripts/sprites/carrot.mjs",
     "sprite:garden": "node scripts/sprites/garden.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
@@ -68,7 +70,8 @@
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.71.2",
     "vite": "^6.4.5",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "wordlist-english": "1.2.1"
   },
   "dependencies": {
     "express": "^4.22.3",

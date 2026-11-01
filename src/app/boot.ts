@@ -28,6 +28,9 @@ import { PuzzleSetupScene } from '@/game/scenes/PuzzleSetupScene';
 import { PickPuzzleScene } from '@/game/scenes/PickPuzzleScene';
 import { CopyCatScene } from '@/game/scenes/CopyCatScene';
 import { SymbolHuntScene } from '@/game/scenes/SymbolHuntScene';
+import { ThemedPickScene } from '@/game/scenes/ThemedPickScene';
+import { MakeTenScene } from '@/game/scenes/MakeTenScene';
+import { LetterGardenScene } from '@/game/scenes/LetterGardenScene';
 import { MyScoresScene } from '@/game/scenes/MyScoresScene';
 import { HudScene } from '@/game/scenes/HudScene';
 import { GameOverScene } from '@/game/scenes/GameOverScene';
@@ -153,6 +156,9 @@ export function bootGame(): void {
       PickPuzzleScene,
       CopyCatScene,
       SymbolHuntScene,
+      ThemedPickScene,
+      MakeTenScene,
+      LetterGardenScene,
       HudScene,
       GameOverScene,
       PauseOverlay,

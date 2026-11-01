@@ -18,11 +18,12 @@ import { puzzleById } from '@/core/puzzles';
 /** The chooser's title at each step. */
 export const CHOOSER_TITLES = {
   subjects: 'What do you want to play?',
-  groups: 'Aliens or animals?',
+  // Sprint 2.16 — Puzzles has groups too.
+  groups: { math: 'Aliens or animals?', puzzles: 'What kind of puzzle?' },
   games: { math: 'Pick a game!', puzzles: 'Pick a puzzle!' },
 } as const satisfies {
   subjects: string;
-  groups: string;
+  groups: Record<SubjectId, string>;
   games: Record<SubjectId, string>;
 };
 
@@ -41,8 +42,8 @@ export const SUBJECT_TILES: Readonly<Record<SubjectId, SubjectTile>> = {
   },
   puzzles: {
     name: 'Puzzles',
-    line: 'Shapes, patterns and memory',
-    pictures: ['pattern-train', 'missing-piece', 'copy-cat'],
+    line: 'Shapes, words, numbers and memory',
+    pictures: ['pattern-train', 'letter-garden', 'number-machine'],
   },
 };
 
@@ -53,7 +54,7 @@ export interface GroupTile {
   readonly tagline: string;
   /** "4 space games": the count comes from the group, the word from here. */
   readonly gamesNoun: string;
-  readonly pictures: readonly MathGameId[];
+  readonly pictures: readonly GameId[];
 }
 
 export const GROUP_TILES: Readonly<Record<GameGroupId, GroupTile>> = {
@@ -66,6 +67,22 @@ export const GROUP_TILES: Readonly<Record<GameGroupId, GroupTile>> = {
     tagline: 'Hop, splash and slide with animal pals!',
     gamesNoun: 'animal games',
     pictures: ['math-a-lotl', 'frog-splash', 'bunny-garden'],
+  },
+  // Sprint 2.16 — the puzzles' groups.
+  visual: {
+    tagline: 'Shapes, patterns and memory!',
+    gamesNoun: 'puzzles',
+    pictures: ['pattern-train', 'missing-piece', 'copy-cat'],
+  },
+  words: {
+    tagline: 'Letters, rhymes and word magic!',
+    gamesNoun: 'word puzzles',
+    pictures: ['word-train', 'missing-letter', 'letter-garden'],
+  },
+  numbers: {
+    tagline: 'Count, add and crack the pattern!',
+    gamesNoun: 'number puzzles',
+    pictures: ['number-train', 'make-ten', 'quick-count'],
   },
 };
 

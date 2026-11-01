@@ -37,10 +37,25 @@ export type PuzzleGameId = 'pair-pals' | RoundPuzzleId;
  * puzzles (one scene draws them all); Copy Cat and Symbol Hunt have their own.
  */
 export type PickPuzzleId = 'pattern-train' | 'missing-piece' | 'odd-one-out' | 'magic-wand' | 'spin-match';
-export type RoundPuzzleId = PickPuzzleId | 'copy-cat' | 'symbol-hunt';
+/** The puzzle pack (the Visual group, with Pair Pals). */
+export type VisualPuzzleId = PickPuzzleId | 'copy-cat' | 'symbol-hunt';
+
+/**
+ * Sprint 2.16 — the Words and Numbers puzzles. Same rounds of 8 as the
+ * puzzle pack, and each plays in either look (`core/puzzleThemes.ts`).
+ * The "pick one" ones share a scene; Make Ten and Letter Garden have their own.
+ */
+export type WordPuzzleId =
+  'word-train' | 'odd-word-out' | 'word-wand' | 'missing-letter' | 'word-snap' | 'letter-garden';
+export type NumberPuzzleId = 'number-train' | 'number-machine' | 'odd-number-out' | 'make-ten' | 'quick-count';
+export type ThemedPuzzleId = WordPuzzleId | NumberPuzzleId;
+export type ThemedPickId = Exclude<ThemedPuzzleId, 'letter-garden' | 'make-ten'>;
+
+/** Every puzzle played as a round of 8 (all but Pair Pals). */
+export type RoundPuzzleId = VisualPuzzleId | ThemedPuzzleId;
 
 /** The puzzle pack, in picker order. */
-export const ROUND_PUZZLE_IDS: readonly RoundPuzzleId[] = [
+export const VISUAL_PUZZLE_IDS: readonly VisualPuzzleId[] = [
   'pattern-train',
   'missing-piece',
   'odd-one-out',
@@ -50,12 +65,50 @@ export const ROUND_PUZZLE_IDS: readonly RoundPuzzleId[] = [
   'symbol-hunt',
 ];
 
+export const WORD_PUZZLE_IDS: readonly WordPuzzleId[] = [
+  'word-train',
+  'odd-word-out',
+  'word-wand',
+  'missing-letter',
+  'word-snap',
+  'letter-garden',
+];
+
+export const NUMBER_PUZZLE_IDS: readonly NumberPuzzleId[] = [
+  'number-train',
+  'number-machine',
+  'odd-number-out',
+  'make-ten',
+  'quick-count',
+];
+
+export const THEMED_PUZZLE_IDS: readonly ThemedPuzzleId[] = [...WORD_PUZZLE_IDS, ...NUMBER_PUZZLE_IDS];
+
+/** Every round puzzle: the puzzle pack, then Words, then Numbers. */
+export const ROUND_PUZZLE_IDS: readonly RoundPuzzleId[] = [...VISUAL_PUZZLE_IDS, ...THEMED_PUZZLE_IDS];
+
+const PICK_PUZZLE_IDS: readonly PickPuzzleId[] = [
+  'pattern-train',
+  'missing-piece',
+  'odd-one-out',
+  'magic-wand',
+  'spin-match',
+];
+
 export function isRoundPuzzleId(id: GameId): id is RoundPuzzleId {
   return (ROUND_PUZZLE_IDS as readonly GameId[]).includes(id);
 }
 
 export function isPickPuzzleId(id: GameId): id is PickPuzzleId {
-  return isRoundPuzzleId(id) && id !== 'copy-cat' && id !== 'symbol-hunt';
+  return (PICK_PUZZLE_IDS as readonly GameId[]).includes(id);
+}
+
+export function isThemedPuzzleId(id: GameId): id is ThemedPuzzleId {
+  return (THEMED_PUZZLE_IDS as readonly GameId[]).includes(id);
+}
+
+export function isThemedPickId(id: GameId): id is ThemedPickId {
+  return isThemedPuzzleId(id) && id !== 'letter-garden' && id !== 'make-ten';
 }
 
 /** Every game: the nine math games and the puzzle games. */

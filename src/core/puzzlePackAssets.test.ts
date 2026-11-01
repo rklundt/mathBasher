@@ -18,7 +18,7 @@ import {
 } from '@/core/spriteKeys';
 import { AUDIO_MANIFEST, COPY_CAT_VOICES, GAME_MUSIC_MAP, PAIR_PALS_MUSIC } from '@/core/audioKeys';
 import { isGameScope } from '@/core/assetScope';
-import { ROUND_PUZZLE_IDS } from '@/core/gameIds';
+import { VISUAL_PUZZLE_IDS } from '@/core/gameIds';
 import { config } from '@/core/config';
 
 /**
@@ -71,7 +71,7 @@ describe('puzzle pack assets (sprint 2.14)', () => {
     expect(scriptArray('HATS')).toEqual([...P.hats]);
     expect(scriptArray('SPIN_CELLS')).toEqual(P.spinCells);
     expect((scriptArray('SPIN_COLOURS') as unknown[]).length).toBe(P.spinColours);
-    expect(scriptArray('PUZZLES')).toEqual([...ROUND_PUZZLE_IDS]);
+    expect(scriptArray('PUZZLES')).toEqual([...VISUAL_PUZZLE_IDS]);
   });
 
   it('every sheet is on disk at the size its frames say', async () => {
@@ -94,7 +94,7 @@ describe('puzzle pack assets (sprint 2.14)', () => {
   });
 
   it('the tile pictures are in the order the script draws them, and load at boot', () => {
-    const order = ['pair-pals', ...ROUND_PUZZLE_IDS];
+    const order = ['pair-pals', ...VISUAL_PUZZLE_IDS];
     expect(
       Object.entries(PUZZLE_ICON_SHEET.frames)
         .sort((a, b) => a[1] - b[1])
@@ -104,7 +104,7 @@ describe('puzzle pack assets (sprint 2.14)', () => {
   });
 
   it('every puzzle loads what it draws and plays', () => {
-    for (const id of ROUND_PUZZLE_IDS) {
+    for (const id of VISUAL_PUZZLE_IDS) {
       for (const key of PUZZLE_BACKDROP_KEYS[id]) {
         expect(entry(key)?.scope, key).toBe(`game:${id}`);
         expect(existsSync(onDisk(entry(key)!.url)), key).toBe(true);

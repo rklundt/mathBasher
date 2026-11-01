@@ -2,14 +2,15 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { isMathGameId, type GameId } from '@/core/gameIds';
-import { GAME_GROUPS, gameGroupById, gameGroupOf, type GameGroup, type GameGroupId } from '@/core/gameGroups';
+import type { GameId } from '@/core/gameIds';
+import { ALL_GROUPS, gameGroupById, gameGroupOf, type GameGroup, type GameGroupId } from '@/core/gameGroups';
 import { subjectById, type SubjectId } from '@/core/subjects';
 
 /**
  * Sprint 2.15 — the Game Chooser's steps: subject › group › games (ADR-0015).
- * A step with one choice is skipped: Puzzles has no groups, so it opens its
- * games straight away. Plain data, so the rules are tested without Phaser.
+ * A step with one choice is skipped (a subject with one group or none opens
+ * its games straight away). Sprint 2.16: Puzzles has groups too (Visual,
+ * Words, Numbers). Plain data, so the rules are tested without Phaser.
  */
 export type ChooserStep =
   | { readonly kind: 'subjects' }
@@ -18,9 +19,9 @@ export type ChooserStep =
 
 export const SUBJECTS_STEP: ChooserStep = { kind: 'subjects' };
 
-/** A subject's groups (Math: mathBasher and Math Fun; Puzzles: none). */
+/** A subject's groups (Math: mathBasher and Math Fun; Puzzles: Visual, Words and Numbers). */
 export function groupsOf(subject: SubjectId): readonly GameGroup[] {
-  return subject === 'math' ? GAME_GROUPS : [];
+  return ALL_GROUPS.filter((g) => g.subject === subject);
 }
 
 /** Where picking a subject goes: its groups, or its games when it has one group or none. */
@@ -51,8 +52,8 @@ export function gamesOn(step: ChooserStep & { kind: 'games' }): readonly GameId[
 
 /** The games step a game is on (Change Game opens it). */
 export function gamesStepFor(game: GameId): ChooserStep & { kind: 'games' } {
-  if (isMathGameId(game)) return { kind: 'games', subject: 'math', group: gameGroupOf(game).id };
-  return { kind: 'games', subject: 'puzzles', group: null };
+  const group = gameGroupOf(game);
+  return { kind: 'games', subject: group.subject, group: group.id };
 }
 
 /** One chip on the "where you are" trail: its label and the step it opens. */

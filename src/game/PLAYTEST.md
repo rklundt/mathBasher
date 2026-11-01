@@ -33,7 +33,7 @@ a phone in landscape (844 × 390).
 |   | First visit (clear site data): no hero picker; the Title Screen shows mathBasher, "Math and puzzle games", Play, Settings, the art and mute |
 |   | Play → "What do you want to play?": Math, Puzzles and a "More Coming Soon" tile that does nothing |
 |   | Math → "Aliens or animals?" (mathBasher, Math Fun; the trail says Math) → a group → its games (trail: Math › mathBasher) |
-|   | Puzzles opens its eight puzzles straight away (no group step); Back from there goes to the subjects |
+|   | Puzzles → "What kind of puzzle?" (Visual, Words, Numbers, three across; the trail says Puzzles) → a group → its puzzles (trail: Puzzles › Words); Back walks up the same way |
 |   | A trail chip goes back to its step; Back walks up one step; from the subjects, Back goes to the Title Screen |
 |   | My Scores (top bar) from any chooser step or setup screen, then Back → the same step or screen |
 |   | Settings (top bar, Title Screen, pause card, end of round) opens over the screen; its Back or Esc returns to it (Esc doesn't also go back a step) |
@@ -588,6 +588,28 @@ Phone in landscape, then desktop. Each of Pattern Train, Missing Piece, Odd One 
 - [ ] Symbol Hunt: the sign, the grid, the sand bar; found cards ring green; a wrong tap wiggles; the sand running out shows the ones left. Keyboard: the arrow keys move a yellow ring around the grid (it stops at the edges), Space or Enter taps the card under it.
 - [ ] The end: stars, "N of 8 right first time!", "Your first round at this level!" / "New best!" / "Your best is N of 8"; Play Again, Change Difficulty, Menu. Pause: Resume · Change Difficulty · Settings · Quit to Menu. Menu and Quit to Menu open the game picker on the Puzzles tab.
 - [ ] Keys: Left / Right and Space / Enter, 1–5 (Copy Cat 1–6), Esc pauses.
+
+## Words and Numbers (sprint 2.16)
+
+Play each at Easy, Medium and Hard, in both looks, with the mouse, the
+keyboard and touch.
+
+- [ ] Puzzles › Words lists Word Train, Odd Word Out, Word Wand, Missing Letter, Word Snap, Letter Garden; Puzzles › Numbers lists Number Train, Number Machine, Odd Number Out, Make Ten, Quick Count; each has its own tile picture.
+- [ ] Setup: "Pick a look!" (Animal Pals, Alien Invaders, two dancers on each) above "How tough?" (what changes, "Up to N points!"); the look and the level are remembered per puzzle after a reload.
+- [ ] Animal Pals: pastel backdrops (meadow, rainbow, candy, mushroom forest), a unicorn, dragon, bunny, kitten, panda or yeti dancing, the Pair Pals sounds. Alien Invaders: space backdrops (planets, moon, station, robot lab), little aliens and robots, the zap sounds. Each puzzle plays its look's music.
+- [ ] Every puzzle has the sand bar (12 s; Make Ten 15 s; Letter Garden 30 s per word); points, ⚡ and green / yellow / red steps work as in the Visual puzzles.
+- [ ] Word Train: letters in ABC order (Easy), rhymes, words taking turns; growing words and same first letter (Medium); backwards letters and words whose first letters go A, B, C or skip one (Hard).
+- [ ] Odd Word Out: kinds of things (Easy), rhymes and first letters (Medium), closer kinds and letter counts (Hard); the note says what the others share.
+- [ ] Word Wand: animal sounds, colours, opposites (Easy); babies, homes, more than one (Medium); tricky plurals, past tense, what covers an animal (Hard). Animal Pals waves a wand; Alien Invaders a zapper.
+- [ ] Missing Letter: a picture and its word with one letter gone; 3 letters on Easy, 4 on Medium, 5–6 on Hard.
+- [ ] Word Snap: "sun + ? = sunflower" (Easy), "? + flower = sunflower" (Medium), no whole word on Hard (only one choice makes a real word).
+- [ ] Letter Garden: drag through touching letters (diagonals too; back onto the last letter takes it off); the word shows on the left, found words on the right; too short or found already just says so; a word not in the list is a miss; the sand or three misses shows a word that was there. A new garden every 4 words; 4 × 4 Easy and Medium, 5 × 5 Hard. Typing works too: letters light their tiles, Backspace, Enter.
+- [ ] Number Train: count up by 1s, 2s, 5s, 10s (Easy); by 3s, 4s, or down, sometimes a gap in the middle (Medium); doubles, growing jumps, times 3, squares, times tables (Hard).
+- [ ] Number Machine: two (Hard: three) numbers going in and out, then one going in; the candy machine or the robot.
+- [ ] Odd Number Out: even / odd (Easy); 2s, 5s, 10s (Medium); 3s, 4s, 9s, teens (Hard); the odd one sits close to the others.
+- [ ] Make Ten: tap two (Easy) or three cards that make 10 (Medium) or 20 (Hard); the sum shows under the target; a wrong set says what it made and clears; the sand or three misses shows one way. Arrow keys and Space / Enter work.
+- [ ] Quick Count: the counters show for a moment ("Look quick!"), then hide behind a "?"; the tray and sand come; after the answer the counters come back to check.
+- [ ] End panel, pause and Change Game work as in the Visual puzzles; Change Game opens Puzzles › Words or Numbers; My Scores lists the new puzzles under Puzzles.
 
 ## Logging the run
 

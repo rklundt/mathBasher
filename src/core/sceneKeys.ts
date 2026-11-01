@@ -135,6 +135,16 @@ export const SceneKeys = {
   CopyCat: 'copy-cat',
   SymbolHunt: 'symbol-hunt',
   /**
+   * Sprint 2.16 — the Words and Numbers puzzles (they share the puzzle
+   * setup screen, with a "Pick a look!" row): one scene for the nine "pick
+   * one" ones (Word Train, Odd Word Out, Word Wand, Missing Letter, Word
+   * Snap, Number Train, Number Machine, Odd Number Out, Quick Count; it
+   * reads which from `Settings.round.gameId`), and Make Ten and Letter Garden.
+   */
+  ThemedPick: 'themed-pick',
+  MakeTen: 'make-ten',
+  LetterGarden: 'letter-garden',
+  /**
    * Loading intermediate (sprint 2.1.8) — sits between the setup screen and
    * the target game scene to render a visible progress bar during
    * the per-game asset load. Phaser's mid-session scene-transition
@@ -198,6 +208,20 @@ export function gameSceneKeyFor(gameId: GameId): SceneKey {
       return SceneKeys.CopyCat;
     case 'symbol-hunt':
       return SceneKeys.SymbolHunt;
+    case 'word-train':
+    case 'odd-word-out':
+    case 'word-wand':
+    case 'missing-letter':
+    case 'word-snap':
+    case 'number-train':
+    case 'number-machine':
+    case 'odd-number-out':
+    case 'quick-count':
+      return SceneKeys.ThemedPick;
+    case 'make-ten':
+      return SceneKeys.MakeTen;
+    case 'letter-garden':
+      return SceneKeys.LetterGarden;
   }
 }
 
@@ -216,6 +240,17 @@ export function puzzleSetupSceneKeyFor(gameId: PuzzleGameId): SceneKey {
     case 'spin-match':
     case 'copy-cat':
     case 'symbol-hunt':
+    case 'word-train':
+    case 'odd-word-out':
+    case 'word-wand':
+    case 'missing-letter':
+    case 'word-snap':
+    case 'letter-garden':
+    case 'number-train':
+    case 'number-machine':
+    case 'odd-number-out':
+    case 'make-ten':
+    case 'quick-count':
       return SceneKeys.PuzzleSetup;
   }
 }

@@ -27,6 +27,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+- **Puzzles: Words and Numbers.** Puzzles now opens three groups, Visual (the puzzles so far), Words and Numbers, with eleven new puzzles: Word Train, Odd Word Out, Word Wand, Missing Letter, Word Snap and Letter Garden (drag through touching letters to make words); Number Train, Number Machine, Odd Number Out, Make Ten and Quick Count. Each plays in two looks picked on its setup screen, Animal Pals or Alien Invaders, with sand timers, points and stars like the other puzzles.
 - **Security updates (tools only, nothing players see):** vite 6.4.5, vitest 4.1.12, express's body-parser 1.20.9 and minimatch 11.0.3 (now held at 11 or newer), clearing five GitHub security alerts. None of them were in the live game.
 
 ## [2.15.1] - 2026-10-31 — Puzzle tune-ups
