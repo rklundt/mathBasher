@@ -108,7 +108,12 @@ describe('the Words puzzles (sprint 2.16)', () => {
   it('every puzzle: the right number of choices, all different, one answer, a note', () => {
     for (const id of IDS)
       each(id, (p, level, tag) => {
-        const want = id === 'odd-word-out' ? P.oddWordOut.items[level] : P.choices[level];
+        const want =
+          id === 'odd-word-out'
+            ? P.oddWordOut.items[level]
+            : id === 'missing-letter'
+              ? P.missingLetter.cards[level]
+              : P.choices[level];
         expect(p.choices.length, tag).toBe(want);
         expect(new Set(texts(p)).size, tag).toBe(want);
         expect(p.answer, tag).toBeGreaterThanOrEqual(0);
@@ -213,16 +218,26 @@ describe('the Words puzzles (sprint 2.16)', () => {
         const [lo, hi] = P.missingLetter.letters[level];
         expect(letters.length, tag).toBeGreaterThanOrEqual(lo);
         expect(letters.length, tag).toBeLessThanOrEqual(hi);
-        expect(letters.filter((l) => l === null).length, tag).toBe(P.missingLetter.gaps[level]);
-        expect(fill(letters, right(p)), tag).toBe(word);
+        const gaps = P.missingLetter.gaps[level];
+        expect(letters.filter((l) => l === null).length, tag).toBe(gaps);
+        expect(p.choices.length, tag).toBe(P.missingLetter.cards[level]);
+        // One letter per card; the right cards, in gap order, fill the gaps.
+        for (const t of texts(p)) expect(t, tag).toMatch(/^[A-Z]$/);
+        const answers = p.answers ?? [p.answer];
+        expect(answers.length, tag).toBe(gaps);
+        expect(new Set(answers.map((a) => texts(p)[a])).size, tag).toBe(gaps);
+        expect(fill(letters, answers.map((a) => texts(p)[a]).join('')), tag).toBe(word);
         if (picture !== null) expect(PICTURE_WORDS[picture], tag).toBe(word);
         else expect(dictionary.has(word), tag).toBe(true);
-        for (const w of wrongs(p)) {
-          const spelled = fill(letters, w);
-          expect(spelled, `${tag} ${w}`).not.toBe(word);
-          expect(dictionary.has(spelled), `${tag}: ${spelled} is a word`).toBe(false);
-        }
-        for (const t of texts(p)) expect(t, tag).toMatch(/^[A-Z]( [A-Z])*$/);
+        // No wrong letter spells a real word in any gap (the other gaps right).
+        const gapAt = letters.flatMap((l, k) => (l === null ? [k] : []));
+        texts(p).forEach((t, i) => {
+          if (answers.includes(i)) return;
+          for (const g of gapAt) {
+            const spelled = word.slice(0, g) + t.toLowerCase() + word.slice(g + 1);
+            expect(dictionary.has(spelled), `${tag}: ${spelled} is a word`).toBe(false);
+          }
+        });
       }
     // Far more words than the 50 pictures.
     expect(seen.size).toBeGreaterThan(150);

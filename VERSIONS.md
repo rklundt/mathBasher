@@ -28,7 +28,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 ## [Unreleased]
 
 - **Stars count yellow as half.** A round's stars now come from its steps: green counts 1, yellow (right, but slow or after a miss) counts half, red 0. ★★★ from 7, ★★ from 5. A round all right but a few slow (5 green, 3 yellow) is ★★, not ★. The end panel says "5 green and 3 yellow!", and the best stars are remembered. Every puzzle.
-- **Missing Letter:** many more words (about 290 kid words besides the 50 pictures; a word without a picture shows just its letters), never the same word twice in a round, and two letters missing on Hard (5 to 7 letters). No wrong card ever spells a real word.
+- **Missing Letter:** many more words (about 290 kid words besides the 50 pictures; a word without a picture shows just its letters), never the same word twice in a round, and two letters missing on Hard (5 to 7 letters), picked one at a time in any order from seven letter cards. No wrong letter ever spells a real word.
 - **Word cards:** a row of cards shows pictures only when every card in it has one.
 - **Quick Count:** the counters stay up longer on Medium (2.4 s) and Hard (3 s).
 

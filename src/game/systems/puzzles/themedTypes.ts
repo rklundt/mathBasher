@@ -53,6 +53,12 @@ export interface ThemedPuzzle {
   readonly stage: ThemedStage;
   readonly choices: readonly TextToken[];
   readonly answer: number;
+  /**
+   * Sprint 2.16 — a puzzle with more than one right card (Missing Letter
+   * Hard: one letter per gap, picked in any order): every right card, in gap
+   * order (`answer` is the first). Left out: just `answer`.
+   */
+  readonly answers?: readonly number[];
   /** Said when it's solved ("The others all rhyme!"). */
   readonly why: string;
 }

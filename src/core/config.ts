@@ -1662,10 +1662,15 @@ export const config = {
     wordTrain: { cars: { easy: 4, medium: 4, hard: 4 } },
     oddWordOut: { items: { easy: 4, medium: 4, hard: 5 } },
     /**
-     * Missing Letter: the word's length range and how many letters are
-     * missing, by level. Owner (2026-11-01): Hard misses two, and longer words.
+     * Missing Letter: the word's length range, how many letters are missing
+     * and how many letter cards there are, by level. Owner (2026-11-01): Hard
+     * misses two, picked one at a time, from more cards; longer words.
      */
-    missingLetter: { letters: { easy: [3, 3], medium: [4, 4], hard: [5, 7] }, gaps: { easy: 1, medium: 1, hard: 2 } },
+    missingLetter: {
+      letters: { easy: [3, 3], medium: [4, 4], hard: [5, 7] },
+      gaps: { easy: 1, medium: 1, hard: 2 },
+      cards: { easy: 3, medium: 4, hard: 7 },
+    },
     /**
      * Letter Garden: the board (`size` × `size` letters) and the shortest
      * word that counts, mirrored in `scripts/words/build-word-list.mjs`

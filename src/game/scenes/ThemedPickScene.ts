@@ -38,6 +38,8 @@ export class ThemedPickScene extends ThemedRoundScene {
   private stageObjects: Phaser.GameObjects.GameObject[] = [];
   private tray?: AnswerTray;
   private slot?: { x: number; y: number; w: number; h: number; card: Phaser.GameObjects.Container };
+  /** Right cards picked so far on this puzzle (Missing Letter Hard needs two). */
+  private found = new Set<number>();
   /** Missing Letter: its gaps, left to right (Hard has two). */
   private letterGaps: { x: number; y: number; w: number; h: number; card: Phaser.GameObjects.Container }[] = [];
   private misses = 0;
@@ -88,7 +90,9 @@ export class ThemedPickScene extends ThemedRoundScene {
     };
     kb?.on('keydown-SPACE', pickFocused);
     kb?.on('keydown-ENTER', pickFocused);
-    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((k, i) => kb?.on(`keydown-${k}`, () => this.pick(i)));
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'].forEach((k, i) =>
+      kb?.on(`keydown-${k}`, () => this.pick(i)),
+    );
     this.showPuzzle(0);
   }
 
@@ -112,6 +116,7 @@ export class ThemedPickScene extends ThemedRoundScene {
     this.flash = undefined;
     this.slot = undefined;
     this.letterGaps = [];
+    this.found = new Set();
     this.misses = 0;
     this.locked = false;
     const p = this.puzzles[i];
@@ -153,7 +158,9 @@ export class ThemedPickScene extends ThemedRoundScene {
     // row shows pictures only when every card in it has one.
     const allPics = p.choices.every((c) => c.pic !== null);
     const cards = allPics ? p.choices : p.choices.map((c) => textToken(c.text));
-    this.tray = new AnswerTray(this, cards, (c) => this.pick(c), spots, shelf ? 160 : undefined);
+    // Seven cards (Missing Letter Hard) shrink a little so the tray clears the dancers.
+    const cardPx = shelf ? 160 : n >= 7 ? 108 : undefined;
+    this.tray = new AnswerTray(this, cards, (c) => this.pick(c), spots, cardPx);
     this.sand?.start(this.seconds(), () => this.miss('Time’s up! It was this one.'));
     this.restartClock();
   }
@@ -161,12 +168,18 @@ export class ThemedPickScene extends ThemedRoundScene {
   private pick(c: number): void {
     if (this.blocked || this.locked || !this.tray || c >= this.tray.cards.length || this.tray.isTried(c)) return;
     const p = this.puzzles[this.index];
+    if (this.found.has(c)) return;
     getAudioManager().play(pickTileFlipSfx(), 'sfx');
-    if (c === p.answer) {
+    const answers = p.answers ?? [p.answer];
+    if (answers.includes(c)) {
+      // A right card: its gap fills (Missing Letter Hard: in any order); the last one solves it.
+      this.found.add(c);
+      this.tray.right(c);
+      if (answers.length > 1) this.fillGap(answers.indexOf(c), p.choices[c].text);
+      if (this.found.size < answers.length) return;
       this.locked = true;
       this.sand?.stop();
-      this.tray.right(c);
-      this.fillSlot(p.choices[c]);
+      if (answers.length === 1) this.fillSlot(p.choices[c]);
       this.markRight(this.misses, this.sand?.used() ?? null, p.why, () => this.next());
       return;
     }
@@ -181,8 +194,13 @@ export class ThemedPickScene extends ThemedRoundScene {
     this.locked = true;
     this.sand?.stop();
     const p = this.puzzles[this.index];
-    this.tray.reveal(p.answer);
-    this.fillSlot(p.choices[p.answer]);
+    const answers = p.answers ?? [p.answer];
+    answers.forEach((a, k) => {
+      if (this.found.has(a)) return;
+      this.tray?.reveal(a);
+      if (answers.length > 1) this.fillGap(k, p.choices[a].text);
+      else this.fillSlot(p.choices[a]);
+    });
     this.markRed(note, () => this.next());
   }
 
@@ -193,6 +211,18 @@ export class ThemedPickScene extends ThemedRoundScene {
       return;
     }
     this.showPuzzle(this.index + 1);
+  }
+
+  /** Missing Letter Hard: gap `k` gets its letter. */
+  private fillGap(k: number, letter: string): void {
+    const g = this.letterGaps[k] as (typeof this.letterGaps)[number] | undefined;
+    if (!g) return;
+    const card = tokenCard(this, g.x, g.y, g.w, g.h, textToken(letter))
+      .setDepth(PUZZLE_DEPTH.stage + 1)
+      .setScale(0.3);
+    this.tweens.add({ targets: card, scale: 1, duration: 260, ease: 'Back.Out' });
+    g.card.setVisible(false);
+    this.stageObjects.push(card);
   }
 
   /** The "?" becomes the answer (Quick Count: the counters come back, so the kid can check). */

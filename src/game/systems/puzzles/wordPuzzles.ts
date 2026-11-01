@@ -319,45 +319,46 @@ function lookAlikes(l: string): string[] {
   return [...new Set(pool.split('').filter((x) => x !== l))];
 }
 
-/** The word with `fill` (one letter per gap) put in the gaps. */
-function fillGaps(word: string, gaps: readonly number[], fill: string): string {
-  const out = word.split('');
-  gaps.forEach((g, k) => (out[g] = fill[k]));
-  return out.join('');
-}
-
 /**
  * Owner (2026-11-01): more words (picture words, then `KID_VOCAB` checked
- * against the big word list), and two gaps on Hard. With the word list,
- * no wrong choice spells a real word; a word without a picture is only
- * used then.
+ * against the big word list), and on Hard two letters missing, picked one
+ * at a time from more letter cards ("2 separate letters (2 choices)… another
+ * option or two to make it more challenging"). With the word list, no wrong
+ * letter spells a real word in any gap (the other gaps filled right); a word
+ * without a picture is only used then. The gaps' letters always differ.
  */
 function missingLetter(level: PuzzleLevel, rng: () => number, words?: PuzzleWords): ThemedPuzzle {
-  const [lo, hi] = P.missingLetter.letters[level];
-  const gapCount = P.missingLetter.gaps[level];
+  const M = P.missingLetter;
+  const [lo, hi] = M.letters[level];
+  const gapCount = M.gaps[level];
   const fits = (w: string): boolean => w.length >= lo && w.length <= hi;
   const pictured = PICTURE_WORDS.filter(fits);
   const plain = words ? KID_VOCAB.filter((w) => fits(w) && picOf(w) === null && words.isWord(w)) : [];
   const pool = [...new Set([...pictured, ...plain])];
-  const count = P.choices[level];
+  const count = M.cards[level];
   for (let guard = 0; ; guard++) {
     const w = pick(pool, rng);
     const gaps = pickDistinct(w.length, gapCount, rng).sort((x, y) => x - y);
-    const answer = gaps.map((g) => w[g]).join('');
-    const options = gaps.map((g) => [w[g], ...shuffled(lookAlikes(w[g]), rng)]);
-    // Every mix of tempting letters (one gap wrong, or both), most tempting first.
-    let combos: string[] = options[0];
-    for (const o of options.slice(1)) combos = combos.flatMap((c) => o.map((x) => c + x));
-    const wrong = shuffled(
-      combos.filter((c) => c !== answer),
+    const right = gaps.map((g) => w[g]);
+    if (new Set(right).size < right.length && guard < 200) continue;
+    // A wrong letter may not spell a real word in any gap.
+    const spellsWord = (l: string): boolean =>
+      gaps.some((g) => {
+        const spelled = w.slice(0, g) + l + w.slice(g + 1);
+        return spelled !== w && (words?.isWord(spelled) ?? false);
+      });
+    const tempting = shuffled(
+      [...new Set(right.flatMap((l) => lookAlikes(l)))].filter((l) => !right.includes(l)),
       rng,
-    ).filter((c) => {
-      const spelled = fillGaps(w, gaps, c);
-      return spelled !== w && !(words?.isWord(spelled) ?? false);
-    });
-    if (wrong.length < count - 1 && guard < 50) continue;
-    const card = (c: string): TextToken => textToken(c.toUpperCase().split('').join(' '));
-    const { choices, answer: a } = makeChoices(card(answer), wrong.map(card), count, rng);
+    );
+    const others = shuffled(
+      ALPHABET.split('').filter((l) => !right.includes(l) && !tempting.includes(l)),
+      rng,
+    );
+    const wrong = [...tempting, ...others].filter((l) => !spellsWord(l)).slice(0, count - gapCount);
+    if (wrong.length < count - gapCount && guard < 200) continue;
+    const cards = shuffled([...right, ...wrong], rng).map((l) => letter(l));
+    const answers = right.map((l) => cards.findIndex((c) => c.text === l.toUpperCase()));
     return {
       prompt: gapCount > 1 ? 'Which letters are missing?' : 'Which letter is missing?',
       stage: {
@@ -366,8 +367,9 @@ function missingLetter(level: PuzzleLevel, rng: () => number, words?: PuzzleWord
         picture: picOf(w),
         letters: w.split('').map((l, k) => (gaps.includes(k) ? null : l)),
       },
-      choices,
-      answer: a,
+      choices: cards,
+      answer: answers[0],
+      ...(gapCount > 1 && { answers }),
       why: `${w.toUpperCase()}!`,
     };
   }
