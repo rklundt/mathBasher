@@ -22,8 +22,13 @@ export type ThemedStage =
       readonly rows: readonly { readonly input: TextToken; readonly output: TextToken }[];
       readonly next: TextToken;
     }
-  /** Missing Letter: the picture and the word's letters, one missing (null). */
-  | { readonly kind: 'missing'; readonly picture: number; readonly letters: readonly (string | null)[] }
+  /** Missing Letter: the word, its picture (if it has one) and its letters with the gaps (null). */
+  | {
+      readonly kind: 'missing';
+      readonly word: string;
+      readonly picture: number | null;
+      readonly letters: readonly (string | null)[];
+    }
   /** Word Snap: one half shown (the other null), and the whole word when it helps. */
   | {
       readonly kind: 'snap';
@@ -33,6 +38,15 @@ export type ThemedStage =
     }
   /** Quick Count: `spots` (0–1 across and down) flash, then hide. */
   | { readonly kind: 'flash'; readonly spots: readonly { readonly x: number; readonly y: number }[] };
+
+/**
+ * What a generator may lean on beyond its own lists: the big word list
+ * (Missing Letter checks no wrong choice spells a real word with it, so it
+ * can use words without a picture). Left out, it sticks to picture words.
+ */
+export interface PuzzleWords {
+  readonly isWord: (w: string) => boolean;
+}
 
 export interface ThemedPuzzle {
   readonly prompt: string;

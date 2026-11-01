@@ -537,3 +537,28 @@ export const KID_WORDS: ReadonlySet<string> = new Set(
     ...COMPOUNDS.flatMap(([a, b]) => [a, b, a + b]),
   ].filter((w) => /^[a-z]+$/.test(w)),
 );
+
+/**
+ * Sprint 2.16 — more words a young reader knows, for Missing Letter
+ * (owner, 2026-11-01: "need more variety… pull in quite a few more
+ * options"). Most have no picture, so Missing Letter checks each choice
+ * against the big word list: only the right letters make a real word.
+ */
+export const KID_VOCAB: readonly string[] = [
+  // 4 letters
+  ...'ball bark barn bath beak bean bear bell bike bird blue boat bone book boot bowl bush cake calf card cart cave clap coat cold comb corn crab cube dart deer desk dish doll door drum duck dust farm fern fish flag foam food foot fork frog game gate gift goat gold golf hand harp hill hive home hook horn jump kick king kite lake lamp leaf lion lock mail milk mint moon nest nose park pear pond pony pool rain ring road rock roof rope rose sail sand seal ship shoe sing skip sled snow soap sock song star swim tail tent toad tree tube vase wand wave wing wolf yard yarn'.split(
+    ' ',
+  ),
+  // 5 letters
+  ...'apple beach bench berry block board brush candy chair chalk cheek chick cloud clown coral crown daisy dance dream drink eagle fairy feast flute fruit giant glove grape grass heart honey horse house juice koala lemon light llama magic mango maple melon mouse music nurse ocean otter paint panda party peach pearl penny piano pilot pizza plant plate puppy queen quilt radio river robin robot salad scarf shark sheep shell skate skirt sleep smile snack snail snake spoon squid stamp stick stone sugar sunny table teeth tiger toast tooth tower train truck tulip whale wheel zebra'.split(
+    ' ',
+  ),
+  // 6 letters
+  ...'animal banana basket bubble bucket butter button camera candle carrot castle cherry cookie cotton dragon flower forest garden guitar hammer helmet island jacket kitten ladder lizard monkey orange parrot peanut pebble pencil pepper pillow planet pocket potato puddle puzzle rabbit rocket sister spider spring summer sunset teapot tomato turtle window winter yellow zipper'.split(
+    ' ',
+  ),
+  // 7 letters
+  ...'balloon blanket brother cupcake dolphin feather giraffe hamster kitchen lantern leopard octopus pancake panther peacock penguin picture popcorn pumpkin rainbow sandbox scooter seaweed snowman sparkle sunrise teacher thunder unicorn vanilla whistle'.split(
+    ' ',
+  ),
+];

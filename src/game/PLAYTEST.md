@@ -597,18 +597,20 @@ keyboard and touch.
 - [ ] Puzzles › Words lists Word Train, Odd Word Out, Word Wand, Missing Letter, Word Snap, Letter Garden; Puzzles › Numbers lists Number Train, Number Machine, Odd Number Out, Make Ten, Quick Count; each has its own tile picture.
 - [ ] Setup: "Pick a look!" (Animal Pals, Alien Invaders, two dancers on each) above "How tough?" (what changes, "Up to N points!"); the look and the level are remembered per puzzle after a reload.
 - [ ] Animal Pals: pastel backdrops (meadow, rainbow, candy, mushroom forest), a unicorn, dragon, bunny, kitten, panda or yeti dancing, the Pair Pals sounds. Alien Invaders: space backdrops (planets, moon, station, robot lab), little aliens and robots, the zap sounds. Each puzzle plays its look's music.
+- [ ] A row of cards shows pictures only when every card in it has one.
+- [ ] Stars: green counts 1, yellow half; ★★★ from 7, ★★ from 5; the end panel says "5 green and 3 yellow!"; the setup's best line shows the best stars.
 - [ ] Every puzzle has the sand bar (12 s; Make Ten 15 s; Letter Garden 30 s per word); points, ⚡ and green / yellow / red steps work as in the Visual puzzles.
 - [ ] Word Train: letters in ABC order (Easy), rhymes, words taking turns; growing words and same first letter (Medium); backwards letters and words whose first letters go A, B, C or skip one (Hard).
 - [ ] Odd Word Out: kinds of things (Easy), rhymes and first letters (Medium), closer kinds and letter counts (Hard); the note says what the others share.
 - [ ] Word Wand: animal sounds, colours, opposites (Easy); babies, homes, more than one (Medium); tricky plurals, past tense, what covers an animal (Hard). Animal Pals waves a wand; Alien Invaders a zapper.
-- [ ] Missing Letter: a picture and its word with one letter gone; 3 letters on Easy, 4 on Medium, 5–6 on Hard.
+- [ ] Missing Letter: a word with one letter gone (two on Hard, 5–7 letters), with its picture when it has one; no word twice in a round; every wrong card spells a non-word.
 - [ ] Word Snap: "sun + ? = sunflower" (Easy), "? + flower = sunflower" (Medium), no whole word on Hard (only one choice makes a real word).
 - [ ] Letter Garden: drag through touching letters (diagonals too; back onto the last letter takes it off); the word shows on the left, found words on the right; too short or found already just says so; a word not in the list is a miss; the sand or three misses shows a word that was there. A new garden every 4 words; 4 × 4 Easy and Medium, 5 × 5 Hard. Typing works too: letters light their tiles, Backspace, Enter.
 - [ ] Number Train: count up by 1s, 2s, 5s, 10s (Easy); by 3s, 4s, or down, sometimes a gap in the middle (Medium); doubles, growing jumps, times 3, squares, times tables (Hard).
 - [ ] Number Machine: two (Hard: three) numbers going in and out, then one going in; the candy machine or the robot.
 - [ ] Odd Number Out: even / odd (Easy); 2s, 5s, 10s (Medium); 3s, 4s, 9s, teens (Hard); the odd one sits close to the others.
 - [ ] Make Ten: tap two (Easy) or three cards that make 10 (Medium) or 20 (Hard); the sum shows under the target; a wrong set says what it made and clears; the sand or three misses shows one way. Arrow keys and Space / Enter work.
-- [ ] Quick Count: the counters show for a moment ("Look quick!"), then hide behind a "?"; the tray and sand come; after the answer the counters come back to check.
+- [ ] Quick Count: the counters show for a moment (1.8 / 2.4 / 3 s, "Look quick!"), then hide behind a "?"; the tray and sand come; after the answer the counters come back to check.
 - [ ] End panel, pause and Change Game work as in the Visual puzzles; Change Game opens Puzzles › Words or Numbers; My Scores lists the new puzzles under Puzzles.
 
 ## Logging the run

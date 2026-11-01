@@ -44,9 +44,21 @@ export class WordList {
     return this.all.has(word);
   }
 
+  /** The same as `has` (so a word list can be handed to the puzzle generators as `PuzzleWords`). */
+  isWord(word: string): boolean {
+    return this.all.has(word);
+  }
+
   isPrefix(s: string): boolean {
     return this.prefixes.has(s);
   }
+}
+
+let cachedList: WordList | null = null;
+
+/** The word list from the loaded file, built once a visit (it's large; Letter Garden and Missing Letter share it). */
+export function wordListFrom(data: Pick<LetterGardenData, 'common' | 'more'>): WordList {
+  return (cachedList ??= new WordList(data));
 }
 
 /** The tiles touching tile `i` on a `size` × `size` board (diagonals too). */

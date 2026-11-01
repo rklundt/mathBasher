@@ -25,6 +25,12 @@ import { PromptPill, PuzzleBackdrop, PuzzleDancers, PuzzleTopBar, showEndPanel }
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import type { QuitDestination } from '@/game/scenes/gameSceneContract';
 
+/** "5 green and 3 yellow!" (or "8 of 8 green!"): what the stars came from. */
+function stepsLine(green: number, yellow: number, total: number): string {
+  if (yellow === 0) return `${String(green)} of ${String(total)} green!`;
+  return `${String(green)} green and ${String(yellow)} yellow!`;
+}
+
 /**
  * What a round looks and sounds like: the puzzle pack's own backdrops, the
  * crowd and Pair Pals' sounds; a Words or Numbers puzzle's look (sprint 2.16,
@@ -58,6 +64,8 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
   protected index = 0;
   /** Puzzles done green this round (right first try, in time). */
   protected greens = 0;
+  /** Puzzles done yellow (right, but slower or after a miss): half a green toward the stars. */
+  protected yellows = 0;
   protected paused = false;
   protected ended = false;
   private score!: PuzzleScore;
@@ -103,6 +111,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.level = getPuzzleProgress().level(id);
     this.index = 0;
     this.greens = 0;
+    this.yellows = 0;
     this.paused = false;
     this.ended = false;
     this.musicKey = null;
@@ -193,6 +202,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.dancers.cheer();
     this.bar.mark(this.index, step);
     if (step === 'green') this.greens++;
+    else this.yellows++;
     this.prompt.flash(note, 'good', config.puzzles.timings.rightHoldMs + 400);
     this.time.delayedCall(config.puzzles.timings.rightHoldMs, next);
   }
@@ -221,7 +231,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     const bonus = this.score.finish(this.greens === total);
     this.refreshTopLeft();
     this.settle(true);
-    const result = getPuzzleProgress().recordRound(this.id, this.level, this.greens);
+    const result = getPuzzleProgress().recordRound(this.id, this.level, this.greens, this.yellows);
     _th.logToAi('PuzzleRoundCompleted', SeverityLevel.Information, {
       ...this.props(),
       firstTry: String(result.firstTry),
@@ -240,11 +250,11 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
         ? 'Your first round at this level!'
         : result.newBest
           ? 'New best!'
-          : `Your best is ${String(result.previousBest)} of ${String(total)}`;
+          : `Your best: ${'★'.repeat(getPuzzleProgress().bestStars(this.id, this.level) ?? 1)}`;
     this.time.delayedCall(config.puzzles.timings.endPanelDelayMs, () =>
       showEndPanel(this, {
         title: result.stars === 3 ? 'Amazing!' : 'You did it!',
-        lines: [`${String(result.firstTry)} of ${String(total)} green!`, pointsLine, bestLine],
+        lines: [stepsLine(this.greens, this.yellows, total), pointsLine, bestLine],
         stars: result.stars,
         newBest: result.newBest && result.previousBest !== null,
         changeLabel: 'Change Difficulty',

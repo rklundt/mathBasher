@@ -1312,8 +1312,12 @@ export const config = {
     perRound: 8,
     /** Choices in the tray (Odd One Out: items on the shelf). */
     choices: { easy: 3, medium: 4, hard: 5 },
-    /** Green answers for ★★★ and ★★ (fewer: ★). */
-    stars: { three: 8, two: 6 },
+    /**
+     * Stars from a round's steps: green counts 1, yellow `yellowWorth`, red 0.
+     * Owner (2026-11-01): a round all right but a few slow was only ★, so
+     * yellow counts half; ★★★ at `three`, ★★ at `two` (fewer: ★).
+     */
+    stars: { three: 7, two: 5, yellowWorth: 0.5 },
     /**
      * Each puzzle's step on the progress bar (owner, 2026-10-26): green = right
      * first try (and, on a timed puzzle, in the first `greenShare` of its
@@ -1657,8 +1661,11 @@ export const config = {
      */
     wordTrain: { cars: { easy: 4, medium: 4, hard: 4 } },
     oddWordOut: { items: { easy: 4, medium: 4, hard: 5 } },
-    /** Missing Letter: the word's length range by level. */
-    missingLetter: { letters: { easy: [3, 3], medium: [4, 4], hard: [5, 6] } },
+    /**
+     * Missing Letter: the word's length range and how many letters are
+     * missing, by level. Owner (2026-11-01): Hard misses two, and longer words.
+     */
+    missingLetter: { letters: { easy: [3, 3], medium: [4, 4], hard: [5, 7] }, gaps: { easy: 1, medium: 1, hard: 2 } },
     /**
      * Letter Garden: the board (`size` × `size` letters) and the shortest
      * word that counts, mirrored in `scripts/words/build-word-list.mjs`
@@ -1684,7 +1691,8 @@ export const config = {
     /** Quick Count: how many show (a range), and for how long before they hide. */
     quickCount: {
       count: { easy: [2, 6], medium: [4, 10], hard: [6, 15] },
-      flashMs: { easy: 1800, medium: 1500, hard: 1200 },
+      // Owner (2026-11-01): more time to count on Medium, more again on Hard (was 1,800 / 1,500 / 1,200).
+      flashMs: { easy: 1800, medium: 2400, hard: 3000 },
     },
     symbolHunt: {
       // Owner (2026-10-28, focus group): Hard wasn't hard enough: a column more (7 → 8).

@@ -24,6 +24,8 @@ interface SavedPuzzles {
   level: Partial<Record<RoundPuzzleId, PuzzleLevel>>;
   /** Most first-try answers in a round, per puzzle per level. */
   best: Partial<Record<RoundPuzzleId, Partial<Record<PuzzleLevel, number>>>>;
+  /** Sprint 2.16 — the most stars in a round, per puzzle per level (optional: older saves have none). */
+  bestStars?: Partial<Record<RoundPuzzleId, Partial<Record<PuzzleLevel, number>>>>;
   /** Sprint 2.16 — the look picked last, per Words or Numbers puzzle (optional: older saves have none). */
   theme?: Partial<Record<ThemedPuzzleId, PuzzleTheme>>;
 }
@@ -39,11 +41,12 @@ export interface RoundResult {
 
 const LEVELS = Object.keys(config.puzzles.choices) as PuzzleLevel[];
 
-/** Stars for a round: ★★★ all first try, ★★ most, ★ for finishing. */
-export function starsFor(firstTry: number): number {
+/** Stars for a round: green steps count 1, yellow half (sprint 2.16); ★★★ near all, ★★ most, ★ for finishing. */
+export function starsFor(green: number, yellow = 0): number {
   const S = config.puzzles.stars;
-  if (firstTry >= S.three) return 3;
-  if (firstTry >= S.two) return 2;
+  const score = green + yellow * S.yellowWorth;
+  if (score >= S.three) return 3;
+  if (score >= S.two) return 2;
   return 1;
 }
 
@@ -72,6 +75,14 @@ function parse(json: string): SavedPuzzles {
         if (isLevel(level) && typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= config.puzzles.perRound) {
           (out.best[id] ??= {})[level] = n;
         }
+      }
+    }
+  }
+  if (typeof r.bestStars === 'object' && r.bestStars !== null) {
+    for (const [id, levels] of Object.entries(r.bestStars as Record<string, unknown>)) {
+      if (!isPuzzle(id) || typeof levels !== 'object' || levels === null) continue;
+      for (const [level, n] of Object.entries(levels as Record<string, unknown>)) {
+        if (isLevel(level) && (n === 1 || n === 2 || n === 3)) ((out.bestStars ??= {})[id] ??= {})[level] = n;
       }
     }
   }
@@ -117,15 +128,25 @@ export class PuzzleProgress {
     return this.data.best[id]?.[level] ?? null;
   }
 
-  /** A finished round: keeps the best for its puzzle and level. */
-  recordRound(id: RoundPuzzleId, level: PuzzleLevel, firstTry: number): RoundResult {
+  /** The most stars in a round at this level (from the best green count for rounds before sprint 2.16), or null. */
+  bestStars(id: RoundPuzzleId, level: PuzzleLevel): number | null {
+    const stars = this.data.bestStars?.[id]?.[level];
+    if (stars !== undefined) return stars;
+    const best = this.best(id, level);
+    return best === null ? null : starsFor(best);
+  }
+
+  /** A finished round (`yellow`: right but slower or after a miss): keeps the bests for its puzzle and level. */
+  recordRound(id: RoundPuzzleId, level: PuzzleLevel, firstTry: number, yellow = 0): RoundResult {
     const previousBest = this.best(id, level);
-    const newBest = previousBest === null || firstTry > previousBest;
-    if (newBest) {
-      (this.data.best[id] ??= {})[level] = firstTry;
-      this.save();
-    }
-    return { firstTry, stars: starsFor(firstTry), previousBest, newBest };
+    const previousStars = this.bestStars(id, level);
+    const stars = starsFor(firstTry, yellow);
+    const moreGreen = previousBest === null || firstTry > previousBest;
+    const moreStars = previousStars === null || stars > previousStars;
+    if (moreGreen) (this.data.best[id] ??= {})[level] = firstTry;
+    if (moreStars) ((this.data.bestStars ??= {})[id] ??= {})[level] = stars;
+    if (moreGreen || moreStars) this.save();
+    return { firstTry, stars, previousBest, newBest: moreGreen || moreStars };
   }
 
   private load(): SavedPuzzles {

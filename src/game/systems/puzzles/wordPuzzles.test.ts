@@ -197,18 +197,51 @@ describe('the Words puzzles (sprint 2.16)', () => {
     });
   });
 
-  it('Missing Letter: the answer fills the gap to spell the picture; letters only', () => {
-    each('missing-letter', (p, level, tag) => {
+  it('Missing Letter: the answer fills the gaps (two on Hard) to spell the word; no wrong card spells a real word', () => {
+    const fill = (letters: readonly (string | null)[], card: string): string => {
+      const put = card.replace(/ /g, '').toLowerCase().split('');
+      return letters.map((l) => l ?? put.shift() ?? '?').join('');
+    };
+    const seen = new Set<string>();
+    for (const level of LEVELS)
+      for (let seed = 1; seed <= 300; seed++) {
+        const p = generateThemed('missing-letter', level, mulberry32(seed * 37 + 11), dictionary);
+        const tag = `missing-letter ${level} seed ${String(seed)}`;
+        if (p.stage.kind !== 'missing') throw new Error(tag);
+        const { letters, picture, word } = p.stage;
+        seen.add(word);
+        const [lo, hi] = P.missingLetter.letters[level];
+        expect(letters.length, tag).toBeGreaterThanOrEqual(lo);
+        expect(letters.length, tag).toBeLessThanOrEqual(hi);
+        expect(letters.filter((l) => l === null).length, tag).toBe(P.missingLetter.gaps[level]);
+        expect(fill(letters, right(p)), tag).toBe(word);
+        if (picture !== null) expect(PICTURE_WORDS[picture], tag).toBe(word);
+        else expect(dictionary.has(word), tag).toBe(true);
+        for (const w of wrongs(p)) {
+          const spelled = fill(letters, w);
+          expect(spelled, `${tag} ${w}`).not.toBe(word);
+          expect(dictionary.has(spelled), `${tag}: ${spelled} is a word`).toBe(false);
+        }
+        for (const t of texts(p)) expect(t, tag).toMatch(/^[A-Z]( [A-Z])*$/);
+      }
+    // Far more words than the 50 pictures.
+    expect(seen.size).toBeGreaterThan(150);
+  });
+
+  it('Missing Letter without the word list sticks to picture words', () => {
+    each('missing-letter', (p, _level, tag) => {
       if (p.stage.kind !== 'missing') throw new Error(tag);
-      const { letters, picture } = p.stage;
-      const [lo, hi] = P.missingLetter.letters[level];
-      expect(letters.length, tag).toBeGreaterThanOrEqual(lo);
-      expect(letters.length, tag).toBeLessThanOrEqual(hi);
-      expect(letters.filter((l) => l === null).length, tag).toBe(1);
-      const spelled = letters.map((l) => l ?? right(p).toLowerCase()).join('');
-      expect(spelled, tag).toBe(PICTURE_WORDS[picture]);
-      for (const t of texts(p)) expect(t, tag).toMatch(/^[A-Z]$/);
+      expect(p.stage.picture, tag).not.toBeNull();
     });
+  });
+
+  it('a Missing Letter round never has the same word twice', () => {
+    for (const level of LEVELS)
+      for (let seed = 1; seed <= 40; seed++) {
+        const round = generateThemedRound('missing-letter', level, P.perRound, mulberry32(seed), dictionary);
+        const words = round.map((p) => (p.stage.kind === 'missing' ? p.stage.word : ''));
+        expect(new Set(words).size, `${level} ${String(seed)}`).toBe(P.perRound);
+      }
   });
 
   it('Word Snap: the halves make the word; on Hard no wrong card makes a real word', () => {

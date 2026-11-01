@@ -5,7 +5,7 @@
 import { config, type PuzzleLevel } from '@/core/config';
 import type { WordPuzzleId } from '@/core/gameIds';
 import { pickDistinct, randInt, shuffled, textToken, type TextToken } from '@/game/systems/puzzles/tokens';
-import { makeChoices, type ThemedPuzzle } from '@/game/systems/puzzles/themedTypes';
+import { makeChoices, type PuzzleWords, type ThemedPuzzle } from '@/game/systems/puzzles/themedTypes';
 import {
   ABC_WORDS,
   ALSO_REAL,
@@ -15,6 +15,7 @@ import {
   GROW_CHAINS,
   HARD_KINDS,
   HARD_KIND_PAIRS,
+  KID_VOCAB,
   PICTURE_WORDS,
   RHYMES,
   WAND_RELATIONS,
@@ -41,6 +42,7 @@ export function generateWordPuzzle(
   id: Exclude<WordPuzzleId, 'letter-garden'>,
   level: PuzzleLevel,
   rng: () => number,
+  words?: PuzzleWords,
 ): ThemedPuzzle {
   switch (id) {
     case 'word-train':
@@ -50,7 +52,7 @@ export function generateWordPuzzle(
     case 'word-wand':
       return wordWand(level, rng);
     case 'missing-letter':
-      return missingLetter(level, rng);
+      return missingLetter(level, rng, words);
     case 'word-snap':
       return wordSnap(level, rng);
   }
@@ -311,23 +313,64 @@ function wordWand(level: PuzzleLevel, rng: () => number): ThemedPuzzle {
 
 const VOWELS = 'aeiou';
 
-function missingLetter(level: PuzzleLevel, rng: () => number): ThemedPuzzle {
+/** Tempting wrong letters for one gap: the other vowels for a vowel; look- and sound-alikes for a consonant. */
+function lookAlikes(l: string): string[] {
+  const pool = VOWELS.includes(l) ? VOWELS : (CLOSE_LETTERS[l] ?? '') + 'bdgmnprst';
+  return [...new Set(pool.split('').filter((x) => x !== l))];
+}
+
+/** The word with `fill` (one letter per gap) put in the gaps. */
+function fillGaps(word: string, gaps: readonly number[], fill: string): string {
+  const out = word.split('');
+  gaps.forEach((g, k) => (out[g] = fill[k]));
+  return out.join('');
+}
+
+/**
+ * Owner (2026-11-01): more words (picture words, then `KID_VOCAB` checked
+ * against the big word list), and two gaps on Hard. With the word list,
+ * no wrong choice spells a real word; a word without a picture is only
+ * used then.
+ */
+function missingLetter(level: PuzzleLevel, rng: () => number, words?: PuzzleWords): ThemedPuzzle {
   const [lo, hi] = P.missingLetter.letters[level];
-  const words = PICTURE_WORDS.filter((w) => w.length >= lo && w.length <= hi);
-  const w = pick(words, rng);
-  const gap = randInt(w.length, rng);
-  const ans = w[gap];
-  // A vowel's look-alikes are the other vowels; a consonant's, letters that sound or look close.
-  const pool = VOWELS.includes(ans) ? VOWELS : (CLOSE_LETTERS[ans] ?? '') + 'bdgmnprst';
-  const wrong = shuffled([...new Set(pool.split('').filter((l) => l !== ans))], rng);
-  const { choices, answer } = makeChoices(letter(ans), wrong.map(letter), P.choices[level], rng);
-  return {
-    prompt: 'Which letter is missing?',
-    stage: { kind: 'missing', picture: picOf(w) ?? 0, letters: w.split('').map((l, k) => (k === gap ? null : l)) },
-    choices,
-    answer,
-    why: `${w.toUpperCase()}!`,
-  };
+  const gapCount = P.missingLetter.gaps[level];
+  const fits = (w: string): boolean => w.length >= lo && w.length <= hi;
+  const pictured = PICTURE_WORDS.filter(fits);
+  const plain = words ? KID_VOCAB.filter((w) => fits(w) && picOf(w) === null && words.isWord(w)) : [];
+  const pool = [...new Set([...pictured, ...plain])];
+  const count = P.choices[level];
+  for (let guard = 0; ; guard++) {
+    const w = pick(pool, rng);
+    const gaps = pickDistinct(w.length, gapCount, rng).sort((x, y) => x - y);
+    const answer = gaps.map((g) => w[g]).join('');
+    const options = gaps.map((g) => [w[g], ...shuffled(lookAlikes(w[g]), rng)]);
+    // Every mix of tempting letters (one gap wrong, or both), most tempting first.
+    let combos: string[] = options[0];
+    for (const o of options.slice(1)) combos = combos.flatMap((c) => o.map((x) => c + x));
+    const wrong = shuffled(
+      combos.filter((c) => c !== answer),
+      rng,
+    ).filter((c) => {
+      const spelled = fillGaps(w, gaps, c);
+      return spelled !== w && !(words?.isWord(spelled) ?? false);
+    });
+    if (wrong.length < count - 1 && guard < 50) continue;
+    const card = (c: string): TextToken => textToken(c.toUpperCase().split('').join(' '));
+    const { choices, answer: a } = makeChoices(card(answer), wrong.map(card), count, rng);
+    return {
+      prompt: gapCount > 1 ? 'Which letters are missing?' : 'Which letter is missing?',
+      stage: {
+        kind: 'missing',
+        word: w,
+        picture: picOf(w),
+        letters: w.split('').map((l, k) => (gaps.includes(k) ? null : l)),
+      },
+      choices,
+      answer: a,
+      why: `${w.toUpperCase()}!`,
+    };
+  }
 }
 
 /** Letters easy to mix up with each one (a consonant's tempting wrong answers). */

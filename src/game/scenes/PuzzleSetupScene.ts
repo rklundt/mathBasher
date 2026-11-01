@@ -25,11 +25,11 @@ import { openChooser } from '@/game/services/chooserNavigation';
 const LEVELS: readonly PuzzleLevel[] = ['easy', 'medium', 'hard'];
 const LEVEL_LABELS: Record<PuzzleLevel, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
-/** The best line for a level: green answers and stars, said plainly. */
-export function puzzleBestLine(best: number | null): string {
-  if (best === null) return 'Get them all green for ★★★!';
+/** The best line for a level: the most green answers and the most stars, said plainly. */
+export function puzzleBestLine(best: number | null, bestStars: number | null = null): string {
+  if (best === null) return 'Get them green for ★★★! Yellow counts half.';
   const total = config.puzzles.perRound;
-  return `Your best: ${String(best)} of ${String(total)} green ${'★'.repeat(starsFor(best))}`;
+  return `Your best: ${String(best)} of ${String(total)} green ${'★'.repeat(bestStars ?? starsFor(best))}`;
 }
 
 /** "Up to 1,500 points!" under a level: the round's top score there. */
@@ -182,7 +182,10 @@ export class PuzzleSetupScene extends Phaser.Scene {
   private refresh(): void {
     for (const [level, tile] of this.tiles) tile.setSelected(level === this.level);
     for (const [theme, tile] of this.looks) tile.setSelected(theme === this.theme);
-    this.frame.best.setText(puzzleBestLine(getPuzzleProgress().best(this.id, this.level)));
+    const progress = getPuzzleProgress();
+    this.frame.best.setText(
+      puzzleBestLine(progress.best(this.id, this.level), progress.bestStars(this.id, this.level)),
+    );
   }
 
   private start(): void {

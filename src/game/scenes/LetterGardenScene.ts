@@ -11,12 +11,13 @@ import { pickTileFlipSfx } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
 import {
-  WordList,
+  type WordList,
   checkTrace,
   neighbours,
   pathFor,
   pickBoard,
   revealWord,
+  wordListFrom,
   wordOf,
   type LetterGardenData,
 } from '@/game/systems/puzzles/letterGarden';
@@ -29,9 +30,6 @@ import { applyTextOutline } from '@/game/ui/callouts';
 const P = config.puzzles;
 const LG = P.letterGarden;
 const INK = 0x3a2420;
-
-/** The word list is built once per visit (it's large); later rounds reuse it. */
-let cachedList: WordList | null = null;
 
 /**
  * Sprint 2.16 — Letter Garden (owner, 2026-11-01): drag through touching
@@ -78,15 +76,12 @@ export class LetterGardenScene extends ThemedRoundScene {
 
   protected startRound(): void {
     this.gardenData = this.cache.json.get(LG.wordsKey) as LetterGardenData;
-    if (cachedList === null) {
-      const t0 = performance.now();
-      cachedList = new WordList(this.gardenData);
-      _th.logToAi('LetterGarden.WordListReady', SeverityLevel.Information, {
-        ...this.props(),
-        reason: `word list ready in ${String(Math.round(performance.now() - t0))} ms`,
-      });
-    }
-    this.list = cachedList;
+    const t0 = performance.now();
+    this.list = wordListFrom(this.gardenData);
+    _th.logToAi('LetterGarden.WordListReady', SeverityLevel.Information, {
+      ...this.props(),
+      reason: `word list ready in ${String(Math.round(performance.now() - t0))} ms`,
+    });
     this.size = LG.size[this.level];
     this.minLetters = LG.minLetters[this.level];
     this.board = '';

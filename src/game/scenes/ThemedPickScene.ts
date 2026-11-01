@@ -11,6 +11,7 @@ import { pickTileFlipSfx } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
 import { generateThemedRound, type ThemedPuzzle } from '@/game/systems/puzzles/themedPuzzles';
+import { wordListFrom, type LetterGardenData } from '@/game/systems/puzzles/letterGarden';
 import { textToken, type TextToken, type Token } from '@/game/systems/puzzles/tokens';
 import { ThemedRoundScene } from '@/game/scenes/ThemedRoundScene';
 import { AnswerTray, PUZZLE_DEPTH, SandTimer, questionCard, tokenCard } from '@/game/ui/puzzleFrame';
@@ -37,6 +38,8 @@ export class ThemedPickScene extends ThemedRoundScene {
   private stageObjects: Phaser.GameObjects.GameObject[] = [];
   private tray?: AnswerTray;
   private slot?: { x: number; y: number; w: number; h: number; card: Phaser.GameObjects.Container };
+  /** Missing Letter: its gaps, left to right (Hard has two). */
+  private letterGaps: { x: number; y: number; w: number; h: number; card: Phaser.GameObjects.Container }[] = [];
   private misses = 0;
   private locked = false;
   private sand?: SandTimer;
@@ -58,8 +61,19 @@ export class ThemedPickScene extends ThemedRoundScene {
     return this.id as ThemedPickId;
   }
 
+  preload(): void {
+    super.preload();
+    // Missing Letter checks its choices against Letter Garden's big word list (loaded once, shared).
+    const LG = P.letterGarden;
+    if (Settings.round.gameId === 'missing-letter' && !this.cache.json.exists(LG.wordsKey)) {
+      this.load.json(LG.wordsKey, LG.wordsUrl);
+    }
+  }
+
   protected startRound(): void {
-    this.puzzles = generateThemedRound(this.pickId, this.level, P.perRound);
+    const data = this.cache.json.get(P.letterGarden.wordsKey) as LetterGardenData | undefined;
+    const words = this.pickId === 'missing-letter' && data ? wordListFrom(data) : undefined;
+    this.puzzles = generateThemedRound(this.pickId, this.level, P.perRound, undefined, words);
     this.stageObjects = [];
     this.sand = new SandTimer(this, this.scale.width / 2, P.layout.sand.y, P.layout.sand.width);
     this.tray = undefined;
@@ -97,6 +111,7 @@ export class ThemedPickScene extends ThemedRoundScene {
     this.flashTimer?.remove(false);
     this.flash = undefined;
     this.slot = undefined;
+    this.letterGaps = [];
     this.misses = 0;
     this.locked = false;
     const p = this.puzzles[i];
@@ -134,7 +149,11 @@ export class ThemedPickScene extends ThemedRoundScene {
     const spots = shelf
       ? p.choices.map((_, k) => ({ x: this.scale.width / 2 + (k - (n - 1) / 2) * 190, y: 360 }))
       : undefined;
-    this.tray = new AnswerTray(this, p.choices, (c) => this.pick(c), spots, shelf ? 160 : undefined);
+    // Owner (2026-11-01): cards with and without pictures side by side were confusing, so a
+    // row shows pictures only when every card in it has one.
+    const allPics = p.choices.every((c) => c.pic !== null);
+    const cards = allPics ? p.choices : p.choices.map((c) => textToken(c.text));
+    this.tray = new AnswerTray(this, cards, (c) => this.pick(c), spots, shelf ? 160 : undefined);
     this.sand?.start(this.seconds(), () => this.miss('Time’s up! It was this one.'));
     this.restartClock();
   }
@@ -181,6 +200,19 @@ export class ThemedPickScene extends ThemedRoundScene {
     if (this.flash) {
       this.tweens.add({ targets: this.flash.counters, alpha: 1, duration: 220 });
       if (this.flash.cover) this.tweens.add({ targets: this.flash.cover, alpha: 0, duration: 160 });
+    }
+    if (this.letterGaps.length > 0 && token.kind === 'text') {
+      // Missing Letter: one letter of the card in each gap.
+      const letters = token.text.replace(/ /g, '');
+      this.letterGaps.forEach((g, k) => {
+        const card = tokenCard(this, g.x, g.y, g.w, g.h, textToken(letters[k] ?? ''))
+          .setDepth(PUZZLE_DEPTH.stage + 1)
+          .setScale(0.3);
+        this.tweens.add({ targets: card, scale: 1, duration: 260, delay: k * 90, ease: 'Back.Out' });
+        g.card.setVisible(false);
+        this.stageObjects.push(card);
+      });
+      return;
     }
     const s = this.slot;
     if (!s) return;
@@ -335,19 +367,28 @@ export class ThemedPickScene extends ThemedRoundScene {
   }
 
   /** Missing Letter: the picture, and the word's letters with one gap. */
-  private drawMissing(picture: number, letters: readonly (string | null)[]): void {
+  private drawMissing(picture: number | null, letters: readonly (string | null)[]): void {
     const pieces: Phaser.GameObjects.GameObject[] = [];
-    const frame = this.keep(tokenCard(this, 300, 340, 230, 230, null));
-    const pic = this.keep(this.add.image(300, 340, PUZZLE_PICS_SHEET.key, picture).setDisplaySize(200, 200));
-    pieces.push(frame, pic);
-    const tile = 96;
+    if (picture !== null) {
+      pieces.push(this.keep(tokenCard(this, 270, 340, 230, 230, null)));
+      pieces.push(this.keep(this.add.image(270, 340, PUZZLE_PICS_SHEET.key, picture).setDisplaySize(200, 200)));
+    }
+    // The letters fill what's left of the stage (all of it when there's no picture).
     const gapX = 14;
-    const x0 = 820 - ((letters.length - 1) * (tile + gapX)) / 2;
+    const left = picture !== null ? 420 : 120;
+    const right = 1180;
+    const tile = Math.min(100, Math.floor((right - left) / letters.length) - gapX);
+    const cx = (left + right) / 2;
+    const x0 = cx - ((letters.length - 1) * (tile + gapX)) / 2;
     letters.forEach((l, k) => {
       const x = x0 + k * (tile + gapX);
-      pieces.push(
-        l === null ? this.gap(x, 340, tile, tile + 16) : this.card(x, 340, tile, tile + 16, textToken(l.toUpperCase())),
-      );
+      if (l === null) {
+        const g = this.gap(x, 340, tile, tile + 16);
+        this.letterGaps.push({ x, y: 340, w: tile, h: tile + 16, card: g });
+        pieces.push(g);
+      } else {
+        pieces.push(this.card(x, 340, tile, tile + 16, textToken(l.toUpperCase())));
+      }
     });
     this.popIn(pieces);
   }
