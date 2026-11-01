@@ -15,6 +15,7 @@ import {
   PUZZLE_THEME_ART,
   SPRITE_MANIFEST,
   THEME_COUNTERS_SHEET,
+  THEME_FLYERS_SHEET,
   THEME_MACHINES_SHEET,
 } from '@/core/spriteKeys';
 import { PUZZLE_THEME_SOUNDS } from '@/core/audioKeys';
@@ -83,7 +84,13 @@ describe('Words and Numbers art (sprint 2.16)', () => {
     const m = await size(THEME_MACHINES_SHEET.key);
     expect([m.width, m.height]).toEqual([3 * THEME_MACHINES_SHEET.frame, THEME_MACHINES_SHEET.frame]);
     const c = await size(THEME_COUNTERS_SHEET.key);
-    expect([c.width, c.height]).toEqual([8 * THEME_COUNTERS_SHEET.frame, THEME_COUNTERS_SHEET.frame]);
+    expect([c.width, c.height]).toEqual([16 * THEME_COUNTERS_SHEET.frame, THEME_COUNTERS_SHEET.frame]);
+    const fl = await size(THEME_FLYERS_SHEET.key);
+    expect([fl.width, fl.height]).toEqual([8 * THEME_FLYERS_SHEET.frame, THEME_FLYERS_SHEET.frame]);
+    // Each look draws from its own frames, never the other's.
+    const { critters, cosmos } = PUZZLE_THEME_ART;
+    expect(critters.counters.filter((f) => cosmos.counters.includes(f))).toEqual([]);
+    expect(critters.flyers.map((f) => f.frame).filter((f) => cosmos.flyers.some((g) => g.frame === f))).toEqual([]);
     const icons = await size(PUZZLE_ICON_SHEET_2.key);
     expect([icons.width, icons.height]).toEqual([THEMED_PUZZLE_IDS.length * 96, 96]);
   });
@@ -104,6 +111,7 @@ describe('Words and Numbers art (sprint 2.16)', () => {
     expect(loadsFor(PUZZLE_SHEETS.wand.key, 'word-wand')).toBe(true);
     expect(loadsFor(THEME_MACHINES_SHEET.key, 'number-machine')).toBe(true);
     expect(loadsFor(THEME_COUNTERS_SHEET.key, 'quick-count')).toBe(true);
+    expect(loadsFor(THEME_FLYERS_SHEET.key, 'letter-garden')).toBe(true);
   });
 });
 

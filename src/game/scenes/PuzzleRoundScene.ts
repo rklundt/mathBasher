@@ -83,6 +83,9 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
   /** Build the round (called from `create`, after the frame is up). */
   protected abstract startRound(): void;
 
+  /** Anything extra behind the puzzle, once the frame is up (sprint 2.16: the themed puzzles' flyers). */
+  protected decorate(): void {}
+
   /** What this round looks and sounds like (called once `id` is set). */
   protected look(): PuzzleRoundLook {
     const id = this.id as VisualPuzzleId;
@@ -127,6 +130,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.dancers = new PuzzleDancers(this, this.roundLook.dancers);
     this.bar = new PuzzleTopBar(this, puzzleById(id).label, config.puzzles.perRound, () => this.openPause());
     this.prompt = new PromptPill(this);
+    this.decorate();
     this.refreshTopLeft();
 
     this.input.keyboard?.on('keydown-ESC', () => {

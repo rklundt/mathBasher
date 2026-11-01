@@ -1357,6 +1357,25 @@ export const config = {
       drift: { scaleFrom: 1.04, scaleTo: 1.1, panPx: 20, ms: 16000 },
     },
     /**
+     * Sprint 2.16 — the Words and Numbers puzzles' backdrops get a little life
+     * of their own look (`game/ui/themeFlyers.ts`): now and then something
+     * drifts across behind the puzzle (butterflies, balloons, birds and
+     * leaves; UFOs, comets, satellites and rockets), at most `maxAtOnce`.
+     */
+    flyers: {
+      everyMs: [2600, 5200],
+      maxAtOnce: 2,
+      crossMs: {
+        flutter: [11000, 15000],
+        rise: [12000, 16000],
+        fall: [9000, 13000],
+        glide: [12000, 17000],
+        streak: [2200, 3200],
+      },
+      sizePx: [56, 84],
+      alpha: 0.85,
+    },
+    /**
      * Seconds of sand per puzzle, by level. Owner (2026-10-31): every puzzle
      * but Copy Cat has a sand timer, a blanket 12 / 12 / 12 to playtest (a
      * harder level shouldn't get more time); change any one here. Before:

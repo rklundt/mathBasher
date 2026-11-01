@@ -867,29 +867,59 @@ export interface PuzzleThemeArt {
   readonly changer: { readonly key: string; readonly frame?: number };
   /** Quick Count's counters (frames of `THEME_COUNTERS_SHEET`). */
   readonly counters: readonly number[];
+  /** What drifts across the backdrop (frames of `THEME_FLYERS_SHEET`), each with how it moves. */
+  readonly flyers: readonly { readonly frame: number; readonly motion: FlyerMotion }[];
 }
 
-export const THEME_MACHINES_SHEET = { key: 'theme-machines', frame: 260 } as const;
-export const THEME_COUNTERS_SHEET = { key: 'theme-counters', frame: 96 } as const;
+/**
+ * How a flyer crosses the backdrop: `flutter` (wobbling side to side, a
+ * butterfly or bird), `rise` (a balloon floating up), `fall` (a leaf
+ * twirling down), `glide` (a steady drift with a bob: a UFO, a satellite),
+ * `streak` (fast and diagonal: a comet, a rocket).
+ */
+export type FlyerMotion = 'flutter' | 'rise' | 'fall' | 'glide' | 'streak';
 
-const dancerSheet = (key: string): DancerSheet => ({ key, frameWidth: 200, frameHeight: 230, characters: 6, poses: 3 });
+export const THEME_MACHINES_SHEET = { key: 'theme-machines', frame: 260 } as const;
+export const THEME_COUNTERS_SHEET = { key: 'theme-counters-2', frame: 96 } as const;
+/** Sprint 2.16 — the things that drift across a look's backdrop (`scripts/sprites/themes.mjs` FLYERS). */
+export const THEME_FLYERS_SHEET = { key: 'theme-flyers', frame: 96 } as const;
+
+const dancerSheet = (key: string): DancerSheet => ({
+  key,
+  frameWidth: 200,
+  frameHeight: 230,
+  characters: 10,
+  poses: 3,
+});
 
 export const PUZZLE_THEME_ART: Readonly<Record<PuzzleTheme, PuzzleThemeArt>> = {
   critters: {
-    backdrops: ['theme-critters-1', 'theme-critters-2', 'theme-critters-3', 'theme-critters-4'],
-    dancers: dancerSheet('theme-critters-dancers'),
+    backdrops: [1, 2, 3, 4, 5, 6].map((n) => `theme-critters-${String(n)}`),
+    dancers: dancerSheet('theme-critters-dancers-2'),
     train: PUZZLE_SHEETS.train,
     machine: { key: THEME_MACHINES_SHEET.key, frame: 0 },
     changer: { key: PUZZLE_SHEETS.wand.key },
-    counters: [0, 1, 2, 3],
+    counters: [0, 1, 2, 3, 4, 5, 6, 7],
+    flyers: [
+      { frame: 0, motion: 'flutter' },
+      { frame: 1, motion: 'rise' },
+      { frame: 2, motion: 'flutter' },
+      { frame: 3, motion: 'fall' },
+    ],
   },
   cosmos: {
-    backdrops: ['theme-cosmos-1', 'theme-cosmos-2', 'theme-cosmos-3', 'theme-cosmos-4'],
-    dancers: dancerSheet('theme-cosmos-dancers'),
+    backdrops: [1, 2, 3, 4, 5, 6].map((n) => `theme-cosmos-${String(n)}`),
+    dancers: dancerSheet('theme-cosmos-dancers-2'),
     train: { key: 'theme-cosmos-train', frameWidth: 220, frameHeight: 180, cars: 4, windowY: 88 },
     machine: { key: THEME_MACHINES_SHEET.key, frame: 1 },
     changer: { key: THEME_MACHINES_SHEET.key, frame: 2 },
-    counters: [4, 5, 6, 7],
+    counters: [8, 9, 10, 11, 12, 13, 14, 15],
+    flyers: [
+      { frame: 4, motion: 'glide' },
+      { frame: 5, motion: 'streak' },
+      { frame: 6, motion: 'glide' },
+      { frame: 7, motion: 'streak' },
+    ],
   },
 };
 
@@ -1412,6 +1442,7 @@ function themedArtEntries(): SpriteManifestEntry[] {
     sheet(cosmosTrain.key, cosmosTrain.frameWidth, cosmosTrain.frameHeight),
     sheet(THEME_MACHINES_SHEET.key, THEME_MACHINES_SHEET.frame),
     sheet(THEME_COUNTERS_SHEET.key, THEME_COUNTERS_SHEET.frame),
+    sheet(THEME_FLYERS_SHEET.key, THEME_FLYERS_SHEET.frame),
   ];
 }
 

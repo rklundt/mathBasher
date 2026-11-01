@@ -10,12 +10,15 @@ import { PUZZLE_THEME_SOUNDS } from '@/core/audioKeys';
 import { getPuzzleProgress } from '@/services/PuzzleProgress';
 import { PuzzleRoundScene, type PuzzleRoundLook } from '@/game/scenes/PuzzleRoundScene';
 import { THEME_COLOURS, type ThemeColours } from '@/game/ui/puzzleThemeLook';
+import { ThemeFlyers } from '@/game/ui/themeFlyers';
+import { PUZZLE_DEPTH } from '@/game/ui/puzzleFrame';
 
 /**
  * Sprint 2.16 — a Words or Numbers round: a puzzle-pack round played in the
  * look picked on its setup screen (`PuzzleProgress.theme`). The look sets
  * the backdrops, dancers, music and sounds here, and the stage art and
- * colours the scenes draw with (`art`, `colours`); the puzzles never see it.
+ * colours the scenes draw with (`art`, `colours`), and what drifts across
+ * the backdrop (`ui/themeFlyers.ts`); the puzzles never see it.
  */
 export abstract class ThemedRoundScene extends PuzzleRoundScene {
   protected theme: PuzzleTheme = DEFAULT_PUZZLE_THEME;
@@ -36,6 +39,11 @@ export abstract class ThemedRoundScene extends PuzzleRoundScene {
       right: sounds.right,
       wrong: sounds.wrong,
     };
+  }
+
+  /** The look's flyers drift across behind the puzzle. */
+  protected decorate(): void {
+    new ThemeFlyers(this, this.art, PUZZLE_DEPTH.ambience + 1);
   }
 
   protected props(): TelemetryProps {

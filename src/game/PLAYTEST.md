@@ -599,6 +599,7 @@ keyboard and touch.
 - [ ] Animal Pals: pastel backdrops (meadow, rainbow, candy, mushroom forest), a unicorn, dragon, bunny, kitten, panda or yeti dancing, the Pair Pals sounds. Alien Invaders: space backdrops (planets, moon, station, robot lab), little aliens and robots, the zap sounds. Each puzzle plays its look's music.
 - [ ] A row of cards shows pictures only when every card in it has one.
 - [ ] Stars: green counts 1, yellow half; ★★★ from 7, ★★ from 5; the end panel says "5 green and 3 yellow!"; the setup's best line shows the best stars.
+- [ ] Behind the puzzle, now and then something drifts across (Animal Pals: butterflies, balloons, birds, leaves; Alien Invaders: UFOs, comets, satellites, rockets), never more than two; they stop when paused. Dancers change every few puzzles among ten per look; six backdrops per look.
 - [ ] Every puzzle has the sand bar (12 s; Make Ten 15 s; Letter Garden 30 s per word); points, ⚡ and green / yellow / red steps work as in the Visual puzzles.
 - [ ] Word Train: letters in ABC order (Easy), rhymes, words taking turns; growing words and same first letter (Medium); backwards letters and words whose first letters go A, B, C or skip one (Hard).
 - [ ] Odd Word Out: kinds of things (Easy), rhymes and first letters (Medium), closer kinds and letter counts (Hard); the note says what the others share.
