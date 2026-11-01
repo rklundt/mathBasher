@@ -27,7 +27,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
-### 2.15.1 — Puzzle tune-ups (on dev; not released yet)
+## [2.15.1] - 2026-10-31 — Puzzle tune-ups
 
 - **Sand timers on every puzzle but Copy Cat:** Missing Piece, Magic Wand and Spin Match get one too. Every timer is 12 seconds at every level for now (a harder level no longer gets more time). Before: Pattern Train 20 / 25 / 30, Odd One Out 15 / 18 / 22, Symbol Hunt 20 / 25 / 30.
 - **The sand bar shows the colour you'd get:** green until a notch at halfway (a right first answer then is green), then yellow; it pulses near the end. It no longer turns red, since red means missed.

@@ -1564,9 +1564,9 @@ export const config = {
       /** The puzzle itself sits between these. */
       stage: { top: 176, bottom: 500 },
       tray: { y: 604, cardPx: 128, gapPx: 24, panelPad: 22 },
-      /** The sand bar of a timed puzzle (all but Copy Cat), along the bottom between the dancers. */
       /**
-       * Owner (2026-10-31): the sand is green while a right answer would
+       * The sand bar of a timed puzzle (all but Copy Cat), along the bottom
+       * between the dancers. Owner (2026-10-31): the sand is green while a right answer would
        * still be green (`steps.greenShare`, marked by a notch), then yellow;
        * never red (red means missed). In the last `hurryShare` it pulses.
        */
