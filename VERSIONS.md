@@ -27,6 +27,8 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+- **Security updates (tools only, nothing players see):** vite 6.4.5, vitest 4.1.12, express's body-parser 1.20.9 and minimatch 11.0.3 (now held at 11 or newer), clearing five GitHub security alerts. None of them were in the live game.
+
 ## [2.15.1] - 2026-10-31 — Puzzle tune-ups
 
 - **Sand timers on every puzzle but Copy Cat:** Missing Piece, Magic Wand and Spin Match get one too. Every timer is 12 seconds at every level for now (a harder level no longer gets more time). Before: Pattern Train 20 / 25 / 30, Odd One Out 15 / 18 / 22, Symbol Hunt 20 / 25 / 30.

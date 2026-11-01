@@ -43,12 +43,15 @@ minimumReleaseAge: 1440
 
 overrides:
   # Version floors that must hold across any future install / lockfile regen.
-  # vite 6.4.4 is the build/dev toolchain baseline (patched dev-server
-  # advisories, sprint 2.6.2); esbuild 0.25.x carries the
+  # vite 6.4.5 is the build/dev toolchain baseline (patched dev-server
+  # advisories, sprint 2.6.2 and the 2026-11 update); esbuild 0.25.x carries the
   # dev-server security fix (the pre-0.25 default let any website send requests
-  # to the running dev server). Do not lower these without a deliberate review.
-  vite: ^6.4.4
+  # to the running dev server); minimatch 11.0.1 fixes a slow-pattern
+  # denial-of-service advisory (pulled in by the lint tooling, which still asks
+  # for 9 / 10). Do not lower these without a deliberate review.
+  vite: ^6.4.5
   esbuild: ^0.25.0
+  minimatch: ^11.0.1
 
 # --- Lifecycle-script approval (replaces package.json "pnpm".onlyBuiltDependencies) ---
 
