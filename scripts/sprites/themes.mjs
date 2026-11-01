@@ -1,0 +1,944 @@
+#!/usr/bin/env node
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright 2026 Ray Klundt
+// mathBasher is also available under a commercial license — see COMMERCIAL.md
+
+/**
+ * Words and Numbers puzzle art generator (sprint 2.16).
+ *
+ * Original kawaii vector art drawn in code for the two looks the Words and
+ * Numbers puzzles play in, **Animal Pals** (kawaii and fantasy animals)
+ * and **Alien Invaders**, plus the word pictures. This file IS the source
+ * of the art: edit and re-run, never hand-edit the shipped images. The
+ * owner may later swap in their own picture sheet: same frame size, same
+ * order (`PICS`, mirrored in `src/game/systems/puzzles/wordData.ts`).
+ *
+ * Outputs:
+ *   public/assets/sprites/hero/puzzle-pics.webp            50 word pictures, PIC px, 10 across (PICS order)
+ *   public/assets/sprites/hero/theme-critters-dancers.webp 6 characters × 3 poses (idle, happy, oops), DANCER frames
+ *   public/assets/sprites/hero/theme-cosmos-dancers.webp   the same for the aliens and robots
+ *   public/assets/sprites/hero/theme-cosmos-train.webp     a rocket and 4 pods (the train's geometry)
+ *   public/assets/sprites/hero/theme-machines.webp         the candy machine, the robot machine, the zapper (MACHINE px)
+ *   public/assets/sprites/hero/theme-counters.webp         Quick Count's counters: 4 critters, then 4 space ones (COUNTER px)
+ *   public/assets/sprites/hero/puzzle-icons-2.webp         the new puzzles' tile pictures, ICON px, ICON_ORDER
+ *   public/assets/sprites/bg/theme-<look>-{1,2,3,4}.webp   each look's four backdrops
+ *   public/assets/sprites/bg/puzzle-words.webp             the Words setup backdrop (darkened)
+ *   public/assets/sprites/bg/puzzle-numbers.webp           the Numbers setup backdrop (darkened)
+ *
+ * Usage:
+ *   pnpm sprite:themes                       # writes the files above
+ *   pnpm sprite:themes --preview <png> --dry # review board only, ships nothing
+ *   pnpm sprite:themes --force               # re-render over the shipped files
+ */
+
+import sharp from 'sharp';
+import { existsSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const BG_DIR = resolve(ROOT, 'public/assets/sprites/bg');
+const HERO_DIR = resolve(ROOT, 'public/assets/sprites/hero');
+const MENU_BRIGHTNESS = 0.3;
+
+export const W = 1280;
+export const H = 720;
+export const PIC = 128;
+export const PIC_COLS = 10;
+export const DANCER = { w: 200, h: 230 };
+export const TRAIN = { w: 220, h: 180 };
+export const MACHINE = 260;
+export const COUNTER = 96;
+export const ICON = 96;
+export const BACKDROPS = 4;
+export const LOOKS = ['critters', 'cosmos'];
+
+/** The word pictures, in frame order. Mirrored in wordData.PICTURE_WORDS (a test checks). */
+export const PICS = [
+  'cat',
+  'dog',
+  'pig',
+  'cow',
+  'hen',
+  'fox',
+  'bee',
+  'owl',
+  'bug',
+  'ant',
+  'sun',
+  'cup',
+  'hat',
+  'bus',
+  'car',
+  'bed',
+  'box',
+  'egg',
+  'key',
+  'web',
+  'fish',
+  'frog',
+  'duck',
+  'bird',
+  'bear',
+  'lion',
+  'moon',
+  'star',
+  'tree',
+  'ball',
+  'cake',
+  'kite',
+  'boat',
+  'book',
+  'sock',
+  'drum',
+  'bell',
+  'leaf',
+  'apple',
+  'house',
+  'clock',
+  'horse',
+  'snake',
+  'mouse',
+  'train',
+  'robot',
+  'pizza',
+  'cloud',
+  'rocket',
+  'flower',
+];
+/** Each look's dancers, in sheet row order. */
+export const DANCERS = {
+  critters: ['unicorn', 'dragon', 'bunny', 'kitten', 'panda', 'yeti'],
+  cosmos: ['blip', 'zorp', 'goo', 'boxbot', 'domebot', 'tallbot'],
+};
+export const COUNTERS = ['ladybug', 'chick', 'star', 'blossom', 'alien', 'planet', 'ufo', 'bothead'];
+export const MACHINES = ['candy', 'robot', 'zapper'];
+/** The new puzzles' tile pictures. Mirrored in spriteKeys PUZZLE_ICON_SHEETS (a test checks). */
+export const ICON_ORDER = [
+  'word-train',
+  'odd-word-out',
+  'word-wand',
+  'missing-letter',
+  'word-snap',
+  'letter-garden',
+  'number-train',
+  'number-machine',
+  'odd-number-out',
+  'make-ten',
+  'quick-count',
+];
+
+// ---------------------------------------------------------------- helpers
+
+const INK = '#3a2420';
+const BLUSH = '#ff8fa3';
+const f = (n) => Number(n).toFixed(1);
+const st = (w = 3, c = INK) => `stroke="${c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+
+/** A kawaii face at (x, y), s = scale. mood: 'smile' | 'happy' (^^, open mouth) | 'oops' (O mouth). */
+function face(x, y, s = 1, mood = 'smile', ink = '#2a1a17') {
+  const dx = 9 * s;
+  let eyes;
+  if (mood === 'happy') {
+    eyes = [-1, 1]
+      .map(
+        (d) =>
+          `<path d="M${f(x + d * dx - 4 * s)},${f(y + 1 * s)} q${f(4 * s)},${f(-6 * s)} ${f(8 * s)},0" fill="none" ${st(2.2 * s, ink)}/>`,
+      )
+      .join('');
+  } else {
+    eyes = [-1, 1]
+      .map(
+        (d) =>
+          `<ellipse cx="${f(x + d * dx)}" cy="${f(y)}" rx="${f(3.6 * s)}" ry="${f(4.2 * s)}" fill="${ink}"/><circle cx="${f(x + d * dx - 1.3 * s)}" cy="${f(y - 1.6 * s)}" r="${f(1.4 * s)}" fill="#fff"/>`,
+      )
+      .join('');
+  }
+  const blush = [-1, 1]
+    .map(
+      (d) =>
+        `<ellipse cx="${f(x + d * (dx + 6 * s))}" cy="${f(y + 5 * s)}" rx="${f(3.6 * s)}" ry="${f(2.3 * s)}" fill="${BLUSH}" opacity="0.8"/>`,
+    )
+    .join('');
+  let mouth;
+  if (mood === 'happy') {
+    mouth = `<path d="M${f(x - 4.5 * s)},${f(y + 5 * s)} q${f(4.5 * s)},${f(7 * s)} ${f(9 * s)},0 Z" fill="#c2414d" ${st(1.4 * s, ink)}/>`;
+  } else if (mood === 'oops') {
+    mouth = `<ellipse cx="${f(x)}" cy="${f(y + 7 * s)}" rx="${f(2.8 * s)}" ry="${f(3.6 * s)}" fill="#c2414d" ${st(1.4 * s, ink)}/>`;
+  } else {
+    mouth = `<path d="M${f(x - 3 * s)},${f(y + 5 * s)} q${f(1.5 * s)},${f(2.4 * s)} ${f(3 * s)},0 q${f(1.5 * s)},${f(2.4 * s)} ${f(3 * s)},0" fill="none" ${st(1.6 * s, ink)}/>`;
+  }
+  return blush + eyes + mouth;
+}
+
+const svg = (w, h, inner) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${inner}</svg>`;
+/** Inner drawn around (0, 0), centred in a size-px frame. */
+const centred = (inner, size) => svg(size, size, `<g transform="translate(${size / 2},${size / 2})">${inner}</g>`);
+const star5 = (r, inner = 0.48, cx = 0, cy = 0) =>
+  Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rr = i % 2 === 0 ? r : r * inner;
+    return `${f(cx + Math.cos(a) * rr)},${f(cy + Math.sin(a) * rr)}`;
+  }).join(' ');
+const sparkle = (x, y, s, c = '#fff') =>
+  `<path d="M${f(x)},${f(y - s)} Q${f(x + s * 0.18)},${f(y - s * 0.18)} ${f(x + s)},${f(y)} Q${f(x + s * 0.18)},${f(y + s * 0.18)} ${f(x)},${f(y + s)} Q${f(x - s * 0.18)},${f(y + s * 0.18)} ${f(x - s)},${f(y)} Q${f(x - s * 0.18)},${f(y - s * 0.18)} ${f(x)},${f(y - s)} Z" fill="${c}"/>`;
+
+// ---------------------------------------------------------------- word pictures
+
+/** Each picture drawn around (0, 0), about 100 px across. */
+const PIC_ART = {
+  cat: () =>
+    `<path d="M-34,-18 L-30,-46 L-10,-30 Z M34,-18 L30,-46 L10,-30 Z" fill="#ffa94d" ${st()}/><ellipse cx="0" cy="4" rx="40" ry="34" fill="#ffa94d" ${st()}/>
+     <path d="M-26,-40 l4,10 M26,-40 l-4,10" ${st(2)}/><path d="M-44,8 h-14 M-44,14 h-12 M44,8 h14 M44,14 h12" ${st(2)}/>${face(0, 4, 1.4)}`,
+  dog: () =>
+    `<ellipse cx="0" cy="4" rx="36" ry="34" fill="#e8c39e" ${st()}/><ellipse cx="-36" cy="-2" rx="11" ry="24" fill="#a0724e" ${st()} transform="rotate(14 -36 -2)"/>
+     <ellipse cx="36" cy="-2" rx="11" ry="24" fill="#a0724e" ${st()} transform="rotate(-14 36 -2)"/><ellipse cx="0" cy="16" rx="16" ry="11" fill="#fff4e6" ${st(2)}/><ellipse cx="0" cy="11" rx="6" ry="4" fill="#3a2420"/>${face(0, -4, 1.3)}`,
+  pig: () =>
+    `<path d="M-30,-22 L-34,-42 L-14,-30 Z M30,-22 L34,-42 L14,-30 Z" fill="#faa2c1" ${st()}/><circle cx="0" cy="4" r="38" fill="#fcc2d7" ${st()}/>
+     <ellipse cx="0" cy="16" rx="15" ry="11" fill="#faa2c1" ${st(2.5)}/><ellipse cx="-5" cy="16" rx="2.6" ry="4" fill="#3a2420"/><ellipse cx="5" cy="16" rx="2.6" ry="4" fill="#3a2420"/>${face(0, -6, 1.3)}`,
+  cow: () =>
+    `<path d="M-30,-30 q-10,-14 -2,-20 M30,-30 q10,-14 2,-20" fill="none" ${st(5)}/><ellipse cx="0" cy="0" rx="38" ry="36" fill="#fff" ${st()}/>
+     <path d="M-30,-20 q10,-6 14,6 q-4,12 -16,6 Z M18,-26 q14,0 14,14 q-12,4 -14,-14 Z" fill="#3a2420"/><ellipse cx="0" cy="20" rx="24" ry="14" fill="#fcc2d7" ${st(2.5)}/>
+     <circle cx="-8" cy="20" r="3" fill="#3a2420"/><circle cx="8" cy="20" r="3" fill="#3a2420"/>${face(0, -6, 1.2)}`,
+  hen: () =>
+    `<path d="M-6,-44 q6,-12 12,0 q8,-10 12,2 q-12,6 -24,-2 Z" fill="#ff6b6b" ${st(2.5)}/><ellipse cx="0" cy="4" rx="34" ry="38" fill="#fff" ${st()}/>
+     <path d="M-4,2 L0,10 L4,2 Z" fill="#ffd43b" ${st(2)}/><path d="M-2,12 q2,10 4,0" fill="#ff6b6b" ${st(1.5)}/><path d="M28,8 q14,4 10,18 q-10,-2 -12,-8" fill="#fff" ${st(2.5)}/>${face(0, -8, 1.1)}`,
+  fox: () =>
+    `<path d="M-36,-14 L-32,-48 L-8,-28 Z M36,-14 L32,-48 L8,-28 Z" fill="#ff922b" ${st()}/><path d="M-42,-10 Q-40,30 0,40 Q40,30 42,-10 Q20,-34 0,-30 Q-20,-34 -42,-10 Z" fill="#ff922b" ${st()}/>
+     <path d="M-30,10 Q-10,14 0,40 Q10,14 30,10 Q20,32 0,40 Q-20,32 -30,10 Z" fill="#fff"/><circle cx="0" cy="30" r="5" fill="#3a2420"/>${face(0, 0, 1.2)}`,
+  bee: () =>
+    `<ellipse cx="-14" cy="-30" rx="16" ry="12" fill="#e7f5ff" ${st(2.5)}/><ellipse cx="14" cy="-30" rx="16" ry="12" fill="#e7f5ff" ${st(2.5)}/><ellipse cx="0" cy="6" rx="42" ry="32" fill="#ffd43b" ${st()}/>
+     <path d="M-14,-22 q-4,30 0,56 M10,-24 q4,30 0,58" fill="none" stroke="#3a2420" stroke-width="9"/><path d="M38,6 L52,6" ${st(4)}/>${face(-22, 2, 1)}`,
+  owl: () =>
+    `<path d="M-34,-30 L-30,-46 L-16,-36 Z M34,-30 L30,-46 L16,-36 Z" fill="#a0724e" ${st()}/><ellipse cx="0" cy="4" rx="38" ry="42" fill="#a0724e" ${st()}/><ellipse cx="0" cy="14" rx="24" ry="26" fill="#e8c39e"/>
+     <circle cx="-14" cy="-12" r="14" fill="#fff" ${st(2.5)}/><circle cx="14" cy="-12" r="14" fill="#fff" ${st(2.5)}/><circle cx="-14" cy="-12" r="6" fill="#2a1a17"/><circle cx="14" cy="-12" r="6" fill="#2a1a17"/>
+     <circle cx="-16" cy="-14" r="2" fill="#fff"/><circle cx="12" cy="-14" r="2" fill="#fff"/><path d="M-5,0 L0,10 L5,0 Z" fill="#ffa94d" ${st(2)}/>`,
+  bug: () =>
+    `<path d="M-10,-34 q-8,-14 -16,-12 M10,-34 q8,-14 16,-12" fill="none" ${st(3)}/><circle cx="0" cy="-26" r="14" fill="#3a2420"/><circle cx="0" cy="8" r="36" fill="#ff6b6b" ${st()}/>
+     <path d="M0,-28 L0,44" ${st(3)}/><circle cx="-16" cy="0" r="6" fill="#3a2420"/><circle cx="16" cy="0" r="6" fill="#3a2420"/><circle cx="-14" cy="24" r="5" fill="#3a2420"/><circle cx="14" cy="24" r="5" fill="#3a2420"/>${face(0, -24, 0.7, 'smile', '#fff')}`,
+  ant: () =>
+    `<path d="M-30,-10 q-10,-20 -4,-30 M-22,-14 q-2,-20 8,-26" fill="none" ${st(3)}/><circle cx="-26" cy="0" r="18" fill="#a0724e" ${st()}/><circle cx="4" cy="10" r="12" fill="#a0724e" ${st()}/><ellipse cx="34" cy="14" rx="20" ry="16" fill="#a0724e" ${st()}/>
+     <path d="M-4,22 l-10,20 M6,22 l0,22 M16,20 l10,20" fill="none" ${st(3)}/>${face(-26, 0, 0.9)}`,
+  sun: () =>
+    Array.from({ length: 10 }, (_, i) => {
+      const a = (i * Math.PI) / 5;
+      return `<path d="M${f(Math.cos(a) * 34)},${f(Math.sin(a) * 34)} L${f(Math.cos(a + 0.16) * 52)},${f(Math.sin(a + 0.16) * 52)} L${f(Math.cos(a + 0.32) * 34)},${f(Math.sin(a + 0.32) * 34)} Z" fill="#ffa94d" ${st(2.5)}/>`;
+    }).join('') + `<circle cx="0" cy="0" r="36" fill="#ffd43b" ${st()}/>${face(0, 2, 1.3)}`,
+  cup: () =>
+    `<path d="M30,-10 q24,0 22,20 q-2,18 -26,14" fill="none" ${st(7)}/><path d="M30,-10 q24,0 22,20 q-2,18 -26,14" fill="none" stroke="#74c0fc" stroke-width="3"/>
+     <path d="M-36,-24 L36,-24 L30,34 Q0,44 -30,34 Z" fill="#74c0fc" ${st()}/><path d="M-10,-34 q6,-8 0,-16 M8,-34 q6,-8 0,-16" fill="none" ${st(2.5, '#adb5bd')}/>${face(0, 6, 1.2)}`,
+  hat: () =>
+    `<ellipse cx="0" cy="26" rx="52" ry="14" fill="#9775fa" ${st()}/><path d="M-30,26 L-26,-30 Q0,-40 26,-30 L30,26 Z" fill="#9775fa" ${st()}/><path d="M-28,10 L28,10 L29,22 L-29,22 Z" fill="#ffd43b" ${st(2.5)}/>`,
+  bus: () =>
+    `<rect x="-50" y="-34" width="100" height="62" rx="12" fill="#ffd43b" ${st()}/><rect x="-42" y="-26" width="22" height="20" rx="4" fill="#d0ebff" ${st(2.5)}/><rect x="-14" y="-26" width="22" height="20" rx="4" fill="#d0ebff" ${st(2.5)}/>
+     <rect x="14" y="-26" width="28" height="20" rx="4" fill="#d0ebff" ${st(2.5)}/><circle cx="-28" cy="30" r="11" fill="#5a4a4a" ${st()}/><circle cx="28" cy="30" r="11" fill="#5a4a4a" ${st()}/>${face(0, 10, 0.9)}`,
+  car: () =>
+    `<path d="M-50,14 L-50,0 Q-48,-10 -36,-10 L-24,-30 Q-20,-34 -12,-34 L18,-34 Q26,-34 30,-28 L40,-10 Q52,-8 52,4 L52,14 Z" fill="#ff6b6b" ${st()}/>
+     <path d="M-18,-26 L-8,-26 L-8,-12 L-26,-12 Z M0,-26 L16,-26 L26,-12 L0,-12 Z" fill="#d0ebff" ${st(2.5)}/><circle cx="-28" cy="18" r="12" fill="#5a4a4a" ${st()}/><circle cx="30" cy="18" r="12" fill="#5a4a4a" ${st()}/>${face(10, 2, 0.8)}`,
+  bed: () =>
+    `<rect x="-52" y="-30" width="14" height="66" rx="4" fill="#a0724e" ${st()}/><rect x="38" y="0" width="14" height="36" rx="4" fill="#a0724e" ${st()}/><rect x="-42" y="0" width="86" height="22" rx="6" fill="#a0724e" ${st()}/>
+     <rect x="-38" y="-12" width="80" height="16" rx="8" fill="#74c0fc" ${st()}/><ellipse cx="-24" cy="-16" rx="14" ry="9" fill="#fff" ${st(2.5)}/>`,
+  box: () =>
+    `<path d="M-40,-14 L40,-14 L40,40 L-40,40 Z" fill="#e8c39e" ${st()}/><path d="M-40,-14 L-50,-34 L30,-34 L40,-14 Z M40,-14 L50,-34" fill="#d9a066" ${st()}/><path d="M0,-14 L0,40" ${st(2.5)}/>${face(0, 16, 1.1)}`,
+  egg: () =>
+    `<path d="M0,-46 C28,-46 40,6 36,22 C30,44 -30,44 -36,22 C-40,6 -28,-46 0,-46 Z" fill="#fff4e6" ${st()}/>${face(0, 10, 1.2)}`,
+  key: () =>
+    `<circle cx="-24" cy="0" r="22" fill="#ffd43b" ${st()}/><circle cx="-24" cy="0" r="8" fill="#fff" ${st(2.5)}/><path d="M-2,-6 L48,-6 L48,6 L40,6 L40,18 L32,18 L32,6 L24,6 L24,14 L16,14 L16,6 L-2,6 Z" fill="#ffd43b" ${st()}/>`,
+  web: () =>
+    Array.from({ length: 8 }, (_, i) => {
+      const a = (i * Math.PI) / 4;
+      return `<path d="M0,0 L${f(Math.cos(a) * 50)},${f(Math.sin(a) * 50)}" ${st(2.5, '#7a849c')}/>`;
+    }).join('') +
+    [16, 30, 44]
+      .map(
+        (r) =>
+          `<polygon points="${Array.from({ length: 8 }, (_, i) => `${f(Math.cos((i * Math.PI) / 4) * r)},${f(Math.sin((i * Math.PI) / 4) * r)}`).join(' ')}" fill="none" ${st(2.5, '#7a849c')}/>`,
+      )
+      .join('') +
+    `<circle cx="18" cy="16" r="10" fill="#3a2420"/>${face(18, 16, 0.45, 'smile', '#fff')}`,
+  fish: () =>
+    `<path d="M30,0 L54,-22 L54,22 Z" fill="#4dabf7" ${st()}/><ellipse cx="-4" cy="0" rx="40" ry="30" fill="#74c0fc" ${st()}/><path d="M-4,-30 q14,-14 24,-4" fill="#4dabf7" ${st(2.5)}/>${face(-14, -2, 1.1)}`,
+  frog: () =>
+    `<circle cx="-22" cy="-24" r="16" fill="#69db7c" ${st()}/><circle cx="22" cy="-24" r="16" fill="#69db7c" ${st()}/><ellipse cx="0" cy="8" rx="44" ry="34" fill="#69db7c" ${st()}/>
+     <circle cx="-22" cy="-26" r="7" fill="#2a1a17"/><circle cx="22" cy="-26" r="7" fill="#2a1a17"/><circle cx="-24" cy="-28" r="2.4" fill="#fff"/><circle cx="20" cy="-28" r="2.4" fill="#fff"/>
+     <path d="M-20,10 q20,18 40,0" fill="none" ${st(3)}/><ellipse cx="-30" cy="6" rx="6" ry="4" fill="${BLUSH}" opacity="0.8"/><ellipse cx="30" cy="6" rx="6" ry="4" fill="${BLUSH}" opacity="0.8"/>`,
+  duck: () =>
+    `<ellipse cx="6" cy="20" rx="42" ry="26" fill="#ffd43b" ${st()}/><circle cx="-14" cy="-18" r="24" fill="#ffd43b" ${st()}/><path d="M-36,-14 q-18,4 -16,10 q8,4 18,-2 Z" fill="#ff922b" ${st(2.5)}/>
+     <path d="M10,14 q16,-10 26,4" fill="none" ${st(2.5)}/>${face(-12, -20, 0.9)}`,
+  bird: () =>
+    `<circle cx="0" cy="4" r="38" fill="#74c0fc" ${st()}/><path d="M-10,12 q-28,-6 -22,22 q16,0 22,-22 Z" fill="#4dabf7" ${st(2.5)}/><path d="M34,-2 L52,4 L34,10 Z" fill="#ffa94d" ${st(2.5)}/>
+     <path d="M-8,-34 q4,-14 14,-8" fill="none" ${st(3)}/>${face(14, -4, 1)}`,
+  bear: () =>
+    `<circle cx="-30" cy="-30" r="14" fill="#a0724e" ${st()}/><circle cx="30" cy="-30" r="14" fill="#a0724e" ${st()}/><circle cx="0" cy="4" r="40" fill="#a0724e" ${st()}/>
+     <ellipse cx="0" cy="18" rx="16" ry="12" fill="#e8c39e" ${st(2)}/><ellipse cx="0" cy="13" rx="6" ry="4" fill="#3a2420"/>${face(0, -6, 1.3)}`,
+  lion: () =>
+    Array.from({ length: 12 }, (_, i) => {
+      const a = (i * Math.PI) / 6;
+      return `<circle cx="${f(Math.cos(a) * 38)}" cy="${f(Math.sin(a) * 38)}" r="16" fill="#e8590c" ${st(2.5)}/>`;
+    }).join('') +
+    `<circle cx="0" cy="0" r="38" fill="#ffc078" ${st()}/><ellipse cx="0" cy="14" rx="5" ry="3.5" fill="#3a2420"/>${face(0, 0, 1.2)}`,
+  moon: () => {
+    // A crescent: the big circle minus a smaller one to its right.
+    const r = 46;
+    const R2 = r * 0.8;
+    const d = r * 0.55;
+    const ix = (d * d + r * r - R2 * R2) / (2 * d);
+    const iy = Math.sqrt(r * r - ix * ix);
+    return `<g transform="translate(10,0)"><path d="M${f(ix)},${f(-iy)} A${r},${r} 0 1 0 ${f(ix)},${f(iy)} A${f(R2)},${f(R2)} 0 0 1 ${f(ix)},${f(-iy)} Z" fill="#ffe066" ${st()}/>${face(-26, 4, 1)}</g>${sparkle(40, -30, 8, '#ffd43b')}`;
+  },
+  star: () => `<polygon points="${star5(50)}" fill="#ffd43b" ${st(3.5)}/>${face(0, 4, 1.2)}`,
+  tree: () =>
+    `<rect x="-10" y="10" width="20" height="40" rx="5" fill="#a0724e" ${st()}/><circle cx="-22" cy="-6" r="24" fill="#69db7c" ${st()}/><circle cx="22" cy="-6" r="24" fill="#69db7c" ${st()}/>
+     <circle cx="0" cy="-26" r="28" fill="#69db7c" ${st()}/><circle cx="0" cy="-8" r="20" fill="#69db7c"/>${face(0, -12, 1.1)}`,
+  ball: () =>
+    `<circle cx="0" cy="0" r="46" fill="#fff" ${st()}/><path d="M-46,0 Q0,-20 46,0 Q0,20 -46,0 Z" fill="#ff6b6b"/><path d="M0,-46 Q-18,0 0,46" fill="none" ${st(2.5)}/><circle cx="0" cy="0" r="46" fill="none" ${st()}/>`,
+  cake: () =>
+    `<rect x="-42" y="-6" width="84" height="44" rx="8" fill="#fcc2d7" ${st()}/><path d="M-42,4 q10,10 21,0 q10,10 21,0 q10,10 21,0 q10,10 21,0" fill="none" stroke="#fff" stroke-width="5"/>
+     <rect x="-4" y="-30" width="8" height="22" rx="3" fill="#74c0fc" ${st(2)}/><path d="M0,-42 q6,6 0,10 q-6,-4 0,-10 Z" fill="#ffd43b" ${st(1.5)}/>${face(0, 22, 0.9)}`,
+  kite: () =>
+    `<path d="M0,-48 L32,-8 L0,30 L-32,-8 Z" fill="#f783ac" ${st()}/><path d="M0,-48 L0,30 M-32,-8 L32,-8" ${st(2.5)}/><path d="M0,30 q-10,10 0,18 q10,8 0,16" fill="none" ${st(2.5)}/>
+     <path d="M-4,42 l-8,-4 l2,8 Z M4,52 l8,-4 l-2,8 Z" fill="#74c0fc" ${st(1.5)}/>${face(0, -14, 0.8)}`,
+  boat: () =>
+    `<path d="M2,-46 L2,14 L38,14 Z" fill="#fff" ${st()}/><path d="M-4,-36 L-4,14 L-30,14 Z" fill="#ffd43b" ${st()}/><path d="M-50,18 L50,18 L38,42 L-38,42 Z" fill="#ff6b6b" ${st()}/>${face(0, 30, 0.8)}`,
+  book: () =>
+    `<path d="M0,-30 Q-24,-42 -50,-30 L-50,34 Q-24,22 0,34 Z" fill="#74c0fc" ${st()}/><path d="M0,-30 Q24,-42 50,-30 L50,34 Q24,22 0,34 Z" fill="#4dabf7" ${st()}/>
+     <path d="M-40,-16 q16,-6 32,0 M-40,-2 q16,-6 32,0 M8,-16 q16,-6 32,0" fill="none" ${st(2, '#fff')}/>${face(26, 8, 0.8)}`,
+  sock: () =>
+    `<path d="M-14,-46 L18,-46 L18,14 Q46,10 46,30 Q46,46 24,46 L-6,46 Q-20,46 -20,30 Z" fill="#69db7c" ${st()}/><rect x="-16" y="-46" width="36" height="14" rx="4" fill="#fff" ${st(2.5)}/>
+     <path d="M-18,-6 L18,-6 M-18,8 L18,8" stroke="#ffd43b" stroke-width="6"/>`,
+  drum: () =>
+    `<path d="M-40,-14 L-40,26 Q0,44 40,26 L40,-14" fill="#ff6b6b" ${st()}/><ellipse cx="0" cy="-14" rx="40" ry="14" fill="#fff4e6" ${st()}/><path d="M-40,-8 L-20,30 L0,-2 L20,30 L40,-8" fill="none" stroke="#ffd43b" stroke-width="4"/>
+     <path d="M-30,-48 L-6,-20 M30,-48 L6,-20" ${st(5, '#a0724e')}/>`,
+  bell: () =>
+    `<path d="M-38,26 Q-34,-36 0,-38 Q34,-36 38,26 Z" fill="#ffd43b" ${st()}/><rect x="-44" y="22" width="88" height="10" rx="5" fill="#ffd43b" ${st()}/><circle cx="0" cy="40" r="8" fill="#ffa94d" ${st(2.5)}/>
+     <circle cx="0" cy="-42" r="6" fill="#ffd43b" ${st(2.5)}/>${face(0, -2, 1.1)}`,
+  leaf: () =>
+    `<path d="M-40,40 Q-46,-30 40,-44 Q44,30 -40,40 Z" fill="#69db7c" ${st()}/><path d="M-40,40 Q0,0 36,-38 M-10,10 L-18,-12 M8,-8 L20,10" fill="none" ${st(2.5)}/>`,
+  apple: () =>
+    `<path d="M0,-30 C30,-48 52,-16 42,14 C34,40 12,46 0,36 C-12,46 -34,40 -42,14 C-52,-16 -30,-48 0,-30 Z" fill="#ff6b6b" ${st()}/><path d="M0,-30 q-2,-14 6,-20" fill="none" ${st(4, '#a0724e')}/>
+     <path d="M6,-40 q16,-12 24,0 q-14,8 -24,0 Z" fill="#69db7c" ${st(2.5)}/>${face(0, 4, 1.1)}`,
+  house: () =>
+    `<path d="M-40,-4 L-40,44 L40,44 L40,-4" fill="#ffe8cc" ${st()}/><path d="M-52,0 L0,-44 L52,0 Z" fill="#ff6b6b" ${st()}/><rect x="-12" y="14" width="24" height="30" rx="4" fill="#a0724e" ${st(2.5)}/>
+     <rect x="18" y="4" width="16" height="16" rx="2" fill="#d0ebff" ${st(2.5)}/><rect x="-34" y="4" width="16" height="16" rx="2" fill="#d0ebff" ${st(2.5)}/>`,
+  clock: () =>
+    `<circle cx="-30" cy="-36" r="12" fill="#ff6b6b" ${st()}/><circle cx="30" cy="-36" r="12" fill="#ff6b6b" ${st()}/><circle cx="0" cy="4" r="42" fill="#fff" ${st()}/>
+     ${Array.from({ length: 12 }, (_, i) => {
+       const a = (i * Math.PI) / 6;
+       return `<circle cx="${f(Math.cos(a) * 34)}" cy="${f(4 + Math.sin(a) * 34)}" r="2.4" fill="#3a2420"/>`;
+     }).join('')}<path d="M0,4 L0,-20 M0,4 L18,12" ${st(4)}/><circle cx="0" cy="4" r="4" fill="#3a2420"/>`,
+  horse: () =>
+    `<path d="M-30,46 L-30,-6 Q-30,-40 0,-44 Q30,-44 34,-20 L44,20 Q44,30 30,30 L14,14 L14,46 Z" fill="#c8915e" ${st()}/><path d="M-4,-44 Q-24,-50 -36,-30 Q-40,-6 -30,10 Q-34,-14 -18,-26" fill="#5a3c28" ${st(2.5)}/>
+     <path d="M0,-44 L-6,-58 L8,-48 Z" fill="#c8915e" ${st(2.5)}/><ellipse cx="38" cy="22" rx="3" ry="2.4" fill="#3a2420"/>${face(10, -14, 0.9)}`,
+  snake: () =>
+    `<path d="M-46,30 Q-46,10 -20,14 Q8,18 8,0 Q8,-18 -16,-18 Q-30,-18 -30,-30 Q-30,-44 -6,-44 L22,-44" fill="none" ${st(24)}/><path d="M-46,30 Q-46,10 -20,14 Q8,18 8,0 Q8,-18 -16,-18 Q-30,-18 -30,-30 Q-30,-44 -6,-44 L22,-44" fill="none" stroke="#69db7c" stroke-width="18" stroke-linecap="round"/>
+     <circle cx="30" cy="-40" r="18" fill="#69db7c" ${st()}/><path d="M46,-36 l10,0 l4,-4 M56,-36 l4,4" fill="none" ${st(2, '#ff6b6b')}/>${face(30, -42, 0.8)}`,
+  mouse: () =>
+    `<circle cx="-28" cy="-24" r="20" fill="#ced4da" ${st()}/><circle cx="28" cy="-24" r="20" fill="#ced4da" ${st()}/><circle cx="-28" cy="-24" r="11" fill="#fcc2d7"/><circle cx="28" cy="-24" r="11" fill="#fcc2d7"/>
+     <ellipse cx="0" cy="10" rx="36" ry="32" fill="#ced4da" ${st()}/><circle cx="0" cy="18" r="5" fill="#f783ac"/>${face(0, 2, 1.2)}`,
+  train: () =>
+    `<rect x="-44" y="-20" width="60" height="50" rx="10" fill="#ff6b6b" ${st()}/><rect x="-40" y="-44" width="30" height="26" rx="6" fill="#f783ac" ${st()}/><rect x="14" y="0" width="34" height="30" rx="8" fill="#ff6b6b" ${st()}/>
+     <rect x="-30" y="-56" width="12" height="14" rx="3" fill="#5a4a4a" ${st(2.5)}/><circle cx="-26" cy="36" r="11" fill="#5a4a4a" ${st()}/><circle cx="20" cy="36" r="11" fill="#5a4a4a" ${st()}/>${face(-14, 6, 0.9)}`,
+  robot: () =>
+    `<path d="M0,-40 L0,-52" ${st(3)}/><circle cx="0" cy="-54" r="5" fill="#ff6b6b" ${st(2)}/><rect x="-36" y="-40" width="72" height="56" rx="14" fill="#adb5bd" ${st()}/>
+     <rect x="-28" y="-30" width="56" height="34" rx="10" fill="#d0ebff" ${st(2.5)}/><rect x="-26" y="18" width="52" height="30" rx="8" fill="#868e96" ${st()}/><circle cx="0" cy="32" r="6" fill="#ffd43b" ${st(2)}/>${face(0, -14, 1)}`,
+  pizza: () =>
+    `<path d="M0,46 L-44,-30 Q0,-50 44,-30 Z" fill="#ffd43b" ${st()}/><path d="M-44,-30 Q0,-50 44,-30 L40,-22 Q0,-40 -40,-22 Z" fill="#e8a25e" ${st(2.5)}/>
+     <circle cx="-12" cy="-14" r="7" fill="#ff6b6b" ${st(2)}/><circle cx="14" cy="-10" r="7" fill="#ff6b6b" ${st(2)}/><circle cx="0" cy="16" r="7" fill="#ff6b6b" ${st(2)}/>${face(0, -2, 0.7)}`,
+  cloud: () =>
+    `<path d="M-44,26 Q-58,4 -36,-4 Q-36,-34 -6,-28 Q10,-48 30,-26 Q54,-24 46,4 Q58,26 36,30 Z" fill="#fff" ${st()}/>${face(0, 4, 1.1)}`,
+  rocket: () =>
+    `<path d="M-14,26 L-30,40 L-22,10 Z M14,26 L30,40 L22,10 Z" fill="#ff6b6b" ${st()}/><path d="M0,-50 Q24,-26 18,30 L-18,30 Q-24,-26 0,-50 Z" fill="#e9ecef" ${st()}/>
+     <circle cx="0" cy="-6" r="11" fill="#74c0fc" ${st(2.5)}/><path d="M-10,30 L0,52 L10,30 Z" fill="#ffa94d" ${st(2)}/>${face(0, 14, 0.6)}`,
+  flower: () =>
+    `<path d="M0,10 L0,50" ${st(5, '#40c057')}/><path d="M0,34 q-22,-4 -24,8 q14,6 24,-8 Z" fill="#69db7c" ${st(2.5)}/>` +
+    Array.from({ length: 6 }, (_, i) => {
+      const a = (i * Math.PI) / 3;
+      return `<circle cx="${f(Math.cos(a) * 24)}" cy="${f(-10 + Math.sin(a) * 24)}" r="16" fill="#f783ac" ${st(2.5)}/>`;
+    }).join('') +
+    `<circle cx="0" cy="-10" r="17" fill="#ffd43b" ${st(2.5)}/>${face(0, -10, 0.8)}`,
+};
+
+// ---------------------------------------------------------------- dancers
+
+/** Arms per pose: idle down at the sides, happy up, oops hands to cheeks. */
+function arms(pose, colour, y = 120, spread = 48) {
+  const L =
+    pose === 1
+      ? `M${-spread + 10},${y} q-18,-30 -14,-56`
+      : pose === 2
+        ? `M${-spread + 10},${y} q-6,-24 14,-34`
+        : `M${-spread + 10},${y} q-14,16 -10,34`;
+  const mirror = (d) => {
+    let k = 0;
+    return d.replace(/-?\d+(\.\d+)?/g, (m) => (k++ % 2 === 0 ? String(-Number(m)) : m));
+  };
+  return `<path d="${L}" fill="none" ${st(16)}/><path d="${L}" fill="none" stroke="${colour}" stroke-width="10" stroke-linecap="round"/>
+    <path d="${mirror(L)}" fill="none" ${st(16)}/><path d="${mirror(L)}" fill="none" stroke="${colour}" stroke-width="10" stroke-linecap="round"/>`;
+}
+
+const mood = (pose) => (pose === 1 ? 'happy' : pose === 2 ? 'oops' : 'smile');
+const sweat = (x, y) => `<path d="M${x},${y} q6,10 0,14 q-6,-4 0,-14 Z" fill="#74c0fc" ${st(1.5)}/>`;
+const cheers = (pose) => (pose === 1 ? sparkle(-70, -40, 10, '#ffd43b') + sparkle(72, -54, 8, '#ff8fa3') : '');
+
+/** One dancer (pose 0 idle, 1 happy, 2 oops), drawn around (0, 0) with its feet near y 108. */
+function dancerArt(name, pose) {
+  const m = mood(pose);
+  const o = pose === 2 ? sweat(40, -30) : '';
+  switch (name) {
+    case 'unicorn':
+      return `${arms(pose, '#fff', 40)}<ellipse cx="0" cy="60" rx="44" ry="46" fill="#fff" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <path d="M-50,-34 q-30,40 -6,70 q4,-30 20,-46 Z" fill="#b197fc" ${st(2.5)}/><path d="M-44,-40 q-20,30 -2,58" fill="none" stroke="#f783ac" stroke-width="6"/>
+        <ellipse cx="0" cy="-20" rx="50" ry="44" fill="#fff" ${st()}/><path d="M-6,-62 L0,-100 L8,-62 Z" fill="#ffd43b" ${st(2.5)}/><path d="M-3,-74 l9,-3 M-1,-86 l7,-2" ${st(1.5)}/>
+        <path d="M-40,-50 L-34,-74 L-20,-56 Z M40,-50 L34,-74 L20,-56 Z" fill="#fff" ${st()}/>${face(0, -16, 1.6, m)}${o}${cheers(pose)}`;
+    case 'dragon':
+      return `<path d="M30,70 q50,10 52,-24 q-10,6 -20,0" fill="#69db7c" ${st()}/><path d="M-36,0 q-50,-30 -56,10 q24,-10 30,14 Z M36,0 q50,-30 56,10 q-24,-10 -30,14 Z" fill="#b2f2bb" ${st()}/>
+        ${arms(pose, '#69db7c', 40)}<ellipse cx="0" cy="60" rx="44" ry="46" fill="#69db7c" ${st()}/><ellipse cx="0" cy="68" rx="26" ry="30" fill="#fff3bf"/>
+        <path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/><ellipse cx="0" cy="-20" rx="50" ry="44" fill="#69db7c" ${st()}/>
+        <path d="M-26,-60 L-20,-84 L-10,-62 Z M26,-60 L20,-84 L10,-62 Z" fill="#ffd43b" ${st(2.5)}/><path d="M-6,-64 l6,-10 l6,10" fill="#40c057" ${st(2)}/>${face(0, -16, 1.6, m)}${o}${cheers(pose)}`;
+    case 'bunny':
+      return `${arms(pose, '#fff', 40)}<ellipse cx="0" cy="60" rx="42" ry="46" fill="#fff" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <ellipse cx="-22" cy="-74" rx="14" ry="40" fill="#fff" ${st()}/><ellipse cx="22" cy="-74" rx="14" ry="40" fill="#fff" ${st()}/><ellipse cx="-22" cy="-74" rx="6" ry="28" fill="#fcc2d7"/><ellipse cx="22" cy="-74" rx="6" ry="28" fill="#fcc2d7"/>
+        <ellipse cx="0" cy="-16" rx="50" ry="42" fill="#fff" ${st()}/>${face(0, -12, 1.6, m)}${o}${cheers(pose)}`;
+    case 'kitten':
+      return `<path d="M36,80 q44,0 40,-40" fill="none" ${st(16)}/><path d="M36,80 q44,0 40,-40" fill="none" stroke="#ffa94d" stroke-width="10" stroke-linecap="round"/>
+        ${arms(pose, '#ffa94d', 40)}<ellipse cx="0" cy="60" rx="42" ry="46" fill="#ffa94d" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <path d="M-46,-40 L-40,-78 L-16,-56 Z M46,-40 L40,-78 L16,-56 Z" fill="#ffa94d" ${st()}/><ellipse cx="0" cy="-18" rx="52" ry="42" fill="#ffa94d" ${st()}/>
+        <path d="M-54,-10 h-16 M-54,-2 h-14 M54,-10 h16 M54,-2 h14" ${st(2)}/>${face(0, -14, 1.6, m)}${o}${cheers(pose)}`;
+    case 'panda':
+      return `${arms(pose, '#3a2420', 40)}<ellipse cx="0" cy="60" rx="44" ry="46" fill="#fff" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <circle cx="-38" cy="-56" r="16" fill="#3a2420"/><circle cx="38" cy="-56" r="16" fill="#3a2420"/><ellipse cx="0" cy="-18" rx="52" ry="44" fill="#fff" ${st()}/>
+        <ellipse cx="-18" cy="-18" rx="13" ry="16" fill="#3a2420" transform="rotate(-20 -18 -18)"/><ellipse cx="18" cy="-18" rx="13" ry="16" fill="#3a2420" transform="rotate(20 18 -18)"/>${face(
+          0,
+          -16,
+          1.6,
+          m,
+          '#2a1a17',
+        )
+          .replace(/fill="#2a1a17"/g, 'fill="#fff"')
+          .replace(/fill="#fff" ?\/>(?=<\/?)/, 'fill="#fff"/>')}${o}${cheers(pose)}`;
+    case 'yeti':
+      return `${arms(pose, '#e7f5ff', 40)}<ellipse cx="0" cy="56" rx="48" ry="52" fill="#e7f5ff" ${st()}/><path d="M-22,104 l0,6 M22,104 l0,6" ${st(14)}/>
+        <path d="M-50,-10 q-8,-30 10,-50 q-4,-20 22,-22 q14,-12 36,0 q26,2 22,22 q18,20 10,50 Z" fill="#e7f5ff" ${st()}/><ellipse cx="0" cy="-12" rx="34" ry="28" fill="#a5d8ff" ${st(2.5)}/>
+        <path d="M-10,-58 l4,-12 l6,10 l6,-12 l4,12" fill="none" ${st(2.5)}/>${face(0, -14, 1.5, m)}${o}${cheers(pose)}`;
+    // ---- cosmos
+    case 'blip':
+      return `${arms(pose, '#8ce99a', 40)}<path d="M-44,104 Q-50,10 0,6 Q50,10 44,104 Z" fill="#8ce99a" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <path d="M0,-56 L0,-90" ${st(4)}/><circle cx="0" cy="-94" r="9" fill="#ffd43b" ${st(2.5)}/><ellipse cx="0" cy="-16" rx="52" ry="44" fill="#8ce99a" ${st()}/>
+        ${pose === 1 ? `<path d="M-18,-22 q18,-22 36,0" fill="none" ${st(4)}/>` : `<circle cx="0" cy="-22" r="18" fill="#fff" ${st(2.5)}/><circle cx="0" cy="-20" r="9" fill="#2a1a17"/><circle cx="-3" cy="-24" r="3" fill="#fff"/>`}
+        ${pose === 2 ? `<ellipse cx="0" cy="10" rx="6" ry="8" fill="#c2414d" ${st(1.5)}/>` : `<path d="M-12,4 q12,12 24,0" fill="${pose === 1 ? '#c2414d' : 'none'}" ${st(2.5)}/>`}
+        <ellipse cx="-30" cy="0" rx="7" ry="4" fill="${BLUSH}" opacity="0.8"/><ellipse cx="30" cy="0" rx="7" ry="4" fill="${BLUSH}" opacity="0.8"/>${o}${cheers(pose)}`;
+    case 'zorp':
+      return `${[-30, -10, 10, 30].map((x) => `<path d="M${x},90 q${x / 3},20 ${x / 2},22" fill="none" ${st(14)}/><path d="M${x},90 q${x / 3},20 ${x / 2},22" fill="none" stroke="#b197fc" stroke-width="8" stroke-linecap="round"/>`).join('')}
+        ${arms(pose, '#b197fc', 30)}<ellipse cx="0" cy="54" rx="44" ry="42" fill="#b197fc" ${st()}/><path d="M-30,-50 q-20,-30 -30,-30 M30,-50 q20,-30 30,-30" fill="none" ${st(4)}/>
+        <circle cx="-60" cy="-80" r="8" fill="#63e6be" ${st(2)}/><circle cx="60" cy="-80" r="8" fill="#63e6be" ${st(2)}/><ellipse cx="0" cy="-16" rx="54" ry="44" fill="#b197fc" ${st()}/>${face(0, -16, 1.7, m)}${o}${cheers(pose)}`;
+    case 'goo':
+      return `${arms(pose, '#faa2c1', 40)}<path d="M-56,108 Q-60,30 -40,-20 Q-30,-70 0,-70 Q30,-70 40,-20 Q60,30 56,108 Q40,96 28,108 Q14,96 0,108 Q-14,96 -28,108 Q-40,96 -56,108 Z" fill="#faa2c1" ${st()}/>
+        <circle cx="-22" cy="-8" r="16" fill="#fff" ${st(2.5)}/><circle cx="22" cy="-8" r="16" fill="#fff" ${st(2.5)}/><circle cx="0" cy="-40" r="12" fill="#fff" ${st(2.5)}/>
+        ${pose === 1 ? `<path d="M-30,-8 q8,-10 16,0 M14,-8 q8,-10 16,0 M-6,-40 q6,-8 12,0" fill="none" ${st(3)}/>` : `<circle cx="-22" cy="-6" r="7" fill="#2a1a17"/><circle cx="22" cy="-6" r="7" fill="#2a1a17"/><circle cx="0" cy="-38" r="5" fill="#2a1a17"/>`}
+        ${pose === 2 ? `<ellipse cx="0" cy="26" rx="7" ry="9" fill="#c2414d" ${st(1.5)}/>` : `<path d="M-14,20 q14,16 28,0" fill="${pose === 1 ? '#c2414d' : 'none'}" ${st(2.5)}/>`}${o}${cheers(pose)}`;
+    case 'boxbot':
+      return `${arms(pose, '#adb5bd', 40, 52)}<rect x="-46" y="20" width="92" height="80" rx="12" fill="#adb5bd" ${st()}/><rect x="-30" y="36" width="60" height="30" rx="6" fill="#495057" ${st(2.5)}/>
+        <circle cx="-16" cy="51" r="5" fill="#ff6b6b"/><circle cx="0" cy="51" r="5" fill="#ffd43b"/><circle cx="16" cy="51" r="5" fill="#69db7c"/><path d="M-24,100 l0,10 M24,100 l0,10" ${st(14)}/>
+        <path d="M0,-64 L0,-88" ${st(4)}/><circle cx="0" cy="-92" r="8" fill="#ff6b6b" ${st(2.5)}/><rect x="-54" y="-64" width="108" height="80" rx="16" fill="#ced4da" ${st()}/>
+        <rect x="-42" y="-52" width="84" height="56" rx="12" fill="#d0ebff" ${st(2.5)}/>${face(0, -28, 1.5, m)}${o}${cheers(pose)}`;
+    case 'domebot':
+      return `${arms(pose, '#ffa94d', 40)}<path d="M-44,104 L-40,30 Q0,14 40,30 L44,104 Z" fill="#ffa94d" ${st()}/><circle cx="0" cy="64" r="12" fill="#ffd43b" ${st(2.5)}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <ellipse cx="0" cy="-4" rx="60" ry="16" fill="#868e96" ${st()}/><path d="M-50,-8 Q-50,-80 0,-80 Q50,-80 50,-8 Z" fill="#a5d8ff" fill-opacity="0.85" ${st()}/>
+        <circle cx="0" cy="-34" r="30" fill="#fff4e6" ${st(2.5)}/>${face(0, -34, 1.1, m)}<path d="M-30,-66 q10,-6 18,-4" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>${o}${cheers(pose)}`;
+    case 'tallbot':
+      return `${arms(pose, '#63e6be', 20, 40)}<rect x="-34" y="0" width="68" height="100" rx="14" fill="#63e6be" ${st()}/><path d="M-16,100 l0,10 M16,100 l0,10" ${st(14)}/>
+        <rect x="-20" y="24" width="40" height="12" rx="6" fill="#0ca678" ${st(2)}/><rect x="-20" y="46" width="40" height="12" rx="6" fill="#0ca678" ${st(2)}/>
+        <rect x="-44" y="-90" width="88" height="86" rx="20" fill="#e9ecef" ${st()}/><rect x="-34" y="-78" width="68" height="60" rx="14" fill="#212529" ${st(2.5)}/>
+        ${face(0, -50, 1.4, m, '#63e6be').replace(/#c2414d/g, '#63e6be')}${o}${cheers(pose)}`;
+    default:
+      throw new Error(`unknown dancer ${name}`);
+  }
+}
+
+function dancerSvg(name, pose) {
+  const { w, h } = DANCER;
+  // Feet at the frame's bottom (the crowd's anchor: bottom middle).
+  return svg(w, h, `<g transform="translate(${w / 2},${h - 118})">${dancerArt(name, pose)}</g>`);
+}
+
+// ---------------------------------------------------------------- props
+
+/** The rocket train: frame 0 the rocket, 1–4 pods with a window (same geometry as the puzzle train). */
+function rocketSvg(i) {
+  const { w, h } = TRAIN;
+  let g;
+  if (i === 0) {
+    g = `<path d="M24,${h - 40} L24,${h - 120} Q24,${h - 150} 60,${h - 150} L150,${h - 150} Q206,${h - 140} 214,${h - 80} Q206,${h - 40} 150,${h - 40} Z" fill="#e9ecef" ${st()}/>
+      <path d="M24,${h - 140} L2,${h - 160} L2,${h - 110} Z M24,${h - 60} L2,${h - 40} L2,${h - 90} Z" fill="#ff6b6b" ${st()}/><circle cx="150" cy="${h - 96}" r="22" fill="#74c0fc" ${st()}/>
+      <path d="M2,${h - 100} l-14,-8 l0,24 Z" fill="#ffa94d" ${st(2)}/>${face(100, h - 96, 1.5)}`;
+  } else {
+    const c = ['#b197fc', '#63e6be', '#faa2c1', '#ffd43b'][i - 1];
+    g = `<rect x="14" y="${h - 146}" width="${w - 28}" height="108" rx="40" fill="${c}" ${st()}/><rect x="34" y="${h - 132}" width="${w - 68}" height="80" rx="26" fill="#1c2541" ${st(2.5)}/>
+      <rect x="2" y="${h - 96}" width="14" height="12" rx="3" fill="#868e96"/><rect x="${w - 16}" y="${h - 96}" width="14" height="12" rx="3" fill="#868e96"/>
+      <path d="M50,${h - 38} l14,22 M${w - 50},${h - 38} l-14,22" ${st(6)}/><circle cx="64" cy="${h - 14}" r="7" fill="#ffd43b" ${st(2)}/><circle cx="${w - 64}" cy="${h - 14}" r="7" fill="#ffd43b" ${st(2)}/>`;
+  }
+  return svg(w, h, g);
+}
+
+/** The machines (MACHINE px): candy machine (critters' Number Machine), robot machine, zapper (Alien Invaders' Word Wand). */
+function machineSvg(kind) {
+  const s = MACHINE;
+  let g;
+  if (kind === 'candy') {
+    g = `<rect x="70" y="150" width="120" height="90" rx="14" fill="#ff6b6b" ${st()}/><rect x="104" y="196" width="52" height="30" rx="8" fill="#5a4a4a" ${st(2.5)}/>
+      <circle cx="130" cy="96" r="76" fill="#d0ebff" fill-opacity="0.9" ${st()}/>
+      ${[
+        [100, 70, '#ff6b6b'],
+        [140, 60, '#ffd43b'],
+        [160, 100, '#69db7c'],
+        [110, 112, '#b197fc'],
+        [136, 130, '#ffa94d'],
+        [84, 104, '#74c0fc'],
+        [168, 136, '#f783ac'],
+      ]
+        .map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="14" fill="${c}" ${st(2)}/>`)
+        .join('')}
+      <rect x="112" y="12" width="36" height="16" rx="6" fill="#ff6b6b" ${st(2.5)}/>${face(130, 172, 1.4)}`;
+  } else if (kind === 'robot') {
+    g = `<path d="M130,26 L130,6" ${st(4)}/><circle cx="130" cy="6" r="8" fill="#ff6b6b" ${st(2.5)}/><rect x="40" y="26" width="180" height="200" rx="28" fill="#adb5bd" ${st()}/>
+      <rect x="62" y="48" width="136" height="88" rx="18" fill="#d0ebff" ${st(2.5)}/><rect x="22" y="150" width="30" height="40" rx="8" fill="#868e96" ${st()}/><rect x="208" y="150" width="30" height="40" rx="8" fill="#868e96" ${st()}/>
+      <circle cx="96" cy="176" r="12" fill="#ffd43b" ${st(2.5)}/><circle cx="130" cy="176" r="12" fill="#69db7c" ${st(2.5)}/><circle cx="164" cy="176" r="12" fill="#ff6b6b" ${st(2.5)}/>${face(130, 92, 2)}`;
+  } else {
+    g = `<rect x="60" y="120" width="56" height="110" rx="14" fill="#868e96" ${st()}/><path d="M40,80 L190,80 Q232,92 232,120 Q232,148 190,160 L40,160 Z" fill="#b197fc" ${st()}/>
+      <rect x="190" y="104" width="54" height="32" rx="10" fill="#63e6be" ${st()}/><circle cx="96" cy="120" r="18" fill="#d0ebff" ${st(2.5)}/>
+      ${sparkle(230, 60, 14, '#ffd43b')}${sparkle(250, 180, 10, '#63e6be')}${face(140, 118, 1.3)}`;
+  }
+  return svg(s, s, g);
+}
+
+/** Quick Count's counters (COUNTER px). */
+function counterSvg(kind) {
+  const r = COUNTER * 0.36;
+  let g;
+  switch (kind) {
+    case 'ladybug':
+      g = `<circle cx="0" cy="-${r * 0.8}" r="${r * 0.45}" fill="#3a2420"/><circle cx="0" cy="${r * 0.1}" r="${r}" fill="#ff6b6b" ${st(3)}/><path d="M0,-${r * 0.9} L0,${r * 1.1}" ${st(2.5)}/>
+        <circle cx="-${r * 0.45}" cy="0" r="${r * 0.18}" fill="#3a2420"/><circle cx="${r * 0.45}" cy="0" r="${r * 0.18}" fill="#3a2420"/><circle cx="-${r * 0.35}" cy="${r * 0.55}" r="${r * 0.15}" fill="#3a2420"/><circle cx="${r * 0.35}" cy="${r * 0.55}" r="${r * 0.15}" fill="#3a2420"/>`;
+      break;
+    case 'chick':
+      g = `<circle cx="0" cy="0" r="${r}" fill="#ffe066" ${st(3)}/><path d="M-5,4 L0,12 L5,4 Z" fill="#ffa94d" ${st(1.5)}/><path d="M-4,-${r} q4,-10 8,0" fill="none" ${st(2)}/>${face(0, -2, 0.8)}`;
+      break;
+    case 'star':
+      g = `<polygon points="${star5(r * 1.1)}" fill="#ffd43b" ${st(3)}/>${face(0, 4, 0.75)}`;
+      break;
+    case 'blossom':
+      g =
+        Array.from({ length: 5 }, (_, i) => {
+          const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+          return `<circle cx="${f(Math.cos(a) * r * 0.62)}" cy="${f(Math.sin(a) * r * 0.62)}" r="${f(r * 0.48)}" fill="#f783ac" ${st(2.5)}/>`;
+        }).join('') + `<circle cx="0" cy="0" r="${f(r * 0.5)}" fill="#fff3bf" ${st(2.5)}/>${face(0, 0, 0.55)}`;
+      break;
+    case 'alien':
+      g = `<path d="M0,-${r * 0.9} L0,-${r * 1.25}" ${st(2.5)}/><circle cx="0" cy="-${r * 1.3}" r="4" fill="#ffd43b" ${st(1.5)}/><ellipse cx="0" cy="0" rx="${r}" ry="${r * 0.92}" fill="#8ce99a" ${st(3)}/>
+        <circle cx="0" cy="-4" r="${r * 0.36}" fill="#fff" ${st(2)}/><circle cx="0" cy="-3" r="${r * 0.17}" fill="#2a1a17"/><path d="M-7,${r * 0.45} q7,6 14,0" fill="none" ${st(2)}/>`;
+      break;
+    case 'planet':
+      g = `<ellipse cx="0" cy="0" rx="${r * 1.35}" ry="${r * 0.35}" fill="none" ${st(6)}/><ellipse cx="0" cy="0" rx="${r * 1.35}" ry="${r * 0.35}" fill="none" stroke="#ffd43b" stroke-width="3"/>
+        <circle cx="0" cy="0" r="${r * 0.82}" fill="#b197fc" ${st(3)}/><path d="M-${r * 1.1},${r * 0.1} Q0,${r * 0.6} ${r * 1.1},-${r * 0.1}" fill="none" stroke="#ffd43b" stroke-width="3"/>${face(0, -3, 0.6)}`;
+      break;
+    case 'ufo':
+      g = `<path d="M-${r * 0.6},-2 Q0,-${r * 1.3} ${r * 0.6},-2 Z" fill="#a5d8ff" ${st(2.5)}/><ellipse cx="0" cy="${r * 0.1}" rx="${r * 1.2}" ry="${r * 0.42}" fill="#adb5bd" ${st(3)}/>
+        <circle cx="-${r * 0.6}" cy="${r * 0.15}" r="4" fill="#ffd43b"/><circle cx="0" cy="${r * 0.3}" r="4" fill="#ff6b6b"/><circle cx="${r * 0.6}" cy="${r * 0.15}" r="4" fill="#69db7c"/>${face(0, -r * 0.45, 0.45)}`;
+      break;
+    case 'bothead':
+      g = `<path d="M0,-${r} L0,-${r * 1.3}" ${st(2.5)}/><circle cx="0" cy="-${r * 1.35}" r="4" fill="#ff6b6b" ${st(1.5)}/><rect x="-${r}" y="-${r}" width="${r * 2}" height="${r * 1.8}" rx="${r * 0.35}" fill="#ced4da" ${st(3)}/>
+        <rect x="-${r * 0.72}" y="-${r * 0.72}" width="${r * 1.44}" height="${r * 1.0}" rx="${r * 0.2}" fill="#d0ebff" ${st(2)}/>${face(0, -r * 0.25, 0.65)}`;
+      break;
+    default:
+      throw new Error(`unknown counter ${kind}`);
+  }
+  return centred(g, COUNTER);
+}
+
+// ---------------------------------------------------------------- backdrops
+
+/** A seeded little random so a backdrop renders the same every run. */
+function rand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+const inMiddle = (x, y) => x > 280 && x < 1000 && y > 120 && y < 600;
+
+const CRITTER_BACKDROPS = [
+  // 0: a meadow with hills, flowers and a sun.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d0f0ff"/><stop offset="1" stop-color="#fff9db"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    g += `<circle cx="1140" cy="110" r="70" fill="#ffe066" opacity="0.8"/><path d="M0,${H - 150} Q260,${H - 250} 560,${H - 160} T1280,${H - 190} L1280,${H} L0,${H} Z" fill="#b2f2bb"/>
+      <path d="M0,${H - 90} Q300,${H - 170} 700,${H - 100} T1280,${H - 110} L1280,${H} L0,${H} Z" fill="#8ce99a"/>`;
+    for (let i = 0; i < 60; i++) {
+      const x = R() * W;
+      const y = H - 90 + R() * 90;
+      const c = ['#f783ac', '#ffd43b', '#fff', '#b197fc'][Math.floor(R() * 4)];
+      g += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(4 + R() * 4)}" fill="${c}"/><circle cx="${f(x)}" cy="${f(y)}" r="2" fill="#ffa94d"/>`;
+    }
+    for (let i = 0; i < 6; i++) g += cloud(R() * W, 40 + R() * 160, 0.6 + R() * 0.6, '#fff', 0.85);
+    return g;
+  },
+  // 1: rainbow sky with clouds.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe3f1"/><stop offset="1" stop-color="#e5dbff"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    ['#ff8787', '#ffc078', '#ffe066', '#8ce99a', '#74c0fc', '#b197fc'].forEach((c, i) => {
+      g += `<path d="M-60,${H + 40} A${700 - i * 34},${560 - i * 34} 0 0 1 ${W + 60},${H + 40}" fill="none" stroke="${c}" stroke-width="34" opacity="0.35"/>`;
+    });
+    for (let i = 0; i < 9; i++) g += cloud(R() * W, R() * H, 0.6 + R() * 0.8, '#fff', 0.9);
+    for (let i = 0; i < 30; i++) {
+      const x = R() * W;
+      const y = R() * H;
+      if (inMiddle(x, y)) continue;
+      g += sparkle(x, y, 5 + R() * 7);
+    }
+    return g;
+  },
+  // 2: candy land — lollipops and gumdrops along the edges.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0f6"/><stop offset="1" stop-color="#ffe8cc"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    for (let i = 0; i < 14; i++) {
+      const x = i % 2 ? 30 + R() * 200 : W - 230 + R() * 200;
+      const y = 120 + R() * (H - 200);
+      const c = ['#f783ac', '#74c0fc', '#8ce99a', '#ffd43b', '#b197fc'][Math.floor(R() * 5)];
+      g += `<path d="M${f(x)},${f(y)} L${f(x)},${f(y + 90)}" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity="0.8"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(22 + R() * 14)}" fill="${c}" opacity="0.55"/>
+        <path d="M${f(x - 14)},${f(y)} a14,14 0 1 1 28,0" fill="none" stroke="#fff" stroke-width="4" opacity="0.7"/>`;
+    }
+    for (let i = 0; i < 200; i++) {
+      const x = R() * W;
+      const y = R() * H;
+      if (inMiddle(x, y) && R() < 0.8) continue;
+      g += `<rect x="${f(x)}" y="${f(y)}" width="4" height="10" rx="2" fill="${['#f783ac', '#74c0fc', '#ffd43b', '#8ce99a'][Math.floor(R() * 4)]}" opacity="0.45" transform="rotate(${f(R() * 180)} ${f(x)} ${f(y)})"/>`;
+    }
+    return g;
+  },
+  // 3: a mushroom forest, pastel.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6fcf5"/><stop offset="1" stop-color="#f3f0ff"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    for (let i = 0; i < 10; i++) {
+      const x = i < 5 ? 40 + i * 50 : W - 260 + (i - 5) * 50;
+      g += `<rect x="${f(x)}" y="${f(80 + R() * 120)}" width="${f(30 + R() * 20)}" height="${H}" rx="14" fill="#c5a582" opacity="0.35"/><circle cx="${f(x + 20)}" cy="${f(60 + R() * 100)}" r="${f(60 + R() * 30)}" fill="#8ce99a" opacity="0.35"/>`;
+    }
+    g += `<rect y="${H - 70}" width="${W}" height="70" fill="#b2f2bb" opacity="0.7"/>`;
+    for (let i = 0; i < 12; i++) {
+      const x = R() * W;
+      if (x > 330 && x < 950) continue;
+      const s = 0.6 + R() * 0.7;
+      g += `<g transform="translate(${f(x)},${H - 60}) scale(${f(s)})"><rect x="-10" y="-40" width="20" height="44" rx="8" fill="#fff4e6"/><path d="M-40,-36 Q0,-90 40,-36 Z" fill="${['#ff8787', '#b197fc', '#ffa94d'][Math.floor(R() * 3)]}"/>
+        <circle cx="-14" cy="-52" r="6" fill="#fff"/><circle cx="12" cy="-60" r="5" fill="#fff"/></g>`;
+    }
+    for (let i = 0; i < 40; i++) {
+      const x = R() * W;
+      const y = R() * H;
+      if (inMiddle(x, y)) continue;
+      g += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(2 + R() * 3)}" fill="#ffe066" opacity="0.8"/>`;
+    }
+    return g;
+  },
+];
+
+function cloud(x, y, s, c, o) {
+  return `<g transform="translate(${f(x)},${f(y)}) scale(${f(s)})" opacity="${o}"><path d="M-60,20 Q-80,-6 -48,-12 Q-44,-46 -6,-38 Q14,-62 40,-34 Q74,-32 64,0 Q82,22 52,26 Z" fill="${c}"/></g>`;
+}
+
+const COSMOS_BACKDROPS = [
+  // 0: deep space with planets.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b1f4b"/><stop offset="1" stop-color="#3b2a6b"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    g += stars(R, 220);
+    g += `<circle cx="150" cy="560" r="110" fill="#b197fc" opacity="0.55"/><ellipse cx="150" cy="560" rx="170" ry="30" fill="none" stroke="#ffd43b" stroke-width="10" opacity="0.5"/>
+      <circle cx="1140" cy="130" r="64" fill="#63e6be" opacity="0.5"/><circle cx="1080" cy="600" r="34" fill="#ff8787" opacity="0.5"/>`;
+    return g;
+  },
+  // 1: a moon's surface.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14183a"/><stop offset="1" stop-color="#2b3266"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    g += stars(R, 160);
+    g += `<circle cx="1060" cy="140" r="90" fill="#74c0fc" opacity="0.4"/><path d="M0,${H - 120} Q320,${H - 180} 640,${H - 130} T1280,${H - 140} L1280,${H} L0,${H} Z" fill="#868e96" opacity="0.85"/>`;
+    for (let i = 0; i < 14; i++) {
+      const x = R() * W;
+      const y = H - 100 + R() * 80;
+      g += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(16 + R() * 24)}" ry="${f(5 + R() * 6)}" fill="#495057" opacity="0.7"/>`;
+    }
+    return g;
+  },
+  // 2: inside a space station: panels and round windows.
+  (R) => {
+    let g = `<rect width="${W}" height="${H}" fill="#2c3e5a"/>`;
+    for (let x = 0; x < W; x += 160)
+      g += `<rect x="${x + 6}" y="0" width="148" height="${H}" fill="#34496a" opacity="0.8"/><circle cx="${x + 20}" cy="30" r="5" fill="#5c7cfa" opacity="0.6"/><circle cx="${x + 140}" cy="${H - 30}" r="5" fill="#5c7cfa" opacity="0.6"/>`;
+    for (const [x, y] of [
+      [120, 140],
+      [1160, 140],
+      [120, 560],
+      [1160, 560],
+    ]) {
+      g += `<circle cx="${x}" cy="${y}" r="76" fill="#868e96"/><circle cx="${x}" cy="${y}" r="62" fill="#14183a"/>`;
+      for (let i = 0; i < 12; i++) {
+        const a = R() * Math.PI * 2;
+        const d = R() * 54;
+        g += `<circle cx="${f(x + Math.cos(a) * d)}" cy="${f(y + Math.sin(a) * d)}" r="${f(1 + R() * 2)}" fill="#fff"/>`;
+      }
+    }
+    for (let i = 0; i < 24; i++) {
+      const x = R() * W;
+      const y = R() * H;
+      if (inMiddle(x, y)) continue;
+      g += `<rect x="${f(x)}" y="${f(y)}" width="10" height="4" rx="2" fill="${['#63e6be', '#ffd43b', '#ff8787'][Math.floor(R() * 3)]}" opacity="0.7"/>`;
+    }
+    return g;
+  },
+  // 3: a robot lab: a glowing grid and gears.
+  (R) => {
+    let g = `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16213e"/><stop offset="1" stop-color="#0f3460"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#g)"/>`;
+    for (let x = 0; x <= W; x += 64)
+      g += `<path d="M${x},0 L${x},${H}" stroke="#63e6be" stroke-width="1" opacity="0.15"/>`;
+    for (let y = 0; y <= H; y += 64)
+      g += `<path d="M0,${y} L${W},${y}" stroke="#63e6be" stroke-width="1" opacity="0.15"/>`;
+    for (const [x, y, r] of [
+      [110, 120, 70],
+      [1170, 600, 80],
+      [1190, 110, 44],
+      [90, 610, 50],
+    ]) {
+      const teeth = Array.from({ length: 10 }, (_, i) => {
+        const a = (i * Math.PI) / 5;
+        return `<rect x="${f(x + Math.cos(a) * r - 9)}" y="${f(y + Math.sin(a) * r - 9)}" width="18" height="18" rx="3" fill="#495057" transform="rotate(${f((a * 180) / Math.PI)} ${f(x + Math.cos(a) * r)} ${f(y + Math.sin(a) * r)})"/>`;
+      }).join('');
+      g += `<g opacity="0.55">${teeth}<circle cx="${x}" cy="${y}" r="${r}" fill="#495057"/><circle cx="${x}" cy="${y}" r="${r * 0.35}" fill="#16213e"/></g>`;
+    }
+    for (let i = 0; i < 30; i++) {
+      const x = R() * W;
+      const y = R() * H;
+      if (inMiddle(x, y)) continue;
+      g += `<circle cx="${f(x)}" cy="${f(y)}" r="3" fill="#63e6be" opacity="0.6"/>`;
+    }
+    return g;
+  },
+];
+
+function stars(R, n) {
+  let g = '';
+  for (let i = 0; i < n; i++) {
+    const x = R() * W;
+    const y = R() * H;
+    if (inMiddle(x, y) && R() < 0.6) continue;
+    g += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(0.8 + R() * 2)}" fill="#fff" opacity="${f(0.4 + R() * 0.6)}"/>`;
+  }
+  for (let i = 0; i < 16; i++) {
+    const x = R() * W;
+    const y = R() * H;
+    if (inMiddle(x, y)) continue;
+    g += sparkle(x, y, 5 + R() * 6, '#ffe066');
+  }
+  return g;
+}
+
+const backdropSvg = (look, v) => {
+  const R = rand(LOOKS.indexOf(look) * 101 + v * 17 + 3);
+  const art = (look === 'critters' ? CRITTER_BACKDROPS : COSMOS_BACKDROPS)[v](R);
+  return svg(W, H, art);
+};
+
+// ---------------------------------------------------------------- tile pictures
+
+const ip = (inner) => svg(ICON, ICON, inner);
+/** A picture drawn small at (x, y), px across. */
+const miniPic = (name, x, y, px) =>
+  `<g transform="translate(${f(x)},${f(y)}) scale(${f(px / 110)})">${PIC_ART[name]()}</g>`;
+const card = (x, y, w, h, fill = '#fffaf0') =>
+  `<rect x="${f(x - w / 2)}" y="${f(y - h / 2)}" width="${w}" height="${h}" rx="${f(Math.min(w, h) * 0.2)}" fill="${fill}" ${st(2.5)}/>`;
+const label = (x, y, s, size = 18, fill = '#3a2420') =>
+  `<text x="${f(x)}" y="${f(y + size * 0.35)}" text-anchor="middle" font-family="Segoe UI, Arial" font-weight="800" font-size="${size}" fill="${fill}">${s}</text>`;
+
+function iconSvg(id) {
+  switch (id) {
+    case 'word-train':
+      return ip(`<rect x="6" y="40" width="40" height="34" rx="8" fill="#ff6b6b" ${st(2.5)}/><rect x="10" y="24" width="20" height="18" rx="4" fill="#f783ac" ${st(2.5)}/><circle cx="16" cy="78" r="7" fill="#5a4a4a" ${st(2)}/><circle cx="36" cy="78" r="7" fill="#5a4a4a" ${st(2)}/>
+        <rect x="50" y="40" width="40" height="34" rx="8" fill="#74c0fc" ${st(2.5)}/>${label(70, 57, 'ABC', 14)}<circle cx="60" cy="78" r="7" fill="#5a4a4a" ${st(2)}/><circle cx="80" cy="78" r="7" fill="#5a4a4a" ${st(2)}/>${face(26, 56, 0.6)}`);
+    case 'odd-word-out':
+      return ip(
+        `${miniPic('cat', 26, 26, 40)}${miniPic('dog', 70, 26, 40)}${miniPic('pig', 26, 70, 40)}${miniPic('apple', 70, 70, 40)}<circle cx="70" cy="70" r="22" fill="none" stroke="#facc15" stroke-width="4"/>`,
+      );
+    case 'word-wand':
+      return ip(`<rect x="44" y="40" width="8" height="52" rx="4" fill="#5a4a4a" ${st(2)} transform="rotate(-24 48 66)"/><polygon points="${star5(22, 0.48, 34, 28)}" fill="#ffd43b" ${st(2.5)}/>${face(34, 30, 0.45)}
+        ${card(74, 62, 34, 26)}${label(74, 62, 'Ab', 16)}${sparkle(80, 22, 7, '#b197fc')}${sparkle(12, 66, 6, '#f783ac')}`);
+    case 'missing-letter':
+      return ip(
+        `${miniPic('cat', 48, 34, 52)}${card(20, 78, 22, 24)}${label(20, 78, 'C', 16)}<rect x="37" y="66" width="22" height="24" rx="5" fill="#fff" stroke="#7a849c" stroke-width="2.5" stroke-dasharray="4 3"/>${label(48, 78, '?', 16, '#7a849c')}${card(76, 78, 22, 24)}${label(76, 78, 'T', 16)}`,
+      );
+    case 'word-snap':
+      return ip(`<path d="M8,30 L44,30 L44,40 q8,0 8,8 q0,8 -8,8 L44,66 L8,66 Z" fill="#ffd43b" ${st(2.5)}/>${label(24, 48, 'sun', 13)}
+        <path d="M52,30 L88,30 L88,66 L52,66 L52,56 q8,0 8,-8 q0,-8 -8,-8 Z" fill="#f783ac" ${st(2.5)}/>${label(72, 48, 'set', 13)}${sparkle(48, 20, 7, '#74c0fc')}`);
+    case 'letter-garden': {
+      const L = ['C', 'A', 'T', 'S', 'U', 'N', 'O', 'W', 'E'];
+      const tiles = L.map((l, i) => {
+        const x = 18 + (i % 3) * 30;
+        const y = 18 + Math.floor(i / 3) * 30;
+        return `<circle cx="${x}" cy="${y}" r="13" fill="${[0, 1, 2].includes(i) ? '#ffd43b' : '#fffaf0'}" ${st(2)}/>${label(x, y, l, 13)}`;
+      }).join('');
+      return ip(
+        `<rect x="2" y="2" width="92" height="92" rx="14" fill="#b2f2bb" ${st(2.5)}/>${tiles}<path d="M18,18 L48,18 L78,18" fill="none" stroke="#f783ac" stroke-width="5" stroke-linecap="round" opacity="0.7"/>`,
+      );
+    }
+    case 'number-train':
+      return ip(`<rect x="4" y="38" width="28" height="34" rx="7" fill="#ff6b6b" ${st(2.5)}/>${face(18, 54, 0.45)}${[0, 1, 2].map((k) => `<rect x="${34 + k * 20}" y="42" width="18" height="30" rx="5" fill="${['#ffd43b', '#74c0fc', '#8ce99a'][k]}" ${st(2)}/>${label(43 + k * 20, 57, String((k + 1) * 2), 13)}`).join('')}
+        <circle cx="12" cy="78" r="6" fill="#5a4a4a"/><circle cx="26" cy="78" r="6" fill="#5a4a4a"/><circle cx="52" cy="78" r="6" fill="#5a4a4a"/><circle cx="80" cy="78" r="6" fill="#5a4a4a"/>`);
+    case 'number-machine':
+      return ip(`<rect x="22" y="22" width="52" height="56" rx="12" fill="#adb5bd" ${st(2.5)}/><rect x="30" y="30" width="36" height="22" rx="6" fill="#d0ebff" ${st(2)}/>${face(48, 40, 0.55)}
+        ${card(12, 66, 20, 20)}${label(12, 66, '3', 14)}${card(84, 66, 20, 20, '#d3f9d8')}${label(84, 66, '6', 14)}<path d="M2,48 l14,0 m-5,-5 l5,5 l-5,5 M78,48 l14,0 m-5,-5 l5,5 l-5,5" fill="none" ${st(2.5)}/>`);
+    case 'odd-number-out':
+      return ip(
+        `${[
+          ['2', 26, 26],
+          ['4', 70, 26],
+          ['8', 26, 70],
+          ['7', 70, 70],
+        ]
+          .map(([n, x, y]) => card(x, y, 36, 36) + label(x, y, n, 22))
+          .join('')}<circle cx="70" cy="70" r="24" fill="none" stroke="#facc15" stroke-width="4"/>`,
+      );
+    case 'make-ten':
+      return ip(`${card(20, 44, 30, 38, '#fcc2d7')}${label(20, 44, '3', 22)}${label(42, 44, '+', 18)}${card(64, 44, 30, 38, '#a5d8ff')}${label(64, 44, '7', 22)}
+        <rect x="18" y="70" width="60" height="22" rx="11" fill="#69db7c" ${st(2.5)}/>${label(48, 81, '= 10', 15)}`);
+    case 'quick-count':
+      return ip(
+        `<rect x="10" y="10" width="76" height="76" rx="16" fill="#fff" ${st(3)}/>${[
+          [30, 30],
+          [66, 30],
+          [48, 48],
+          [30, 66],
+          [66, 66],
+        ]
+          .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#f783ac" ${st(2)}/>`)
+          .join('')}${sparkle(86, 12, 8, '#ffd43b')}`,
+      );
+    default:
+      throw new Error(`no icon for ${id}`);
+  }
+}
+
+// ---------------------------------------------------------------- output
+
+const png = (s) => sharp(Buffer.from(s)).png().toBuffer();
+
+async function grid(svgs, w, h, cols) {
+  const bufs = await Promise.all(svgs.map(png));
+  const rows = Math.ceil(bufs.length / cols);
+  return sharp({
+    create: {
+      width: w * Math.min(cols, bufs.length),
+      height: h * rows,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite(bufs.map((input, i) => ({ input, left: (i % cols) * w, top: Math.floor(i / cols) * h })))
+    .png()
+    .toBuffer();
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const previewIdx = args.indexOf('--preview');
+  const previewPath = previewIdx >= 0 ? args[previewIdx + 1] : null;
+  const dry = args.includes('--dry');
+
+  const pics = await grid(
+    PICS.map((p) => centred(PIC_ART[p](), PIC)),
+    PIC,
+    PIC,
+    PIC_COLS,
+  );
+  const dancers = {};
+  for (const look of LOOKS) {
+    dancers[look] = await grid(
+      DANCERS[look].flatMap((d) => [0, 1, 2].map((pose) => dancerSvg(d, pose))),
+      DANCER.w,
+      DANCER.h,
+      3,
+    );
+  }
+  const rocket = await grid([0, 1, 2, 3, 4].map(rocketSvg), TRAIN.w, TRAIN.h, 5);
+  const machines = await grid(MACHINES.map(machineSvg), MACHINE, MACHINE, MACHINES.length);
+  const counters = await grid(COUNTERS.map(counterSvg), COUNTER, COUNTER, COUNTERS.length);
+  const icons = await grid(ICON_ORDER.map(iconSvg), ICON, ICON, ICON_ORDER.length);
+  const backdrops = {};
+  for (const look of LOOKS) {
+    backdrops[look] = await Promise.all(Array.from({ length: BACKDROPS }, (_, v) => png(backdropSvg(look, v))));
+  }
+
+  const webp = { quality: 90, alphaQuality: 100, effort: 6 };
+  const bg = { quality: 84, effort: 6 };
+  const files = [
+    [resolve(HERO_DIR, 'puzzle-pics.webp'), sharp(pics).webp(webp)],
+    ...LOOKS.map((look) => [resolve(HERO_DIR, `theme-${look}-dancers.webp`), sharp(dancers[look]).webp(webp)]),
+    [resolve(HERO_DIR, 'theme-cosmos-train.webp'), sharp(rocket).webp(webp)],
+    [resolve(HERO_DIR, 'theme-machines.webp'), sharp(machines).webp(webp)],
+    [resolve(HERO_DIR, 'theme-counters.webp'), sharp(counters).webp(webp)],
+    [resolve(HERO_DIR, 'puzzle-icons-2.webp'), sharp(icons).webp(webp)],
+    ...LOOKS.flatMap((look) =>
+      backdrops[look].map((b, v) => [resolve(BG_DIR, `theme-${look}-${v + 1}.webp`), sharp(b).webp(bg)]),
+    ),
+    [
+      resolve(BG_DIR, 'puzzle-words.webp'),
+      sharp(backdrops.critters[0]).modulate({ brightness: MENU_BRIGHTNESS }).webp(bg),
+    ],
+    [resolve(BG_DIR, 'puzzle-numbers.webp'), sharp(backdrops.cosmos[0]).modulate({ brightness: 0.7 }).webp(bg)],
+  ];
+
+  if (!dry) {
+    const existing = files.map(([p]) => p).filter((p) => existsSync(p));
+    if (existing.length && !args.includes('--force')) {
+      console.error('Refusing to overwrite shipped assets (pass --force to re-render in place):');
+      for (const p of existing) console.error(`  ${p}`);
+      console.error('A visible change should ship under a new filename (week-long cache).');
+      process.exit(1);
+    }
+    mkdirSync(BG_DIR, { recursive: true });
+    mkdirSync(HERO_DIR, { recursive: true });
+    for (const [p, img] of files) {
+      await img.toFile(p);
+      console.log(`wrote ${p}`);
+    }
+  }
+
+  if (previewPath) {
+    const sheets = [pics, dancers.critters, dancers.cosmos, rocket, machines, counters, icons];
+    const metas = await Promise.all(sheets.map((b) => sharp(b).metadata()));
+    const thumbs = await Promise.all(
+      LOOKS.flatMap((look) => backdrops[look].map((b) => sharp(b).resize(320, 180).png().toBuffer())),
+    );
+    let x = 10;
+    let y = 10;
+    let rowH = 0;
+    const comps = [];
+    const maxW = 2000;
+    sheets.forEach((input, i) => {
+      if (x + metas[i].width > maxW) {
+        x = 10;
+        y += rowH + 16;
+        rowH = 0;
+      }
+      comps.push({ input, left: x, top: y });
+      x += metas[i].width + 16;
+      rowH = Math.max(rowH, metas[i].height);
+    });
+    y += rowH + 16;
+    thumbs.forEach((input, i) => comps.push({ input, left: 10 + (i % 4) * 330, top: y + Math.floor(i / 4) * 190 }));
+    y += Math.ceil(thumbs.length / 4) * 190;
+    await sharp({ create: { width: maxW + 20, height: y + 10, channels: 4, background: '#e9e4f5' } })
+      .composite(comps)
+      .png()
+      .toFile(previewPath);
+    console.log(`wrote preview ${previewPath}`);
+  }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

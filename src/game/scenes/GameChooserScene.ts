@@ -10,7 +10,7 @@ import { isMathGameId, type GameId } from '@/core/gameIds';
 import { SUBJECTS, type SubjectId } from '@/core/subjects';
 import { gameGroupById, type GameGroupId } from '@/core/gameGroups';
 import { puzzleById } from '@/core/puzzles';
-import { GAME_ICON_SHEET, PUZZLE_ICON_SHEET } from '@/core/spriteKeys';
+import { GAME_ICON_SHEET, puzzleIconOf } from '@/core/spriteKeys';
 import { CHOOSER_TITLES, GROUP_TILES, MATH_GAME_TILES, MORE_COMING_SOON, SUBJECT_TILES } from '@/core/chooserTiles';
 import {
   SUBJECTS_STEP,
@@ -36,9 +36,7 @@ import { openMyScores, openSetup, type GameChooserInit } from '@/game/services/c
 
 /** A picture on a tile: a game's or a puzzle's sheet frame. */
 function pictureOf(id: GameId): { key: string; frame: number } {
-  return isMathGameId(id)
-    ? { key: GAME_ICON_SHEET.key, frame: GAME_ICON_SHEET.frames[id] }
-    : { key: PUZZLE_ICON_SHEET.key, frame: PUZZLE_ICON_SHEET.frames[id] };
+  return isMathGameId(id) ? { key: GAME_ICON_SHEET.key, frame: GAME_ICON_SHEET.frames[id] } : puzzleIconOf(id);
 }
 
 /**
@@ -123,7 +121,7 @@ export class GameChooserScene extends Phaser.Scene {
       case 'subjects':
         return CHOOSER_TITLES.subjects;
       case 'groups':
-        return CHOOSER_TITLES.groups;
+        return CHOOSER_TITLES.groups[step.subject];
       case 'games':
         return CHOOSER_TITLES.games[step.subject];
     }
@@ -188,7 +186,7 @@ export class GameChooserScene extends Phaser.Scene {
     const C = config.layout.chooser;
     const groups = groupsOf(subject);
     const remembered = getRememberedPicks().group;
-    const slots = this.slots(groups.length, C.groups, true);
+    const slots = this.slots(groups.length, groups.length > 2 ? C.groups3 : C.groups, true);
     const tiles = groups.map((g, i) => {
       const t = GROUP_TILES[g.id];
       return createChoiceTile({

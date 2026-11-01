@@ -1367,6 +1367,20 @@ export const config = {
       'magic-wand': { easy: 12, medium: 12, hard: 12 },
       'spin-match': { easy: 12, medium: 12, hard: 12 },
       'symbol-hunt': { easy: 12, medium: 12, hard: 12 },
+      // Sprint 2.16 — the Words and Numbers puzzles: the same blanket 12 to
+      // start (Quick Count's runs after the dots hide). Make Ten needs a few
+      // taps (15) and Letter Garden a word traced on the board (30 per word).
+      'word-train': { easy: 12, medium: 12, hard: 12 },
+      'odd-word-out': { easy: 12, medium: 12, hard: 12 },
+      'word-wand': { easy: 12, medium: 12, hard: 12 },
+      'missing-letter': { easy: 12, medium: 12, hard: 12 },
+      'word-snap': { easy: 12, medium: 12, hard: 12 },
+      'letter-garden': { easy: 30, medium: 30, hard: 30 },
+      'number-train': { easy: 12, medium: 12, hard: 12 },
+      'number-machine': { easy: 12, medium: 12, hard: 12 },
+      'odd-number-out': { easy: 12, medium: 12, hard: 12 },
+      'make-ten': { easy: 15, medium: 15, hard: 15 },
+      'quick-count': { easy: 12, medium: 12, hard: 12 },
     },
     shapes: [
       'circle',
@@ -1556,6 +1570,25 @@ export const config = {
       'spin-match': { easy: 'Spot the same shape', medium: 'Watch for mirrors', hard: 'All look alike' },
       'copy-cat': { easy: '4 animals, from 2 sounds', medium: '5 animals, from 3', hard: '6 animals, from 4' },
       'symbol-hunt': { easy: '12 cards', medium: '18 cards, look-alikes', hard: '24 cards, all look-alikes' },
+      'word-train': { easy: 'ABCs and rhymes', medium: 'Growing words, first letters', hard: 'ABC order and skips' },
+      'odd-word-out': {
+        easy: 'Kinds of things',
+        medium: 'Rhymes and first letters',
+        hard: 'Trickier kinds, letter counts',
+      },
+      'word-wand': { easy: 'Sounds, colours, opposites', medium: 'Babies, homes, more than one', hard: 'Tricky words' },
+      'missing-letter': { easy: '3-letter words', medium: '4-letter words', hard: 'Longer words' },
+      'word-snap': { easy: 'Finish the big word', medium: 'Start the big word', hard: 'No big word to help' },
+      'letter-garden': { easy: '3 letters or more', medium: '4 letters or more', hard: '5 letters, bigger garden' },
+      'number-train': {
+        easy: 'Count by 1s, 2s, 5s, 10s',
+        medium: 'By 3s and 4s, and down',
+        hard: 'Doubles, growing jumps',
+      },
+      'number-machine': { easy: 'Add or take away', medium: 'Times and bigger jumps', hard: 'Two steps at once' },
+      'odd-number-out': { easy: 'Odd and even', medium: '2s, 5s and 10s', hard: '3s, 4s and 9s' },
+      'make-ten': { easy: 'Two cards make 10', medium: 'Three cards make 10', hard: 'Three cards make 20' },
+      'quick-count': { easy: 'Up to 6, dice dots', medium: 'Up to 10, scattered', hard: 'Up to 15, quicker' },
     },
     layout: {
       topBar: { height: 66, y: 33 },
@@ -1617,6 +1650,41 @@ export const config = {
       gapMs: 260,
       /** After a turn, before the next sequence plays. */
       betweenMs: 900,
+    },
+    /**
+     * Sprint 2.16 — the Words puzzles (`systems/puzzles/wordPuzzles.ts`;
+     * their words in `wordData.ts`). Choices in the tray are `choices` above.
+     */
+    wordTrain: { cars: { easy: 4, medium: 4, hard: 4 } },
+    oddWordOut: { items: { easy: 4, medium: 4, hard: 5 } },
+    /** Missing Letter: the word's length range by level. */
+    missingLetter: { letters: { easy: [3, 3], medium: [4, 4], hard: [5, 6] } },
+    /**
+     * Letter Garden: the board (`size` × `size` letters) and the shortest
+     * word that counts, mirrored in `scripts/words/build-word-list.mjs`
+     * (which makes the boards; a test checks). A new board every
+     * `wordsPerBoard` words. The words and boards file is loaded with the puzzle.
+     */
+    letterGarden: {
+      size: { easy: 4, medium: 4, hard: 5 },
+      minLetters: { easy: 3, medium: 4, hard: 5 },
+      wordsPerBoard: 4,
+      wordsKey: 'letter-garden-words',
+      wordsUrl: 'assets/words/letter-garden-1.json',
+    },
+    /** Sprint 2.16 — the Numbers puzzles (`systems/puzzles/numberPuzzles.ts`). */
+    numberTrain: { cars: { easy: 4, medium: 4, hard: 5 } },
+    oddNumberOut: { items: { easy: 4, medium: 5, hard: 5 } },
+    /** Make Ten: cards on the table, how many to pick, and what they must add up to. */
+    makeTen: {
+      cards: { easy: 6, medium: 8, hard: 9 },
+      pick: { easy: 2, medium: 3, hard: 3 },
+      target: { easy: 10, medium: 10, hard: 20 },
+    },
+    /** Quick Count: how many show (a range), and for how long before they hide. */
+    quickCount: {
+      count: { easy: [2, 6], medium: [4, 10], hard: [6, 15] },
+      flashMs: { easy: 1800, medium: 1500, hard: 1200 },
     },
     symbolHunt: {
       // Owner (2026-10-28, focus group): Hard wasn't hard enough: a column more (7 → 8).
@@ -1856,6 +1924,8 @@ export const config = {
       content: { top: 168, topNoTrail: 108, bottom: 676 },
       subjects: { cellW: 344, cellH: 470, gapX: 36, gapY: 0, perRow: 3 },
       groups: { cellW: 460, cellH: 450, gapX: 44, gapY: 0, perRow: 2 },
+      /** Sprint 2.16 — three groups (Puzzles: Visual, Words, Numbers) in one row. */
+      groups3: { cellW: 376, cellH: 450, gapX: 32, gapY: 0, perRow: 3 },
       /** Game and puzzle tiles: 4 to a row; one row is taller. */
       games: { cellW: 272, cellH: 300, cellH2Rows: 236, gapX: 24, gapY: 22, perRow: 4 },
       /** Pictures on the tiles (96 px sheet frames). */
@@ -1894,6 +1964,15 @@ export const config = {
       roundEnd: { playAgainW: 360, playAgainH: 80, rowGapY: 22, rowH: 72, gapX: 18, widths: [240, 340, 210] },
       /** Puzzle and Pair Pals setups. */
       puzzleSetup: { headingY: 182, tiles: { y: 352, w: 340, h: 250, gapX: 32 }, upToGapPx: 16 },
+      /** Sprint 2.16 — a Words or Numbers puzzle's setup: "Pick a look!" (two tiles), then "How tough?". */
+      themedPuzzleSetup: {
+        looksHeadingY: 174,
+        looks: { y: 296, w: 360, h: 196, gapX: 40 },
+        samplePx: 96,
+        levelsHeadingY: 420,
+        levels: { y: 490, w: 340, h: 92, gapX: 32 },
+        upToGapPx: 6,
+      },
       pairPalsSetup: {
         cardsHeadingY: 174,
         themes: { y: 290, w: 196, h: 190, gapX: 18 },

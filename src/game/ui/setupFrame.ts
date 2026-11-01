@@ -7,7 +7,7 @@ import { config } from '@/core/config';
 import { isMathGameId, type GameId } from '@/core/gameIds';
 import { gamesStepFor, trailFor } from '@/core/chooserSteps';
 import { gameName } from '@/core/chooserTiles';
-import { GAME_ICON_SHEET, PUZZLE_ICON_SHEET } from '@/core/spriteKeys';
+import { GAME_ICON_SHEET, puzzleIconOf } from '@/core/spriteKeys';
 import { PlaceholderButton } from '@/game/ui/PlaceholderButton';
 import type { Focusable } from '@/game/ui/KeyboardNavigator';
 import { createTopBar } from '@/game/ui/topBar';
@@ -51,7 +51,7 @@ export function createSetupFrame(
     title: gameName(game),
     picture: isMathGameId(game)
       ? { key: GAME_ICON_SHEET.key, frame: GAME_ICON_SHEET.frames[game] }
-      : { key: PUZZLE_ICON_SHEET.key, frame: PUZZLE_ICON_SHEET.frames[game] },
+      : puzzleIconOf(game),
     onBack: back,
     onScores: () => openMyScores(scene),
   });

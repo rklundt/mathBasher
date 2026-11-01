@@ -3,6 +3,7 @@
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
 import { ROUND_PUZZLE_IDS, type GameId } from '@/core/gameIds';
+import type { PuzzleTheme } from '@/core/puzzleThemes';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -583,6 +584,45 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'spin-match': MusicKeys.PairPalsLoop1,
   'copy-cat': MusicKeys.PairPalsAnimalLoop1,
   'symbol-hunt': MusicKeys.PairPalsDessertLoop1,
+  // Sprint 2.16 — not read: the Words and Numbers puzzles play their look's tracks (`PUZZLE_THEME_SOUNDS`).
+  'word-train': MusicKeys.PairPalsAnimalLoop1,
+  'odd-word-out': MusicKeys.PairPalsAnimalLoop1,
+  'word-wand': MusicKeys.PairPalsAnimalLoop1,
+  'missing-letter': MusicKeys.PairPalsAnimalLoop1,
+  'word-snap': MusicKeys.PairPalsAnimalLoop1,
+  'letter-garden': MusicKeys.PairPalsAnimalLoop1,
+  'number-train': MusicKeys.PairPalsAnimalLoop1,
+  'number-machine': MusicKeys.PairPalsAnimalLoop1,
+  'odd-number-out': MusicKeys.PairPalsAnimalLoop1,
+  'make-ten': MusicKeys.PairPalsAnimalLoop1,
+  'quick-count': MusicKeys.PairPalsAnimalLoop1,
+};
+
+/**
+ * Sprint 2.16 — each look's sounds (`core/puzzleThemes.ts`): its music (a
+ * puzzle plays the track at its place in the list, so neighbours differ)
+ * and its right / wrong sounds. Stand-ins borrowed from other games until
+ * the owner's own arrive: Animal Pals the Pair Pals sounds, Alien Invaders
+ * the Alien Shoot zaps.
+ */
+export const PUZZLE_THEME_SOUNDS: Readonly<
+  Record<PuzzleTheme, { music: readonly MusicKey[]; right: () => SfxKey; wrong: () => SfxKey }>
+> = {
+  critters: {
+    music: [
+      MusicKeys.PairPalsAnimalLoop1,
+      MusicKeys.GardenLoop1,
+      MusicKeys.BalanceLoop1,
+      MusicKeys.PairPalsDessertLoop1,
+    ],
+    right: () => pickPairPalsMatchSfx(),
+    wrong: () => pickPairPalsMissSfx(),
+  },
+  cosmos: {
+    music: [MusicKeys.PairPalsAlienLoop1, MusicKeys.CockpitLoop1, MusicKeys.Loop3, MusicKeys.PairPalsLoop1],
+    right: () => pickRandomHitCorrectSfx(),
+    wrong: () => pickRandomHitWrongSfx(),
+  },
 };
 
 /**
@@ -622,6 +662,17 @@ export const GAME_MIDGROUND_MAP: Readonly<Record<GameId, readonly MidgroundKey[]
   'spin-match': [],
   'copy-cat': [],
   'symbol-hunt': [],
+  'word-train': [],
+  'odd-word-out': [],
+  'word-wand': [],
+  'missing-letter': [],
+  'word-snap': [],
+  'letter-garden': [],
+  'number-train': [],
+  'number-machine': [],
+  'odd-number-out': [],
+  'make-ten': [],
+  'quick-count': [],
 };
 
 /**

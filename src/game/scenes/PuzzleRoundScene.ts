@@ -7,9 +7,9 @@ import { _th, SeverityLevel, type TelemetryProps } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
 import { SceneKeys } from '@/core/sceneKeys';
 import { openChooser, openGamesFor } from '@/game/services/chooserNavigation';
-import type { RoundPuzzleId } from '@/core/gameIds';
+import type { RoundPuzzleId, VisualPuzzleId } from '@/core/gameIds';
 import { puzzleById } from '@/core/puzzles';
-import { PUZZLE_BACKDROP_KEYS } from '@/core/spriteKeys';
+import { PUZZLE_BACKDROP_KEYS, type DancerSheet } from '@/core/spriteKeys';
 import { GAME_MUSIC_MAP, pickBonusCheerSfx, pickPairPalsMatchSfx, pickPairPalsMissSfx } from '@/core/audioKeys';
 import { getAudioManager } from '@/services/audioManagerFactory';
 import { Settings } from '@/services/Settings';
@@ -24,6 +24,20 @@ import { loadAudioOnDemand, loadGameBundle } from '@/game/services/assetLoader';
 import { PromptPill, PuzzleBackdrop, PuzzleDancers, PuzzleTopBar, showEndPanel } from '@/game/ui/puzzleFrame';
 import type { PauseOverlayInit } from '@/game/scenes/PauseOverlay';
 import type { QuitDestination } from '@/game/scenes/gameSceneContract';
+
+/**
+ * What a round looks and sounds like: the puzzle pack's own backdrops, the
+ * crowd and Pair Pals' sounds; a Words or Numbers puzzle's look (sprint 2.16,
+ * `ThemedRoundScene`).
+ */
+export interface PuzzleRoundLook {
+  readonly backdrops: readonly string[];
+  /** Left out: Balance Scale's crowd. */
+  readonly dancers?: DancerSheet;
+  readonly music: string;
+  readonly right: () => string;
+  readonly wrong: () => string;
+}
 
 /**
  * Sprint 2.14 — what every puzzle-pack round shares: the frame (backdrops,
@@ -54,11 +68,23 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
   private backdropStart = 0;
   private resumedAt = 0;
   private musicKey: string | null = null;
+  private roundLook!: PuzzleRoundLook;
 
   /** The puzzle this scene plays, from `Settings.round.gameId` (null: not one of its own). */
   protected abstract puzzleId(): RoundPuzzleId | null;
   /** Build the round (called from `create`, after the frame is up). */
   protected abstract startRound(): void;
+
+  /** What this round looks and sounds like (called once `id` is set). */
+  protected look(): PuzzleRoundLook {
+    const id = this.id as VisualPuzzleId;
+    return {
+      backdrops: PUZZLE_BACKDROP_KEYS[id],
+      music: GAME_MUSIC_MAP[id],
+      right: pickPairPalsMatchSfx,
+      wrong: pickPairPalsMissSfx,
+    };
+  }
 
   preload(): void {
     const id = this.puzzleId();
@@ -84,10 +110,12 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.elapsedMs = 0;
     this.settled = false;
 
-    this.backdrop = new PuzzleBackdrop(this, PUZZLE_BACKDROP_KEYS[id]);
-    this.backdropStart = Math.floor(Math.random() * PUZZLE_BACKDROP_KEYS[id].length);
+    this.roundLook = this.look();
+    const backdrops = this.roundLook.backdrops;
+    this.backdrop = new PuzzleBackdrop(this, backdrops);
+    this.backdropStart = Math.floor(Math.random() * backdrops.length);
     this.backdrop.show(this.backdropStart);
-    this.dancers = new PuzzleDancers(this);
+    this.dancers = new PuzzleDancers(this, this.roundLook.dancers);
     this.bar = new PuzzleTopBar(this, puzzleById(id).label, config.puzzles.perRound, () => this.openPause());
     this.prompt = new PromptPill(this);
     this.refreshTopLeft();
@@ -161,7 +189,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     const got = this.score.right(misses, sandUsed ?? this.elapsedMs / 1000 / this.speedSeconds());
     this.refreshTopLeft();
     this.bar.popPoints(`+${formatPoints(got.points)}${got.tier > 0 ? ` ${speedMarks(got.tier)}` : ''}`);
-    getAudioManager().play(pickPairPalsMatchSfx(), 'sfx');
+    getAudioManager().play(this.roundLook.right(), 'sfx');
     this.dancers.cheer();
     this.bar.mark(this.index, step);
     if (step === 'green') this.greens++;
@@ -171,14 +199,14 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
 
   /** A wrong answer: a soft sound, "Oh!" from the dancers, "Try again!". */
   protected markWrong(msg = 'Try again!'): void {
-    getAudioManager().play(pickPairPalsMissSfx(), 'sfx');
+    getAudioManager().play(this.roundLook.wrong(), 'sfx');
     this.dancers.oops();
     this.prompt.flash(msg, 'retry');
   }
 
   /** Missed (too many misses, or the time ran out): a red step, the answer shown, then `next`. */
   protected markRed(note: string, next: () => void): void {
-    getAudioManager().play(pickPairPalsMissSfx(), 'sfx');
+    getAudioManager().play(this.roundLook.wrong(), 'sfx');
     this.dancers.oops();
     this.bar.mark(this.index, 'red');
     this.prompt.flash(note, 'retry', config.puzzles.steps.redHoldMs + 300);
@@ -239,7 +267,7 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
   // ----- music + pause ---------------------------------------------------
 
   private startMusic(): void {
-    const key = GAME_MUSIC_MAP[this.id];
+    const key = this.roundLook.music;
     this.musicKey = key;
     loadAudioOnDemand(this, key, () => {
       if (this.musicKey !== key) return;

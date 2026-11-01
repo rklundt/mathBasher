@@ -14,9 +14,9 @@ import {
 } from '@/core/chooserSteps';
 
 describe('chooser steps', () => {
-  it('Math opens its groups; Puzzles (no groups) skips straight to its games', () => {
+  it('Math and Puzzles both open their groups (sprint 2.16: Visual, Words, Numbers)', () => {
     expect(stepAfterSubject('math')).toEqual({ kind: 'groups', subject: 'math' });
-    expect(stepAfterSubject('puzzles')).toEqual({ kind: 'games', subject: 'puzzles', group: null });
+    expect(stepAfterSubject('puzzles')).toEqual({ kind: 'groups', subject: 'puzzles' });
   });
 
   it('Back walks up one step: games › group › subject › Title Screen', () => {
@@ -28,8 +28,11 @@ describe('chooser steps', () => {
     expect(stepBefore(SUBJECTS_STEP)).toBe('title');
   });
 
-  it("Back from Puzzles' games goes to the subjects (the group step was skipped)", () => {
-    expect(stepBefore({ kind: 'games', subject: 'puzzles', group: null })).toEqual(SUBJECTS_STEP);
+  it("Back from a Puzzles group's games goes to Puzzles' groups", () => {
+    expect(stepBefore({ kind: 'games', subject: 'puzzles', group: 'words' })).toEqual({
+      kind: 'groups',
+      subject: 'puzzles',
+    });
   });
 
   it('lists the games on a step', () => {
@@ -39,14 +42,18 @@ describe('chooser steps', () => {
       'number-climb',
       'space-shooter',
     ]);
-    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: null })).toContain('pair-pals');
-    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: null })).toHaveLength(8);
+    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: 'visual' })).toContain('pair-pals');
+    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: 'visual' })).toHaveLength(8);
+    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: 'words' })).toHaveLength(6);
+    expect(gamesOn({ kind: 'games', subject: 'puzzles', group: 'numbers' })).toHaveLength(5);
   });
 
   it('Change Game opens the games step the game is on', () => {
     expect(gamesStepFor('frog-splash')).toEqual({ kind: 'games', subject: 'math', group: 'math-fun' });
     expect(gamesStepFor('alien-shoot')).toEqual({ kind: 'games', subject: 'math', group: 'math-basher' });
-    expect(gamesStepFor('copy-cat')).toEqual({ kind: 'games', subject: 'puzzles', group: null });
+    expect(gamesStepFor('copy-cat')).toEqual({ kind: 'games', subject: 'puzzles', group: 'visual' });
+    expect(gamesStepFor('letter-garden')).toEqual({ kind: 'games', subject: 'puzzles', group: 'words' });
+    expect(gamesStepFor('make-ten')).toEqual({ kind: 'games', subject: 'puzzles', group: 'numbers' });
   });
 
   it('builds the "where you are" trail', () => {
@@ -60,13 +67,16 @@ describe('chooser steps', () => {
       'mathBasher',
       'Alien Shoot',
     ]);
-    expect(trailFor({ kind: 'games', subject: 'puzzles', group: null }).map((c) => c.label)).toEqual(['Puzzles']);
+    expect(trailFor({ kind: 'games', subject: 'puzzles', group: 'numbers' }).map((c) => c.label)).toEqual([
+      'Puzzles',
+      'Numbers',
+    ]);
   });
 
   it('names each step for the screen tag', () => {
     expect(stepTagName(SUBJECTS_STEP)).toBe('subject');
     expect(stepTagName({ kind: 'groups', subject: 'math' })).toBe('math groups');
     expect(stepTagName({ kind: 'games', subject: 'math', group: 'math-fun' })).toBe('games: Math Fun');
-    expect(stepTagName({ kind: 'games', subject: 'puzzles', group: null })).toBe('games: Puzzles');
+    expect(stepTagName({ kind: 'games', subject: 'puzzles', group: 'words' })).toBe('games: Words');
   });
 });

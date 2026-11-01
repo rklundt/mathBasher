@@ -5,7 +5,7 @@
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type MathId, type SpeedKey } from '@/core/config';
 import { MATH_GAME_IDS, ROUND_PUZZLE_IDS, type GameId, type MathGameId } from '@/core/gameIds';
-import { GAME_GROUPS, type GameGroupId } from '@/core/gameGroups';
+import { ALL_GROUPS, type GameGroupId } from '@/core/gameGroups';
 import type { SubjectId } from '@/core/subjects';
 import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
 
@@ -39,7 +39,7 @@ const MATH_IDS = Object.keys(config.scoring.mathDifficulty) as MathId[];
 const SPEEDS = Object.keys(config.scoring.speed) as SpeedKey[];
 const GAME_IDS: readonly GameId[] = [...MATH_GAME_IDS, 'pair-pals', ...ROUND_PUZZLE_IDS];
 const SUBJECT_IDS: readonly SubjectId[] = ['math', 'puzzles'];
-const GROUP_IDS: readonly GameGroupId[] = GAME_GROUPS.map((g) => g.id);
+const GROUP_IDS: readonly GameGroupId[] = ALL_GROUPS.map((g) => g.id);
 
 function isOneOf<T extends string>(list: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && (list as readonly string[]).includes(value);

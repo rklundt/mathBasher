@@ -41,7 +41,22 @@ export interface PictureToken {
   readonly frame: number;
 }
 
-export type Token = ShapeToken | SpinToken | PictureToken;
+/**
+ * Sprint 2.16 — a word, a number or a letter on a card (the Words and
+ * Numbers puzzles), with a picture above it when the word has one (a frame
+ * of the picture sheet, `wordData.PICTURE_WORDS`).
+ */
+export interface TextToken {
+  readonly kind: 'text';
+  readonly text: string;
+  readonly pic: number | null;
+}
+
+export type Token = ShapeToken | SpinToken | PictureToken | TextToken;
+
+export function textToken(text: string, pic: number | null = null): TextToken {
+  return { kind: 'text', text, pic };
+}
 
 export const SHAPE_COUNT = config.puzzles.shapes.length;
 export const COLOUR_COUNT = config.puzzles.colours.length;
@@ -84,6 +99,8 @@ export function lookOf(t: Token): string {
       return `p${String(t.shape)}c${String(t.colour)}:${spinCells(t.shape, t.turn, t.flip)}`;
     case 'picture':
       return `${t.sheet}${String(t.frame)}`;
+    case 'text':
+      return `x${t.text}`;
   }
 }
 

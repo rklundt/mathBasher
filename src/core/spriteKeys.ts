@@ -2,7 +2,17 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
-import { ROUND_PUZZLE_IDS, type GameId, type MathGameId, type PuzzleGameId, type RoundPuzzleId } from '@/core/gameIds';
+import {
+  THEMED_PUZZLE_IDS,
+  VISUAL_PUZZLE_IDS,
+  isThemedPuzzleId,
+  type GameId,
+  type MathGameId,
+  type PuzzleGameId,
+  type ThemedPuzzleId,
+  type VisualPuzzleId,
+} from '@/core/gameIds';
+import type { PuzzleTheme } from '@/core/puzzleThemes';
 import type { AssetScope } from '@/core/assetScope';
 import type { PairPalsTheme } from '@/core/config';
 
@@ -547,6 +557,12 @@ export const BgSpriteKeys = {
   SpinMatch: 'puzzle-spin-match',
   CopyCat: 'puzzle-copy-cat',
   SymbolHunt: 'puzzle-symbol-hunt',
+  /**
+   * Sprint 2.16 — the Words and Numbers puzzles' setup backdrops, drawn by
+   * `scripts/sprites/themes.mjs` (each look's first backdrop, darkened).
+   */
+  PuzzleWords: 'puzzle-words',
+  PuzzleNumbers: 'puzzle-numbers',
 } as const;
 
 /**
@@ -764,7 +780,7 @@ export const PUZZLE_SHEETS = {
 export const PUZZLE_ICON_SHEET: {
   readonly key: 'puzzle-icons';
   readonly frame: number;
-  readonly frames: Readonly<Record<PuzzleGameId, number>>;
+  readonly frames: Readonly<Record<'pair-pals' | VisualPuzzleId, number>>;
 } = {
   key: 'puzzle-icons',
   frame: 96,
@@ -779,8 +795,106 @@ export const PUZZLE_ICON_SHEET: {
     'symbol-hunt': 7,
   },
 };
-/** Each puzzle's three backdrops, cross-faded between puzzles. */
-export const PUZZLE_BACKDROP_KEYS: Readonly<Record<RoundPuzzleId, readonly string[]>> = {
+/**
+ * Sprint 2.16 — the Words and Numbers puzzles' tile pictures, drawn by
+ * `scripts/sprites/themes.mjs` (its `ICON_ORDER`; a test checks).
+ */
+export const PUZZLE_ICON_SHEET_2: {
+  readonly key: 'puzzle-icons-2';
+  readonly frame: number;
+  readonly frames: Readonly<Record<ThemedPuzzleId, number>>;
+} = {
+  key: 'puzzle-icons-2',
+  frame: 96,
+  frames: {
+    'word-train': 0,
+    'odd-word-out': 1,
+    'word-wand': 2,
+    'missing-letter': 3,
+    'word-snap': 4,
+    'letter-garden': 5,
+    'number-train': 6,
+    'number-machine': 7,
+    'odd-number-out': 8,
+    'make-ten': 9,
+    'quick-count': 10,
+  },
+};
+
+/** A puzzle's tile picture (its sheet and frame). */
+export function puzzleIconOf(id: PuzzleGameId): { key: string; frame: number } {
+  return isThemedPuzzleId(id)
+    ? { key: PUZZLE_ICON_SHEET_2.key, frame: PUZZLE_ICON_SHEET_2.frames[id] }
+    : { key: PUZZLE_ICON_SHEET.key, frame: PUZZLE_ICON_SHEET.frames[id] };
+}
+
+/**
+ * Sprint 2.16 — the word pictures (Missing Letter, and any word card with a
+ * picture): `scripts/sprites/themes.mjs` draws them in `wordData.PICTURE_WORDS`
+ * order, 10 across. The owner may swap in their own sheet (same frames).
+ */
+export const PUZZLE_PICS_SHEET = { key: 'puzzle-pics', frame: 128, cols: 10 } as const;
+
+/** A dancer sheet: characters down, three poses across (idle, happy, oops), feet at the bottom middle. */
+export interface DancerSheet {
+  readonly key: string;
+  readonly frameWidth: number;
+  readonly frameHeight: number;
+  readonly characters: number;
+  readonly poses: number;
+}
+
+/** A train sheet: the engine, then `cars` cars; a card sits in a car's window (`windowY` from its top). */
+export interface TrainSheet {
+  readonly key: string;
+  readonly frameWidth: number;
+  readonly frameHeight: number;
+  readonly cars: number;
+  readonly windowY: number;
+}
+
+/**
+ * Sprint 2.16 — what each look draws with (`core/puzzleThemes.ts`), from
+ * `scripts/sprites/themes.mjs` (Animal Pals also borrows the puzzle pack's
+ * train and wand). The gameplay never reads these; the scenes do.
+ */
+export interface PuzzleThemeArt {
+  readonly backdrops: readonly string[];
+  readonly dancers: DancerSheet;
+  readonly train: TrainSheet;
+  /** Number Machine's machine and Word Wand's changer: a sheet frame, or a single image (frame undefined). */
+  readonly machine: { readonly key: string; readonly frame?: number };
+  readonly changer: { readonly key: string; readonly frame?: number };
+  /** Quick Count's counters (frames of `THEME_COUNTERS_SHEET`). */
+  readonly counters: readonly number[];
+}
+
+export const THEME_MACHINES_SHEET = { key: 'theme-machines', frame: 260 } as const;
+export const THEME_COUNTERS_SHEET = { key: 'theme-counters', frame: 96 } as const;
+
+const dancerSheet = (key: string): DancerSheet => ({ key, frameWidth: 200, frameHeight: 230, characters: 6, poses: 3 });
+
+export const PUZZLE_THEME_ART: Readonly<Record<PuzzleTheme, PuzzleThemeArt>> = {
+  critters: {
+    backdrops: ['theme-critters-1', 'theme-critters-2', 'theme-critters-3', 'theme-critters-4'],
+    dancers: dancerSheet('theme-critters-dancers'),
+    train: PUZZLE_SHEETS.train,
+    machine: { key: THEME_MACHINES_SHEET.key, frame: 0 },
+    changer: { key: PUZZLE_SHEETS.wand.key },
+    counters: [0, 1, 2, 3],
+  },
+  cosmos: {
+    backdrops: ['theme-cosmos-1', 'theme-cosmos-2', 'theme-cosmos-3', 'theme-cosmos-4'],
+    dancers: dancerSheet('theme-cosmos-dancers'),
+    train: { key: 'theme-cosmos-train', frameWidth: 220, frameHeight: 180, cars: 4, windowY: 88 },
+    machine: { key: THEME_MACHINES_SHEET.key, frame: 1 },
+    changer: { key: THEME_MACHINES_SHEET.key, frame: 2 },
+    counters: [4, 5, 6, 7],
+  },
+};
+
+/** Each puzzle-pack puzzle's three backdrops, cross-faded between puzzles. */
+export const PUZZLE_BACKDROP_KEYS: Readonly<Record<VisualPuzzleId, readonly string[]>> = {
   'pattern-train': ['puzzle-pattern-train-1', 'puzzle-pattern-train-2', 'puzzle-pattern-train-3'],
   'missing-piece': ['puzzle-missing-piece-1', 'puzzle-missing-piece-2', 'puzzle-missing-piece-3'],
   'odd-one-out': ['puzzle-odd-one-out-1', 'puzzle-odd-one-out-2', 'puzzle-odd-one-out-3'],
@@ -1067,6 +1181,17 @@ export const GAME_BG_MAP: Readonly<Record<GameId, BgSpriteKey>> = {
   'spin-match': BgSpriteKeys.SpinMatch,
   'copy-cat': BgSpriteKeys.CopyCat,
   'symbol-hunt': BgSpriteKeys.SymbolHunt,
+  'word-train': BgSpriteKeys.PuzzleWords,
+  'odd-word-out': BgSpriteKeys.PuzzleWords,
+  'word-wand': BgSpriteKeys.PuzzleWords,
+  'missing-letter': BgSpriteKeys.PuzzleWords,
+  'word-snap': BgSpriteKeys.PuzzleWords,
+  'letter-garden': BgSpriteKeys.PuzzleWords,
+  'number-train': BgSpriteKeys.PuzzleNumbers,
+  'number-machine': BgSpriteKeys.PuzzleNumbers,
+  'odd-number-out': BgSpriteKeys.PuzzleNumbers,
+  'make-ten': BgSpriteKeys.PuzzleNumbers,
+  'quick-count': BgSpriteKeys.PuzzleNumbers,
 };
 
 /**
@@ -1094,6 +1219,17 @@ export const GAME_BG_SPACE_LAYERS: Readonly<Record<GameId, { stars: boolean; bot
   'spin-match': { stars: false, bottomFade: false },
   'copy-cat': { stars: false, bottomFade: false },
   'symbol-hunt': { stars: false, bottomFade: false },
+  'word-train': { stars: false, bottomFade: false },
+  'odd-word-out': { stars: false, bottomFade: false },
+  'word-wand': { stars: false, bottomFade: false },
+  'missing-letter': { stars: false, bottomFade: false },
+  'word-snap': { stars: false, bottomFade: false },
+  'letter-garden': { stars: false, bottomFade: false },
+  'number-train': { stars: false, bottomFade: false },
+  'number-machine': { stars: false, bottomFade: false },
+  'odd-number-out': { stars: false, bottomFade: false },
+  'make-ten': { stars: false, bottomFade: false },
+  'quick-count': { stars: false, bottomFade: false },
 };
 
 /**
@@ -1254,6 +1390,31 @@ export interface SpriteManifestEntry {
  * (after Story 1). Once any const has at least one entry, Object.values
  * already returns a narrow string union and the cast is a no-op widening.
  */
+/** Sprint 2.16 — the looks' art and the word pictures, scoped to the first themed puzzle and shared with the rest. */
+function themedArtEntries(): SpriteManifestEntry[] {
+  const [first, ...rest] = THEMED_PUZZLE_IDS;
+  const scope = { scope: `game:${first}` as const, alsoFor: rest };
+  const sheet = (key: string, frameWidth: number, frameHeight = frameWidth): SpriteManifestEntry => ({
+    kind: 'hero',
+    key,
+    url: spritePath('hero', key),
+    frameWidth,
+    frameHeight,
+    ...scope,
+  });
+  const cosmosTrain = PUZZLE_THEME_ART.cosmos.train;
+  return [
+    sheet(PUZZLE_PICS_SHEET.key, PUZZLE_PICS_SHEET.frame),
+    ...Object.values(PUZZLE_THEME_ART).flatMap((art) => [
+      sheet(art.dancers.key, art.dancers.frameWidth, art.dancers.frameHeight),
+      ...art.backdrops.map<SpriteManifestEntry>((key) => ({ kind: 'bg', key, url: spritePath('bg', key), ...scope })),
+    ]),
+    sheet(cosmosTrain.key, cosmosTrain.frameWidth, cosmosTrain.frameHeight),
+    sheet(THEME_MACHINES_SHEET.key, THEME_MACHINES_SHEET.frame),
+    sheet(THEME_COUNTERS_SHEET.key, THEME_COUNTERS_SHEET.frame),
+  ];
+}
+
 export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
   ...(Object.values(HeroSpriteKeys) as string[]).map<SpriteManifestEntry>((key) => ({
     kind: 'hero',
@@ -1498,7 +1659,7 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameHeight: s.frameHeight,
     scope: 'game:balance-scale',
     // Sprint 2.14 — the crowd dances beside every puzzle in the pack.
-    ...(s.key === BALANCE_SHEETS.crowd.key && { alsoFor: ROUND_PUZZLE_IDS }),
+    ...(s.key === BALANCE_SHEETS.crowd.key && { alsoFor: VISUAL_PUZZLE_IDS }),
   })),
   // Sprint 2.13 — Pair Pals: the picture sheets, the cards and the backdrops, all game-scoped.
   ...Object.values(PAIR_PALS_PICTURE_KEYS).map<SpriteManifestEntry>((key) => ({
@@ -1546,14 +1707,20 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
     frameWidth: PUZZLE_SHEETS.train.frameWidth,
     frameHeight: PUZZLE_SHEETS.train.frameHeight,
     scope: 'game:pattern-train',
+    // Sprint 2.16 — Animal Pals' train.
+    alsoFor: ['word-train', 'number-train'],
   },
   {
     kind: 'hero',
     key: PUZZLE_SHEETS.wand.key,
     url: spritePath('hero', PUZZLE_SHEETS.wand.key),
     scope: 'game:magic-wand',
+    // Sprint 2.16 — Animal Pals' Word Wand.
+    alsoFor: ['word-wand'],
   },
-  ...ROUND_PUZZLE_IDS.flatMap((id) =>
+  // Sprint 2.16 — the Words and Numbers puzzles: both looks' art loads with any of them (about 0.5 MB, once).
+  ...themedArtEntries(),
+  ...VISUAL_PUZZLE_IDS.flatMap((id) =>
     PUZZLE_BACKDROP_KEYS[id].map<SpriteManifestEntry>((key) => ({
       kind: 'bg',
       key,
@@ -1596,6 +1763,15 @@ export const SPRITE_MANIFEST: ReadonlyArray<SpriteManifestEntry> = [
   },
   // Sprint 2.15 — the Title Screen's art. Eager: it's the first screen.
   { kind: 'bg', key: TITLE_ART_KEY, url: spritePath('bg', TITLE_ART_KEY), scope: 'eager' },
+  // Sprint 2.16 — the Words and Numbers tile pictures, boot-loaded too.
+  {
+    kind: 'hero',
+    key: PUZZLE_ICON_SHEET_2.key,
+    url: spritePath('hero', PUZZLE_ICON_SHEET_2.key),
+    frameWidth: PUZZLE_ICON_SHEET_2.frame,
+    frameHeight: PUZZLE_ICON_SHEET_2.frame,
+    scope: 'eager',
+  },
   // Sprint 2.14 — the picker's puzzle tile pictures, boot-loaded.
   {
     kind: 'hero',

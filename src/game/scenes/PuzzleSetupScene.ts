@@ -6,7 +6,9 @@ import Phaser from 'phaser';
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
 import { SceneKeys, gameSceneKeyFor } from '@/core/sceneKeys';
-import { isRoundPuzzleId, type RoundPuzzleId } from '@/core/gameIds';
+import { isRoundPuzzleId, isThemedPuzzleId, type RoundPuzzleId } from '@/core/gameIds';
+import { PUZZLE_THEMES, type PuzzleTheme } from '@/core/puzzleThemes';
+import { PUZZLE_THEME_ART } from '@/core/spriteKeys';
 import { Settings } from '@/services/Settings';
 import { getPuzzleProgress, starsFor } from '@/services/PuzzleProgress';
 import { getRememberedPicks } from '@/services/RememberedPicks';
@@ -45,6 +47,10 @@ export function puzzleUpToLabel(level: PuzzleLevel): string {
  * tough?" with "Up to N points!" under each level, the best line and a big
  * Start. Reached through Loading from the chooser, and from the pause card
  * and the end panel's Change Difficulty; Back goes to the puzzles.
+ *
+ * Sprint 2.16 — a Words or Numbers puzzle also asks "Pick a look!" (Animal
+ * Pals or Alien Invaders, each tile with two of its dancers) above the
+ * levels, remembered per puzzle (owner: "just ask when we choose each game").
  */
 export class PuzzleSetupScene extends Phaser.Scene {
   static readonly key = SceneKeys.PuzzleSetup;
@@ -52,6 +58,8 @@ export class PuzzleSetupScene extends Phaser.Scene {
   private id: RoundPuzzleId = 'pattern-train';
   private level: PuzzleLevel = 'easy';
   private tiles = new Map<PuzzleLevel, PlaceholderButton>();
+  private looks = new Map<PuzzleTheme, PlaceholderButton>();
+  private theme: PuzzleTheme | null = null;
   private frame!: SetupFrame;
 
   constructor() {
@@ -69,8 +77,14 @@ export class PuzzleSetupScene extends Phaser.Scene {
     this.id = gameId;
     this.level = getPuzzleProgress().level(gameId);
     this.tiles.clear();
+    this.looks.clear();
+    this.theme = isThemedPuzzleId(gameId) ? getPuzzleProgress().theme(gameId) : null;
 
     this.frame = createSetupFrame(this, gameId, 'PuzzleSetupScene', () => this.start());
+    if (this.theme !== null) {
+      this.themedLayout();
+      return;
+    }
     const P = config.layout.chooser.puzzleSetup;
     sectionHeading(this, P.headingY, 'How tough?');
 
@@ -100,6 +114,64 @@ export class PuzzleSetupScene extends Phaser.Scene {
     this.refresh();
   }
 
+  /** Sprint 2.16 — "Pick a look!" (two tiles), then "How tough?" (three shorter tiles). */
+  private themedLayout(): void {
+    const P = config.layout.chooser.themedPuzzleSetup;
+    const cx = this.scale.width / 2;
+    sectionHeading(this, P.looksHeadingY, 'Pick a look!');
+    const L = P.looks;
+    PUZZLE_THEMES.forEach((t, i) => {
+      const dancers = PUZZLE_THEME_ART[t.id].dancers;
+      const tile = createChoiceTile({
+        scene: this,
+        x: cx + (i - (PUZZLE_THEMES.length - 1) / 2) * (L.w + L.gapX),
+        y: L.y,
+        width: L.w,
+        height: L.h,
+        pictures: [0, 2].map((c) => ({ key: dancers.key, frame: c * dancers.poses + 1 })),
+        picturePx: P.samplePx,
+        name: t.label,
+        nameKind: 'tileName',
+        lines: [{ text: t.line, kind: 'tileLine' }],
+        radius: config.layout.corners.tilePx,
+        shadow: config.layout.corners.tileShadow,
+        onClick: () => this.pickLook(t.id),
+      });
+      this.looks.set(t.id, tile);
+    });
+
+    sectionHeading(this, P.levelsHeadingY, 'How tough?');
+    const T = P.levels;
+    LEVELS.forEach((level, i) => {
+      const x = cx + (i - 1) * (T.w + T.gapX);
+      const tile = createChoiceTile({
+        scene: this,
+        x,
+        y: T.y,
+        width: T.w,
+        height: T.h,
+        name: LEVEL_LABELS[level],
+        nameKind: 'tileName',
+        lines: [{ text: config.puzzles.levelNotes[this.id][level], kind: 'tileLine' }],
+        radius: config.layout.corners.levelTilePx,
+        onClick: () => this.pick(level),
+      });
+      text(this, x, T.y + T.h / 2 + P.upToGapPx, puzzleUpToLabel(level), 'upTo').setOrigin(0.5, 0);
+      this.tiles.set(level, tile);
+    });
+
+    const order = [...this.frame.top, ...this.looks.values(), ...this.tiles.values(), this.frame.start];
+    new KeyboardNavigator(this, order, { initialIndex: order.indexOf(this.frame.start) });
+    this.refresh();
+  }
+
+  private pickLook(theme: PuzzleTheme): void {
+    if (!isThemedPuzzleId(this.id)) return;
+    this.theme = theme;
+    getPuzzleProgress().setTheme(this.id, theme);
+    this.refresh();
+  }
+
   private pick(level: PuzzleLevel): void {
     this.level = level;
     // Saved now, not on Start, so a trip to My Scores (or the games list) keeps it.
@@ -109,6 +181,7 @@ export class PuzzleSetupScene extends Phaser.Scene {
 
   private refresh(): void {
     for (const [level, tile] of this.tiles) tile.setSelected(level === this.level);
+    for (const [theme, tile] of this.looks) tile.setSelected(theme === this.theme);
     this.frame.best.setText(puzzleBestLine(getPuzzleProgress().best(this.id, this.level)));
   }
 

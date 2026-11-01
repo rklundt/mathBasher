@@ -1,7 +1,7 @@
 {
   "name": "mathbasher",
   "private": true,
-  "version": "2.15.1",
+  "version": "2.16.0",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "description": "A browser math game for kids: arcade mini-games for phones, tablets and computers.",
@@ -46,6 +46,8 @@
     "sprite:balance": "node scripts/sprites/balance.mjs",
     "sprite:pairpals": "node scripts/sprites/pairpals.mjs",
     "sprite:puzzles": "node scripts/sprites/puzzles.mjs",
+    "sprite:themes": "node scripts/sprites/themes.mjs",
+    "words:build": "node scripts/words/build-word-list.mjs",
     "sprite:carrot": "node scripts/sprites/carrot.mjs",
     "sprite:garden": "node scripts/sprites/garden.mjs",
     "icon:favicon": "node scripts/sprites/favicon.mjs"
@@ -59,7 +61,7 @@
     "@eslint/js": "^10.0.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.20.5",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "ffmpeg-static": "5.2.0",
@@ -67,8 +69,9 @@
     "sharp": "^0.35.5",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.71.2",
-    "vite": "^6.4.4",
-    "vitest": "^4.1.11"
+    "vite": "^6.4.5",
+    "vitest": "^4.1.12",
+    "wordlist-english": "1.2.1"
   },
   "dependencies": {
     "express": "^4.22.3",

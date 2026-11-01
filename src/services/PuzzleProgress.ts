@@ -4,13 +4,15 @@
 
 import { _th, SeverityLevel } from '@/core/telemetry';
 import { config, type PuzzleLevel } from '@/core/config';
-import { ROUND_PUZZLE_IDS, type RoundPuzzleId } from '@/core/gameIds';
+import { ROUND_PUZZLE_IDS, isThemedPuzzleId, type RoundPuzzleId, type ThemedPuzzleId } from '@/core/gameIds';
+import { DEFAULT_PUZZLE_THEME, isPuzzleTheme, type PuzzleTheme } from '@/core/puzzleThemes';
 import { resolveDefaultStorage, type MinimalStorage } from '@/services/storage';
 
 /**
  * Sprint 2.14 — the puzzle pack's memory in this browser: the level picked
  * last for each puzzle (its setup screen opens on it), and the best round
- * per puzzle per level (most puzzles right first time). Nothing is sent
+ * per puzzle per level (most puzzles right first time), and (sprint 2.16)
+ * the look each Words or Numbers puzzle was played in last. Nothing is sent
  * anywhere. Storage that can't be read starts fresh; storage that can't be
  * written keeps this visit's results in memory (both log a Warning), as
  * Pair Pals' progress does.
@@ -22,6 +24,8 @@ interface SavedPuzzles {
   level: Partial<Record<RoundPuzzleId, PuzzleLevel>>;
   /** Most first-try answers in a round, per puzzle per level. */
   best: Partial<Record<RoundPuzzleId, Partial<Record<PuzzleLevel, number>>>>;
+  /** Sprint 2.16 — the look picked last, per Words or Numbers puzzle (optional: older saves have none). */
+  theme?: Partial<Record<ThemedPuzzleId, PuzzleTheme>>;
 }
 
 /** What a finished round did to the best. */
@@ -44,7 +48,7 @@ export function starsFor(firstTry: number): number {
 }
 
 function empty(): SavedPuzzles {
-  return { v: 1, level: {}, best: {} };
+  return { v: 1, level: {}, best: {}, theme: {} };
 }
 
 function parse(json: string): SavedPuzzles {
@@ -71,6 +75,11 @@ function parse(json: string): SavedPuzzles {
       }
     }
   }
+  if (typeof r.theme === 'object' && r.theme !== null) {
+    for (const [id, theme] of Object.entries(r.theme as Record<string, unknown>)) {
+      if (isPuzzle(id) && isThemedPuzzleId(id) && isPuzzleTheme(theme)) (out.theme ??= {})[id] = theme;
+    }
+  }
   return out;
 }
 
@@ -89,6 +98,17 @@ export class PuzzleProgress {
   setLevel(id: RoundPuzzleId, level: PuzzleLevel): void {
     if (this.data.level[id] === level) return;
     this.data.level[id] = level;
+    this.save();
+  }
+
+  /** Sprint 2.16 — the look picked last for this puzzle (Animal Pals at first). */
+  theme(id: ThemedPuzzleId): PuzzleTheme {
+    return this.data.theme?.[id] ?? DEFAULT_PUZZLE_THEME;
+  }
+
+  setTheme(id: ThemedPuzzleId, theme: PuzzleTheme): void {
+    if (this.theme(id) === theme) return;
+    (this.data.theme ??= {})[id] = theme;
     this.save();
   }
 
