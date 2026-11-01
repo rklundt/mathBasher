@@ -1325,13 +1325,14 @@ export const config = {
      * Owner (2026-10-28): points, measured against an Add to 10 round at the
      * same difficulty (`services/puzzlePoints.ts`). A puzzle round is worth
      * up to `roundShare` of one. The speed bonus is math's
-     * (`scoring.speedBonus`); the untimed puzzles count it against
-     * `speedSeconds`, Copy Cat against `copyCatSecondsPerTap` per tap of
-     * the sequence (from "Your turn!").
+     * (`scoring.speedBonus`); the timed puzzles count it against their
+     * sand, Copy Cat against `copyCatSecondsPerTap` per tap of the sequence
+     * (from "Your turn!").
      */
     points: {
       roundShare: 0.5,
-      speedSeconds: { 'missing-piece': 30, 'magic-wand': 30, 'spin-match': 30 },
+      /** A puzzle with no sand (none now but Copy Cat, which counts its own). */
+      untimedSpeedSeconds: 30,
       copyCatSecondsPerTap: 4,
     },
     /**
@@ -1351,10 +1352,21 @@ export const config = {
       tints: [0xffc21a, 0xff6fa8, 0x9b6bff, 0x37c3ff, 0x4ade80],
       drift: { scaleFrom: 1.04, scaleTo: 1.1, panPx: 20, ms: 16000 },
     },
-    /** Seconds per puzzle for the timed ones (Symbol Hunt's are in `symbolHunt.seconds`). */
+    /**
+     * Seconds of sand per puzzle, by level. Owner (2026-10-31): every puzzle
+     * but Copy Cat has a sand timer, a blanket 12 / 12 / 12 to playtest (a
+     * harder level shouldn't get more time); change any one here. Before:
+     * Pattern Train 20 / 25 / 30, Odd One Out 15 / 18 / 22, Spin Match
+     * 15 / 20 / 25, Symbol Hunt 12 / 15 / 18; Missing Piece and Magic Wand
+     * had none.
+     */
     timed: {
-      'pattern-train': { easy: 20, medium: 25, hard: 30 },
-      'odd-one-out': { easy: 15, medium: 18, hard: 22 },
+      'pattern-train': { easy: 12, medium: 12, hard: 12 },
+      'missing-piece': { easy: 12, medium: 12, hard: 12 },
+      'odd-one-out': { easy: 12, medium: 12, hard: 12 },
+      'magic-wand': { easy: 12, medium: 12, hard: 12 },
+      'spin-match': { easy: 12, medium: 12, hard: 12 },
+      'symbol-hunt': { easy: 12, medium: 12, hard: 12 },
     },
     shapes: [
       'circle',
@@ -1552,8 +1564,13 @@ export const config = {
       /** The puzzle itself sits between these. */
       stage: { top: 176, bottom: 500 },
       tray: { y: 604, cardPx: 128, gapPx: 24, panelPad: 22 },
-      /** The sand bar of a timed puzzle (Pattern Train, Odd One Out), along the bottom between the dancers. */
-      sand: { y: 706, width: 740, height: 12 },
+      /**
+       * The sand bar of a timed puzzle (all but Copy Cat), along the bottom
+       * between the dancers. Owner (2026-10-31): the sand is green while a right answer would
+       * still be green (`steps.greenShare`, marked by a notch), then yellow;
+       * never red (red means missed). In the last `hurryShare` it pulses.
+       */
+      sand: { y: 706, width: 740, height: 12, notchPx: 6, hurryShare: 0.25, pulseMs: 320 },
       /** Two dancing animals at the bottom corners. */
       dancers: [
         { x: 104, bottomY: 742, scale: 0.78 },
@@ -1589,8 +1606,8 @@ export const config = {
      * Hard is 4–6 columns (picked per puzzle) with two rules at once.
      */
     missingPiece: { rows: 3, cols: { easy: [3, 3], medium: [4, 4], hard: [4, 6] } },
-    /** Odd One Out: items on the shelf (one is odd). */
-    oddOneOut: { items: { easy: 4, medium: 4, hard: 5 } },
+    /** Odd One Out: items on the shelf (one is odd). Owner (2026-10-31): Medium 4 → 5, Hard 5 → 6. */
+    oddOneOut: { items: { easy: 4, medium: 5, hard: 6 } },
     copyCat: {
       pads: { easy: 4, medium: 5, hard: 6 },
       startLength: { easy: 2, medium: 3, hard: 4 },
@@ -1606,8 +1623,6 @@ export const config = {
       cards: { easy: 12, medium: 18, hard: 24 },
       cols: { easy: 4, medium: 6, hard: 8 },
       targets: { easy: [2, 3], medium: [3, 4], hard: [3, 5] },
-      // Owner (2026-10-30): the sand ran far too slowly (it was 40 / 40 / 45).
-      seconds: { easy: 20, medium: 25, hard: 30 },
       /** Share of the other cards that are look-alikes (the sign's shape in another colour, or its colour on another shape). */
       lookalikes: { easy: 0, medium: 0.45, hard: 1 },
       /** Share of the look-alikes that are near ones: a neighbouring colour, or a similar shape (below). */

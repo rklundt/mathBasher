@@ -16,6 +16,7 @@ import {
   shapeIndex,
   shapeToken,
   shuffled,
+  spinCells,
   spinToken,
   type ShapeToken,
   type Token,
@@ -504,8 +505,17 @@ function magicFlip(level: PuzzleLevel, rng: () => number, recolour = false): Pic
 
 // ---------------------------------------------------------------- Spin Match
 
+/**
+ * Spin shapes that look different at every quarter turn. A shape that looks
+ * the same turned halfway round has only two mirror images, so Hard (every
+ * wrong choice a mirror image) would fill up with other shapes.
+ */
+const FOUR_TURN_SPINS = Array.from({ length: SPIN_COUNT }, (_, s) => s).filter(
+  (s) => new Set([0, 1, 2, 3].map((t) => spinCells(s, t, false))).size === 4,
+);
+
 function spinMatch(level: PuzzleLevel, rng: () => number): PickPuzzle {
-  const s = randInt(SPIN_COUNT, rng);
+  const s = level === 'hard' ? pick(FOUR_TURN_SPINS, rng) : randInt(SPIN_COUNT, rng);
   const c = randInt(P.spinColours, rng);
   const flip = rng() < 0.5;
   const target = spinToken(s, c, randInt(4, rng), flip);

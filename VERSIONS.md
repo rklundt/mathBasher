@@ -27,6 +27,14 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 
 ## [Unreleased]
 
+## [2.15.1] - 2026-10-31 — Puzzle tune-ups
+
+- **Sand timers on every puzzle but Copy Cat:** Missing Piece, Magic Wand and Spin Match get one too. Every timer is 12 seconds at every level for now (a harder level no longer gets more time). Before: Pattern Train 20 / 25 / 30, Odd One Out 15 / 18 / 22, Symbol Hunt 20 / 25 / 30.
+- **The sand bar shows the colour you'd get:** green until a notch at halfway (a right first answer then is green), then yellow; it pulses near the end. It no longer turns red, since red means missed.
+- **Symbol Hunt:** can be played with the keyboard now: the arrow keys move a ring around the cards, Space or Enter picks one.
+- **Odd One Out:** more on the shelf: 5 on Medium (was 4) and 6 on Hard (was 5).
+- **Spin Match:** on Hard every choice is now the same shape (the wrong ones mirrored, as planned); before, about 1 in 5 Hard puzzles slipped in a different shape, which made it easier.
+
 ## [2.15.0] - 2026-10-30 — New screen flow
 
 **Title Screen**
