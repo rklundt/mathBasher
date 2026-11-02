@@ -1654,6 +1654,12 @@ export const config = {
       swayMs: 2600,
       swayDeg: 5,
       dancerSwapEvery: 3,
+      /**
+       * Sprint 2.16 — the Words and Numbers puzzles change dancers every
+       * puzzle (owner: "keeps same aliens in foreground… we need a lot more
+       * variety"); each look has 20.
+       */
+      themedDancerSwapEvery: 1,
       /** Between a dancer's little idle hops (ms, random in the range). */
       dancerIdleMs: [2200, 4800],
       endPanelDelayMs: 700,

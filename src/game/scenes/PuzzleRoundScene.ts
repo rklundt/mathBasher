@@ -155,7 +155,12 @@ export abstract class PuzzleRoundScene extends Phaser.Scene {
     this.bar.setCurrent(i);
     this.prompt.setText(promptText);
     this.restartClock();
-    if (i > 0 && i % config.puzzles.timings.dancerSwapEvery === 0) this.dancers.swap();
+    if (i > 0 && i % this.dancerSwapEvery() === 0) this.dancers.swap();
+  }
+
+  /** New dancers every this many puzzles. */
+  protected dancerSwapEvery(): number {
+    return config.puzzles.timings.dancerSwapEvery;
   }
 
   update(_time: number, delta: number): void {

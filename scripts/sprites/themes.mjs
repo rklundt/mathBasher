@@ -15,8 +15,8 @@
  *
  * Outputs:
  *   public/assets/sprites/hero/puzzle-pics.webp            50 word pictures, PIC px, 10 across (PICS order)
- *   public/assets/sprites/hero/theme-critters-dancers-2.webp 10 characters × 3 poses (idle, happy, oops), DANCER frames
- *   public/assets/sprites/hero/theme-cosmos-dancers-2.webp   the same for the aliens and robots
+ *   public/assets/sprites/hero/theme-critters-dancers-3.webp 20 characters × 3 poses (idle, happy, oops), DANCER frames, two to a row
+ *   public/assets/sprites/hero/theme-cosmos-dancers-3.webp   the same for the aliens and robots
  *   public/assets/sprites/hero/theme-cosmos-train.webp     a rocket and 4 pods (the train's geometry)
  *   public/assets/sprites/hero/theme-machines.webp         the candy machine, the robot machine, the zapper (MACHINE px)
  *   public/assets/sprites/hero/theme-counters-2.webp       Quick Count's counters: 8 critters, then 8 space ones (COUNTER px)
@@ -110,8 +110,14 @@ export const PICS = [
 ];
 /** Each look's dancers, in sheet row order. */
 export const DANCERS = {
-  critters: ['unicorn', 'dragon', 'bunny', 'kitten', 'panda', 'yeti', 'puppy', 'fox', 'pegasus', 'phoenix'],
-  cosmos: ['blip', 'zorp', 'goo', 'boxbot', 'domebot', 'tallbot', 'cyclops', 'jelly', 'dronebot', 'roverbot'],
+  critters: [
+    ...['unicorn', 'dragon', 'bunny', 'kitten', 'panda', 'yeti', 'puppy', 'fox', 'pegasus', 'phoenix'],
+    ...['owl', 'penguin', 'koala', 'frog', 'hedgehog', 'lamb', 'raccoon', 'tiger', 'narwhal', 'fairymouse'],
+  ],
+  cosmos: [
+    ...['blip', 'zorp', 'goo', 'boxbot', 'domebot', 'tallbot', 'cyclops', 'jelly', 'dronebot', 'roverbot'],
+    ...['stalky', 'shroom', 'starry', 'twins', 'tvbot', 'spinbot', 'crabbot', 'ufopilot', 'puffball', 'springbot'],
+  ],
 };
 export const COUNTERS = [
   'ladybug',
@@ -398,6 +404,29 @@ function arms(pose, colour, y = 120, spread = 48) {
 }
 
 const mood = (pose) => (pose === 1 ? 'happy' : pose === 2 ? 'oops' : 'smile');
+/** Two eyes at x ±d, y (pupils, or happy arcs), for dancers with their own eye whites. */
+const eyes = (d, y, r, pose) =>
+  [-1, 1]
+    .map((k) =>
+      pose === 1
+        ? `<path d="M${k * d - r * 0.6},${y + 2} q${r * 0.6},${-r * 0.8} ${r * 1.2},0" fill="none" ${st(3)}/>`
+        : `<circle cx="${k * d}" cy="${y + 1}" r="${r * 0.5}" fill="#2a1a17"/><circle cx="${k * d - r * 0.18}" cy="${y - r * 0.15}" r="${r * 0.18}" fill="#fff"/>`,
+    )
+    .join('');
+/** A mouth `w` wide at y, by pose: a smile, an open happy mouth, an "Oh!". */
+const mouth = (y, w, pose) =>
+  pose === 1
+    ? `<path d="M${-w},${y} q${w},${w * 1.4} ${2 * w},0 Z" fill="#c2414d" ${st(2)}/>`
+    : pose === 2
+      ? `<ellipse cx="0" cy="${y + w * 0.5}" rx="${w * 0.55}" ry="${w * 0.75}" fill="#c2414d" ${st(2)}/>`
+      : `<path d="M${-w},${y} q${w},${w} ${2 * w},0" fill="none" ${st(2.5)}/>`;
+/** A spiky ring around (cx, cy): `n` points between radius `r1` and `r2` (a hedgehog's back, a puffball). */
+const spikes = (cx, cy, r1, r2, n) =>
+  Array.from({ length: n * 2 }, (_, i) => {
+    const a = (i * Math.PI) / n;
+    const r = i % 2 ? r2 : r1;
+    return `${f(cx + Math.cos(a) * r)},${f(cy + Math.sin(a) * r)}`;
+  }).join(' ');
 const sweat = (x, y) => `<path d="M${x},${y} q6,10 0,14 q-6,-4 0,-14 Z" fill="#74c0fc" ${st(1.5)}/>`;
 const cheers = (pose) => (pose === 1 ? sparkle(-70, -40, 10, '#ffd43b') + sparkle(72, -54, 8, '#ff8fa3') : '');
 
@@ -514,6 +543,141 @@ function dancerArt(name, pose) {
         ${[-38, 0, 38].map((x) => `<circle cx="${x}" cy="88" r="18" fill="#495057" ${st()}/><circle cx="${x}" cy="88" r="7" fill="#ced4da"/>`).join('')}
         <path d="M0,0 L0,-26" ${st(8)}/><rect x="-46" y="-96" width="92" height="72" rx="20" fill="#e9ecef" ${st()}/><rect x="-36" y="-86" width="72" height="52" rx="14" fill="#d0ebff" ${st(2.5)}/>
         ${face(0, -60, 1.4, m)}${o}${cheers(pose)}`;
+    // ---- sprint 2.16, more dancers (owner: "we need a lot more variety")
+    case 'owl':
+      return `${arms(pose, '#8b5e3c', 30, 58)}<ellipse cx="0" cy="22" rx="60" ry="88" fill="#a9744f" ${st()}/><ellipse cx="0" cy="58" rx="36" ry="46" fill="#ffe8cc"/>
+        <path d="M-16,46 q5,7 10,0 M6,46 q5,7 10,0 M-16,66 q5,7 10,0 M6,66 q5,7 10,0" fill="none" stroke="#d9a066" stroke-width="3"/>
+        <path d="M-20,106 l0,6 M20,106 l0,6" stroke="#ffa94d" stroke-width="10" stroke-linecap="round"/>
+        <path d="M-50,-40 L-46,-82 L-22,-58 Z M50,-40 L46,-82 L22,-58 Z" fill="#a9744f" ${st()}/>
+        <circle cx="-22" cy="-16" r="22" fill="#fff4e6" ${st(2.5)}/><circle cx="22" cy="-16" r="22" fill="#fff4e6" ${st(2.5)}/>${face(0, -16, 2.4, m)}${o}${cheers(pose)}`;
+    case 'penguin':
+      return `${arms(pose, '#343a40', 30, 56)}<ellipse cx="0" cy="26" rx="56" ry="84" fill="#343a40" ${st()}/><ellipse cx="0" cy="44" rx="38" ry="60" fill="#fff"/>
+        <ellipse cx="0" cy="-22" rx="38" ry="32" fill="#fff"/><ellipse cx="-20" cy="108" rx="16" ry="7" fill="#ffa94d" ${st(2.5)}/><ellipse cx="20" cy="108" rx="16" ry="7" fill="#ffa94d" ${st(2.5)}/>
+        <path d="M-44,8 Q0,26 44,8 L44,20 Q0,38 -44,20 Z" fill="#ff6b6b" ${st(2.5)}/><path d="M22,22 l6,30 l12,-4 l-6,-28 Z" fill="#ff6b6b" ${st(2.5)}/>${face(0, -22, 1.6, m)}${o}${cheers(pose)}`;
+    case 'koala':
+      return `${arms(pose, '#adb5bd', 40)}<ellipse cx="0" cy="60" rx="42" ry="46" fill="#adb5bd" ${st()}/><ellipse cx="0" cy="68" rx="24" ry="28" fill="#e9ecef"/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <circle cx="-50" cy="-40" r="28" fill="#adb5bd" ${st()}/><circle cx="50" cy="-40" r="28" fill="#adb5bd" ${st()}/><circle cx="-50" cy="-40" r="16" fill="#fcc2d7"/><circle cx="50" cy="-40" r="16" fill="#fcc2d7"/>
+        <ellipse cx="0" cy="-16" rx="52" ry="44" fill="#adb5bd" ${st()}/>${face(0, -26, 1.5, m)}<ellipse cx="0" cy="-8" rx="11" ry="13" fill="#3a2420"/>${mouth(10, 7, pose)}${o}${cheers(pose)}`;
+    case 'frog':
+      return `${arms(pose, '#69db7c', 40)}<ellipse cx="0" cy="62" rx="46" ry="44" fill="#69db7c" ${st()}/><ellipse cx="0" cy="68" rx="28" ry="28" fill="#e6fcf5"/>
+        <path d="M-34,106 q-10,4 -16,0 M34,106 q10,4 16,0" ${st(10)}/><path d="M-34,106 q-10,4 -16,0 M34,106 q10,4 16,0" stroke="#69db7c" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="-30" cy="-44" r="22" fill="#69db7c" ${st()}/><circle cx="30" cy="-44" r="22" fill="#69db7c" ${st()}/><ellipse cx="0" cy="-8" rx="62" ry="40" fill="#69db7c" ${st()}/>
+        <circle cx="-30" cy="-46" r="14" fill="#fff" ${st(2)}/><circle cx="30" cy="-46" r="14" fill="#fff" ${st(2)}/>${eyes(30, -46, 14, pose)}${mouth(2, 16, pose)}
+        <ellipse cx="-42" cy="-2" rx="8" ry="5" fill="${BLUSH}" opacity="0.8"/><ellipse cx="42" cy="-2" rx="8" ry="5" fill="${BLUSH}" opacity="0.8"/>${o}${cheers(pose)}`;
+    case 'hedgehog':
+      return `<polygon points="${spikes(0, 0, 76, 58, 22)}" fill="#8d6e63" ${st()}/>${arms(pose, '#ffe8cc', 40)}<ellipse cx="0" cy="62" rx="42" ry="44" fill="#ffe8cc" ${st()}/>
+        <path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/><ellipse cx="0" cy="-10" rx="46" ry="40" fill="#ffe8cc" ${st()}/><circle cx="-34" cy="-44" r="10" fill="#ffe8cc" ${st(2.5)}/><circle cx="34" cy="-44" r="10" fill="#ffe8cc" ${st(2.5)}/>
+        ${face(0, -10, 1.5, m)}<circle cx="0" cy="-2" r="4" fill="#3a2420"/>${o}${cheers(pose)}`;
+    case 'lamb':
+      return `${arms(pose, '#495057', 40)}${[
+        [-30, 50],
+        [0, 40],
+        [30, 50],
+        [-34, 78],
+        [0, 86],
+        [34, 78],
+      ]
+        .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="26" fill="#fff" ${st(2.5)}/>`)
+        .join('')}<path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <ellipse cx="-52" cy="-14" rx="22" ry="10" fill="#ffe8cc" ${st(2.5)} transform="rotate(20 -52 -14)"/><ellipse cx="52" cy="-14" rx="22" ry="10" fill="#ffe8cc" ${st(2.5)} transform="rotate(-20 52 -14)"/>
+        <ellipse cx="0" cy="-14" rx="42" ry="40" fill="#fff4e6" ${st()}/>${[-22, 0, 22].map((x) => `<circle cx="${x}" cy="${x === 0 ? -56 : -50}" r="18" fill="#fff" ${st(2.5)}/>`).join('')}
+        ${face(0, -10, 1.5, m)}${o}${cheers(pose)}`;
+    case 'raccoon':
+      return `<ellipse cx="62" cy="58" rx="16" ry="42" fill="#868e96" ${st()} transform="rotate(-34 62 58)"/><ellipse cx="80" cy="30" rx="10" ry="12" fill="#495057" transform="rotate(-34 80 30)"/>
+        ${arms(pose, '#868e96', 40)}<ellipse cx="0" cy="60" rx="42" ry="46" fill="#868e96" ${st()}/><ellipse cx="0" cy="68" rx="24" ry="28" fill="#dee2e6"/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <path d="M-48,-36 L-40,-76 L-16,-54 Z M48,-36 L40,-76 L16,-54 Z" fill="#868e96" ${st()}/><ellipse cx="0" cy="-16" rx="52" ry="44" fill="#868e96" ${st()}/>
+        <path d="M-48,-26 Q0,-8 48,-26 Q52,0 22,-2 Q0,-10 -22,-2 Q-52,0 -48,-26 Z" fill="#343a40"/><ellipse cx="0" cy="-2" rx="22" ry="16" fill="#f1f3f5"/>
+        <circle cx="-14.4" cy="-16" r="9" fill="#fff"/><circle cx="14.4" cy="-16" r="9" fill="#fff"/>${face(0, -16, 1.6, m)}<circle cx="0" cy="-12" r="3.5" fill="#3a2420"/>${o}${cheers(pose)}`;
+    case 'tiger':
+      return `<path d="M36,80 q44,0 40,-40" fill="none" ${st(16)}/><path d="M36,80 q44,0 40,-40" fill="none" stroke="#ff922b" stroke-width="10" stroke-linecap="round"/><path d="M70,56 l10,2 M74,44 l10,-2" ${st(4)}/>
+        ${arms(pose, '#ff922b', 40)}<ellipse cx="0" cy="60" rx="42" ry="46" fill="#ff922b" ${st()}/><ellipse cx="0" cy="70" rx="22" ry="28" fill="#fff4e6"/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        <path d="M-40,40 l12,6 M40,40 l-12,6 M-42,62 l12,4 M42,62 l-12,4" ${st(5)}/>
+        <circle cx="-40" cy="-54" r="16" fill="#ff922b" ${st()}/><circle cx="40" cy="-54" r="16" fill="#ff922b" ${st()}/><circle cx="-40" cy="-54" r="8" fill="#fff4e6"/><circle cx="40" cy="-54" r="8" fill="#fff4e6"/>
+        <ellipse cx="0" cy="-18" rx="52" ry="44" fill="#ff922b" ${st()}/><path d="M-8,-60 l4,12 M0,-62 l0,14 M8,-60 l-4,12 M-52,-14 l12,2 M-52,-4 l12,0 M52,-14 l-12,2 M52,-4 l-12,0" ${st(4)}/>
+        <ellipse cx="0" cy="-4" rx="22" ry="13" fill="#fff4e6"/>${face(0, -18, 1.5, m)}<path d="M-4,-14 L4,-14 L0,-10 Z" fill="#3a2420"/>${o}${cheers(pose)}`;
+    case 'narwhal':
+      return `<path d="M54,70 q36,-10 42,-36 q-16,10 -26,4 q4,16 -16,30 Z" fill="#74c0fc" ${st()}/>${arms(pose, '#74c0fc', 30, 60)}
+        <path d="M-62,104 Q-72,-30 0,-50 Q72,-30 62,104 Q0,118 -62,104 Z" fill="#a5d8ff" ${st()}/><path d="M-40,100 Q-46,30 0,24 Q46,30 40,100 Q0,110 -40,100 Z" fill="#e7f5ff"/>
+        <path d="M-7,-48 L0,-106 L7,-48 Z" fill="#fff3bf" ${st(2.5)}/><path d="M-5,-62 l10,-4 M-3,-76 l7,-3 M-2,-90 l4,-2" ${st(1.5)}/>
+        <circle cx="-30" cy="40" r="5" fill="#74c0fc"/><circle cx="26" cy="56" r="4" fill="#74c0fc"/><circle cx="-12" cy="72" r="3.5" fill="#74c0fc"/>${face(0, -6, 1.7, m)}${o}${cheers(pose)}`;
+    case 'fairymouse':
+      return `<ellipse cx="-50" cy="10" rx="34" ry="22" fill="#d0ebff" fill-opacity="0.85" ${st(2.5)} transform="rotate(-30 -50 10)"/><ellipse cx="50" cy="10" rx="34" ry="22" fill="#d0ebff" fill-opacity="0.85" ${st(2.5)} transform="rotate(30 50 10)"/>
+        ${sparkle(-80, -14, 8, '#ffd43b')}${sparkle(80, -14, 8, '#f783ac')}<path d="M30,96 q40,10 34,-24 q-4,-14 -16,-8" fill="none" ${st(5)}/>
+        ${arms(pose, '#dee2e6', 40)}<ellipse cx="0" cy="62" rx="38" ry="44" fill="#dee2e6" ${st()}/><ellipse cx="0" cy="70" rx="20" ry="26" fill="#fff0f6"/><path d="M-18,104 l0,6 M18,104 l0,6" ${st(14)}/>
+        <circle cx="-42" cy="-50" r="26" fill="#dee2e6" ${st()}/><circle cx="42" cy="-50" r="26" fill="#dee2e6" ${st()}/><circle cx="-42" cy="-50" r="15" fill="#fcc2d7"/><circle cx="42" cy="-50" r="15" fill="#fcc2d7"/>
+        <ellipse cx="0" cy="-12" rx="46" ry="40" fill="#dee2e6" ${st()}/><path d="M-30,-2 h-24 M-30,6 h-22 M30,-2 h24 M30,6 h22" ${st(1.8)}/>${face(0, -12, 1.5, m)}<circle cx="0" cy="-4" r="4" fill="#f783ac"/>${o}${cheers(pose)}`;
+    case 'stalky':
+      return `${[-1, 0, 1].map((k) => `<path d="M${k * 22},${k === 0 ? -6 : 0} L${k * 36},${k === 0 ? -74 : -56}" ${st(8)}/><path d="M${k * 22},${k === 0 ? -6 : 0} L${k * 36},${k === 0 ? -74 : -56}" stroke="#74c0fc" stroke-width="4" stroke-linecap="round"/>`).join('')}
+        ${arms(pose, '#74c0fc', 56, 52)}<path d="M-52,108 Q-60,-6 0,-12 Q60,-6 52,108 Z" fill="#74c0fc" ${st()}/><path d="M-22,108 l0,4 M22,108 l0,4" ${st(12)}/>
+        ${[
+          [-36, -56],
+          [0, -74],
+          [36, -56],
+        ]
+          .map(
+            ([x, y]) =>
+              `<circle cx="${x}" cy="${y}" r="15" fill="#fff" ${st(2.5)}/>${pose === 1 ? `<path d="M${x - 8},${y + 2} q8,-10 16,0" fill="none" ${st(3)}/>` : `<circle cx="${x}" cy="${y + 1}" r="7" fill="#2a1a17"/><circle cx="${x - 2.5}" cy="${y - 2}" r="2.5" fill="#fff"/>`}`,
+          )
+          .join('')}${mouth(36, 14, pose)}
+        <ellipse cx="-30" cy="48" rx="8" ry="5" fill="${BLUSH}" opacity="0.8"/><ellipse cx="30" cy="48" rx="8" ry="5" fill="${BLUSH}" opacity="0.8"/>${o}${cheers(pose)}`;
+    case 'shroom':
+      return `${arms(pose, '#fff4e6', 60, 46)}<ellipse cx="0" cy="58" rx="38" ry="50" fill="#fff4e6" ${st()}/><path d="M-18,104 l0,6 M18,104 l0,6" ${st(14)}/>
+        <path d="M-84,-6 Q-80,-100 0,-102 Q80,-100 84,-6 Q0,12 -84,-6 Z" fill="#b197fc" ${st()}/>
+        ${[
+          [-44, -48, 13],
+          [0, -78, 15],
+          [44, -44, 12],
+          [-14, -36, 8],
+          [26, -72, 8],
+          [-50, -20, 6],
+        ]
+          .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#63e6be" ${st(2)}/>`)
+          .join('')}${face(0, 30, 1.6, m)}${o}${cheers(pose)}`;
+    case 'starry':
+      return `${arms(pose, '#ffd43b', 50, 40)}<polygon points="${star5(92, 0.55, 0, 26)}" fill="#ffd43b" ${st()}/><path d="M-22,96 l-4,12 M22,96 l4,12" ${st(12)}/>
+        ${face(0, 28, 1.9, m)}${sparkle(-62, -56, 8, '#b197fc')}${o}${cheers(pose)}`;
+    case 'twins':
+      return `${arms(pose, '#63e6be', 50, 58)}<ellipse cx="0" cy="66" rx="52" ry="42" fill="#63e6be" ${st()}/><path d="M-20,104 l0,6 M20,104 l0,6" ${st(14)}/>
+        ${[-32, 32]
+          .map(
+            (x) =>
+              `<path d="M${x},-48 L${x + Math.sign(x) * 10},-80" ${st(4)}/><circle cx="${x + Math.sign(x) * 10}" cy="-84" r="7" fill="${x < 0 ? '#ffd43b' : '#f783ac'}" ${st(2)}/>
+              <circle cx="${x}" cy="-14" r="36" fill="#63e6be" ${st()}/>${face(x, -12, 1.15, m)}`,
+          )
+          .join('')}${o}${cheers(pose)}`;
+    case 'tvbot':
+      return `<path d="M-20,-78 L-44,-104 M20,-78 L44,-104" ${st(4)}/><circle cx="-44" cy="-104" r="6" fill="#ff6b6b" ${st(2)}/><circle cx="44" cy="-104" r="6" fill="#ffd43b" ${st(2)}/>
+        ${arms(pose, '#adb5bd', 50, 46)}<rect x="-36" y="26" width="72" height="74" rx="12" fill="#ffa94d" ${st()}/><circle cx="0" cy="62" r="10" fill="#fff3bf" ${st(2)}/><path d="M-18,100 l0,10 M18,100 l0,10" ${st(14)}/>
+        <rect x="-62" y="-80" width="124" height="104" rx="16" fill="#868e96" ${st()}/><rect x="-52" y="-70" width="86" height="84" rx="12" fill="#212529" ${st(2.5)}/>
+        <circle cx="48" cy="-50" r="6" fill="#ced4da" ${st(2)}/><circle cx="48" cy="-28" r="6" fill="#ced4da" ${st(2)}/>${face(-9, -32, 1.6, m, '#63e6be').replace(/#c2414d/g, '#63e6be')}${o}${cheers(pose)}`;
+    case 'spinbot':
+      return `<path d="M-84,40 h-14 M-80,56 h-10 M84,40 h14 M80,56 h10" stroke="#ced4da" stroke-width="4" stroke-linecap="round"/>${arms(pose, '#adb5bd', 10, 62)}
+        <path d="M-70,20 Q0,-6 70,20 L10,96 L0,112 L-10,96 Z" fill="#b197fc" ${st()}/><path d="M-58,36 Q0,16 58,36" fill="none" stroke="#e5dbff" stroke-width="6"/>
+        <circle cx="0" cy="-30" r="44" fill="#e9ecef" ${st()}/><rect x="-32" y="-54" width="64" height="44" rx="14" fill="#d0ebff" ${st(2.5)}/>${face(0, -36, 1.3, m)}
+        <path d="M0,-74 L0,-96" ${st(4)}/><circle cx="0" cy="-100" r="7" fill="#63e6be" ${st(2)}/>${o}${cheers(pose)}`;
+    case 'crabbot': {
+      const claw = pose === 1 ? [74, -30] : pose === 2 ? [44, -6] : [80, 30];
+      const pincer = (x, y) =>
+        `<ellipse cx="${x}" cy="${y - 7}" rx="16" ry="8" fill="#ff8787" ${st(2.5)} transform="rotate(-20 ${x} ${y - 7})"/><ellipse cx="${x}" cy="${y + 7}" rx="16" ry="8" fill="#ff8787" ${st(2.5)} transform="rotate(20 ${x} ${y + 7})"/>`;
+      return `${[-1, 1].map((k) => `<path d="M${k * 30},70 l${k * 16},38 M${k * 44},60 l${k * 22},34" ${st(6)}/><path d="M${k * 56},36 L${k * claw[0]},${claw[1]}" ${st(8)}/><path d="M${k * 56},36 L${k * claw[0]},${claw[1]}" stroke="#adb5bd" stroke-width="4" stroke-linecap="round"/>${pincer(k * claw[0], claw[1])}`).join('')}
+        <path d="M-24,-6 L-28,-40 M24,-6 L28,-40" ${st(5)}/><ellipse cx="0" cy="40" rx="66" ry="44" fill="#ff8787" ${st()}/><rect x="-40" y="24" width="80" height="10" rx="5" fill="#c92a2a" opacity="0.5"/>
+        <circle cx="-28" cy="-44" r="16" fill="#fff" ${st(2.5)}/><circle cx="28" cy="-44" r="16" fill="#fff" ${st(2.5)}/>${eyes(28, -44, 16, pose)}${mouth(52, 14, pose)}${o}${cheers(pose)}`;
+    }
+    case 'ufopilot':
+      return `<ellipse cx="0" cy="40" rx="30" ry="30" fill="#8ce99a" ${st()}/>${arms(pose, '#8ce99a', 40, 44)}
+        <path d="M-14,-46 L-24,-66 M14,-46 L24,-66" ${st(4)}/><circle cx="-24" cy="-68" r="6" fill="#ffd43b" ${st(2)}/><circle cx="24" cy="-68" r="6" fill="#ffd43b" ${st(2)}/>
+        <ellipse cx="0" cy="-10" rx="44" ry="40" fill="#8ce99a" ${st()}/>${face(0, -8, 1.6, m)}
+        <path d="M-66,66 Q-66,-84 0,-86 Q66,-84 66,66 Z" fill="#a5d8ff" fill-opacity="0.3" ${st(2.5)}/><path d="M-46,-50 q14,-20 34,-24" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+        <ellipse cx="0" cy="74" rx="92" ry="26" fill="#adb5bd" ${st()}/><path d="M-52,90 Q0,118 52,90 Z" fill="#868e96" ${st()}/>
+        <circle cx="-60" cy="76" r="6" fill="#ffd43b"/><circle cx="-20" cy="82" r="6" fill="#ff6b6b"/><circle cx="20" cy="82" r="6" fill="#63e6be"/><circle cx="60" cy="76" r="6" fill="#b197fc"/>${o}${cheers(pose)}`;
+    case 'puffball':
+      return `${arms(pose, '#ffc078', 40, 62)}<polygon points="${spikes(0, 24, 76, 64, 26)}" fill="#ffc078" ${st()}/><ellipse cx="-20" cy="106" rx="14" ry="7" fill="#e8590c" ${st(2.5)}/><ellipse cx="20" cy="106" rx="14" ry="7" fill="#e8590c" ${st(2.5)}/>
+        <path d="M0,-50 q-12,-22 6,-30 q14,-4 8,10" fill="none" ${st(4)}/>${face(0, 18, 2.2, m)}${o}${cheers(pose)}`;
+    case 'springbot':
+      return `<rect x="-50" y="88" width="100" height="22" rx="10" fill="#495057" ${st()}/>
+        <polyline points="${Array.from({ length: 9 }, (_, i) => `${i % 2 ? 24 : -24},${88 - i * 10}`).join(' ')}" fill="none" ${st(10)}/><polyline points="${Array.from({ length: 9 }, (_, i) => `${i % 2 ? 24 : -24},${88 - i * 10}`).join(' ')}" fill="none" stroke="#ced4da" stroke-width="5"/>
+        ${arms(pose, '#adb5bd', -16, 62)}<rect x="-58" y="-82" width="116" height="92" rx="26" fill="#74c0fc" ${st()}/><rect x="-46" y="-70" width="92" height="64" rx="16" fill="#e7f5ff" ${st(2.5)}/>
+        <rect x="-68" y="-50" width="12" height="24" rx="4" fill="#ffd43b" ${st(2)}/><rect x="56" y="-50" width="12" height="24" rx="4" fill="#ffd43b" ${st(2)}/>${face(0, -40, 1.6, m)}${o}${cheers(pose)}`;
     default:
       throw new Error(`unknown dancer ${name}`);
   }
@@ -1058,7 +1222,8 @@ async function main() {
       DANCERS[look].flatMap((d) => [0, 1, 2].map((pose) => dancerSvg(d, pose))),
       DANCER.w,
       DANCER.h,
-      3,
+      // Two dancers to a row: a sheet of 20 stays under 4096 px tall (phones' texture limit).
+      6,
     );
   }
   const rocket = await grid([0, 1, 2, 3, 4].map(rocketSvg), TRAIN.w, TRAIN.h, 5);
@@ -1075,7 +1240,7 @@ async function main() {
   const bg = { quality: 84, effort: 6 };
   const files = [
     [resolve(HERO_DIR, 'puzzle-pics.webp'), sharp(pics).webp(webp)],
-    ...LOOKS.map((look) => [resolve(HERO_DIR, `theme-${look}-dancers-2.webp`), sharp(dancers[look]).webp(webp)]),
+    ...LOOKS.map((look) => [resolve(HERO_DIR, `theme-${look}-dancers-3.webp`), sharp(dancers[look]).webp(webp)]),
     [resolve(HERO_DIR, 'theme-cosmos-train.webp'), sharp(rocket).webp(webp)],
     [resolve(HERO_DIR, 'theme-machines.webp'), sharp(machines).webp(webp)],
     [resolve(HERO_DIR, 'theme-counters-2.webp'), sharp(counters).webp(webp)],

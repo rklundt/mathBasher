@@ -69,11 +69,14 @@ describe('Words and Numbers art (sprint 2.16)', () => {
       Math.ceil(PICTURE_WORDS.length / PUZZLE_PICS_SHEET.cols) * PUZZLE_PICS_SHEET.frame,
     ]);
     for (const art of Object.values(PUZZLE_THEME_ART)) {
+      // Two dancers to a row (each row whole poses), every frame filled, and under phones' 4096 px limit.
       const d = await size(art.dancers.key);
-      expect([d.width, d.height], art.dancers.key).toEqual([
-        art.dancers.poses * art.dancers.frameWidth,
-        art.dancers.characters * art.dancers.frameHeight,
-      ]);
+      const cols = d.width / art.dancers.frameWidth;
+      expect(cols % art.dancers.poses, art.dancers.key).toBe(0);
+      expect(cols * (d.height / art.dancers.frameHeight), art.dancers.key).toBe(
+        art.dancers.characters * art.dancers.poses,
+      );
+      expect(Math.max(d.width, d.height), art.dancers.key).toBeLessThanOrEqual(4096);
       const t = await size(art.train.key);
       expect([t.width, t.height], art.train.key).toEqual([
         (art.train.cars + 1) * art.train.frameWidth,

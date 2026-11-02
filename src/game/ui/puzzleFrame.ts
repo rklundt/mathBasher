@@ -352,6 +352,9 @@ const CROWD: DancerSheet = {
  * slowly; they cheer on a right answer and say "Oh!" on a wrong one, and
  * new ones come in every few puzzles.
  */
+/** Each dancer sheet's deck of characters still to come out (`PuzzleDancers.swap`). */
+const DANCER_DECKS = new Map<string, number[]>();
+
 export class PuzzleDancers {
   private readonly sprites: Phaser.GameObjects.Sprite[] = [];
   private readonly sheet: DancerSheet;
@@ -424,15 +427,25 @@ export class PuzzleDancers {
     this.sprites.forEach((s, i) => s.setFrame(this.frame(i, pose)));
   }
 
-  /** New animals (never the same pair twice running). */
+  /**
+   * New animals, dealt from a shuffled deck of the sheet's characters (kept
+   * across rounds), so every one comes out before any comes back; never the
+   * same one twice running.
+   */
   swap(instant = false): void {
     const n = this.sheet.characters;
-    const prev = new Set(this.animals);
+    let deck = DANCER_DECKS.get(this.sheet.key) ?? [];
     const next: number[] = [];
     while (next.length < this.sprites.length) {
-      const a = Math.floor(Math.random() * n);
-      if (!next.includes(a) && !prev.has(a)) next.push(a);
+      if (deck.length === 0) {
+        deck = Phaser.Utils.Array.Shuffle(
+          Array.from({ length: n }, (_, a) => a).filter((a) => !this.animals.includes(a) && !next.includes(a)),
+        );
+      }
+      const a = deck.pop()!;
+      if (!next.includes(a) && !this.animals.includes(a)) next.push(a);
     }
+    DANCER_DECKS.set(this.sheet.key, deck);
     if (instant) {
       this.animals = next;
       this.pose(0);

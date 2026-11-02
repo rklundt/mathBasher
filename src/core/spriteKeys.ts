@@ -888,14 +888,14 @@ const dancerSheet = (key: string): DancerSheet => ({
   key,
   frameWidth: 200,
   frameHeight: 230,
-  characters: 10,
+  characters: 20,
   poses: 3,
 });
 
 export const PUZZLE_THEME_ART: Readonly<Record<PuzzleTheme, PuzzleThemeArt>> = {
   critters: {
     backdrops: [1, 2, 3, 4, 5, 6].map((n) => `theme-critters-${String(n)}`),
-    dancers: dancerSheet('theme-critters-dancers-2'),
+    dancers: dancerSheet('theme-critters-dancers-3'),
     train: PUZZLE_SHEETS.train,
     machine: { key: THEME_MACHINES_SHEET.key, frame: 0 },
     changer: { key: PUZZLE_SHEETS.wand.key },
@@ -909,7 +909,7 @@ export const PUZZLE_THEME_ART: Readonly<Record<PuzzleTheme, PuzzleThemeArt>> = {
   },
   cosmos: {
     backdrops: [1, 2, 3, 4, 5, 6].map((n) => `theme-cosmos-${String(n)}`),
-    dancers: dancerSheet('theme-cosmos-dancers-2'),
+    dancers: dancerSheet('theme-cosmos-dancers-3'),
     train: { key: 'theme-cosmos-train', frameWidth: 220, frameHeight: 180, cars: 4, windowY: 88 },
     machine: { key: THEME_MACHINES_SHEET.key, frame: 1 },
     changer: { key: THEME_MACHINES_SHEET.key, frame: 2 },

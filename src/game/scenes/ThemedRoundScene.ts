@@ -2,6 +2,7 @@
 // Copyright 2026 Ray Klundt
 // mathBasher is also available under a commercial license — see COMMERCIAL.md
 
+import { config } from '@/core/config';
 import type { TelemetryProps } from '@/core/telemetry';
 import { THEMED_PUZZLE_IDS, type ThemedPuzzleId } from '@/core/gameIds';
 import { DEFAULT_PUZZLE_THEME, type PuzzleTheme } from '@/core/puzzleThemes';
@@ -39,6 +40,11 @@ export abstract class ThemedRoundScene extends PuzzleRoundScene {
       right: sounds.right,
       wrong: sounds.wrong,
     };
+  }
+
+  /** A look has 20 dancers: new ones every puzzle. */
+  protected dancerSwapEvery(): number {
+    return config.puzzles.timings.themedDancerSwapEvery;
   }
 
   /** The look's flyers drift across behind the puzzle. */
