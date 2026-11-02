@@ -218,7 +218,75 @@ const ODD_KINDS: Record<PuzzleLevel, readonly OddKind[]> = {
   hard: ['hardKinds', 'length'],
 };
 
+/** Tries before giving up on a shelf where only one word stands out (in practice a few). */
+const ODD_TRIES = 200;
+
 function oddWordOut(level: PuzzleLevel, rng: () => number): ThemedPuzzle {
+  // Owner (2026-11-01): "ball, fork, bell, bee": fork was the odd one (not B), but bee
+  // was the only 3-letter word, so both were right. Draw again until only one stands out.
+  let shelf = oddShelf(level, rng);
+  for (let t = 1; t < ODD_TRIES && !onlyOdd(shelf); t++) shelf = oddShelf(level, rng);
+  const { same, odd, why } = shelf;
+  const items = shuffled([...same, odd], rng).map(word);
+  return {
+    prompt: 'Which word doesn’t belong?',
+    stage: { kind: 'shelf' },
+    choices: items,
+    answer: items.findIndex((t) => t.text === odd),
+    why,
+  };
+}
+
+interface OddShelf {
+  readonly same: readonly string[];
+  readonly odd: string;
+  readonly why: string;
+}
+
+/** The longest rhyme ending a word has (`RHYMES`), or its last two letters. */
+const rhymeOf = (w: string): string =>
+  Object.keys(RHYMES)
+    .filter((e) => w.endsWith(e))
+    .sort((a, b) => b.length - a.length)[0] ?? w.slice(-2);
+
+/** What a child might sort the words by: the first letter, the length, the ending, the rhyme. */
+const ODD_LOOKS: readonly ((w: string) => string | number)[] = [
+  (w) => w[0],
+  (w) => w.length,
+  (w) => w.slice(-2),
+  rhymeOf,
+];
+const ALL_KINDS: readonly WordKind[] = [...Object.values(EASY_KINDS), ...Object.values(HARD_KINDS)];
+
+/**
+ * The words that some rule a child might spot singles out: all the others
+ * start with the same letter, have the same length or ending, or are the same
+ * kind of thing (`EASY_KINDS`, `HARD_KINDS`), and it doesn't.
+ */
+export function oddOnesOut(words: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  const alone = (marks: readonly unknown[]): void => {
+    marks.forEach((m, i) => {
+      const rest = marks.filter((_, j) => j !== i);
+      if (rest.every((r) => r === rest[0]) && m !== rest[0]) out.add(words[i]);
+    });
+  };
+  for (const look of ODD_LOOKS) alone(words.map(look));
+  for (const k of ALL_KINDS) {
+    const inKind = words.map((w) => k.words.includes(w));
+    // Only "the others are all <kind>", not "it's the only <kind>" (most words are the only one of something).
+    if (inKind.filter(Boolean).length === words.length - 1) out.add(words[inKind.indexOf(false)]);
+  }
+  return out;
+}
+
+/** Only the odd word stands out, by its own rule and every other. */
+const onlyOdd = ({ same, odd }: OddShelf): boolean => {
+  const out = oddOnesOut([...same, odd]);
+  return out.size === 1 && out.has(odd);
+};
+
+function oddShelf(level: PuzzleLevel, rng: () => number): OddShelf {
   const n = P.oddWordOut.items[level];
   const kind = pick(ODD_KINDS[level], rng);
   let same: string[];
@@ -272,14 +340,7 @@ function oddWordOut(level: PuzzleLevel, rng: () => number): ThemedPuzzle {
     );
     why = `The others all have ${String(len)} letters!`;
   }
-  const items = shuffled([...same, odd], rng).map(word);
-  return {
-    prompt: 'Which word doesn’t belong?',
-    stage: { kind: 'shelf' },
-    choices: items,
-    answer: items.findIndex((t) => t.text === odd),
-    why,
-  };
+  return { same, odd, why };
 }
 
 // ---------------------------------------------------------------- Word Wand

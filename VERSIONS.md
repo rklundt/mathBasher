@@ -32,6 +32,7 @@ Patch level (third digit) is reserved for hotfixes within a closed sprint. For e
 - **Word cards:** a row of cards shows pictures only when every card in it has one.
 - **More to look at in the Words and Numbers puzzles:** ten dancers per look (new: a puppy, a fox, a pegasus and a baby phoenix; a cyclops, a jellyfish alien, a drone bot and a rover bot), six backdrops per look (new: a pastel ocean and a sunset beach; an alien jungle and a comet storm), eight Quick Count counters per look, and things drifting across behind the puzzle: butterflies, balloons, birds and falling leaves, or UFOs, comets, satellites and rockets.
 - **Quick Count:** the counters stay up longer on Medium (2.4 s) and Hard (3 s).
+- **Odd Word Out:** never two right answers. Before, "ball, fork, bell, bee" wanted fork (not B), but bee was the only 3-letter word. Now only one word ever stands out, whether by first letter, length, ending, rhyme or kind of thing.
 - **Music for the Words and Numbers puzzles:** each look has its own songs now, five for Animal Pals and six for Alien Invaders, instead of tracks borrowed from other games. Neighbouring puzzles play different songs.
 
 ## [2.16.0] - 2026-11-01 — Words and Numbers puzzles

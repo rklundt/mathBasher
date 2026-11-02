@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 import { config, type PuzzleLevel } from '@/core/config';
 import { mulberry32 } from '@/test-utils/mulberry32';
 import { generateThemed, generateThemedRound, type ThemedPuzzle } from '@/game/systems/puzzles/themedPuzzles';
-import { addsOneLetter, snapsToWord } from '@/game/systems/puzzles/wordPuzzles';
+import { addsOneLetter, oddOnesOut, snapsToWord } from '@/game/systems/puzzles/wordPuzzles';
 import {
   ABC_WORDS,
   COMPOUNDS,
@@ -182,6 +182,14 @@ describe('the Words puzzles (sprint 2.16)', () => {
       } else {
         throw new Error(`${tag}: unknown note ${p.why}`);
       }
+    });
+  });
+
+  it('Odd Word Out: only one word stands out, by any rule a child might spot', () => {
+    // The owner's shelf: fork is the only one not starting with B, bee the only 3-letter word.
+    expect(oddOnesOut(['ball', 'fork', 'bell', 'bee'])).toEqual(new Set(['fork', 'bee']));
+    each('odd-word-out', (p, _level, tag) => {
+      expect(oddOnesOut(texts(p)), tag).toEqual(new Set([right(p)]));
     });
   });
 
