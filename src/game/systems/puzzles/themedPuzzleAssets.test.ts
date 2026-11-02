@@ -18,7 +18,7 @@ import {
   THEME_FLYERS_SHEET,
   THEME_MACHINES_SHEET,
 } from '@/core/spriteKeys';
-import { PUZZLE_THEME_SOUNDS } from '@/core/audioKeys';
+import { AUDIO_MANIFEST, PUZZLE_THEME_SOUNDS } from '@/core/audioKeys';
 import { isGameScope } from '@/core/assetScope';
 import { ROUND_PUZZLE_IDS, THEMED_PUZZLE_IDS } from '@/core/gameIds';
 import { PUZZLE_GROUPS } from '@/core/gameGroups';
@@ -112,6 +112,21 @@ describe('Words and Numbers art (sprint 2.16)', () => {
     expect(loadsFor(THEME_MACHINES_SHEET.key, 'number-machine')).toBe(true);
     expect(loadsFor(THEME_COUNTERS_SHEET.key, 'quick-count')).toBe(true);
     expect(loadsFor(THEME_FLYERS_SHEET.key, 'letter-garden')).toBe(true);
+  });
+
+  it("each look plays its own tracks, each on disk and loaded only when it's played", () => {
+    const { critters, cosmos } = PUZZLE_THEME_SOUNDS;
+    expect(new Set(critters.music).size).toBe(5);
+    expect(new Set(cosmos.music).size).toBe(6);
+    expect(critters.music.filter((k) => cosmos.music.includes(k))).toEqual([]);
+    for (const key of [...critters.music, ...cosmos.music]) {
+      const e = AUDIO_MANIFEST.find((x) => x.key === key);
+      expect(e, key).toBeDefined();
+      expect(e!.kind, key).toBe('music');
+      expect(e!.onDemand, key).toBe(true);
+      expect(e!.scope, key).not.toBe('eager');
+      expect(existsSync(onDisk(e!.url)), e!.url).toBe(true);
+    }
   });
 });
 

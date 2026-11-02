@@ -112,8 +112,8 @@ describe('Pair Pals assets (sprint 2.13)', () => {
       expect(e!.onDemand, theme).toBe(true);
       expect(existsSync(onDisk(e!.url)), e!.url).toBe(true);
     }
-    // Only these load on demand.
-    const onDemand = AUDIO_MANIFEST.filter((x) => x.onDemand).map((x) => x.key);
+    // Only these (and the Words and Numbers looks' own tracks) load on demand.
+    const onDemand = AUDIO_MANIFEST.filter((x) => x.onDemand && x.scope === 'game:pair-pals').map((x) => x.key);
     expect(new Set(onDemand)).toEqual(new Set(Object.values(PAIR_PALS_MUSIC)));
   });
 

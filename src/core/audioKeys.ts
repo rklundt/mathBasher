@@ -527,6 +527,19 @@ export const MusicKeys = {
   PairPalsAnimalLoop1: 'loop-14',
   /** Pair Pals: aliens (60 s; raised 1.4 dB to sit with the others). */
   PairPalsAlienLoop1: 'loop-15',
+  /** Words and Numbers, the Animal Pals look (sprint 2.16, the owner's five tracks, 60 s each). */
+  AnimalPalsLoop1: 'loop-16',
+  AnimalPalsLoop2: 'loop-17',
+  AnimalPalsLoop3: 'loop-18',
+  AnimalPalsLoop4: 'loop-19',
+  AnimalPalsLoop5: 'loop-20',
+  /** Words and Numbers, the Alien Invaders look (sprint 2.16, the owner's six tracks, 60 s each). */
+  AlienInvadersLoop1: 'loop-21',
+  AlienInvadersLoop2: 'loop-22',
+  AlienInvadersLoop3: 'loop-23',
+  AlienInvadersLoop4: 'loop-24',
+  AlienInvadersLoop5: 'loop-25',
+  AlienInvadersLoop6: 'loop-26',
 } as const;
 
 export type SfxKey = (typeof SfxKeys)[keyof typeof SfxKeys];
@@ -561,6 +574,24 @@ export const PAIR_PALS_MUSIC: Readonly<Record<PairPalsTheme, MusicKey>> = {
   aliens: MusicKeys.PairPalsAlienLoop1,
 };
 const PAIR_PALS_MUSIC_KEYS: ReadonlySet<string> = new Set(Object.values(PAIR_PALS_MUSIC));
+
+/**
+ * Sprint 2.16 — the Words and Numbers looks' own tracks (`PUZZLE_THEME_SOUNDS`):
+ * about 1 MB each, so a puzzle loads just the one it plays, when it plays it.
+ */
+const THEME_MUSIC_KEYS: ReadonlySet<string> = new Set<string>([
+  MusicKeys.AnimalPalsLoop1,
+  MusicKeys.AnimalPalsLoop2,
+  MusicKeys.AnimalPalsLoop3,
+  MusicKeys.AnimalPalsLoop4,
+  MusicKeys.AnimalPalsLoop5,
+  MusicKeys.AlienInvadersLoop1,
+  MusicKeys.AlienInvadersLoop2,
+  MusicKeys.AlienInvadersLoop3,
+  MusicKeys.AlienInvadersLoop4,
+  MusicKeys.AlienInvadersLoop5,
+  MusicKeys.AlienInvadersLoop6,
+]);
 
 export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
   'alien-shoot': MusicKeys.Loop1,
@@ -601,25 +632,34 @@ export const GAME_MUSIC_MAP: Readonly<Record<GameId, MusicKey>> = {
 /**
  * Sprint 2.16 — each look's sounds (`core/puzzleThemes.ts`): its music (a
  * puzzle plays the track at its place in the list, so neighbours differ)
- * and its right / wrong sounds. Stand-ins borrowed from other games until
- * the owner's own arrive: Animal Pals the Pair Pals sounds, Alien Invaders
- * the Alien Shoot zaps.
+ * and its right / wrong sounds. The music is the owner's own (five tracks
+ * for Animal Pals, six for Alien Invaders); the right / wrong sounds are
+ * stand-ins borrowed from other games until the owner's own arrive:
+ * Animal Pals the Pair Pals sounds, Alien Invaders the Alien Shoot zaps.
  */
 export const PUZZLE_THEME_SOUNDS: Readonly<
   Record<PuzzleTheme, { music: readonly MusicKey[]; right: () => SfxKey; wrong: () => SfxKey }>
 > = {
   critters: {
     music: [
-      MusicKeys.PairPalsAnimalLoop1,
-      MusicKeys.GardenLoop1,
-      MusicKeys.BalanceLoop1,
-      MusicKeys.PairPalsDessertLoop1,
+      MusicKeys.AnimalPalsLoop1,
+      MusicKeys.AnimalPalsLoop2,
+      MusicKeys.AnimalPalsLoop3,
+      MusicKeys.AnimalPalsLoop4,
+      MusicKeys.AnimalPalsLoop5,
     ],
     right: () => pickPairPalsMatchSfx(),
     wrong: () => pickPairPalsMissSfx(),
   },
   cosmos: {
-    music: [MusicKeys.PairPalsAlienLoop1, MusicKeys.CockpitLoop1, MusicKeys.Loop3, MusicKeys.PairPalsLoop1],
+    music: [
+      MusicKeys.AlienInvadersLoop1,
+      MusicKeys.AlienInvadersLoop2,
+      MusicKeys.AlienInvadersLoop3,
+      MusicKeys.AlienInvadersLoop4,
+      MusicKeys.AlienInvadersLoop5,
+      MusicKeys.AlienInvadersLoop6,
+    ],
     right: () => pickRandomHitCorrectSfx(),
     wrong: () => pickRandomHitWrongSfx(),
   },
@@ -825,6 +865,8 @@ function audioScopeFor(key: AudioKey): AssetScope {
   if (PAIR_PALS_MUSIC_KEYS.has(key) || PAIR_PALS_SFX_KEYS.has(key)) return 'game:pair-pals';
   // Sprint 2.14 — Copy Cat's own animal voices.
   if (COPY_CAT_SFX_KEYS.has(key)) return 'game:copy-cat';
+  // Sprint 2.16 — the Words and Numbers looks' tracks (each puzzle loads its own on demand).
+  if (THEME_MUSIC_KEYS.has(key)) return 'game:word-train';
   return 'eager';
 }
 
@@ -832,9 +874,10 @@ function audioScopeFor(key: AudioKey): AssetScope {
  * Sprint 2.13 — the sounds a scene loads itself, when needed (`onDemand`):
  * Pair Pals' theme tracks (the puzzle pack plays them too). Sprint 2.14 —
  * the puzzle pack's borrowed sounds load with each of its puzzles (`alsoFor`).
+ * Sprint 2.16 — the Words and Numbers looks' tracks load on demand too.
  */
 function audioExtras(key: AudioKey): { onDemand?: true; alsoFor?: readonly GameId[] } {
-  if (PAIR_PALS_MUSIC_KEYS.has(key)) return { onDemand: true };
+  if (PAIR_PALS_MUSIC_KEYS.has(key) || THEME_MUSIC_KEYS.has(key)) return { onDemand: true };
   return PUZZLE_PACK_SOUNDS.has(key) ? { alsoFor: ROUND_PUZZLE_IDS } : {};
 }
 
