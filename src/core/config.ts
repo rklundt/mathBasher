@@ -1600,7 +1600,11 @@ export const config = {
         hard: 'Trickier kinds, letter counts',
       },
       'word-wand': { easy: 'Sounds, colours, opposites', medium: 'Babies, homes, more than one', hard: 'Tricky words' },
-      'missing-letter': { easy: '3-letter words', medium: '4-letter words', hard: 'Longer words' },
+      'missing-letter': {
+        easy: '3-letter words, with pictures',
+        medium: '4-letter words, with pictures',
+        hard: 'Longer words, two missing, no pictures',
+      },
       'word-snap': { easy: 'Finish the big word', medium: 'Start the big word', hard: 'No big word to help' },
       'letter-garden': { easy: '3 letters or more', medium: '4 letters or more', hard: '5 letters, bigger garden' },
       'number-train': {
@@ -1684,11 +1688,15 @@ export const config = {
      * Missing Letter: the word's length range, how many letters are missing
      * and how many letter cards there are, by level. Owner (2026-11-01): Hard
      * misses two, picked one at a time, from more cards; longer words.
+     * `pictures`: the level always shows the word's picture (its words are
+     * the picture words), or never (any kid word: a reading challenge);
+     * owner's pick, Easy and Medium with, Hard without.
      */
     missingLetter: {
       letters: { easy: [3, 3], medium: [4, 4], hard: [5, 7] },
       gaps: { easy: 1, medium: 1, hard: 2 },
       cards: { easy: 3, medium: 4, hard: 7 },
+      pictures: { easy: true, medium: true, hard: false },
     },
     /**
      * Letter Garden: the board (`size` × `size` letters) and the shortest

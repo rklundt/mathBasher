@@ -235,8 +235,14 @@ describe('the Words puzzles (sprint 2.16)', () => {
         expect(answers.length, tag).toBe(gaps);
         expect(new Set(answers.map((a) => texts(p)[a])).size, tag).toBe(gaps);
         expect(fill(letters, answers.map((a) => texts(p)[a]).join('')), tag).toBe(word);
-        if (picture !== null) expect(PICTURE_WORDS[picture], tag).toBe(word);
-        else expect(dictionary.has(word), tag).toBe(true);
+        // Easy and Medium always show the word's picture; Hard never does.
+        if (P.missingLetter.pictures[level]) {
+          expect(picture, tag).not.toBeNull();
+          expect(PICTURE_WORDS[picture!], tag).toBe(word);
+        } else {
+          expect(picture, tag).toBeNull();
+          expect(dictionary.has(word), tag).toBe(true);
+        }
         // No wrong letter spells a real word in any gap (the other gaps right).
         const gapAt = letters.flatMap((l, k) => (l === null ? [k] : []));
         texts(p).forEach((t, i) => {
@@ -252,9 +258,10 @@ describe('the Words puzzles (sprint 2.16)', () => {
   });
 
   it('Missing Letter without the word list sticks to picture words', () => {
-    each('missing-letter', (p, _level, tag) => {
+    each('missing-letter', (p, level, tag) => {
       if (p.stage.kind !== 'missing') throw new Error(tag);
-      expect(p.stage.picture, tag).not.toBeNull();
+      expect(PICTURE_WORDS, tag).toContain(p.stage.word);
+      expect(p.stage.picture === null, tag).toBe(!P.missingLetter.pictures[level]);
     });
   });
 

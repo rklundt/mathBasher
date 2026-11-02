@@ -394,7 +394,9 @@ function missingLetter(level: PuzzleLevel, rng: () => number, words?: PuzzleWord
   const gapCount = M.gaps[level];
   const fits = (w: string): boolean => w.length >= lo && w.length <= hi;
   const pictured = PICTURE_WORDS.filter(fits);
-  const plain = words ? KID_VOCAB.filter((w) => fits(w) && picOf(w) === null && words.isWord(w)) : [];
+  // A level shows a picture every time (picture words only) or never (any kid word).
+  const withPicture = M.pictures[level];
+  const plain = words && !withPicture ? KID_VOCAB.filter((w) => fits(w) && picOf(w) === null && words.isWord(w)) : [];
   const pool = [...new Set([...pictured, ...plain])];
   const count = M.cards[level];
   for (let guard = 0; ; guard++) {
@@ -425,7 +427,7 @@ function missingLetter(level: PuzzleLevel, rng: () => number, words?: PuzzleWord
       stage: {
         kind: 'missing',
         word: w,
-        picture: picOf(w),
+        picture: withPicture ? picOf(w) : null,
         letters: w.split('').map((l, k) => (gaps.includes(k) ? null : l)),
       },
       choices: cards,
